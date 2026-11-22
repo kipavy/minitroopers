@@ -56,7 +56,7 @@ docs/             conception, plans, référence du jeu original
 
 | Étape | Contenu | État |
 |---|---|---|
-| 1 | Banc différentiel + moteur de combat exact | 🚧 en cours |
+| 1 | Banc différentiel + moteur de combat exact | ✅ terminée (`@mt/engine` 1.0.0, 0 écart sur 10 000 combats oracle) |
 | 2 | Règles de jeu, serveur, création d'armée, HQ, recrutement, amélioration, combats quotidiens | à venir |
 | 3 | Missions (Extermination, Infiltration, Epic), raids, parrainage | à venir |
 | 4 | Historique, classements, protection, ordre de déploiement, fin de journée, Docker | à venir |
