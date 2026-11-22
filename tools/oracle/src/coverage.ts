@@ -3,6 +3,9 @@
 // Reports per tag: battles, winner=null, TRP lines vs input troopers, TRP vehicle index
 // histogram, jet runs (EV type 21); EV type histogram; forced-skill: per skill, whether the
 // forced trooper got a TRP line; pref.leftOver: leftover skills absent from the TRP skills.
+// Then the trigger-level mechanics (src/mechanics.ts): every useSuper case, Comms order, status,
+// vehicle, Martyr/Vendetta/Frenetic (engine replay), etc., with the tags they fired in; exit
+// code != 0 when a reachable mechanic fired fewer than MIN_FIRES times.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -10,6 +13,15 @@ import { gunzipSync } from "node:zlib";
 import { SKILL_COUNT, SKILL_NAMES } from "./data/skills.ts";
 import type { OracleTrace } from "./runner.ts";
 import { GOLDEN_DIR } from "./capture.ts";
+import {
+  MIN_FIRES,
+  UNREACHED_DOCUMENTED,
+  expectedMechanics,
+  mechanicProblems,
+  replayMechanics,
+  traceMechanics,
+  type MechanicCounts,
+} from "./mechanics.ts";
 
 /** BattleMsg constructor index of the fighter-jet strike (decompiled Battle event case 1, Vehicule
  * index 7: `msg(BattleMsg.$\x7f\x02p\x02(side, x, y, hits))`, ctor 21 of 43). A jet trooper is
@@ -201,11 +213,55 @@ export function* readGoldens(dir: string): Generator<Golden> {
   }
 }
 
+export interface MechanicCoverage {
+  counts: MechanicCounts;
+  /** mechanic -> tag -> count */
+  byTag: Map<string, Map<string, number>>;
+  /** goldens whose engine replay differs from the trace (replay counts then unreliable). */
+  replayMismatches: string[];
+}
+
+/** Runs traceMechanics + replayMechanics over every golden passing through `goldens`. */
+export function* tapMechanics(goldens: Iterable<Golden>, mc: MechanicCoverage): Generator<Golden> {
+  for (const g of goldens) {
+    const one: MechanicCounts = new Map();
+    traceMechanics(g.trace.record, one);
+    const { same } = replayMechanics(g.trace.input, g.trace.record, one);
+    if (!same) mc.replayMismatches.push(`${g.tag}/${g.file}`);
+    for (const [k, v] of one) {
+      mc.counts.set(k, (mc.counts.get(k) ?? 0) + v);
+      const t = mc.byTag.get(k) ?? new Map<string, number>();
+      t.set(g.tag, (t.get(g.tag) ?? 0) + v);
+      mc.byTag.set(k, t);
+    }
+    yield g;
+  }
+}
+
+export const formatMechanics = (mc: MechanicCoverage): string => {
+  const out = [`mechanics (fired count; gate >= ${MIN_FIRES}; tags):`];
+  for (const m of expectedMechanics()) {
+    const n = mc.counts.get(m) ?? 0;
+    const tags = [...(mc.byTag.get(m) ?? [])].sort(([a], [b]) => a.localeCompare(b)).map(([t, c]) => `${t}=${c}`);
+    const flag = UNREACHED_DOCUMENTED.has(m) ? "--" : n < MIN_FIRES ? "!!" : "  ";
+    out.push(`  ${flag} ${String(n).padStart(7)}  ${m}  [${tags.join(" ")}]`);
+  }
+  for (const [m, why] of UNREACHED_DOCUMENTED) out.push(`UNREACHED (documented, not gated): ${m}: ${why}`);
+  out.push(`replay mismatches: ${mc.replayMismatches.length ? mc.replayMismatches.join(", ") : "none"}`);
+  return out.join("\n");
+};
+
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === import.meta.filename) {
   const { values } = parseArgs({ options: { dir: { type: "string", default: GOLDEN_DIR } } });
-  const cov = analyze(readGoldens(values.dir));
+  const mc: MechanicCoverage = { counts: new Map(), byTag: new Map(), replayMismatches: [] };
+  const cov = analyze(tapMechanics(readGoldens(values.dir), mc));
   console.log(formatCoverage(cov));
-  const problems = coverageProblems(cov);
+  console.log(formatMechanics(mc));
+  const problems = [
+    ...coverageProblems(cov),
+    ...mechanicProblems(mc.counts),
+    ...mc.replayMismatches.map((f) => `engine replay differs from golden ${f}`),
+  ];
   for (const p of problems) console.log(`COVERAGE GAP: ${p}`);
   if (problems.length > 0) process.exitCode = 1;
 }

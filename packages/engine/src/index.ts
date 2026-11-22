@@ -30,5 +30,7 @@ export {
 export type { GeneratedTrooper, TrooperLineState } from "./logic/trooperGen.ts";
 export { Battle } from "./logic/battle.ts";
 export { BattleMsg, HitEvent, Announce } from "./msg/battleMsg.ts";
-export { HxEnum, haxeString } from "./msg/hx.ts";
+export { HxEnum, haxeString, OBF_KEYS } from "./msg/hx.ts";
+// Exposed for the verification harness (coverage replay observers); not a game API.
+export { Trooper } from "./logic/trooper/trooper.ts";
 export { as3Sort } from "./core/sort.ts";
