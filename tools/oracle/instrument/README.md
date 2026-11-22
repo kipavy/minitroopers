@@ -1,0 +1,254 @@
+# Oracle SWF instrumenté (`assets/oracle/client_fr_trace.swf`)
+
+`client_fr_trace.swf` est `assets/swf/client_fr.swf` (original Motion-Twin, SHA-256
+`dfdb6659…4c22`) auquel on a ajouté des `trace()` : chargé avec les flashvars d'un combat,
+il imprime les troopers générés, tout `Battle.history` dès que le calcul est terminé
+(avant toute animation), le vainqueur, puis `MTDONE`. Aucune logique de combat n'est
+recompilée ni modifiée (voir « Innocuité »).
+
+- Source du patch (notre code uniquement) : `patch-msg.as`
+- Construction : `build.ps1`
+- Résultat : `assets/oracle/client_fr_trace.swf` + `client_fr_trace.swf.sha256`
+  (`a4afe044c3707993f7d49c7afe4fc6319a8c1012fd3e1fd563cd2b6eb9c1b08c`, build reproductible :
+  deux builds dans deux dossiers de travail donnent le même SHA-256).
+
+Le code décompilé de Motion-Twin n'est jamais écrit dans le dépôt : `build.ps1` travaille dans
+`..\minitroopers-work\oracle-build` (à côté du worktree), paramètre `-WorkDir`.
+
+## Outils (portables, rien d'installé)
+
+Tout vit dans `tools/bin/` (ignoré par git) ; supprimer `tools/bin/` suffit à tout enlever.
+
+| Outil | Emplacement | Version | Source | SHA-256 de l'archive |
+|---|---|---|---|---|
+| JDK (x64) | `tools/bin/jdk/` | Microsoft Build of OpenJDK 21.0.13.1+2, windows-x64 | `https://aka.ms/download-jdk/microsoft-jdk-21.0.13.1-windows-x64.zip` (→ `download.visualstudio.microsoft.com/…/microsoft-jdk-21.0.13.1-windows-x64.zip`) | `071c10e8e7fa62cfef83137b152f5f40e37012dd48e4d5586c5125667cf0b8de` (= `.sha256sum.txt` publié) |
+| JPEXS FFDec | `tools/bin/ffdec/` | 26.5.0 (zip, pas l'installeur) | `https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version26.5.0/ffdec_26.5.0.zip` | `8d00c2713a724bb3f7e6c9a64994836ce3a953b5ac264f405d98f92e7c266d33` |
+| Ruffle desktop | `tools/bin/ruffle/ruffle_desktop.exe` | `Ruffle 0.1.0-local (a111ceec3873b019c79e8554963bfdc8307adcc0 2025-07-27)`, build Windows x64 | copie de `$GL apps/server/src/bin/ruffle_desktop.exe` ($GL `b06792e5`) | `585af1c75c1171c0352d900fbd4f490ef9660ce073aa18e99d4f6321dbc97a5d` (exe) |
+
+Remise en place :
+
+```sh
+# JDK
+curl -L -o jdk.zip https://aka.ms/download-jdk/microsoft-jdk-21.0.13.1-windows-x64.zip
+sha256sum jdk.zip   # 071c10e8…b8de
+unzip jdk.zip -d tmp && mv tmp/jdk-21.0.13.1+2 tools/bin/jdk
+# FFDec
+curl -L -o ffdec.zip https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version26.5.0/ffdec_26.5.0.zip
+sha256sum ffdec.zip # 8d00c271…6d33
+unzip ffdec.zip -d tools/bin/ffdec
+# Ruffle
+mkdir -p tools/bin/ruffle && cp "$GL/apps/server/src/bin/ruffle_desktop.exe" tools/bin/ruffle/
+```
+
+Pourquoi un JDK **x64** sur une machine ARM64 : FFDec 26.5.0 embarque JNA 3.5.1, qui n'a de
+bibliothèque native que pour `win32-x86`/`win32-amd64`. Avec un JVM aarch64, `Main.initJna`
+ouvre une boîte de dialogue modale et la CLI reste bloquée indéfiniment (même pour `-help`).
+Le JVM x64 tourne sous l'émulation x64 de Windows ARM64.
+
+Empreinte hors dépôt :
+- FFDec écrit ses logs sous `%APPDATA%\JPEXS\FFDec\logs` ; `build.ps1` redirige `APPDATA`
+  vers `tools/bin/ffdec-home` **pour le seul processus FFDec** (variable restaurée ensuite).
+- Ruffle écrit sa config/son cache (dont la DLL OpenH264 téléchargée) sous
+  `%LOCALAPPDATA%\ruffle` par défaut ; toujours lui passer `--config tools/bin/ruffle-home
+  --cache-directory tools/bin/ruffle-home/cache`.
+
+## Construire
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/oracle/instrument/build.ps1 [-Verify] [-WorkDir <dir>]
+```
+
+1. vérifie le SHA-256 de `client_fr.swf` contre `assets/swf/SHA256SUMS` ;
+2. décompile (AS3 avec `showMethodBodyId=true`, et P-code) dans `-WorkDir` ;
+3. insère les sections `PC_*` de `patch-msg.as` dans le **P-code** de trois méthodes
+   originales et remplace ces trois corps (`ffdec -replace <script> <pcode> <methodBodyIndex>`) ;
+   l'index de corps est relu dans l'export AS3, chaque motif `PC_*_FIND` doit apparaître
+   exactement une fois dans la méthode, sinon échec ;
+4. ajoute les fonctions de la section `HELPERS` comme méthodes statiques de `§(m]a\x02§`,
+   classe vide et jamais référencée du SWF original, et recompile **cette seule classe** depuis
+   l'AS3 (`ffdec -importScript`) ;
+5. écrit le SWF et son `.sha256`. `-Verify` exporte le P-code du résultat et liste les fichiers
+   dont le P-code diffère de l'original (en ignorant la renumérotation `newfunction N`).
+
+Pourquoi pas d'édition AS3 directe des classes originales : la recompilation AS3 de
+`Trooper` échoue (`Compiling §§goto is not available`), et recompiler `Game` réussit mais
+réécrit tout son bytecode (≈6 500 lignes de P-code différentes). L'édition P-code ciblée
+garantit que seules les instructions insérées changent. `-importScript` ne sait pas ajouter
+une nouvelle classe, d'où l'hébergement des helpers dans la classe vide `§(m]a\x02§`.
+
+## Noms obfusqués réels (client_fr.swf)
+
+FFDec affiche les identifiants entre `§…§` avec des échappements `\xNN` ; certains contiennent
+en plus un caractère U+007F brut, noté `{DEL}` dans `patch-msg.as` et `build.ps1`.
+
+| Rôle ($GL `flash-port`) | Nom obfusqué | Fichier d'export |
+|---|---|---|
+| `Main` (flashvars, `chk`, charge le gfx, crée le Game) | `§,7u\x1f§` ; `_rsq()` ; handler COMPLETE `§\x074\x10\r§` | `scripts/§,7u%5Cx1f§.as` |
+| `Game` (possède le Battle) | `§Q\btf§` ; champ battle `§S\rNK\x02§` ; ENTER_FRAME `§&l\f[\x01§` | `scripts/§Q%5Cbtf§.as` |
+| hôte des helpers (classe vide) | `§(m]a\x02§` | `scripts/§(m]a%5Cx02§.as` |
+| package `logic` | `§P!L/\x02§` | `scripts/§P!L%2F%5Cx02§/` |
+| `logic.Battle` | `§\x0b\x0eNO§` | `…/§%5Cx0b%5Cx0eNO§.as` |
+| `Battle.resolve()` (→ `true` = fini) | `MnRZ()` | |
+| `Battle.msg(BattleMsg, ?tid)` | `§SV\x1d\x01§` | |
+| `Battle.history` / `btime` / `winner` / `graveyard` / `troopers` / `hero` / `seed` | `§7\x13JZ\x03§` / `§U-\x19i\x03§` / `§\x1e1\\J\x01§` / `§8X}L\x01§` / `` §`1\x1f*\x02§ `` / `§'5'T§` / `§\fA2c§` | |
+| `Battle.setWinner` ($GL `Battle.ts:127`, émet le message vainqueur) | `§Gp3\x13\x03§` | |
+| clés d'une entrée `history` `type` / `time` / `tid` | `"An%6"` / `"uN\x0ed"` / `"\x1e,d\x01"` | |
+| `logic.Ent` (`getId()`, `side`, `life`, `time`) | `§\x15)\x01\x02§` (`§(m\x0fl\x01§()`, `§9\x118u§`, `§\x12?g-§`, `§uN\x0ed§`) | |
+| `logic.Trooper` | `§59=F\x03§` | `…/§59=F%5Cx03§.as` |
+| `Trooper.init(Battle)` (fin de génération) | `§(\x07\x184§` (corps n° 1521) | |
+| `Trooper.ghost` / `weapons` / `weap` / `vehicule`(enum) / `helmet` / `leader` | `§we\f=\x03§` / `§\x1dI\x02\r\x03§` / `§5\tmF§` / `` §K(m`\x01§ `` / `§(\x1f\x15F\x01§` / `§\x1c(h7\x03§` | |
+| `logic.Ghost` (génération depuis la seed) ; `skills` / `lvl` | `§9\x19\x02~§` ; `§0\x06@F\x03§` / `§\n@?\x01§` | `…/§9%5Cx19%5Cx02~§.as` |
+| `logic.Square` (`x`, `y`) | `§\r\x07 \x05\x01§` (`§v\x01§`, `§l\x01§`) | |
+| `LogicWeapon` (`data`, munitions, réserve, drapeau `_obf_75b4f881`) | `§&Z\x01H§` (`§5E[\x1d§`, `§+8\x19{DEL}§`, `§\x1ap\x04f§`, `§\x0fV8\x16\x02§`) | |
+| enum `BattleMsg` | `§|\x10i \x02§` | `scripts/§%7C%5Cx10i %5Cx02§.as` |
+| champs d'une valeur d'enum Haxe `tag` / `index` / `params` | `§\x14s\x1e\x01§` / `§)-Z\x19\x01§` / `§7\x02@d\x02§` (+ `__enum__ = true`) | |
+
+## Le patch
+
+| Point | Où | Effet |
+|---|---|---|
+| `PC_TROOPER` | dernière instruction de `Trooper.init` | `§(m]a\x02§.mtTrp(this)` → une ligne `TRP` par trooper, au moment où il vient d'être initialisé (déploiement initial **et** troopers apparus en cours de combat) |
+| `PC_GAME` | handler ENTER_FRAME du Game, étape 0, juste après `if (battle.resolve()) { history = battle.history; step = … }` | `§(m]a\x02§.mtDump(battle)` → toutes les lignes `EV`, puis `END`, puis `MTDONE`, avant toute animation |
+| `PC_MAIN` | `Main._rsq` : `if (hash(data) != chk) return;` | devient `if (hash(data) != chk && chk != null) return;` : le hash est toujours calculé, mais l'oracle tourne sans flashvar `chk` (le hash est un algorithme maison exécuté par un interpréteur embarqué ; Eternaltwin a supprimé ce contrôle dans `client_fr_edit.swf`). Aucun effet sur le combat. |
+| `HELPERS` | classe `§(m]a\x02§` | `mtEsc`, `mtStr`, `mtTrp`, `mtDump` |
+
+## Format des lignes (figé)
+
+Une ligne par `trace()` :
+
+```
+TRP <id>|<side>|<life>|<time>|<lvl>|<skills>|<weapons>|<weapIdx>|<vehicle>|<helmet>|<leader>
+EV <time>|<tid>|<type>
+END <winner>|<graveyard>
+MTDONE
+```
+
+- `TRP` (fin de `Trooper.init`) :
+  - `id` = `getId()` (= `data.id`), `side` = 0/1 ;
+  - `life` = vie après init (= `getLifeMax()`), `time` = initiative après init (tirage
+    `bat.seed % 40`, véhicule, ON_POINT/SPY inclus), `lvl` = `ghost.lvl` ;
+  - `skills` = chaque valeur de `ghost.skills` au format valeur ci-dessous (donc l'index de
+    l'enum `Skill`), **dans l'ordre du tableau** (non trié : l'ordre conditionne `init`),
+    séparés par `,` ;
+  - `weapons` = pour chaque `LogicWeapon` de `trooper.weapons`, dans l'ordre :
+    `<index enum Weapon>:<munitions chargées>:<réserve>:<drapeau 0|1>` (munitions = tirage
+    `1 + seed % chargeur` de `LogicWeapon.init`, réserve = reste ; `-1` pour les poings ;
+    drapeau = `§\x0fV8\x16\x02§`, $GL `_obf_75b4f881`, posé par la boucle aléatoire de `init`),
+    séparés par `,` ;
+  - `weapIdx` = index de l'arme courante (`weap`) dans `weapons` (`-1` si aucune) ;
+  - `vehicle` = valeur de l'enum véhicule `` §K(m`\x01§ `` (index) ou `-` ;
+  - `helmet`, `leader` = `0`/`1`.
+- `EV` : une ligne par entrée de `Battle.history`, dans l'ordre, `time`/`tid`/`type` au
+  format valeur (`tid` vaut `null` quand aucun héros n'est actif).
+- `END` : `winner` au format valeur (`0`/`1`, ou `null` si le combat s'arrête par
+  `btime > 50000`) ; `graveyard` = ids au format valeur séparés par `,` (vide si aucun mort).
+- `MTDONE` : fin de trace ; le processus Ruffle continue (animation) et doit être tué.
+
+Format « valeur » (`mtStr`), à reproduire à l'identique côté TS :
+
+| Valeur AS3 | Sortie |
+|---|---|
+| `null` / `undefined` | `null` |
+| `Boolean` | `true` / `false` |
+| `int` / `uint` / `Number` | `String(n)` AS3 (tel que Ruffle l'implémente) |
+| `String` | `"` + échappé + `"` |
+| `Array` | `[v1,v2,…]` |
+| instance de `logic.Ent` (Trooper…) | `T<getId()>` |
+| instance de `logic.Square` | `Q<x>:<y>` |
+| valeur d'enum Haxe sans paramètre | `<index>` |
+| valeur d'enum Haxe avec paramètres | `<index>(<p1>,<p2>,…)` |
+| objet anonyme (`getQualifiedClassName == "Object"`) | `{<clé>=<valeur>;…}`, clés triées par `Array.sort()` AS3 (ordre des unités UTF-16), clés échappées |
+| `Function` | `<fn>` |
+| autre instance de classe | `<` + nom de classe qualifié échappé + `>` (non rencontré à ce jour) |
+| profondeur > 16 | `<deep>` |
+
+Échappement (`mtEsc`) : tout caractère de code < 0x20 ou > 0x7E, et chacun de
+`\ " | ; = , { } [ ] ( ) < >`, devient `\uXXXX` (4 chiffres hexadécimaux minuscules) ; le reste
+est copié tel quel. Une ligne ne contient donc jamais de saut de ligne ni de `|` hors séparateurs.
+
+Pourquoi pas `Std.string` : la valeur d'enum Haxe compilée en AS3 imprime son `tag`, c'est-à-dire
+le nom obfusqué du constructeur, plein de caractères de contrôle (par ex. `` "\x0b`\\0\x03" ``) ;
+l'index est stable et lisible. Les objets anonymes gardent leurs clés obfusquées (échappées),
+par exemple `{\u0005\u000b\u007f\u0001=4;Se3Z=1;VkD\u0001=0;WJb\u0001=0}` : le moteur TS devra
+produire les mêmes clés (table de correspondance à tenir côté TS).
+
+## Exécuter (smoke run)
+
+```sh
+FV=$(node -e '…decodeURIComponent(toFlashvars(input, "file:///C:/…/assets/swf/army.swf"))')
+tools/bin/ruffle/ruffle_desktop.exe assets/oracle/client_fr_trace.swf -P "$FV" \
+  --dummy-external-interface --storage memory --filesystem-access-mode allow \
+  --config tools/bin/ruffle-home --cache-directory tools/bin/ruffle-home/cache
+```
+
+- Les `trace()` sortent sur **stdout** dans le log de Ruffle : `<horodatage>  INFO avm_trace: <ligne>`
+  (avec codes couleur ANSI) ; extraire avec `sed 's/\x1b\[[0-9;]*m//g' | grep avm_trace | sed 's/.*avm_trace: //'`.
+- `-P` reçoit `toFlashvars(...)` **décodé une fois** (`decodeURIComponent`), comme le fait $GL.
+- **Le gfx doit être joignable** : le `Game` (donc le `Battle`) n'est construit que dans le
+  handler `COMPLETE` du chargement de `gfx` (`army.swf`). Sans gfx, aucune ligne n'est émise.
+  Un `file:///…/assets/swf/army.swf` fonctionne, à condition de passer
+  `--filesystem-access-mode allow` (sinon Ruffle demande l'autorisation dans sa fenêtre et
+  le chargement reste bloqué silencieusement). `http://localhost:4200/…` sans serveur échoue
+  (`InvalidDomain`).
+- `--dummy-external-interface` est nécessaire (le Game appelle `ExternalInterface.addCallback`).
+- `imageurl` absent → l'image de fond `nullbg/garden.jpg` échoue à charger : sans effet sur le calcul.
+- Ruffle ouvre une fenêtre ; le processus ne se termine pas seul.
+- Le compteur statique d'armes (`LogicWeapon.§\x02XD\x01§`, qui numérote `wid`) n'est pas remis
+  à zéro entre deux combats d'un même processus : un combat par processus Ruffle.
+
+Smoke run (fixture 1v1 de `packages/engine/test/input/flashvars.test.ts`, gfx en `file:///`) :
+37 lignes, identiques sur deux exécutions ; extrait :
+
+```
+TRP 0|0|10|12|0|13,128|0:1:-1:0,6:1:3:0|1|-|0|1
+TRP 1|1|10|19|0|8,24|0:1:-1:0,1:3:1:0,17:1:1:0|1|-|0|1
+EV 0|null|40(0,{\u0005\u000b\u007f\u0001=4;Se3Z=1;VkD\u0001=0;WJb\u0001=0})
+…
+EV 12|0|11(3,2)
+EV 19|1|11(11,2)
+EV 204|0|11(6,2)
+EV 211|1|2(0)
+…
+EV 860|1|34(1)
+END 1|0
+MTDONE
+```
+
+(`client_fr_edit.swf` sur les mêmes flashvars rapporte `battleResult` = graveyard `[0]`,
+résultat `1` : cohérent avec `END 1|0`.)
+
+## Innocuité
+
+`build.ps1 -Verify` : P-code de `client_fr.swf` vs `client_fr_trace.swf`, 290 scripts.
+28 fichiers diffèrent octet à octet ; 24 ne diffèrent que par la renumérotation des opérandes
+`newfunction N` (indices de méthodes décalés par l'ajout des helpers). Après normalisation,
+4 fichiers diffèrent, exactement aux endroits patchés :
+
+```
+=== §P!L/\x02§.§59=F\x03§ (Trooper.init)
+   ofs0698:
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  getlocal0
++  callpropvoid QName(PackageNamespace(""),"mtTrp"), 1
+   returnvoid
+
+=== §Q\btf§ (Game, handler ENTER_FRAME §&l\f[\x01§) — seules autres différences : offsets des labels de saut décalés
+   getlex QName(PackageNamespace(""),"(\x1ar3")
+   getproperty QName(PackageNamespace(""),"{DEL}\x0fY@")
+   initproperty QName(PackageNamespace(""),")\x11\x1d\x0e")
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  getlocal0
++  getproperty QName(PackageNamespace(""),"S\rNK\x02")
++  callpropvoid QName(PackageNamespace(""),"mtDump"), 1
+   jump …
+
+=== §,7u\x1f§ (Main._rsq) — + offsets de labels décalés
+   getlocal 6
+   ifeq ofs0088
++  getlocal 6
++  pushnull
++  ifeq ofs0088
+   returnvoid
+
+=== §(m]a\x02§ : la classe vide reçoit les 4 méthodes statiques mtEsc/mtStr/mtTrp/mtDump
+```

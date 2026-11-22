@@ -86,10 +86,11 @@ export interface BattleRecord { troopers: TrooperSnapshot[]; events: string[]; w
 export interface OracleTrace { formatVersion: 1; swfSha256: string; input: BattleInput; record: BattleRecord; }
 ```
 
-Format des lignes (identique oracle et moteur) :
-- événement : `EV <time>|<tid>|<haxeString(type)>` où `haxeString` reproduit `Std.string` de Haxe/AS3 sur une valeur d'enum (`Ctor(a,b)` ; tableaux `[1,2]` ; `null` ; nombres comme AS3 `String(n)`).
-- trooper : `TRP <id>|<side>|<hp>|<skills triés par index, séparés par ,>|<armes>|<véhicule ou ->` (champs exacts fixés à la tâche 3 d'après les propriétés réelles de la classe Trooper décompilée, puis figés).
-- fin : `END <winner>|<graveyard séparé par ,>`.
+Format des lignes (identique oracle et moteur ; figé à la tâche 3, référence complète : `tools/oracle/instrument/README.md` § « Format des lignes ») :
+- trooper (une ligne à la fin de chaque `Trooper.init`, y compris les troopers apparus en cours de combat) : `TRP <id>|<side>|<life>|<time>|<lvl>|<skills>|<weapons>|<weapIdx>|<vehicle>|<helmet>|<leader>` — `life`/`time` après init, `lvl` = `ghost.lvl`, `skills` = index des `Skill` de `ghost.skills` **dans l'ordre du tableau** (non trié), séparés par `,` ; `weapons` = pour chaque arme dans l'ordre `<index Weapon>:<munitions>:<réserve>:<drapeau 0|1>` séparées par `,` ; `weapIdx` = index de l'arme courante (`-1` si aucune) ; `vehicle` = index de l'enum véhicule ou `-` ; `helmet`/`leader` = `0|1`.
+- événement : `EV <time>|<tid>|<valeur(type)>`, une ligne par entrée de `Battle.history`, émises dès que `resolve()` renvoie `true`, avant animation.
+- fin : `END <winner>|<graveyard séparé par ,>` (`winner` = `0|1`, ou `null` si arrêt à `btime > 50000`), puis `MTDONE`.
+- format « valeur » (remplace `Std.string`, qui imprimerait les noms obfusqués des constructeurs, pleins de caractères de contrôle) : `null` ; `true|false` ; nombres = AS3 `String(n)` ; chaîne = `"…"` échappée ; tableau `[a,b]` ; enum Haxe = `<index>` ou `<index>(<p1>,<p2>)` ; trooper (instance `Ent`) = `T<id>` ; case = `Q<x>:<y>` ; objet anonyme = `{<clé>=<v>;…}` clés obfusquées échappées et triées (`Array.sort()` AS3) ; échappement `\uXXXX` (hex minuscule) des caractères < 0x20, > 0x7E et de ``\ " | ; = , { } [ ] ( ) < >``.
 
 ---
 
