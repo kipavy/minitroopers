@@ -58,5 +58,5 @@ for (const tag of tags) {
 }
 
 test("engine version", () => {
-  assert.equal(ENGINE_VERSION, "1.0.0");
+  assert.equal(ENGINE_VERSION, "2.0.0");
 });

@@ -1,4 +1,4 @@
-# @mt/engine — moteur de combat MiniTroopers (v1.0.0)
+# @mt/engine — moteur de combat MiniTroopers (v2.0.0)
 
 Port TypeScript déterministe du moteur de combat du SWF original de Motion-Twin
 (`client_fr.swf`). Zéro dépendance d'exécution, aucun I/O, ni `Math.random` ni `Date` : une même
@@ -16,13 +16,13 @@ Deux points d'entrée (`package.json` `exports`) :
     `InvalidBattleInput`).
   - `describeTrooper(t)` → `TrooperSheet` (niveau, vie, spécialité, compétences, armes dans l'ordre du
     sélecteur de la fiche, équipement, leftOver, physique) ; `levelUpOptions(t)` → `{ shown, drawn,
-    choiceCount }` ; `choiceIndexForSkill(t, skill)` ; `defaultLeftOver(t)` ; `reequip(t, rand)`.
+    choiceCount }` ; `choiceIndexForSkill(t, skill)` ; `defaultLeftOver(t)` ; `reequip(t, rand)` ; `carryCapacity(t)` (3, 2 avec Débardeur Bruce).
   - `upgradeCost`, `recruitCost`, `armyPower`, `trooperLevel` (formules de la classe `Data` du SWF).
   - `battleData`, `trooperData`, `gridData`, `midData` (ClientMode 0/2/4/3, octet pour octet comme les pages
     originales) et `clientParams(data, { endMsg?, onclick? })` → `data=…&chk=play&imageurl=/img/…`.
   - `generateTrooper`, `toFlashvars` (flashvars de l'oracle, parité $GL), types d'entrée (`BattleInput`,
     `BattleArmyInput`, `BattleTrooperInput`, `TrooperPref`), `Data` (tables gelées), enums, `Rand`,
-    `ENGINE_VERSION = "1.0.0"`.
+    `ENGINE_VERSION = "2.0.0"` (2.0.0 : exports du banc déplacés vers `/internal`, logique de combat inchangée depuis 1.0.0).
 - **`@mt/engine/internal`** — banc de vérification uniquement (`tools/oracle`, golden, bench), pas une API de
   jeu : `simulateBattle(input): BattleRecord` (lignes `TRP`/`EV` de l'oracle, `winner`, `graveyard`),
   `simulateBattleCapped(input, maxSteps)` (plafond de pas ; le SWF n'en a aucun), `StepCapExceeded`,

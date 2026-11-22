@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  carryCapacity,
   choiceIndexForSkill,
   Data,
   defaultLeftOver,
@@ -113,8 +114,8 @@ test("describeTrooper: the t_0.html sheet (Edonnell, level 8, weapons Sniper / T
   assert.deepEqual(sheet.equipment, g.ghost.skills.filter(isEquipment));
 });
 
-/** A level-`n` HUMAN (always the first option) owning exactly `count` equipment skills. */
-const findWithEquipment = (count: number): BattleTrooperInput => {
+/** A HUMAN (always the first option) owning exactly `count` equipment skills, with or without skill 54. */
+const findWithEquipment = (count: number, with54 = false): BattleTrooperInput => {
   for (let seed = 1; seed < 20_000; seed++) {
     for (let n = 8; n <= 30; n += 2) {
       const t = human(seed, Array(n).fill(0), {
@@ -125,10 +126,11 @@ const findWithEquipment = (count: number): BattleTrooperInput => {
         moveSystem: 1,
         leftOver: [],
       });
-      if (describeTrooper(t).equipment.length === count) return t;
+      const e = describeTrooper(t).equipment;
+      if (e.length === count && e.includes(SKILLS.WIFE_BEATER) === with54) return t;
     }
   }
-  throw new Error(`no trooper with ${count} equipment`);
+  throw new Error(`no trooper with ${count} equipment (54: ${with54})`);
 };
 
 test("defaultLeftOver: a trooper with 5 equipment keeps 3 (the first ones, or selectedItems first)", () => {
@@ -166,4 +168,29 @@ test("reequip: keeps 3 equipment, deterministic for a given Rand", () => {
     seen.add(a.join(","));
   }
   assert.ok(seen.size > 1, "different Rand seeds give different sets");
+});
+
+test("carryCapacity: 3, or 2 with skill 54 (Débardeur Bruce), even when 54 is left over", () => {
+  const plain = findWithEquipment(5);
+  assert.equal(carryCapacity(plain), 3);
+  assert.equal(describeTrooper(plain).carry, 3);
+  const t = findWithEquipment(4, true);
+  const all = describeTrooper(t).equipment;
+  assert.equal(carryCapacity(t), 2);
+  const lo = defaultLeftOver(t);
+  assert.deepEqual(lo, all.slice(2));
+  const kept = describeTrooper({ ...t, pref: { ...t.pref!, leftOver: lo } });
+  assert.equal(kept.skills.filter(isEquipment).length, 2);
+  assert.equal(kept.carry, 2, "capacity comes from every owned skill, kept or not");
+  // 54 left over still lowers the capacity (5 of 7 archived skill-54 cases).
+  const without54 = all.filter((s) => s !== SKILLS.WIFE_BEATER).slice(0, 2);
+  const lo54 = all.filter((s) => !without54.includes(s));
+  assert.ok(lo54.includes(SKILLS.WIFE_BEATER));
+  assert.equal(carryCapacity({ ...t, pref: { ...t.pref!, leftOver: lo54 } }), 2);
+  for (let s = 1; s <= 10; s++) {
+    const r = reequip(t, new Rand(s));
+    assert.equal(all.length - r.length, 2);
+  }
+  const three54 = findWithEquipment(2, true);
+  assert.deepEqual(defaultLeftOver(three54), []);
 });

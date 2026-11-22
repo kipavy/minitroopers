@@ -1,4 +1,4 @@
-export const ENGINE_VERSION = "1.0.0";
+export const ENGINE_VERSION = "2.0.0";
 export * from "./input/types.ts";
 export { HaxeEnum, originalUrlEncode, serializeHaxe } from "./input/haxeSerializer.ts";
 export { toFlashvars } from "./input/flashvars.ts";
@@ -24,8 +24,8 @@ export {
   choiceIndexForSkill,
   defaultLeftOver,
   describeTrooper,
+  carryCapacity,
   levelUpOptions,
-  MAX_CARRIED_EQUIPMENT,
   reequip,
 } from "./boundary/trooper.ts";
 export type { LevelUpOptions, TrooperSheet } from "./boundary/trooper.ts";

@@ -100,8 +100,9 @@ export const serializeHaxe = (value: unknown, urlEncode: (s: string) => string =
 /**
  * The string escaping of the original server (Haxe `StringTools.urlEncode`), as seen in every
  * `data=` / `endMsg=` of the archived pages: `encodeURIComponent` that also escapes `! * ( )`
- * (observed as `%21`, `%2A`, `%29` in the obfuscated keys and in endMsg).
- * UNVERIFIED: `'` and `~` never occur in the archives; they are escaped too. `_` is kept.
+ * (observed as `%21`, `%2A`, `%29` in the obfuscated keys and in endMsg) and `~` (`%7E`,
+ * html/com/b_view_miss1.html). UNVERIFIED: `'` and `_` never occur in the archives; `'` is
+ * escaped, `_` kept.
  */
 export const originalUrlEncode = (s: string): string =>
   encodeURIComponent(s).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
