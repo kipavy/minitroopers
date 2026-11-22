@@ -45,7 +45,7 @@ sont pas des API de jeu.
 
 1. `assets/oracle/client_fr_trace.swf` = SWF original + `trace()` (troopers générés, tout
    `Battle.history`, vainqueur), sans toucher à la logique.
-2. `tools/oracle` génère des corpus déterministes (13 familles : basic, levels, forced-skill,
+2. `tools/oracle` génère des corpus déterministes (14 familles (dont `regression`) : basic, levels, forced-skill,
    vehicles, specialists, large, rats, edge, comms, martyr-saviour, jet, sabotage, helicopter) et
    capture la trace du SWF pour chacun (Ruffle web + Chromium headless).
 3. `npm run oracle:diff` compare le moteur à ces traces ; `npm run oracle:coverage` vérifie que

@@ -29,7 +29,7 @@ gameplay** (mêmes combats pour une même graine, mêmes règles, mêmes pages, 
 
 ## Non-objectifs
 
-- Hébergement public ou montée en charge (instance privée pour un petit groupe).
+- Montée en charge : instance publique mais non référencée, pour un petit groupe (voir « Déploiement »).
 - Monétisation (tokens/Twinoid) : les fonctions payantes de l'original deviennent gratuites
   ou désactivées (voir annexe A).
 - Connexion Twinoid/Eternaltwin OAuth (comptes locaux suffisent, voir décisions).
@@ -48,7 +48,7 @@ gameplay** (mêmes combats pour une même graine, mêmes règles, mêmes pages, 
 - Dépôt GitHub **privé** `kipavy/minitroopers` (il peut donc contenir les assets Motion-Twin).
 - Machine de dev : Windows 11 ARM64, Node 24.12 installé, Bun absent.
 - Code réutilisé du dépôt GitLab sous MIT : attribution conservée (LICENSE + NOTICE).
-- Ruffle (`ruffle_desktop`) sert **uniquement** au banc de test différentiel (dev/CI).
+- Côté serveur, Ruffle ne sert qu'au banc de test différentiel (dev/CI). Côté navigateur, `ruffle.js` auto-hébergé (pas d'extension) affiche les combats — voir « Affichage des combats ».
 
 ## Approches considérées (moteur de combat)
 
@@ -264,3 +264,34 @@ inclusion du trooper du joueur dans les raids.
 - Conséquences pour l'étape 2 : IP client lue dans `CF-Connecting-IP` (limite de création
   d'armées par IP), cookies `Secure`, limitation de débit sur la création d'armée et les
   tentatives de mot de passe `/protect`.
+
+## Affichage des combats (décidé le 2026-11-22, précisé après l'étape 1)
+
+- Ruffle **web** embarqué (`ruffle.js` servi par le site, aucune extension), confirmé par Killian.
+- Le SWF affiché doit calculer exactement le même combat que `simulateBattle` :
+  `client_fr.swf` original avec seulement le contournement du contrôle `chk` (sans les
+  traces de l'oracle), ou un `chk` calculé. **Pas** `client_fr_edit.swf` d'Eternaltwin, qui
+  génère les troopers différemment (`docs/oracle/edit-vs-original.md`).
+- `ruffle.js` épinglé sur le même cœur que l'oracle (nightly 2025.7.28 / a111ceec) : le moteur
+  reproduit son `Array.sort`. Une instance Ruffle neuve par combat (compteur d'armes statique).
+- Test de fumée à l'étape 2 : le résultat (`battleResult`) affiché sur quelques goldens est
+  identique à `simulateBattle`.
+
+## Passation vers l'étape 2 (issue de la revue finale de l'étape 1)
+
+Tâche 0 « frontière du moteur » de l'étape 2, avant toute règle de jeu :
+- `validateBattleInput()` : plages des enums, armées non vides (0 contre 0 → TypeError
+  aujourd'hui), ids de troopers uniques et positifs, graines int32, noms UTF-16 bien formés ;
+  appelé avant `simulateBattle` et `toFlashvars`.
+- Résultat structuré pour le jeu (`{winner, graveyard, history, troopers}`) indépendant de
+  `haxeString`, qui lève sur une valeur inconnue ; `simulateBattle` (trace) reste pour le banc.
+- `Object.freeze` récursif des tables `Data` ; internes de l'oracle (`Battle`, `Trooper`,
+  `as3Sort`, `OBF_KEYS`…) déplacés vers `@mt/engine/internal` ; `NotImplemented` supprimé.
+- `describeTrooper(t)` : DTO de fiche trooper (niveau, compétences, vie, apparence).
+- Garde-fou d'absence d'I/O dans `packages/engine/src` ; vérifier `formatVersion`/`swfSha256`
+  dans `golden.test.ts` ; `count` par tag dans `meta.json` de golden-full.
+- Avant de lire les champs `Data` pour les règles (coûts, catégories) : vérifier les noms de
+  champs inférés et les valeurs de catégories ; ne jamais se fier aux libellés `VH_*` de
+  `$GL skills.model.ts` (décalés).
+- Porter `getLeftOver` de `$GL` et ajouter un corpus oracle qui l'utilise ; Cible prioritaire
+  (`SPECIFIC_CLASS`) réservée au niveau ≥ 6 côté règles.
