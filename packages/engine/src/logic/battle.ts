@@ -467,7 +467,7 @@ export class Battle {
     this.check();
   }
 
-  // swf: Battle.§\x14\x13i\x0b\x01§ — positions of occupied squares.
+  // swf: Battle.§\x14\x13i\x0b\x01§ — positions of occupied squares. Dead in the SWF: defined but never referenced (no caller in the client_fr.swf decompile).
   msgOccupied(): void {
     const xy: number[] = [];
     for (const sq of this.squares) {
@@ -479,7 +479,7 @@ export class Battle {
     this.msg(BattleMsg.Positions(xy));
   }
 
-  // swf: Battle.§Em\x14\x05\x02§ (checks)
+  // swf: Battle.§Em\x14\x05\x02§ (checks) Dead in the SWF: defined but never referenced (no caller in the client_fr.swf decompile).
   checks(): void {
     for (const t of this.troopers) {
       if (t.weap == null) t.weap = new LogicWeapon(WEAPONS.FISTS, t);
@@ -487,7 +487,7 @@ export class Battle {
     }
   }
 
-  // swf: Battle.§Q-\x10x§ — every trooper's position.
+  // swf: Battle.§Q-\x10x§ — every trooper's position. Dead in the SWF: defined but never referenced (no caller in the client_fr.swf decompile).
   msgPositions(): void {
     const xy: number[] = [];
     for (const t of this.troopers) {

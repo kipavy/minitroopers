@@ -204,6 +204,17 @@ Format des lignes (identique oracle et moteur ; figé à la tâche 3, référenc
 - [ ] **Step 2:** FAIL → porter `Battle` (boucle, ticks, Initiative, vagues, Deployment, `msg`/`history`), `Square`, `Ent`, `Player`, et dans `Trooper` : déplacement, tir avec armes par défaut, rechargement, mêlée, chute/mort. Code : traduction ligne à ligne, noms lisibles via `identifier-map.json`, commentaire `// swf: <classe>.<méthode obfusquée>` en tête de chaque méthode.
 - [ ] **Step 3:** PASS sur `basic` et `edge`. Commit `feat(engine): battle loop, deployment, basic combat`.
 
+> **Re-cadrage (2026-11-22) : les tâches 8 et 9 sont fusionnées en une tâche 8 « Couverture et durcissement ».**
+> La tâche 7 a porté toute la logique de combat (Battle, Player, Trooper, LogicWeapon, LogicVehicle, toutes les
+> compétences, statuts, véhicules, ordres Comms, sabotage) et `oracle:diff` donne 0 écart sur les 1 244 golden de tous
+> les tags : il ne reste rien à porter. La tâche 8 prouve donc les mécaniques rares que les golden n'exercent pas et
+> durcit la vérification avant les 10 000 combats de la tâche 10 : tri `Array.sort` comparé au source de Ruffle
+> a111ceec, plafond de pas dans `oracle:diff` et les tests golden, couverture par déclenchement dans
+> `oracle:coverage` (chaque cas de `useSuper`, ordre Comms, Martyr, Sauveteur, Vendetta/Frénésie, frappe d'avion,
+> interception, clown, sabotage, statuts, véhicules, `winner=null`), tags ciblés `comms`, `martyr-saviour`, `jet`,
+> `sabotage`. Les sections « Task 8 » et « Task 9 » ci-dessous sont conservées pour l'historique et ne sont plus à
+> exécuter telles quelles.
+
 ### Task 8: Compétences, statuts et niveaux
 
 **Files:**

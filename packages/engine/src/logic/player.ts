@@ -97,7 +97,8 @@ export class Player {
     arrayRemove(this.pool, t);
   }
 
-  // swf: Player.§8w/#\x02§ — by life ratio (never 0).
+  // swf: Player.§8w/#\x02§ — by life ratio (never 0). Dead in the SWF: defined but never
+  // referenced (no caller anywhere in the client_fr.swf decompile); kept for completeness, never called.
   cmpLife(a: Trooper, b: Trooper): number {
     const x = a.life / a.getLifeMax();
     const y = b.life / b.getLifeMax();

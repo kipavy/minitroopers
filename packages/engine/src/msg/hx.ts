@@ -111,7 +111,13 @@ export const registerRefKinds = (k: typeof refKinds): void => {
   refKinds.isSquare = k.isSquare;
 };
 
-/** `mtStr`: the oracle's value format (see tools/oracle/instrument/README.md). */
+/**
+ * `mtStr`: the oracle's value format (see tools/oracle/instrument/README.md).
+ * Deliberate difference: for an instance of any other class, `mtStr` prints `<qualified class
+ * name>` while `haxeString` throws. No such value reaches `Battle.history` in any golden (the
+ * README notes the case as never met), and the engine's class names are not the SWF's obfuscated
+ * ones, so printing them could only produce a false match; throwing surfaces the case instead.
+ */
 export const haxeString = (v: unknown, depth = 0): string => {
   if (v === null || v === undefined) return "null";
   if (depth > 16) return "<deep>";
