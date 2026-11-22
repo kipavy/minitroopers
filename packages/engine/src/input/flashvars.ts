@@ -56,8 +56,14 @@ const en = (name: string, index: number): HaxeEnum => new HaxeEnum(name, index);
 
 const toFlashPref = (pref: TrooperPref | null) => {
   if (pref === null) return null;
-  if (pref.targetType !== 0) {
-    throw new RangeError("TargetType.SPECIFIC_CLASS is not supported");
+  let targetType: HaxeEnum;
+  if (pref.targetType === 0) {
+    targetType = en("TargetType", 0);
+  } else if (pref.targetType === 1 && pref.targetClass !== undefined) {
+    // SPECIFIC_CLASS: decompiled TargetType.UpHmc(Skill) = ctor index 1, one Skill arg.
+    targetType = new HaxeEnum("TargetType", 1, [en("Skill", pref.targetClass)]);
+  } else {
+    throw new RangeError("Invalid targetType/targetClass");
   }
   const out: Record<string, unknown> = {
     leftOver: [],
@@ -66,7 +72,7 @@ const toFlashPref = (pref: TrooperPref | null) => {
     __CBody: pref.CBody === null ? null : en("BodyLoc", pref.CBody),
     __CWeapon: pref.CWeapon === null ? null : en("Weapon", pref.CWeapon),
     targetSystem: en("TargetSystem", pref.targetSystem),
-    targetType: en("TargetType", pref.targetType),
+    targetType,
   };
   if (pref.selectedItems) out.selectedItems = pref.selectedItems;
   return out;

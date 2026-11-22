@@ -27,7 +27,10 @@ export type TrooperPref = {
   CWeapon: number | null;
   CBody: number | null;
   targetSystem: number;
+  /** 0 = DEFAULT, 1 = SPECIFIC_CLASS (requires `targetClass`). */
   targetType: number;
+  /** Skill enum index of the priority class when `targetType` is 1. */
+  targetClass?: number;
   moveSystem: number;
   name: string;
   selectedItems?: number[];
