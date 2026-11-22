@@ -315,7 +315,8 @@ n'existe, ou si un `leftOver` n'est pas respecté.
 Couverture par déclenchement (`src/mechanics.ts`, tâche 8) : la même commande compte ensuite, sur
 tous les golden, chaque mécanique qui s'est **réellement produite**, avec les tags où elle apparaît,
 et sort en erreur si l'une d'elles a eu moins de 3 occurrences (`MIN_FIRES`). Liste : chaque cas de
-`useSuper` (21 compétences), interception de grenade, apparition d'un clown, les 6 ordres Comms,
+`useSuper` (21 compétences), interception de grenade, apparition d'un clown, les 6 ordres Comms (comptés en
+**marques** dans la trace, pas en ordres : voir ci-dessous),
 Propagande, Martyr, Vendetta, Frénésie, frappe d'avion, chaque véhicule déployé, démontage,
 hélicoptère qui part, retraite, sabotage (drapeau d'arme TRP et valeur de `PlayerStatus`), chaque
 statut (cécité, poison, amphétamine, paralysie, malédiction, verrouillage), `winner=null`, chaque
@@ -325,23 +326,40 @@ constructeur `BattleMsg` et `HitEvent`.
   les `HitEvent` sont lus dans le tableau `events` (clé obfusquée) de chaque résultat de coup, à
   toute profondeur. Le premier paramètre (`Skill`) de `Skill`(16)/`Grenade`(14) identifie le cas de
   `useSuper` ; `Rescue`(19) = SAVIOUR, `Brawl`(9) sans arme = FACEBOOT, `Wrestle`(18) = WRESTLER ;
-  `Grenade` avec un 5ᵉ paramètre = interception ; `Announce(Com(c))` (20(1(c))) = ordre c, et
-  `StatusOn(LOCKED)` = ordre « cible repérée » (seule source de LOCKED).
+  `Grenade` avec un 5ᵉ paramètre = interception ; `Announce(Com(c))` (20(1(c))) = une marque de
+  l'ordre c — un ordre en émet une par trooper concerné (Commando : chaque trooper du groupe,
+  Renfort : chaque déployé, Retraite : chaque partant ; Objectif solo et Propagande : une seule) —,
+  et `StatusOn(LOCKED)` = ordre « cible repérée » (seule source de LOCKED, une marque par ordre).
 - Martyr, Vendetta et Frénésie ne laissent que des `Boost(0)`, émis aussi ailleurs : ils sont
   comptés en **rejouant** l'entrée du golden dans le moteur, avec des observateurs posés depuis
   `tools/` sur `Battle.prototype.runTrigger` et `Trooper.prototype.boost` (aucune ligne du moteur
   modifiée ; les observateurs appellent l'original et ne lisent que des champs). Le rejeu doit
   reproduire le golden à l'identique, sinon `COVERAGE GAP`.
 - Jamais émis (preuve par le décompilé) : `Battle.msg` n'est appelé que depuis le paquetage
-  `logic` (`§P!L/§`), qui ne référence jamais les constructeurs `BattleMsg` 0, 15, 31, 33, 37,
+  `logic` (`§P!L/\x02§`), qui ne référence jamais les constructeurs `BattleMsg` 0, 15, 31, 33, 37,
   42 ni `HitEvent` 0 (leurs noms obfusqués n'apparaissent que dans les classes d'affichage).
-- Non atteints, non prouvés inatteignables (hors barrière, toujours affichés « UNREACHED ») :
-  `winner=null` (aucun combat ne dure : `btime` max 6 627 sur 80 000 combats aléatoires simulés
-  par le moteur, aucune construction de blocage trouvée) et `BattleMsg` 41 `Positions` (les trois
-  méthodes de `Battle` qui l'émettent n'ont aucun appelant ; reste `Trooper.play` en visée avec
-  `weap.target == null`, que `checkAim` remet à zéro à chaque pas ; seul chemin trouvé : un
-  TUCK_AND_ROLL qui ramasse une arme jamais pointée pendant la visée, après le `checkAim` du pas,
-  et ce trooper joue le pas suivant — 0 sur 54 000 combats ciblés).
+- `winner=null` : non atteint, hors barrière (toujours affiché « UNREACHED »). Argument (revue de la
+  tâche 8) : aucune entrée valide ne garde `btime` > 50 000 sans vainqueur. L'armure retire au plus 3
+  et seulement sur la zone correspondante (gilet : torse/ventre, cagoule : tête, armure lourde : 1),
+  donc les poings infligent encore 1 sur les membres ; les véhicules partent ou démontent quand ils
+  sont vides ou inactifs ; les blocages du redéploiement sont passagers (OCCUPATION : 10 % par
+  `newWave`, 3 utilisations ; REVERSE_ATTACK ne vaut que pour un déploiement, car `deploy()` remet
+  `depBonus` à 0 et `sendStatus` recalcule `dep`). Le seul blocage durable serait ≥ `dep` clowns du
+  côté posés exactement sur les premières cases de `DEPLOY_ORDER` (`player.ts` 396–447) à la fin
+  d'une vague. Recherches : `btime` max 6 627 sur 80 000 combats aléatoires (tâche 8), 13 706 dans
+  celles de la revue ; aucun `winner=null`.
+- `BattleMsg` 41 `Positions` : rare mais atteint, dans la barrière. Les trois méthodes de `Battle`
+  qui l'émettent n'ont aucun appelant ; les émetteurs vivants sont `Trooper.play` en visée (cas AIM)
+  avec `weap.target == null` et `LogicWeapon.fire` sans cible. Chemin : B (TUCK_AND_ROLL) est le
+  héros et passe en visée ; dans la boucle `checkAim` du même pas, un ennemi A qui vise déjà B
+  déclenche COVERING_FIRE et tire sur B ; B roule sur une case voisine où traîne une arme jamais
+  pointée (`target` nul, meilleur score), la ramasse (`takenBy`) et reste en visée (le héros saute
+  `checkAim`) ; si B a le plus petit temps au pas suivant, `play` émet 41. Il faut des combats de
+  20–32 par côté : `tools/oracle/scripts/hunt41.ts` (moteur seul ; côté 0 forcé
+  `[TUCK_AND_ROLL, SHOCK_GRENADE]`, côté 1 `[COVERING_FIRE, SHOCK_GRENADE]`, variantes avec
+  grenade à fragmentation / compétences de vitesse) en trouve un en 1 000–5 000 combats ; trois
+  entrées trouvées sont capturées par l'oracle (`scripts/capture-input.ts`) dans
+  `golden/regression/ev41-hunt-*.json.gz` : le SWF émet bien 41, 0 écart avec le moteur.
 
 Plafond de pas : `oracle:diff` et les tests golden simulent via `simulateBattleCapped` (moteur),
 qui abandonne un combat encore en cours après `--max-steps` appels à `resolve()` (défaut

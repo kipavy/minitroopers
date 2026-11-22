@@ -177,10 +177,19 @@ export const COMS_NAMES = [
   "Locked (cible repérée, min 0)",
 ];
 
+/**
+ * Coverage label of Comms order c. What is counted are the order's MARKS in the trace, not orders:
+ * orders 0-4 emit one `Announce(Com(c))` per affected trooper (Commando: each trooper of the group,
+ * Support: each deployed one, Retreat: each leaving one; Solo / Propaganda: one); order 5 (Locked)
+ * emits one `StatusOn(LOCKED)` on its single target.
+ */
+export const comLabel = (c: number): string =>
+  c === 5 ? `comms 5 ${COMS_NAMES[5]} [StatusOn(LOCKED) marks]` : `comms ${c} ${COMS_NAMES[c]} [Announce(Com) marks]`;
+
 export const STATUS_NAMES = ["BLIND", "POISON", "AMPHETAMINE", "PARALYZED", "CURSED", "LOCKED"];
 export const VEHICLE_NAMES: Record<number, string> = { 0: "MOTO", 2: "LIGHT_TANK", 3: "HELICOPTER", 4: "HEAVY_TANK" };
 
-/** BattleMsg constructors never constructed by the SWF logic package (§P!L/§, the only caller
+/** BattleMsg constructors never constructed by the SWF logic package (§P!L/\x02§, the only caller
  * of Battle.msg): proven by the decompile (tools/oracle/instrument/README.md, "Couverture"). */
 export const NEVER_EMITTED_MSG = new Set([0, 15, 31, 33, 37, 42]);
 /** HitEvent constructors never constructed by the SWF logic package (same proof). */
@@ -200,7 +209,7 @@ export const expectedMechanics = (): string[] => [
   ...Object.entries(SUPER_CASES).map(([k, v]) => `super ${k} ${v}`),
   "interception (Grenade 14 with interceptor id)",
   "clown spawn (TRP with negative id)",
-  ...COMS_NAMES.map((n, i) => `comms ${i} ${n}`),
+  ...COMS_NAMES.map((_, i) => comLabel(i)),
   "propaganda switch (Propaganda 30)",
   "martyr (replay)",
   "vendetta boost (replay)",
@@ -230,15 +239,11 @@ export const MIN_FIRES = 3;
 export const UNREACHED_DOCUMENTED: ReadonlyMap<string, string> = new Map([
   [
     "winner=null (btime > 50000)",
-    "needs ~50 000 ticks without a decisive kill; battles end by ~7 000 ticks (max btime 6 627 over " +
-      "80 000 random engine battles; 0 winner=null); no stalemate construction found",
-  ],
-  [
-    "BattleMsg 41",
-    "Positions(41): the 3 Battle methods that emit it have no caller in the SWF; the live emitter " +
-      "(Trooper.play in AIM with weap.target == null) is guarded by checkAim each step; only path " +
-      "found: a TUCK_AND_ROLL pickup of a never-aimed weapon while aiming, after checkAim ran — " +
-      "0 EV 41 in 54 000 targeted engine battles, 0 pickups while aiming in 4 500 instrumented ones",
+    "no valid input keeps btime > 50000 (review argument): armour removes <= 3 and only on the " +
+      "matching body location, so fists still deal 1 on limbs; vehicles leave/dismount when empty or " +
+      "idle; redeploy blockers are transient (OCCUPATION 10% per newWave, 3 uses; REVERSE_ATTACK lasts " +
+      "one deploy, deploy() resets depBonus); only >= dep own clowns parked on the first DEPLOY_ORDER " +
+      "squares at wave end would last. Searches: max btime 6 627 (80 000 battles), 13 706 (review)",
   ],
 ]);
 
@@ -277,14 +282,14 @@ export const traceMechanics = (record: BattleRecord, into: MechanicCounts = new 
         break;
       case 20: {
         const a = p[0] ?? null;
-        if (ctor(a) === 1) inc(into, `comms ${ctor(params(a)[0] ?? null)} ${COMS_NAMES[ctor(params(a)[0] ?? null)!]}`);
+        if (ctor(a) === 1) inc(into, comLabel(ctor(params(a)[0] ?? null)!));
         break;
       }
       case 22: {
         const s = ctor(p[0] ?? null)!;
         inc(into, `status ${s} ${STATUS_NAMES[s]} on`);
         // LOCKED is set only by the Locked comms order (Player.useCom case 5).
-        if (s === 5) inc(into, `comms 5 ${COMS_NAMES[5]}`);
+        if (s === 5) inc(into, comLabel(5));
         break;
       }
       case 30:

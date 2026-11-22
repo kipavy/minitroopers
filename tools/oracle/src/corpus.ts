@@ -288,8 +288,8 @@ const comms = (r: Rng): BattleInput => {
 
 /** Martyr (Battle.runTrigger Kill: first MARTYR death of a side deploys up to 5 + boosts) and
  * Saviour (Doctor-only super: a dead ally back to the pool). Battle i: 4-10 per side; on each side
- * 1-3 troopers forced MARTYR (level 7-30) and 1-2 forced [DOCTOR, SAVIOUR] (level 7-30); armies
- * larger than one wave keep a reserve for Martyr to deploy. */
+ * the first 2 troopers are forced MARTYR (level 7-30) and the next 2 [DOCTOR, SAVIOUR] (level 7-30);
+ * armies larger than one wave keep a reserve for Martyr to deploy. */
 const martyrSaviour = (r: Rng): BattleInput => {
   const mk = (id: number, side: number): BattleTrooperInput => {
     const k = side === 0 ? id : id - nLeft;

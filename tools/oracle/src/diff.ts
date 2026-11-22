@@ -118,9 +118,14 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === import.meta.fi
       "max-steps": { type: "string", default: String(DEFAULT_MAX_STEPS) },
     },
   });
+  const maxSteps = Number(values["max-steps"]);
+  if (!Number.isSafeInteger(maxSteps) || maxSteps <= 0) {
+    console.error(`--max-steps must be a positive integer, got "${values["max-steps"]}"`);
+    process.exit(2);
+  }
   const res = runDiff(
     readGoldenItems(values.dir, values.tag),
-    (input) => simulateBattleCapped(input, Number(values["max-steps"])),
+    (input) => simulateBattleCapped(input, maxSteps),
     values.limit !== undefined ? { limit: Number(values.limit) } : {},
   );
   console.log(res.lines.join("\n"));

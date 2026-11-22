@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Battle, OBF_KEYS, simulateBattle, type BattleRecord } from "@mt/engine";
 import {
   MIN_FIRES,
+  comLabel,
   UNREACHED_DOCUMENTED,
   expectedMechanics,
   mechanicProblems,
@@ -63,8 +64,8 @@ test("traceMechanics: supers, interception, comms, statuses inside hits, vehicle
   assert.equal(get("interception (Grenade 14 with interceptor id)"), 1);
   assert.equal(get("super 111 SAVIOUR rescue (Rescue 19)"), 1);
   assert.equal(get("super 122 FACEBOOT (Brawl 9(tid,null,hit,20))"), 1, "weapon brawl not counted");
-  assert.equal(get("comms 2 Propaganda (propagande, min 20)"), 1);
-  assert.equal(get("comms 5 Locked (cible repérée, min 0)"), 1);
+  assert.equal(get(comLabel(2)), 1);
+  assert.equal(get(comLabel(5)), 1);
   assert.equal(get("status 5 LOCKED on"), 1);
   assert.equal(get("status 3 PARALYZED on"), 1, "HitEvent STATUS inside a hit result");
   assert.equal(get("HitEvent 12"), 1);
