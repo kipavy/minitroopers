@@ -34,6 +34,7 @@ const trooper = (id: number, name: string, seed: number): BattleTrooperInput => 
     moveSystem: MoveSystem.STANDARD,
     reloadSystem: ReloadSystem.DEFAULT,
     name,
+    leftOver: [],
     selectedItems: [],
   },
 });
@@ -121,6 +122,7 @@ const INPUT_RICH: BattleInput = {
             "moveSystem": 0,
             "reloadSystem": 3,
             "name": "Zoé:Alpha",
+            "leftOver": [],
             "selectedItems": [
               5,
               7
@@ -144,6 +146,7 @@ const INPUT_RICH: BattleInput = {
             "moveSystem": 2,
             "reloadSystem": 0,
             "name": "Bravo",
+            "leftOver": [],
             "selectedItems": []
           }
         }
@@ -209,4 +212,14 @@ test("TargetType.SPECIFIC_CLASS encodes as index 1 with one Skill enum argument"
   assert.ok(decodeURIComponent(withClass).includes("jy10:TargetType:1:1jy5:Skill:4:0"));
   delete pref.targetClass;
   assert.throws(() => toFlashvars(input, GFX_URL), RangeError);
+});
+
+// $GL always sends leftOver: [] (no reference bytes for a non-empty list). The SWF compares and
+// removes leftOver entries as Skill enum values (Ghost: skills.remove(pref.leftOver[i])), so they
+// serialize as Skill enums; the oracle goldens (forced-skill extras) check the removal end to end.
+test("pref.leftOver serializes as Skill enum values", () => {
+  const input = fixture1v1();
+  input.armies[0].troopers[0]!.pref!.leftOver = [57, 58];
+  const fv = decodeURIComponent(toFlashvars(input, GFX_URL).slice("data=".length));
+  assert.match(fv, /y9:\)0%19i%03ajy5:Skill:57:0jR\d+:58:0h/);
 });

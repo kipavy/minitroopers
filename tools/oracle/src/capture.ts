@@ -1,14 +1,15 @@
 // CLI: corpus -> golden traces via the oracle.
 //   npm run oracle:capture -- --tag <tag|all> [--count n] [--seed s] [--jobs 4] [--out dir]
 // Writes <out>/<tag>/<NNNNN>.json.gz (gzip JSON OracleTrace; NNNNN = corpus index). Resumable:
-// existing files are skipped (corpora are prefix-stable; <out>/<tag>/meta.json pins the seed).
+// existing files are skipped (corpora are prefix-stable; <out>/<tag>/meta.json pins the seed and
+// the tag's CORPUS_VERSIONS entry). Each file is written to <file>.tmp then renamed (no truncated golden on a crash).
 // Battles that fail or time out (no MTDONE) are appended to <out>/<tag>/capture-failures.jsonl
 // and reported; never silently dropped.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { gzipSync } from "node:zlib";
-import { CORPUS_TAGS, corpusFullSize, generateCorpus, type CorpusTag } from "./corpus.ts";
+import { CORPUS_TAGS, CORPUS_VERSIONS, corpusFullSize, generateCorpus, type CorpusTag } from "./corpus.ts";
 import { DEFAULT_TIMEOUT_MS, OracleRunner, OracleTimeoutError, REPO_ROOT } from "./runner.ts";
 
 export const GOLDEN_DIR = join(REPO_ROOT, "tools/oracle/golden");
@@ -44,12 +45,21 @@ export const captureTag = async (opts: {
   mkdirSync(dir, { recursive: true });
   const metaFile = join(dir, "meta.json");
   if (existsSync(metaFile)) {
-    const meta = JSON.parse(readFileSync(metaFile, "utf8")) as { seed: number };
+    const meta = JSON.parse(readFileSync(metaFile, "utf8")) as {
+      seed: number;
+      corpusVersion?: number;
+    };
     if (meta.seed !== seed) {
       throw new Error(`${dir} was captured with --seed ${meta.seed}, not ${seed}`);
     }
+    if (meta.corpusVersion !== CORPUS_VERSIONS[tag]) {
+      throw new Error(
+        `${dir} was captured with corpus version ${meta.corpusVersion ?? 1}, not ` +
+          `${CORPUS_VERSIONS[tag]}: delete it (or use another --out) to recapture`,
+      );
+    }
   } else {
-    writeFileSync(metaFile, JSON.stringify({ tag, seed }) + "\n");
+    writeFileSync(metaFile, JSON.stringify({ tag, seed, corpusVersion: CORPUS_VERSIONS[tag] }) + "\n");
   }
   const failLog = join(dir, "capture-failures.jsonl");
   const inputs = generateCorpus({ seed, count: opts.count, tag });
@@ -77,7 +87,9 @@ export const captureTag = async (opts: {
         try {
           const trace = await runner.run(input, { timeoutMs: opts.timeoutMs });
           busyMs += Date.now() - start;
-          writeFileSync(goldenFile(out, tag, index), gzipSync(JSON.stringify(trace), { level: 9 }));
+          const file = goldenFile(out, tag, index);
+          writeFileSync(file + ".tmp", gzipSync(JSON.stringify(trace), { level: 9 }));
+          renameSync(file + ".tmp", file);
           stats.ok++;
           break;
         } catch (e) {

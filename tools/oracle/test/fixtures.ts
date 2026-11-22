@@ -16,6 +16,7 @@ const trooper = (id: number, name: string, seed: number): BattleTrooperInput => 
     moveSystem: 1,
     reloadSystem: 2,
     name,
+    leftOver: [],
     selectedItems: [],
   },
 });

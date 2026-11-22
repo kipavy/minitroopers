@@ -71,7 +71,8 @@ docs/oracle/ruffle-quirks.md, docs/oracle/edit-vs-original.md
 
 ```ts
 // packages/engine/src/input/types.ts — forme reprise de $GL combat/types.ts
-export type TrooperPref = { /* champs exacts de $GL troopers.model.ts getTrooperPref() */ };
+export type TrooperPref = { /* champs exacts de $GL troopers.model.ts getTrooperPref() */
+  leftOver: number[]; /* index Skill retirés à la génération (SWF Ghost) ; $GL envoie toujours [] */ };
 export interface BattleTrooperInput { id: number; name: string; seed: number; type: number;
   choices: number[]; force: number[]; pref: TrooperPref | null; }
 export interface BattleArmyInput { faction: number; spawnOrder: number[]; troopers: BattleTrooperInput[]; }

@@ -40,7 +40,7 @@ export const EDIT_SWF = join(REPO_ROOT, "assets/swf/client_fr_edit.swf");
 const ARMY_SWF = join(REPO_ROOT, "assets/swf/army.swf");
 /** Playwright browsers live in the gitignored tools/bin, never in the user profile. */
 export const BROWSERS_PATH = join(REPO_ROOT, "tools/bin/ms-playwright");
-process.env.PLAYWRIGHT_BROWSERS_PATH ??= BROWSERS_PATH;
+process.env.PLAYWRIGHT_BROWSERS_PATH = BROWSERS_PATH;
 
 const PROFILES_DIR = join(REPO_ROOT, "tools/bin/tmp");
 
@@ -207,7 +207,19 @@ const launchContext = async (): Promise<[BrowserContext, string]> => {
   mkdirSync(PROFILES_DIR, { recursive: true });
   const dir = mkdtempSync(join(PROFILES_DIR, "chromium-"));
   try {
-    return [await chromium.launchPersistentContext(dir, { headless: true }), dir];
+    // Playwright creates %TEMP%playwright-artifacts-* (os.tmpdir()) during launch, and Chromium
+    // inherits TEMP: point both at tools/bin/tmp for the launch, then restore this process's env.
+    const saved = { TEMP: process.env.TEMP, TMP: process.env.TMP };
+    process.env.TEMP = process.env.TMP = PROFILES_DIR;
+    try {
+      const env = { ...process.env, TEMP: PROFILES_DIR, TMP: PROFILES_DIR } as Record<string, string>;
+      return [await chromium.launchPersistentContext(dir, { headless: true, env }), dir];
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
   } catch (e) {
     removeProfile(dir);
     throw e;

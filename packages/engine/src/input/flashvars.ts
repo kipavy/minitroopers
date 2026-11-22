@@ -66,7 +66,7 @@ const toFlashPref = (pref: TrooperPref | null) => {
     throw new RangeError("Invalid targetType/targetClass");
   }
   const out: Record<string, unknown> = {
-    leftOver: [],
+    leftOver: pref.leftOver.map((k) => en("Skill", k)),
     moveSystem: en("MoveSystem", pref.moveSystem),
     reloadSystem: en("ReloadSystem", pref.reloadSystem ?? 2),
     __CBody: pref.CBody === null ? null : en("BodyLoc", pref.CBody),

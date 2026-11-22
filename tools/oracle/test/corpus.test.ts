@@ -1,9 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { BattleInput, BattleTrooperInput } from "@mt/engine";
-import { CORPUS_TAGS, corpusFullSize, generateCorpus, type CorpusTag } from "../src/corpus.ts";
+import {
+  CORPUS_TAGS,
+  VEHICLE_SKILLS,
+  corpusFullSize,
+  generateCorpus,
+  type CorpusTag,
+} from "../src/corpus.ts";
 import { RAT_SKILLS, SKILL_COUNT, SKILL_GEN } from "../src/data/skills.ts";
-import { SkillGuide } from "../src/skillGuide.ts";
 
 const troopers = (b: BattleInput): BattleTrooperInput[] => b.armies.flatMap((a) => a.troopers);
 const level = (t: BattleTrooperInput): number => t.choices.length + 1;
@@ -62,39 +67,78 @@ test("levels: levels 1-30, all reached", () => {
   assert.equal(seen.size, 30);
 });
 
-test("forced-skill: every skill forced at least once, including >3 equipment", () => {
+const isEquip = (k: number) => SKILL_GEN[k]!.cats.includes("EQUIPMENT");
+
+test("forced-skill: each skill forced 3 times on a lone side-0 trooper; >3 equipment with leftOver", () => {
   const n = corpusFullSize("forced-skill");
-  assert.ok(n !== null && n >= SKILL_COUNT);
-  const all = gen("forced-skill", n);
+  assert.equal(n, 3 * SKILL_COUNT + 9);
+  const all = gen("forced-skill", n!);
   assert.equal(all.length, n);
-  assert.equal(gen("forced-skill", n + 50).length, n, "capped at the full size");
-  const forced = new Set(all.flatMap((b) => troopers(b).flatMap((t) => t.force)));
-  for (let k = 0; k < SKILL_COUNT; k++) assert.ok(forced.has(k), `skill ${k} forced`);
-  const isEquip = (k: number) => SKILL_GEN[k]!.cats.includes("EQUIPMENT");
-  assert.ok(all.some((b) => troopers(b).some((t) => t.force.filter(isEquip).length > 3)));
+  assert.equal(gen("forced-skill", n! + 50).length, n, "capped at the full size");
+  const perSkill = new Map<number, Set<number>>();
+  all.forEach((b, i) => {
+    assert.equal(b.armies[0].troopers.length, 1, `#${i}: forced trooper alone on side 0`);
+    assert.ok(b.armies[1].troopers.length >= 1 && b.armies[1].troopers.length <= 3);
+    assert.ok(b.armies[1].troopers.every((t) => t.force.length === 0));
+    const t = b.armies[0].troopers[0]!;
+    if (i < 3 * SKILL_COUNT) {
+      assert.deepEqual(t.force, [Math.floor(i / 3)]);
+      const seeds = perSkill.get(t.force[0]!) ?? new Set();
+      perSkill.set(t.force[0]!, seeds.add(b.seed));
+    } else {
+      assert.ok(t.force.length >= 4 && t.force.length <= 6 && t.force.every(isEquip));
+      assert.ok(t.pref !== null);
+      assert.deepEqual(t.pref.selectedItems, t.force.slice(0, 3));
+      assert.deepEqual(t.pref.leftOver, t.force.slice(3));
+    }
+  });
+  for (let k = 0; k < SKILL_COUNT; k++) assert.equal(perSkill.get(k)?.size, 3, `skill ${k}: 3 seeds`);
 });
 
-test("vehicles / specialists: level >= 7, choices steered", () => {
-  const isVehicle = (k: number) => SKILL_GEN[k]!.cats.includes("VEHICULE");
-  const isJob = (k: number) => SKILL_GEN[k]!.cats.includes("ARMY_JOB");
-  for (const [tag, want] of [
-    ["vehicles", isVehicle],
-    ["specialists", isJob],
-  ] as const) {
-    let hit = 0;
-    let n = 0;
-    for (const b of gen(tag, 100)) {
-      for (const t of troopers(b)) {
-        assert.ok(level(t) >= 7 && level(t) <= 30, `${tag}: level ${level(t)}`);
-        const g = new SkillGuide(t.seed);
-        for (const c of t.choices) g.pick(c);
-        n++;
-        if (g.skills.some(want)) hit++;
-      }
-    }
-    // Random 0/1 choices give ~55% for vehicles (seed 7); steering gives ~75%.
-    assert.ok(hit / n > 0.7, `${tag}: ${hit}/${n} troopers predicted to get a target skill`);
+test("leftOver is [] everywhere except the forced-skill equipment extras", () => {
+  for (const tag of CORPUS_TAGS) {
+    const all = gen(tag, tag === "forced-skill" ? 3 * SKILL_COUNT : 60);
+    for (const t of all.flatMap(troopers)) if (t.pref) assert.deepEqual(t.pref.leftOver, [], tag);
   }
+});
+
+test("vehicles: [PILOT, vehicle skill] forced first, companions after, every vehicle skill", () => {
+  const seen = new Set<number>();
+  for (const b of gen("vehicles", 100)) {
+    const forced = b.armies[0].troopers.filter((t) => t.force.length > 0);
+    assert.ok(forced.length >= 1 && forced.length <= 2);
+    assert.deepEqual(b.armies[0].troopers.slice(0, forced.length), forced, "pilots deploy first");
+    const companions = b.armies[0].troopers.length - forced.length;
+    assert.ok(companions >= 1 && companions <= 3);
+    for (const t of forced) {
+      assert.equal(t.force.length, 2);
+      assert.equal(t.force[0], 2);
+      assert.ok((VEHICLE_SKILLS as readonly number[]).includes(t.force[1]!));
+      assert.ok(level(t) >= 15 && level(t) <= 30);
+      seen.add(t.force[1]!);
+    }
+    assert.ok(b.armies[1].troopers.every((t) => t.force.length === 0));
+  }
+  assert.equal(seen.size, VEHICLE_SKILLS.length);
+});
+
+test("specialists: each of the 8 specializations forced, plus opened skills, level 7-30", () => {
+  const jobs = new Set<number>();
+  let withOpen = 0;
+  for (const b of gen("specialists", 100)) {
+    for (const t of b.armies[0].troopers) {
+      const job = t.force[0]!;
+      assert.ok(job >= 0 && job <= 7);
+      assert.ok(level(t) >= 7 && level(t) <= 30);
+      if (t.force.length === 2) {
+        assert.ok(SKILL_GEN[job]!.open.includes(t.force[1]!));
+        withOpen++;
+      } else assert.equal(t.force.length, 1);
+      jobs.add(job);
+    }
+  }
+  assert.equal(jobs.size, 8);
+  assert.ok(withOpen > 0);
 });
 
 test("large: 20-32 troopers per side", () => {

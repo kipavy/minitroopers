@@ -12,7 +12,8 @@
   "scripts": {
     "test": "node --test \"packages/*/test/**/*.test.ts\" \"tools/*/test/**/*.test.ts\"",
     "typecheck": "tsc -b",
-    "oracle:capture": "node tools/oracle/src/capture.ts"
+    "oracle:capture": "node tools/oracle/src/capture.ts",
+    "oracle:coverage": "node tools/oracle/src/coverage.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

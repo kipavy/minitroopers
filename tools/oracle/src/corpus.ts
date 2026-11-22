@@ -8,7 +8,7 @@ import type {
   TrooperPref,
 } from "@mt/engine";
 import { RAT_SKILLS, SKILL_COUNT, SKILL_GEN } from "./data/skills.ts";
-import { SkillGuide } from "./skillGuide.ts";
+
 
 export const CORPUS_TAGS = [
   "basic",
@@ -22,6 +22,19 @@ export const CORPUS_TAGS = [
 ] as const;
 export type CorpusTag = (typeof CORPUS_TAGS)[number];
 
+/** Per-tag generator version; bump a tag's entry when its generation changes: capture refuses to
+ * resume a tag directory captured with another version. */
+export const CORPUS_VERSIONS: Record<CorpusTag, number> = {
+  basic: 2,
+  levels: 2,
+  "forced-skill": 2,
+  vehicles: 3,
+  specialists: 2,
+  large: 2,
+  rats: 2,
+  edge: 2,
+};
+
 const HUMAN = 0;
 const RAT = 2;
 const MAX_SEED = 2147483646;
@@ -29,6 +42,9 @@ const BACKGROUNDS = ["garden", "attic", "sewer", "road", "wood"] as const;
 const WEAPON_COUNT = 38;
 const BODY_LOC_COUNT = 8;
 const ARMY_JOBS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+const PILOT = 2;
+/** LIGHT_TANK, MOTORCYCLE, FIGHTER_JET, HELICOPTER, HEAVY_TANK (SPAWN skills -> Vehicule). */
+export const VEHICLE_SKILLS = [38, 39, 40, 41, 42] as const;
 const hasCat = (k: number, cat: string): boolean => SKILL_GEN[k]!.cats.includes(cat);
 const EQUIPMENT = Array.from({ length: SKILL_COUNT }, (_, k) => k).filter((k) =>
   hasCat(k, "EQUIPMENT"),
@@ -63,8 +79,8 @@ class Rng {
 /** Seeds as $GL draws them (createBattleSeed / ratSeed): 10 000 000 + random(90 000 000). */
 const gameSeed = (r: Rng): number => r.int(10_000_000, 99_999_999);
 
-const randomPref = (r: Rng, name: string): TrooperPref | null => {
-  if (r.chance(0.2)) return null;
+const randomPref = (r: Rng, name: string, nullable = true): TrooperPref | null => {
+  if (nullable && r.chance(0.2)) return null;
   const specific = r.chance(0.2);
   const pref: TrooperPref = {
     CWeapon: r.chance(0.25) ? r.int(0, WEAPON_COUNT - 1) : null,
@@ -73,6 +89,7 @@ const randomPref = (r: Rng, name: string): TrooperPref | null => {
     targetType: specific ? 1 : 0,
     moveSystem: r.int(0, 2),
     name,
+    leftOver: [],
     selectedItems: [],
     reloadSystem: r.int(0, 3),
   };
@@ -80,29 +97,15 @@ const randomPref = (r: Rng, name: string): TrooperPref | null => {
   return pref;
 };
 
-type Steer = (offers: number[], level: number) => number | undefined;
-
-/** `level - 1` choices; `steer` may pick the offer index, otherwise random 0/1. */
-const makeChoices = (r: Rng, seed: number, lvl: number, steer?: Steer): number[] => {
-  const choices: number[] = [];
-  const guide = steer ? new SkillGuide(seed) : undefined;
-  for (let i = 1; i < lvl; i++) {
-    let c = r.int(0, 1);
-    if (guide) {
-      const offers = guide.offers().slice(0, 2);
-      c = steer!(offers, guide.level) ?? (offers.length < 2 ? 0 : c);
-      guide.pick(c);
-    }
-    choices.push(c);
-  }
-  return choices;
-};
+/** `level - 1` random 0/1 choices (level = choices.length + 1). */
+const makeChoices = (r: Rng, lvl: number): number[] =>
+  Array.from({ length: lvl - 1 }, () => r.int(0, 1));
 
 const human = (
   r: Rng,
   id: number,
   lvl: number,
-  opts: { steer?: Steer; force?: number[]; seed?: number } = {},
+  opts: { force?: number[]; seed?: number } = {},
 ): BattleTrooperInput => {
   const seed = opts.seed ?? gameSeed(r);
   const name = `T${id}`;
@@ -111,7 +114,7 @@ const human = (
     name,
     seed,
     type: HUMAN,
-    choices: makeChoices(r, seed, lvl, opts.steer),
+    choices: makeChoices(r, lvl),
     force: opts.force ?? [],
     pref: randomPref(r, name),
   };
@@ -150,44 +153,16 @@ const battle = (
   };
 };
 
-const vehicleSteer: Steer = (offers, level) => {
-  if (level === 4) {
-    const pilot = offers.indexOf(2);
-    if (pilot >= 0) return pilot;
-  }
-  const i = offers.findIndex((k) => hasCat(k, "VEHICULE"));
-  return i >= 0 ? i : undefined;
-};
-
-const specialistSteer = (job: number): Steer => {
-  const opened = new Set(SKILL_GEN[job]!.open);
-  return (offers) => {
-    const i = offers.indexOf(job);
-    if (i >= 0) return i;
-    const j = offers.findIndex((k) => opened.has(k));
-    return j >= 0 ? j : undefined;
-  };
-};
-
 const levelIn = (r: Rng, min: number, max: number) => r.int(min, max);
 
 /** Random battle `i` of a random tag. */
-const RANDOM_TAGS: Record<Exclude<CorpusTag, "forced-skill" | "edge">, (r: Rng) => BattleInput> = {
+const RANDOM_TAGS: Record<"basic" | "levels" | "large" | "rats", (r: Rng) => BattleInput> = {
   basic: (r) => {
     const mk = (id: number) => human(r, id, 1);
     return battle(r, [r.int(1, 6), r.int(1, 6)], [mk, mk]);
   },
   levels: (r) => {
     const mk = (id: number) => human(r, id, levelIn(r, 1, 30));
-    return battle(r, [r.int(1, 6), r.int(1, 6)], [mk, mk]);
-  },
-  vehicles: (r) => {
-    const mk = (id: number) => human(r, id, levelIn(r, 7, 30), { steer: vehicleSteer });
-    return battle(r, [r.int(1, 6), r.int(1, 6)], [mk, mk]);
-  },
-  specialists: (r) => {
-    const mk = (id: number) =>
-      human(r, id, levelIn(r, 7, 30), { steer: specialistSteer(r.pick(ARMY_JOBS)) });
     return battle(r, [r.int(1, 6), r.int(1, 6)], [mk, mk]);
   },
   large: (r) => {
@@ -205,35 +180,65 @@ const RANDOM_TAGS: Record<Exclude<CorpusTag, "forced-skill" | "edge">, (r: Rng) 
   },
 };
 
-/** Fixed lists: index -> battle. */
-const forcedSkill = (r: Rng, i: number): BattleInput => {
+/** A single trooper on side 0 (always deployed first) vs 1-3 opponents of level 1-10. */
+const soloVs = (r: Rng, solo: (id: number) => BattleTrooperInput): BattleInput => {
   const opp = (id: number) => human(r, id, levelIn(r, 1, 10));
-  if (i < SKILL_COUNT) {
-    // One trooper forced with skill i (NPC/rat-only skills included) vs 1-3 random troopers.
-    const forcedLevel = levelIn(r, 1, 10);
-    let first = true;
-    const left = (id: number) => {
-      if (!first) return opp(id);
-      first = false;
-      return human(r, id, forcedLevel, { force: [i] });
-    };
-    return battle(r, [r.int(1, 3), r.int(1, 3)], [left, opp]);
-  }
-  // Extras: one trooper forced with 4-6 equipment skills (more than the 3 a pref can select).
-  const n = 4 + ((i - SKILL_COUNT) % 3);
-  const pool = [...EQUIPMENT];
-  const force = Array.from({ length: n }, () => pool.splice(r.int(0, pool.length - 1), 1)[0]!);
-  let first = true;
-  const left = (id: number) => {
-    if (!first) return opp(id);
-    first = false;
-    const t = human(r, id, levelIn(r, 1, 10), { force });
-    if (t.pref) t.pref.selectedItems = force.slice(0, 3);
-    return t;
-  };
-  return battle(r, [r.int(1, 3), r.int(1, 3)], [left, opp]);
+  return battle(r, [1, r.int(1, 3)], [solo, opp]);
 };
+
+/** Equipment beyond the 3 a trooper keeps goes to `pref.leftOver`, like $GL getLeftOver. */
+const withLeftOver = (t: BattleTrooperInput, r: Rng, items: number[]): BattleTrooperInput => {
+  const pref = t.pref ?? randomPref(r, t.name, false)!;
+  pref.selectedItems = items.slice(0, 3);
+  pref.leftOver = items.slice(3);
+  return { ...t, pref };
+};
+
+const FORCED_SEEDS_PER_SKILL = 3;
 const FORCED_SKILL_EXTRAS = 9;
+
+/** i < 3 x SKILL_COUNT: skill floor(i / 3) forced on a lone trooper (3 battle seeds per skill,
+ * NPC/rat-only skills included). Then extras: a lone trooper forced with 4-6 equipment skills,
+ * the ones beyond 3 in `pref.leftOver`. */
+const forcedSkill = (r: Rng, i: number): BattleInput => {
+  if (i < SKILL_COUNT * FORCED_SEEDS_PER_SKILL) {
+    const k = Math.floor(i / FORCED_SEEDS_PER_SKILL);
+    return soloVs(r, (id) => human(r, id, levelIn(r, 1, 10), { force: [k] }));
+  }
+  const n = 4 + ((i - SKILL_COUNT * FORCED_SEEDS_PER_SKILL) % 3);
+  const pool = [...EQUIPMENT];
+  const items = Array.from({ length: n }, () => pool.splice(r.int(0, pool.length - 1), 1)[0]!);
+  return soloVs(r, (id) => withLeftOver(human(r, id, levelIn(r, 1, 10), { force: items }), r, items));
+};
+
+/** Battle i: 1-2 high-level troopers forced [PILOT, vehicle skill i % 5] (deployed first), then
+ * 1-3 random companions on the same side, vs 1-4 random troopers. The vehicle is drawn per battle
+ * from the battle seed (PILOT only raises the odds). Companions keep the side alive: a fighter-jet
+ * trooper leaves the deployment pool and only strikes later (EV 21), so a side made of jets alone
+ * loses before any strike. */
+const vehicles = (r: Rng, i: number): BattleInput => {
+  const v = VEHICLE_SKILLS[i % VEHICLE_SKILLS.length]!;
+  const pilots = r.int(1, 2);
+  const left = (id: number) =>
+    id < pilots
+      ? human(r, id, levelIn(r, 15, 30), { force: [PILOT, v] })
+      : human(r, id, levelIn(r, 1, 30));
+  const opp = (id: number) => human(r, id, levelIn(r, 1, 30));
+  return battle(r, [pilots + r.int(1, 3), r.int(1, 4)], [left, opp]);
+};
+
+/** Battle i: 1-3 troopers of level 7-30 forced specialization i % 8, half of them also forced
+ * one of the skills that specialization opens; vs 1-4 random troopers. */
+const specialists = (r: Rng, i: number): BattleInput => {
+  const job = ARMY_JOBS[i % ARMY_JOBS.length]!;
+  const opens = SKILL_GEN[job]!.open;
+  const spec = (id: number) =>
+    human(r, id, levelIn(r, 7, 30), {
+      force: opens.length > 0 && r.chance(0.5) ? [job, r.pick(opens)] : [job],
+    });
+  const opp = (id: number) => human(r, id, levelIn(r, 1, 30));
+  return battle(r, [r.int(1, 3), r.int(1, 4)], [spec, opp]);
+};
 
 const EXTREME_SEEDS = [0, 1, MAX_SEED] as const;
 
@@ -263,7 +268,7 @@ const EDGE_SIZE = 12;
 
 /** Number of battles of a fixed-list tag (`forced-skill`, `edge`); `null` for random tags. */
 export const corpusFullSize = (tag: CorpusTag): number | null =>
-  tag === "forced-skill" ? SKILL_COUNT + FORCED_SKILL_EXTRAS : tag === "edge" ? EDGE_SIZE : null;
+  tag === "forced-skill" ? SKILL_COUNT * FORCED_SEEDS_PER_SKILL + FORCED_SKILL_EXTRAS : tag === "edge" ? EDGE_SIZE : null;
 
 export const generateCorpus = (opts: { seed: number; count: number; tag: CorpusTag }): BattleInput[] => {
   const { seed, tag } = opts;
@@ -273,6 +278,8 @@ export const generateCorpus = (opts: { seed: number; count: number; tag: CorpusT
     const r = new Rng(`${seed}|${tag}|${i}`);
     if (tag === "forced-skill") return forcedSkill(r, i);
     if (tag === "edge") return edge(r, i);
+    if (tag === "vehicles") return vehicles(r, i);
+    if (tag === "specialists") return specialists(r, i);
     return RANDOM_TAGS[tag](r);
   });
 };

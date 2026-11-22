@@ -239,7 +239,9 @@ Playwright. `ruffle_desktop.exe` (repli) ouvre une fenêtre visible par combat ;
   ```
   `runner.ts` fixe `PLAYWRIGHT_BROWSERS_PATH` pour son seul processus (jamais globalement) et
   lance Chromium avec un profil explicite `tools/bin/tmp/chromium-*`, supprimé à la fermeture
-  (au lieu du `%TEMP%playwright_chromiumdev_profile-*` par défaut de Playwright).
+  (au lieu du `%TEMP%playwright_chromiumdev_profile-*` par défaut de Playwright). Pendant le
+  lancement, `TEMP`/`TMP` pointent aussi vers `tools/bin/tmp` (Playwright y crée son
+  `playwright-artifacts-*`, Chromium hérite de `TEMP`), puis sont restaurés.
 - Un petit serveur `node:http` (127.0.0.1, port libre) sert la page, Ruffle, le SWF et
   `army.swf` (le `gfx` des flashvars pointe dessus : même origine, aucun accès fichier). Réponses
   `cache-control: no-store` : avec le cache HTTP, des pages parallèles se disputent l'écriture du
@@ -260,14 +262,48 @@ Playwright. `ruffle_desktop.exe` (repli) ouvre une fenêtre visible par combat ;
 
 Capture : `npm run oracle:capture -- --tag <tag|all> [--count n] [--seed s] [--jobs 4]` →
 `tools/oracle/golden/<tag>/<NNNNN>.json.gz` (JSON `OracleTrace` gzip, NNNNN = index dans le corpus).
-Reprise : fichiers existants sautés ; `meta.json` fige la graine du dossier. Échecs et délais
-dépassés (après une seconde tentative) : `<tag>/capture-failures.jsonl`, jamais ignorés.
+Reprise : fichiers existants sautés ; `meta.json` fige la graine **et la version du corpus**
+(entrée du tag dans `CORPUS_VERSIONS` : 2, `vehicles` 3) : un dossier d'une autre version est refusé (le supprimer
+pour recapturer). Écriture atomique (`.tmp` puis renommage). Échecs et délais dépassés (après
+une seconde tentative) : `<tag>/capture-failures.jsonl`, jamais ignorés.
 
-Durée (premier lot, 2026-11-22, Snapdragon X / Windows ARM64, Chromium x64 émulé, 4 jobs) :
-**≈ 4,1 s par combat** en moyenne (chargement de la page → `MTDONE`, dont ≈ 2,7 s de démarrage du
-SWF avant la première ligne `TRP`), soit **≈ 1,04 s par combat** en débit avec 4 pages parallèles
-(962 combats en 1 000 s). Par tag : basic 3,87 s · levels 4,59 · forced-skill 3,76 · vehicles 3,87 ·
-specialists 3,90 · large 4,89 · rats 3,88 · edge 4,03. Aucun échec ni délai dépassé.
+Corpus (`src/corpus.ts`) : `basic` (niveau 1, 1–6 par côté), `levels` (1–30, choix
+0/1 aléatoires), `forced-skill` (chaque compétence forcée via `force` sur un trooper **seul de
+son côté** — déployé en premier — contre 1–3 adversaires, **3 graines de combat par compétence**,
+puis 9 combats « plus de 3 équipements » : 4–6 équipements forcés, les 3 premiers dans
+`selectedItems`, le reste dans `pref.leftOver` comme `getLeftOver` de $GL), `vehicles`
+(1–2 troopers niveau 15–30 forcés `[PILOT, compétence véhicule]`, déployés en premier, puis 1–3
+compagnons aléatoires du même côté — un côté fait d'avions seuls perd avant toute frappe —, les 5
+véhicules en rotation ;
+le véhicule est tiré à chaque combat sur la graine du combat, PILOT ne fait qu'augmenter la
+probabilité), `specialists` (les 8 spécialisations forcées en rotation, une fois sur deux avec
+une compétence qu'elle débloque), `large` (20–32 par côté), `rats`, `edge`.
+
+Avion de chasse (compétence 40, `Vehicule` index 7) : `Trooper.init` ne crée pas de véhicule
+pour l'index 7, et `Player` retire ce trooper de sa réserve avant tout déploiement (il n'a donc
+**jamais** de ligne `TRP`) pour programmer un événement de combat qui bombarde périodiquement :
+sa présence se lit uniquement aux lignes `EV …|21(<side>,<x>,<y>,<impacts>)` (constructeur 21
+de `BattleMsg`).
+
+`pref.leftOver` : liste d'index `Skill` retirés du trooper à sa génération (le SWF fait
+`skills.remove` pour chaque entrée) ; sérialisé en valeurs d'enum `Skill`. `selectedItems` n'est
+jamais lu par le SWF (envoyé pour rester identique à $GL, qui envoie toujours `leftOver: []`).
+
+Couverture : `npm run oracle:coverage [-- --dir <dossier>]` lit les golden et affiche, par tag,
+combats / `winner=null` / lignes TRP vs troopers d'entrée / combats avec frappe d'avion /
+histogramme du champ `vehicle` des TRP ; l'histogramme des types `EV` ; pour `forced-skill`, si
+le trooper forcé a une ligne `TRP` (liste explicite des compétences jamais déployées) ; pour
+`vehicles`, le véhicule obtenu par compétence ; pour `leftOver`, qu'aucune compétence retirée
+ne figure dans la ligne TRP.
+
+Durée (lot du 2026-11-22, Snapdragon X / Windows ARM64, Chromium x64 émulé, 4 jobs) :
+**≈ 3,9 s par combat** en moyenne (chargement de la page → `MTDONE`, dont ≈ 2,7 s de démarrage du
+SWF avant la première ligne `TRP`), soit **≈ 1 s par combat** en débit avec 4 pages parallèles
+(corpus v2 : 1 144 combats hors `vehicles` en 1 229 s). Par tag : basic 3,86 s · levels 3,86 ·
+forced-skill 3,82 · specialists 7,57 (machine chargée) · large 4,87 · rats 3,86 · edge 3,78.
+La capture `vehicles` (v3) a été interrompue par une mise en veille de la machine : 4 combats
+ont dépassé le délai à la première tentative (consignés dans `vehicles/capture-failures.jsonl`)
+puis ont réussi à la seconde ; sa moyenne (26 s) n'est pas représentative. Aucun échec définitif.
 
 ## Innocuité
 

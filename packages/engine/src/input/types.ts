@@ -33,6 +33,13 @@ export type TrooperPref = {
   targetClass?: number;
   moveSystem: number;
   name: string;
+  /**
+   * Skill enum indexes removed from the trooper at generation (SWF Ghost: `skills.remove` for
+   * each `pref.leftOver` entry): the equipment beyond the 3 a trooper may carry, computed like
+   * $GL `getLeftOver`. $GL itself always sends `[]`.
+   */
+  leftOver: number[];
+  /** Equipment the player kept (UI only: the SWF never reads it; sent for wire parity with $GL). */
   selectedItems?: number[];
   reloadSystem?: number;
 };
