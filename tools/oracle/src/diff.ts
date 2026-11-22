@@ -1,13 +1,15 @@
 // CLI: compares the TS engine (simulateBattle) with the golden traces.
-//   npm run oracle:diff -- [--tag t] [--limit n] [--dir golden-dir]
+//   npm run oracle:diff -- [--tag t] [--limit n] [--dir golden-dir] [--max-steps n]
 // Per golden: `OK` or the first divergence (0-based line index in the TRP…, EV…, END
 // sequence, expected vs actual, 5 preceding lines of context). Totals per tag and overall;
 // exit code 1 on any divergence or engine failure (e.g. NotImplemented).
+// A battle still running after --max-steps resolve() steps (default DEFAULT_MAX_STEPS) is
+// aborted and reported KO (StepCapExceeded): a harness guard, the SWF itself has no cap.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { gunzipSync } from "node:zlib";
-import { simulateBattle, type BattleInput, type BattleRecord } from "@mt/engine";
+import { DEFAULT_MAX_STEPS, simulateBattleCapped, type BattleInput, type BattleRecord } from "@mt/engine";
 import { GOLDEN_DIR } from "./capture.ts";
 import type { OracleTrace } from "./runner.ts";
 
@@ -113,11 +115,12 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === import.meta.fi
       tag: { type: "string" },
       limit: { type: "string" },
       dir: { type: "string", default: GOLDEN_DIR },
+      "max-steps": { type: "string", default: String(DEFAULT_MAX_STEPS) },
     },
   });
   const res = runDiff(
     readGoldenItems(values.dir, values.tag),
-    simulateBattle,
+    (input) => simulateBattleCapped(input, Number(values["max-steps"])),
     values.limit !== undefined ? { limit: Number(values.limit) } : {},
   );
   console.log(res.lines.join("\n"));

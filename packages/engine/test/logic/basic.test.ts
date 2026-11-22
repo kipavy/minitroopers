@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import type { BattleInput } from "../../src/input/types.ts";
-import { simulateBattle } from "../../src/simulate.ts";
+import { simulateBattleCapped } from "../../src/simulate.ts";
 import type { BattleRecord } from "../../src/simulate.ts";
 
 // Golden traces are read as data (no code is imported from tools/).
@@ -27,7 +27,7 @@ const lines = (r: BattleRecord): string[] => [
 const assertSame = (tag: string, file: string): void => {
   const g = load(tag, file);
   const exp = lines(g.record);
-  const act = lines(simulateBattle(g.input));
+  const act = lines(simulateBattleCapped(g.input)); // harness step cap (DEFAULT_MAX_STEPS)
   for (let i = 0; i < Math.max(exp.length, act.length); i++) {
     if (exp[i] !== act[i]) assert.fail(`${tag}/${file} line ${i}\n  expected: ${exp[i]}\n  actual:   ${act[i]}`);
   }

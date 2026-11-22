@@ -606,6 +606,11 @@ export class Battle {
     while (!this.resolve()) {
       /* one step per call */
     }
+    return this.record();
+  }
+
+  /** The oracle dump (patch-msg.as `mtDump`) of the battle as it stands; `run()` calls it once over. */
+  record(): BattleRecord {
     return {
       troopers: this.trpLines.map((l) => ({ id: l.id, side: l.side as 0 | 1, line: l.line })),
       events: this.history.map((h) => `EV ${haxeString(h.time)}|${haxeString(h.tid)}|${haxeString(h.type)}`),

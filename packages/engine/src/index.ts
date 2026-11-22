@@ -2,7 +2,13 @@ export const ENGINE_VERSION = "0.0.0";
 export * from "./input/types.ts";
 export { HaxeEnum, serializeHaxe } from "./input/haxeSerializer.ts";
 export { toFlashvars } from "./input/flashvars.ts";
-export { simulateBattle, NotImplemented } from "./simulate.ts";
+export {
+  simulateBattle,
+  simulateBattleCapped,
+  StepCapExceeded,
+  DEFAULT_MAX_STEPS,
+  NotImplemented,
+} from "./simulate.ts";
 export type { BattleRecord, TrooperSnapshot } from "./simulate.ts";
 export { Rand } from "./core/rand.ts";
 export { Num } from "./core/num.ts";

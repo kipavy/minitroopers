@@ -86,3 +86,15 @@ test("runDiff: --limit applies per tag", () => {
   const res = runDiff(items, () => rec(), { limit: 2 });
   assert.equal(res.ok, 2);
 });
+
+test("runDiff: a battle over the step cap is aborted and reported KO", async () => {
+  const { simulateBattleCapped, StepCapExceeded } = await import("@mt/engine");
+  const { readGoldenItems } = await import("../src/diff.ts");
+  const { GOLDEN_DIR } = await import("../src/capture.ts");
+  const g = readGoldenItems(GOLDEN_DIR, "basic").next().value!;
+  assert.throws(() => simulateBattleCapped(g.trace.input, 3), StepCapExceeded);
+  assert.equal(diffRecords(g.trace.record, simulateBattleCapped(g.trace.input))?.index, undefined);
+  const res = runDiff([g], (input) => simulateBattleCapped(input, 3));
+  assert.equal(res.ko, 1);
+  assert.match(res.lines.join("\n"), /KO basic\/\d+\.json\.gz: StepCapExceeded: battle still running after 3 resolve\(\) steps/);
+});
