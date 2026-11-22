@@ -123,7 +123,9 @@ END <winner>|<graveyard>
 MTDONE
 ```
 
-- `TRP` (fin de `Trooper.init`) :
+- `TRP` (fin de `Trooper.init`) — **uniquement pour les troopers effectivement déployés**, dans
+  l'ordre de déploiement (déploiement initial puis apparitions en cours de combat) ; un trooper
+  jamais déployé (combat terminé avant son tour, par ex. 12 contre 1) n'a **pas** de ligne `TRP` :
   - `id` = `getId()` (= `data.id`), `side` = 0/1 ;
   - `life` = vie après init (= `getLifeMax()`), `time` = initiative après init (tirage
     `bat.seed % 40`, véhicule, ON_POINT/SPY inclus), `lvl` = `ghost.lvl` ;
@@ -140,6 +142,10 @@ MTDONE
   - `helmet`, `leader` = `0`/`1`.
 - `EV` : une ligne par entrée de `Battle.history`, dans l'ordre, `time`/`tid`/`type` au
   format valeur (`tid` vaut `null` quand aucun héros n'est actif).
+  Les lignes sont imprimées en bloc une fois `resolve()` terminé : chaque valeur est donc
+  dans son **état final, après résolution complète du combat** (un argument mutable — objet,
+  tableau — partagé avec l'état du combat montre l'état de fin de combat, pas celui du moment
+  où l'entrée a été ajoutée à `history`).
 - `END` : `winner` au format valeur (`0`/`1`, ou `null` si le combat s'arrête par
   `btime > 50000`) ; `graveyard` = ids au format valeur séparés par `,` (vide si aucun mort).
 - `MTDONE` : fin de trace ; le processus Ruffle continue (animation) et doit être tué.
@@ -216,6 +222,52 @@ MTDONE
 
 (`client_fr_edit.swf` sur les mêmes flashvars rapporte `battleResult` = graveyard `[0]`,
 résultat `1` : cohérent avec `END 1|0`.)
+
+## Exécuteur (`tools/oracle/src/runner.ts`) — voie retenue : Ruffle web + Chromium headless
+
+Voie principale retenue (et seule utilisée) : **Ruffle web** dans **Chromium headless** piloté par
+Playwright. `ruffle_desktop.exe` (repli) ouvre une fenêtre visible par combat ; il n'est pas utilisé.
+
+- `@ruffle-rs/ruffle` **0.2.0-nightly.2025.7.28** (figé, devDependency de `@mt/oracle`) : son
+  `commitHash` est `a111ceec3873b019c79e8554963bfdc8307adcc0`, **le même commit** que
+  `tools/bin/ruffle/ruffle_desktop.exe` — web et desktop exécutent le même cœur Ruffle.
+- `playwright` **1.65.1** (figé) ; navigateur = Chrome Headless Shell 159.0.8154.6 (build
+  `chromium_headless_shell-1255`, win64, tourne sous émulation x64), installé **uniquement** dans
+  `tools/bin/ms-playwright` :
+  ```sh
+  PLAYWRIGHT_BROWSERS_PATH=tools/bin/ms-playwright npx playwright install --only-shell chromium
+  ```
+  `runner.ts` fixe `PLAYWRIGHT_BROWSERS_PATH` pour son seul processus (jamais globalement) et
+  lance Chromium avec un profil explicite `tools/bin/tmp/chromium-*`, supprimé à la fermeture
+  (au lieu du `%TEMP%playwright_chromiumdev_profile-*` par défaut de Playwright).
+- Un petit serveur `node:http` (127.0.0.1, port libre) sert la page, Ruffle, le SWF et
+  `army.swf` (le `gfx` des flashvars pointe dessus : même origine, aucun accès fichier). Réponses
+  `cache-control: no-store` : avec le cache HTTP, des pages parallèles se disputent l'écriture du
+  `.wasm` (`ERR_CACHE_WRITE_FAILURE`, « Failed to load Ruffle WASM »).
+- **Traces** : Ruffle web envoie `trace()` à `log::info!` (`web/src/log_adapter.rs`), qui n'est
+  imprimé que si `logLevel` ≥ `"info"` (défaut `"error"` : rien ne sort). Avec `logLevel: "info"`,
+  chaque trace devient `console.log("%cINFO%c web/src/log_adapter.rs:<n>%c <ligne>", css…)`. La page
+  remplace `console.log` pour capturer ces lignes en mémoire (sans trafic CDP) ; Node attend
+  `MTDONE` (sondage 50 ms, délai max 30 s, sinon `OracleTimeoutError`), puis ne garde que les
+  lignes `TRP `/`EV `/`END `/`MTDONE`.
+- Flashvars : `parameters: { data: decodeURIComponent(<toFlashvars sans "data=">) }`.
+- Un combat = une **nouvelle page** (nouvelle instance wasm, statiques AVM neuves — cf. compteur
+  d'armes ci-dessus) ; un seul Chromium et un seul contexte pour tous les combats.
+- Renderer : wgpu-webgl par défaut. Le renderer `canvas` est **inutilisable** : le handler
+  COMPLETE de Main lève une erreur et aucun combat n'est construit.
+- `client_fr_edit.swf` (sanity check) : `ExternalInterface.call("battleResult", graveyard)` puis
+  `("battleResult", vainqueur)` ; la page définit `window.battleResult` pour les capter.
+
+Capture : `npm run oracle:capture -- --tag <tag|all> [--count n] [--seed s] [--jobs 4]` →
+`tools/oracle/golden/<tag>/<NNNNN>.json.gz` (JSON `OracleTrace` gzip, NNNNN = index dans le corpus).
+Reprise : fichiers existants sautés ; `meta.json` fige la graine du dossier. Échecs et délais
+dépassés (après une seconde tentative) : `<tag>/capture-failures.jsonl`, jamais ignorés.
+
+Durée (premier lot, 2026-11-22, Snapdragon X / Windows ARM64, Chromium x64 émulé, 4 jobs) :
+**≈ 4,1 s par combat** en moyenne (chargement de la page → `MTDONE`, dont ≈ 2,7 s de démarrage du
+SWF avant la première ligne `TRP`), soit **≈ 1,04 s par combat** en débit avec 4 pages parallèles
+(962 combats en 1 000 s). Par tag : basic 3,87 s · levels 4,59 · forced-skill 3,76 · vehicles 3,87 ·
+specialists 3,90 · large 4,89 · rats 3,88 · edge 4,03. Aucun échec ni délai dépassé.
 
 ## Innocuité
 

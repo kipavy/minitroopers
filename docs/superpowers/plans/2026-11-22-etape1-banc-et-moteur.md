@@ -79,16 +79,20 @@ export interface BattleInput { seed: number; background: { gfx: string; id: numb
   armies: [BattleArmyInput, BattleArmyInput]; attackerSide: number; }
 
 // packages/engine/src/simulate.ts
-export interface TrooperSnapshot { id: number; side: 0 | 1; line: string } // line = format oracle "TRP"
-export interface BattleRecord { troopers: TrooperSnapshot[]; events: string[]; winner: 0 | 1; graveyard: number[]; }
+export interface TrooperSnapshot { id: number; side: 0 | 1; line: string } // line = ligne "TRP …" complète (préfixe inclus)
+export interface BattleRecord { troopers: TrooperSnapshot[]; // une par ligne TRP, dans l'ordre d'émission
+  events: string[];      // lignes "EV …" complètes (préfixe inclus), ordre de Battle.history
+  winner: 0 | 1 | null;  // null = arrêt à btime > 50000 (END null|…)
+  graveyard: number[]; }
 
 // tools/oracle/src/runner.ts
 export interface OracleTrace { formatVersion: 1; swfSha256: string; input: BattleInput; record: BattleRecord; }
 ```
 
 Format des lignes (identique oracle et moteur ; figé à la tâche 3, référence complète : `tools/oracle/instrument/README.md` § « Format des lignes ») :
-- trooper (une ligne à la fin de chaque `Trooper.init`, y compris les troopers apparus en cours de combat) : `TRP <id>|<side>|<life>|<time>|<lvl>|<skills>|<weapons>|<weapIdx>|<vehicle>|<helmet>|<leader>` — `life`/`time` après init, `lvl` = `ghost.lvl`, `skills` = index des `Skill` de `ghost.skills` **dans l'ordre du tableau** (non trié), séparés par `,` ; `weapons` = pour chaque arme dans l'ordre `<index Weapon>:<munitions>:<réserve>:<drapeau 0|1>` séparées par `,` ; `weapIdx` = index de l'arme courante (`-1` si aucune) ; `vehicle` = index de l'enum véhicule ou `-` ; `helmet`/`leader` = `0|1`.
-- événement : `EV <time>|<tid>|<valeur(type)>`, une ligne par entrée de `Battle.history`, émises dès que `resolve()` renvoie `true`, avant animation.
+- trooper (une ligne à la fin de chaque `Trooper.init`, y compris les troopers apparus en cours de combat ; **uniquement pour les troopers effectivement déployés**, dans l'ordre de déploiement — un trooper jamais déployé, par exemple parce que le combat se termine avant son tour, n'a pas de ligne `TRP`) : `TRP <id>|<side>|<life>|<time>|<lvl>|<skills>|<weapons>|<weapIdx>|<vehicle>|<helmet>|<leader>` — `life`/`time` après init, `lvl` = `ghost.lvl`, `skills` = index des `Skill` de `ghost.skills` **dans l'ordre du tableau** (non trié), séparés par `,` ; `weapons` = pour chaque arme dans l'ordre `<index Weapon>:<munitions>:<réserve>:<drapeau 0|1>` séparées par `,` ; `weapIdx` = index de l'arme courante (`-1` si aucune) ; `vehicle` = index de l'enum véhicule ou `-` ; `helmet`/`leader` = `0|1`.
+- événement : `EV <time>|<tid>|<valeur(type)>`, une ligne par entrée de `Battle.history`, émises dès que `resolve()` renvoie `true`, avant animation. Les valeurs sont donc imprimées **dans leur état final, après résolution complète du combat** : un argument mutable (objet, tableau) partagé avec l'état du combat montre l'état de fin de combat, pas celui du moment où l'entrée a été ajoutée.
+- l'exécuteur (`tools/oracle/src/runner.ts`) ne garde que les lignes préfixées `TRP `, `EV `, `END ` et la ligne `MTDONE` (l'interpréteur embarqué du SWF peut émettre d'autres `trace()`).
 - fin : `END <winner>|<graveyard séparé par ,>` (`winner` = `0|1`, ou `null` si arrêt à `btime > 50000`), puis `MTDONE`.
 - format « valeur » (remplace `Std.string`, qui imprimerait les noms obfusqués des constructeurs, pleins de caractères de contrôle) : `null` ; `true|false` ; nombres = AS3 `String(n)` ; chaîne = `"…"` échappée ; tableau `[a,b]` ; enum Haxe = `<index>` ou `<index>(<p1>,<p2>)` ; trooper (instance `Ent`) = `T<id>` ; case = `Q<x>:<y>` ; objet anonyme = `{<clé>=<v>;…}` clés obfusquées échappées et triées (`Array.sort()` AS3) ; échappement `\uXXXX` (hex minuscule) des caractères < 0x20, > 0x7E et de ``\ " | ; = , { } [ ] ( ) < >``.
 
