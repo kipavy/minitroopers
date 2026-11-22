@@ -254,3 +254,13 @@ checklist. Les descriptions du wiki servent à générer des cas ciblés.
 Plafond de raid (20 ou 21+), niveaux minimum de l'avion de chasse / grenade trou noir /
 Martyr / Commandement / Occupation, fond « sewer », correspondance des noms de factions FR/EN,
 inclusion du trooper du joueur dans les raids.
+
+## Déploiement (précisé par Killian le 2026-11-22)
+
+- Stack Docker sur l'hôte Docker existant du homelab (pas de LXC dédiée).
+- Instance **publique** sur Internet **sans ouvrir aucun port** : exposition par Cloudflare
+  Tunnel (réutiliser le `cloudflared` existant s'il y en a un). Le mode sous-domaine passe par
+  un enregistrement `*.domaine` vers le tunnel (certificat universel Cloudflare).
+- Conséquences pour l'étape 2 : IP client lue dans `CF-Connecting-IP` (limite de création
+  d'armées par IP), cookies `Secure`, limitation de débit sur la création d'armée et les
+  tentatives de mot de passe `/protect`.
