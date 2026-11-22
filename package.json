@@ -13,7 +13,8 @@
     "test": "node --test \"packages/*/test/**/*.test.ts\" \"tools/*/test/**/*.test.ts\"",
     "typecheck": "tsc -b",
     "oracle:capture": "node tools/oracle/src/capture.ts",
-    "oracle:coverage": "node tools/oracle/src/coverage.ts"
+    "oracle:coverage": "node tools/oracle/src/coverage.ts",
+    "oracle:diff": "node tools/oracle/src/diff.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

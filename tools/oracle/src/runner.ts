@@ -8,24 +8,9 @@ import type { AddressInfo } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { toFlashvars, type BattleInput } from "@mt/engine";
+import { toFlashvars, type BattleInput, type BattleRecord, type TrooperSnapshot } from "@mt/engine";
 
-export interface TrooperSnapshot {
-  id: number;
-  side: 0 | 1;
-  /** Full `TRP …` trace line, prefix included. */
-  line: string;
-}
-
-export interface BattleRecord {
-  /** One per `TRP` line, in emission (deploy) order. */
-  troopers: TrooperSnapshot[];
-  /** Full `EV …` trace lines, prefix included, in `Battle.history` order. */
-  events: string[];
-  /** `null` when the battle stops at `btime > 50000` without a winner. */
-  winner: 0 | 1 | null;
-  graveyard: number[];
-}
+export type { BattleRecord, TrooperSnapshot };
 
 export interface OracleTrace {
   formatVersion: 1;
