@@ -263,7 +263,7 @@ Playwright. `ruffle_desktop.exe` (repli) ouvre une fenêtre visible par combat ;
 Capture : `npm run oracle:capture -- --tag <tag|all> [--count n] [--seed s] [--jobs 4]` →
 `tools/oracle/golden/<tag>/<NNNNN>.json.gz` (JSON `OracleTrace` gzip, NNNNN = index dans le corpus).
 Reprise : fichiers existants sautés ; `meta.json` fige la graine **et la version du corpus**
-(entrée du tag dans `CORPUS_VERSIONS` : 2, `vehicles` 4) : un dossier d'une autre version est refusé (le supprimer
+(entrée du tag dans `CORPUS_VERSIONS` : 2, `vehicles` 4, tags de la tâche 8 : 1) : un dossier d'une autre version est refusé (le supprimer
 pour recapturer). Écriture atomique (`.tmp` puis renommage). Échecs et délais dépassés (après
 une seconde tentative) : `<tag>/capture-failures.jsonl`, jamais ignorés.
 
@@ -282,7 +282,16 @@ déploiement marquées, HEAVY_TANK = `SIZE[2]`, un bloc 3×2 ; les cases de dép
 `dep` premières de `Data._obf_1afae07b` = [2,1,3,7,6,8,12,11,…] (YMAX = 5), donc un 3×2 exige
 `dep` ≥ 8 ; `dep` = 4 + 1 par trooper du côté ayant SCOUT sans être aussi Comms/Saboteur. D'où,
 dans les combats HEAVY_TANK, 5 compagnons forcés `[SCOUT]` du côté du char (dep = 9)), `specialists` (les 8 spécialisations forcées en rotation, une fois sur deux avec
-une compétence qu'elle débloque), `large` (20–32 par côté), `rats`, `edge`.
+une compétence qu'elle débloque), `large` (20–32 par côté), `rats`, `edge`, puis les tags ciblés de la
+tâche 8 (mécaniques rares) : `comms` (côté 0 : 2–3 Comms Officers niveau 22–30, une fois sur deux
++ RADIO, + 2–8 autres ; côté 1 : 6–16 troopers sans comms forcés, dans un combat sur deux la moitié
+forcés SCOUT pour peupler le terrain — les ordres dépendent de l'écart de Communications et du
+rapport des effectifs), `martyr-saviour` (4–10 par côté, sur chaque côté 2 MARTYR et 2
+`[DOCTOR, SAVIOUR]` niveau 7–30), `jet` (1–2 `[PILOT, FIGHTER_JET]` niveau 15–30 + 4–10 compagnons
+niveau 15–30, contre 4–10 : combats longs), `sabotage` (1–3 SABOTEUR niveau 10–30 + 0–4, contre
+1–8 troopers niveau 7–30), `helicopter` (2–3 `[PILOT, HELICOPTER]` niveau 15–30 + 1–2, contre
+20–32 troopers niveau 1–5 forcés fusil à pompe ou couteau, qui ne peuvent viser un hélicoptère :
+l'hélicoptère vide son arme puis s'en va, `Leave(side, false)`).
 
 Avion de chasse (compétence 40, `Vehicule` index 7) : `Trooper.init` ne crée pas de véhicule
 pour l'index 7, et `Player` retire ce trooper de sa réserve avant tout déploiement (il n'a donc
@@ -302,6 +311,43 @@ le trooper forcé a une ligne `TRP` (liste explicite des compétences jamais dé
 ne figure dans la ligne TRP. Code de sortie ≠ 0 (`COVERAGE GAP: …`) si MOTO, LIGHT_TANK,
 HELICOPTER ou HEAVY_TANK n'apparaît dans aucune ligne TRP, si aucune frappe d'avion (`EV` 21)
 n'existe, ou si un `leftOver` n'est pas respecté.
+
+Couverture par déclenchement (`src/mechanics.ts`, tâche 8) : la même commande compte ensuite, sur
+tous les golden, chaque mécanique qui s'est **réellement produite**, avec les tags où elle apparaît,
+et sort en erreur si l'une d'elles a eu moins de 3 occurrences (`MIN_FIRES`). Liste : chaque cas de
+`useSuper` (21 compétences), interception de grenade, apparition d'un clown, les 6 ordres Comms,
+Propagande, Martyr, Vendetta, Frénésie, frappe d'avion, chaque véhicule déployé, démontage,
+hélicoptère qui part, retraite, sabotage (drapeau d'arme TRP et valeur de `PlayerStatus`), chaque
+statut (cécité, poison, amphétamine, paralysie, malédiction, verrouillage), `winner=null`, chaque
+constructeur `BattleMsg` et `HitEvent`.
+
+- Lecture depuis la trace : les lignes `EV` sont relues dans le format « valeur » (`parseValue`) ;
+  les `HitEvent` sont lus dans le tableau `events` (clé obfusquée) de chaque résultat de coup, à
+  toute profondeur. Le premier paramètre (`Skill`) de `Skill`(16)/`Grenade`(14) identifie le cas de
+  `useSuper` ; `Rescue`(19) = SAVIOUR, `Brawl`(9) sans arme = FACEBOOT, `Wrestle`(18) = WRESTLER ;
+  `Grenade` avec un 5ᵉ paramètre = interception ; `Announce(Com(c))` (20(1(c))) = ordre c, et
+  `StatusOn(LOCKED)` = ordre « cible repérée » (seule source de LOCKED).
+- Martyr, Vendetta et Frénésie ne laissent que des `Boost(0)`, émis aussi ailleurs : ils sont
+  comptés en **rejouant** l'entrée du golden dans le moteur, avec des observateurs posés depuis
+  `tools/` sur `Battle.prototype.runTrigger` et `Trooper.prototype.boost` (aucune ligne du moteur
+  modifiée ; les observateurs appellent l'original et ne lisent que des champs). Le rejeu doit
+  reproduire le golden à l'identique, sinon `COVERAGE GAP`.
+- Jamais émis (preuve par le décompilé) : `Battle.msg` n'est appelé que depuis le paquetage
+  `logic` (`§P!L/§`), qui ne référence jamais les constructeurs `BattleMsg` 0, 15, 31, 33, 37,
+  42 ni `HitEvent` 0 (leurs noms obfusqués n'apparaissent que dans les classes d'affichage).
+- Non atteints, non prouvés inatteignables (hors barrière, toujours affichés « UNREACHED ») :
+  `winner=null` (aucun combat ne dure : `btime` max 6 627 sur 80 000 combats aléatoires simulés
+  par le moteur, aucune construction de blocage trouvée) et `BattleMsg` 41 `Positions` (les trois
+  méthodes de `Battle` qui l'émettent n'ont aucun appelant ; reste `Trooper.play` en visée avec
+  `weap.target == null`, que `checkAim` remet à zéro à chaque pas ; seul chemin trouvé : un
+  TUCK_AND_ROLL qui ramasse une arme jamais pointée pendant la visée, après le `checkAim` du pas,
+  et ce trooper joue le pas suivant — 0 sur 54 000 combats ciblés).
+
+Plafond de pas : `oracle:diff` et les tests golden simulent via `simulateBattleCapped` (moteur),
+qui abandonne un combat encore en cours après `--max-steps` appels à `resolve()` (défaut
+`DEFAULT_MAX_STEPS` = 500 000 ; le plus long golden en fait ≈ 1 035) et le compte KO
+(`StepCapExceeded`). Garde-fou du banc uniquement : le SWF n'a pas de plafond, `simulateBattle`
+non plus. Une boucle infinie à l'intérieur d'un seul `resolve()` n'est pas interceptée.
 
 Durée (lot du 2026-11-22, Snapdragon X / Windows ARM64, Chromium x64 émulé, 4 jobs) :
 **≈ 3,9 s par combat** en moyenne (chargement de la page → `MTDONE`, dont ≈ 2,7 s de démarrage du

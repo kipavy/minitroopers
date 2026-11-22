@@ -19,6 +19,11 @@ export const CORPUS_TAGS = [
   "large",
   "rats",
   "edge",
+  "comms",
+  "martyr-saviour",
+  "jet",
+  "sabotage",
+  "helicopter",
 ] as const;
 export type CorpusTag = (typeof CORPUS_TAGS)[number];
 
@@ -33,6 +38,11 @@ export const CORPUS_VERSIONS: Record<CorpusTag, number> = {
   large: 2,
   rats: 2,
   edge: 2,
+  comms: 1,
+  "martyr-saviour": 1,
+  jet: 1,
+  sabotage: 1,
+  helicopter: 1,
 };
 
 const HUMAN = 0;
@@ -249,6 +259,87 @@ const specialists = (r: Rng, i: number): BattleInput => {
   return battle(r, [r.int(1, 3), r.int(1, 4)], [spec, opp]);
 };
 
+const COMMS_OFFICIER = 6;
+const SABOTEUR = 7;
+const DOCTOR = 1;
+const RADIO = 109;
+const SAVIOUR = 111;
+const MARTYR = 139;
+const FIGHTER_JET = 40;
+
+/** Comms orders need a Communications DIFFERENCE (Player.useCom: com - opp.com >= Data.COMS min:
+ * Solo 0, Locked 0, Commando 5, Support 5, Retreat 10, Propaganda 20); com = sum of Comms Officer
+ * levels (choices.length) + 1 per RADIO, counted from the reserve too. Battle i: side 0 has 2-3
+ * Comms Officers of level 22-30 (half also forced RADIO) + 2-8 others; side 1 has 6-16 troopers,
+ * in one battle out of two about half forced SCOUT (+1 deploy square each) so more of them stand
+ * on the field: the
+ * ratio-gated orders (Support 0.5 < ratio < 1, Retreat ratio <= 0.5 with <= 5 fighters) and
+ * Propaganda (an enemy next to one of ours) all occur. */
+const comms = (r: Rng): BattleInput => {
+  const officers = r.int(2, 3);
+  const left = (id: number) =>
+    id < officers
+      ? human(r, id, levelIn(r, 22, 30), { force: r.chance(0.5) ? [COMMS_OFFICIER, RADIO] : [COMMS_OFFICIER] })
+      : human(r, id, levelIn(r, 1, 30));
+  const scouts = r.chance(0.5);
+  const opp = (id: number) => human(r, id, levelIn(r, 1, 30), scouts && r.chance(0.5) ? { force: [SCOUT] } : {});
+  return battle(r, [officers + r.int(2, 8), r.int(6, 16)], [left, opp]);
+};
+
+/** Martyr (Battle.runTrigger Kill: first MARTYR death of a side deploys up to 5 + boosts) and
+ * Saviour (Doctor-only super: a dead ally back to the pool). Battle i: 4-10 per side; on each side
+ * 1-3 troopers forced MARTYR (level 7-30) and 1-2 forced [DOCTOR, SAVIOUR] (level 7-30); armies
+ * larger than one wave keep a reserve for Martyr to deploy. */
+const martyrSaviour = (r: Rng): BattleInput => {
+  const mk = (id: number, side: number): BattleTrooperInput => {
+    const k = side === 0 ? id : id - nLeft;
+    if (k < 2) return human(r, id, levelIn(r, 7, 30), { force: [MARTYR] });
+    if (k < 4) return human(r, id, levelIn(r, 7, 30), { force: [DOCTOR, SAVIOUR] });
+    return human(r, id, levelIn(r, 1, 30));
+  };
+  const nLeft = r.int(4, 10);
+  return battle(r, [nLeft, r.int(4, 10)], [(id) => mk(id, 0), (id) => mk(id, 1)]);
+};
+
+/** Fighter-jet strikes (Battle event case 1, first one 100 + rand(2000) ticks in): battle i: on
+ * side 0, 1-2 troopers of level 15-30 forced [PILOT, FIGHTER_JET] (the jet is drawn on the seed:
+ * PILOT raises the odds) + 4-10 sturdy companions of level 15-30 so the battle lasts; side 1:
+ * 4-10 troopers of level 15-30. */
+const jet = (r: Rng): BattleInput => {
+  const pilots = r.int(1, 2);
+  const left = (id: number) =>
+    id < pilots ? human(r, id, levelIn(r, 15, 30), { force: [PILOT, FIGHTER_JET] }) : human(r, id, levelIn(r, 15, 30));
+  const opp = (id: number) => human(r, id, levelIn(r, 15, 30));
+  return battle(r, [pilots + r.int(4, 10), r.int(4, 10)], [left, opp]);
+};
+
+/** Sabotage (Trooper.init: each spare weapon jammed with chance opp.sabotage %, halved per jam;
+ * sabotage = 50 * sum of Saboteur levels / enemy army size, capped at 100): battle i: side 0 has
+ * 1-3 Saboteurs of level 10-30 + 0-4 others, side 1 has 1-8 troopers of level 7-30 (spares). */
+const sabotage = (r: Rng): BattleInput => {
+  const sab = r.int(1, 3);
+  const left = (id: number) =>
+    id < sab ? human(r, id, levelIn(r, 10, 30), { force: [SABOTEUR] }) : human(r, id, levelIn(r, 1, 30));
+  const opp = (id: number) => human(r, id, levelIn(r, 7, 30));
+  return battle(r, [sab + r.int(0, 4), r.int(1, 8)], [left, opp]);
+};
+
+const HELICOPTER = 41;
+const MELEE_OR_SHOTGUN = [13, 14, 15, 16, 17, 37] as const;
+
+/** Helicopter flying away (LogicVehicle.leave case 3: `Leave(side, false)` then kill, when its
+ * weapon is empty or it idled > 3 turns): battle i: side 0 has 2-3 troopers of level 15-30 forced
+ * [PILOT, HELICOPTER] (vehicle drawn on the seed) + 1-2 others; side 1 has 20-32 troopers of
+ * level 1-5, each forced a shotgun or the knife (weapon types 1/5 cannot target a flying
+ * helicopter): many weak targets, so the helicopters live long enough to empty their gun. */
+const helicopter = (r: Rng): BattleInput => {
+  const pilots = r.int(2, 3);
+  const left = (id: number) =>
+    id < pilots ? human(r, id, levelIn(r, 15, 30), { force: [PILOT, HELICOPTER] }) : human(r, id, levelIn(r, 1, 30));
+  const opp = (id: number) => human(r, id, levelIn(r, 1, 5), { force: [r.pick(MELEE_OR_SHOTGUN)] });
+  return battle(r, [pilots + r.int(1, 2), r.int(20, 32)], [left, opp]);
+};
+
 const EXTREME_SEEDS = [0, 1, MAX_SEED] as const;
 
 const edge = (r: Rng, i: number): BattleInput => {
@@ -289,6 +380,11 @@ export const generateCorpus = (opts: { seed: number; count: number; tag: CorpusT
     if (tag === "edge") return edge(r, i);
     if (tag === "vehicles") return vehicles(r, i);
     if (tag === "specialists") return specialists(r, i);
+    if (tag === "comms") return comms(r);
+    if (tag === "martyr-saviour") return martyrSaviour(r);
+    if (tag === "jet") return jet(r);
+    if (tag === "sabotage") return sabotage(r);
+    if (tag === "helicopter") return helicopter(r);
     return RANDOM_TAGS[tag](r);
   });
 };

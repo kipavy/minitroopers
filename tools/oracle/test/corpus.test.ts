@@ -185,3 +185,30 @@ test("edge: 1v1, empty side, extreme seeds, 12 level-30 troopers", () => {
   }
   assert.ok(all.some((b) => b.armies.some((a) => a.troopers.length === 12 && a.troopers.every((t) => level(t) === 30))));
 });
+
+test("comms / martyr-saviour / jet / sabotage: the forced rare-mechanic troopers", () => {
+  const forced = (tag: CorpusTag, side: 0 | 1) =>
+    gen(tag, 40).map((b) => b.armies[side].troopers.map((t) => t.force));
+  for (const f of forced("comms", 0)) {
+    const officers = f.filter((x) => x[0] === 6);
+    assert.ok(officers.length >= 2 && officers.length <= 3);
+    assert.ok(officers.every((x) => x.length === 1 || x[1] === 109));
+  }
+  for (const f of forced("comms", 1)) assert.ok(f.every((x) => x.length === 0 || (x.length === 1 && x[0] === 4)));
+  for (const side of [0, 1] as const) {
+    for (const f of forced("martyr-saviour", side)) {
+      assert.deepEqual(f.slice(0, 4), [[139], [139], [1, 111], [1, 111]]);
+    }
+  }
+  for (const f of forced("jet", 0)) assert.deepEqual(f[0], [2, 40]);
+  for (const f of forced("sabotage", 0)) assert.deepEqual(f[0], [7]);
+});
+
+test("helicopter: 2-3 [PILOT, HELICOPTER] vs 20-32 shotgun/knife troopers", () => {
+  for (const b of gen("helicopter", 40)) {
+    const pilots = b.armies[0].troopers.filter((t) => t.force[0] === 2 && t.force[1] === 41);
+    assert.ok(pilots.length >= 2 && pilots.length <= 3);
+    assert.ok(b.armies[1].troopers.length >= 20 && b.armies[1].troopers.length <= 32);
+    for (const t of b.armies[1].troopers) assert.ok([13, 14, 15, 16, 17, 37].includes(t.force[0]!));
+  }
+});

@@ -134,6 +134,11 @@ export const FIRST_BATCH: Record<CorpusTag, number | null> = {
   large: 100,
   rats: 100,
   edge: null,
+  comms: 150,
+  "martyr-saviour": 60,
+  jet: 60,
+  sabotage: 40,
+  helicopter: 60,
 };
 
 const main = async (): Promise<void> => {
