@@ -2,14 +2,15 @@
 //   npm run oracle:diff -- [--tag t] [--limit n] [--dir golden-dir] [--max-steps n]
 // Per golden: `OK` or the first divergence (0-based line index in the TRP…, EV…, END
 // sequence, expected vs actual, 5 preceding lines of context). Totals per tag and overall;
-// exit code 1 on any divergence or engine failure (e.g. NotImplemented).
+// exit code 1 on any divergence or engine failure (an exception).
 // A battle still running after --max-steps resolve() steps (default DEFAULT_MAX_STEPS) is
 // aborted and reported KO (StepCapExceeded): a harness guard, the SWF itself has no cap.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { gunzipSync } from "node:zlib";
-import { DEFAULT_MAX_STEPS, simulateBattleCapped, type BattleInput, type BattleRecord } from "@mt/engine";
+import type { BattleInput } from "@mt/engine";
+import { DEFAULT_MAX_STEPS, simulateBattleCapped, type BattleRecord } from "@mt/engine/internal";
 import { GOLDEN_DIR } from "./capture.ts";
 import type { OracleTrace } from "./runner.ts";
 

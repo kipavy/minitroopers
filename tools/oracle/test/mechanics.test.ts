@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Battle, OBF_KEYS, simulateBattle, type BattleRecord } from "@mt/engine";
+import { Battle, OBF_KEYS, simulateBattle, type BattleRecord } from "@mt/engine/internal";
 import {
   MIN_FIRES,
   comLabel,

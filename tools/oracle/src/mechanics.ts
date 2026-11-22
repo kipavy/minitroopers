@@ -7,7 +7,8 @@
 // with observers wrapped around `Battle.prototype.runTrigger` and `Trooper.prototype.boost`
 // (harness-side wrapping only: no engine code is changed, the wrappers call the originals and only
 // read fields). A replay counts only if it reproduces the golden exactly (otherwise it is reported).
-import { Battle, OBF_KEYS, Trooper, type BattleInput, type BattleRecord } from "@mt/engine";
+import type { BattleInput } from "@mt/engine";
+import { Battle, OBF_KEYS, Trooper, type BattleRecord } from "@mt/engine/internal";
 import { flattenRecord } from "./diff.ts";
 
 // ---------------------------------------------------------------------------------------------

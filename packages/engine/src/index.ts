@@ -1,15 +1,7 @@
 export const ENGINE_VERSION = "1.0.0";
 export * from "./input/types.ts";
-export { HaxeEnum, serializeHaxe } from "./input/haxeSerializer.ts";
+export { HaxeEnum, originalUrlEncode, serializeHaxe } from "./input/haxeSerializer.ts";
 export { toFlashvars } from "./input/flashvars.ts";
-export {
-  simulateBattle,
-  simulateBattleCapped,
-  StepCapExceeded,
-  DEFAULT_MAX_STEPS,
-  NotImplemented,
-} from "./simulate.ts";
-export type { BattleRecord, TrooperSnapshot } from "./simulate.ts";
 export { Rand } from "./core/rand.ts";
 export { Num } from "./core/num.ts";
 export { BMath } from "./core/bmath.ts";
@@ -19,18 +11,24 @@ export * from "./data/enums.ts";
 export * as Data from "./data/data.ts";
 export { Ghost } from "./logic/ghost.ts";
 export type { GhostData, GhostPhysical } from "./logic/ghost.ts";
-export {
-  clownData,
-  formatTrooperLine,
-  generateTrooper,
-  projectGenerated,
-  toGhostData,
-  trooperProjection,
-} from "./logic/trooperGen.ts";
-export type { GeneratedTrooper, TrooperLineState } from "./logic/trooperGen.ts";
-export { Battle } from "./logic/battle.ts";
+export { clownData, generateTrooper, toGhostData } from "./logic/trooperGen.ts";
+export type { GeneratedTrooper } from "./logic/trooperGen.ts";
 export { BattleMsg, HitEvent, Announce } from "./msg/battleMsg.ts";
-export { HxEnum, haxeString, OBF_KEYS } from "./msg/hx.ts";
-// Exposed for the verification harness (coverage replay observers); not a game API.
-export { Trooper } from "./logic/trooper/trooper.ts";
-export { as3Sort } from "./core/sort.ts";
+export { HxEnum, haxeString } from "./msg/hx.ts";
+// Stage-2 boundary (game server API).
+export { InvalidBattleInput, MAX_NAME_LENGTH, validateBattleInput } from "./boundary/validate.ts";
+export type { ValidationResult } from "./boundary/validate.ts";
+export { simulateOutcome } from "./boundary/outcome.ts";
+export type { BattleOutcome } from "./boundary/outcome.ts";
+export {
+  choiceIndexForSkill,
+  defaultLeftOver,
+  describeTrooper,
+  levelUpOptions,
+  MAX_CARRIED_EQUIPMENT,
+  reequip,
+} from "./boundary/trooper.ts";
+export type { LevelUpOptions, TrooperSheet } from "./boundary/trooper.ts";
+export { armyPower, recruitCost, trooperLevel, upgradeCost } from "./boundary/economy.ts";
+export { battleData, clientParams, gridData, midData, trooperData } from "./boundary/client.ts";
+export type { ClientGrid } from "./boundary/client.ts";

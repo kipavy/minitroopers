@@ -18,13 +18,6 @@ export interface BattleRecord {
   graveyard: number[];
 }
 
-export class NotImplemented extends Error {
-  constructor(what: string) {
-    super(`NotImplemented: ${what}`);
-    this.name = "NotImplemented";
-  }
-}
-
 /** Runs the battle like the SWF's Game (`resolve()` until true) and renders the oracle trace. */
 export const simulateBattle = (input: BattleInput): BattleRecord => new Battle(input).run();
 

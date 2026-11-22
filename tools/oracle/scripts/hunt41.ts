@@ -8,7 +8,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { simulateBattleCapped, type BattleInput, type BattleTrooperInput } from "@mt/engine";
+import type { BattleInput, BattleTrooperInput } from "@mt/engine";
+import { simulateBattleCapped } from "@mt/engine/internal";
 
 const { values } = parseArgs({
   options: {

@@ -8,7 +8,8 @@ import type { AddressInfo } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { toFlashvars, type BattleInput, type BattleRecord, type TrooperSnapshot } from "@mt/engine";
+import { toFlashvars, type BattleInput } from "@mt/engine";
+import type { BattleRecord, TrooperSnapshot } from "@mt/engine/internal";
 
 export type { BattleRecord, TrooperSnapshot };
 

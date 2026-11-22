@@ -6,10 +6,14 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { simulateBattleCapped, DEFAULT_MAX_STEPS, ENGINE_VERSION } from "../src/index.ts";
-import type { BattleInput, BattleRecord } from "../src/index.ts";
+import { ENGINE_VERSION } from "../src/index.ts";
+import type { BattleInput } from "../src/index.ts";
+import { simulateBattleCapped, DEFAULT_MAX_STEPS } from "../src/internal.ts";
+import type { BattleRecord } from "../src/internal.ts";
 
 const GOLDEN_DIR = join(import.meta.dirname, "../../../tools/oracle/golden");
+// The trace SWF every committed golden was captured with (assets/oracle/client_fr_trace.swf).
+const SWF_SHA256 = readFileSync(join(import.meta.dirname, "../../../assets/oracle/client_fr_trace.swf.sha256"), "utf8").split(/\s+/)[0];
 
 const flatten = (r: BattleRecord): string[] => [
   ...r.troopers.map((t) => t.line),
@@ -32,9 +36,13 @@ for (const tag of tags) {
     assert.ok(files.length > 0, `no golden in ${tag}`);
     for (const file of files) {
       const trace = JSON.parse(gunzipSync(readFileSync(join(GOLDEN_DIR, tag, file))).toString("utf8")) as {
+        formatVersion: number;
+        swfSha256: string;
         input: BattleInput;
         record: BattleRecord;
       };
+      assert.equal(trace.formatVersion, 1, `${tag}/${file}: formatVersion`);
+      assert.equal(trace.swfSha256, SWF_SHA256, `${tag}/${file}: swfSha256`);
       const expected = flatten(trace.record);
       const actual = flatten(simulateBattleCapped(trace.input, DEFAULT_MAX_STEPS));
       const n = Math.max(expected.length, actual.length);

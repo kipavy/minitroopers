@@ -5,7 +5,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { simulateBattle } from "../src/index.ts";
+import { simulateBattle } from "../src/internal.ts";
 import type { BattleInput } from "../src/index.ts";
 
 const root = join(import.meta.dirname, "../../../tools/oracle");

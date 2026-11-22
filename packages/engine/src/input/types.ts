@@ -32,7 +32,8 @@ export type TrooperPref = {
   /** Skill enum index of the priority class when `targetType` is 1. */
   targetClass?: number;
   moveSystem: number;
-  name: string;
+  /** $GL wire field; the SWF never reads it (optional, ignored). */
+  name?: string;
   /**
    * Skill enum indexes removed from the trooper at generation (SWF Ghost: `skills.remove` for
    * each `pref.leftOver` entry): the equipment beyond the 3 a trooper may carry, computed like

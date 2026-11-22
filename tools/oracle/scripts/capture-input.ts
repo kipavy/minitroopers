@@ -4,7 +4,8 @@
 import { readFileSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
-import { simulateBattleCapped, type BattleInput } from "@mt/engine";
+import type { BattleInput } from "@mt/engine";
+import { simulateBattleCapped } from "@mt/engine/internal";
 import { GOLDEN_DIR } from "../src/capture.ts";
 import { diffRecords } from "../src/diff.ts";
 import { OracleRunner } from "../src/runner.ts";

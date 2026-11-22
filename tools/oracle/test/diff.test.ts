@@ -1,7 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { BattleRecord } from "@mt/engine";
-import { NotImplemented } from "@mt/engine";
+import type { BattleRecord } from "@mt/engine/internal";
 import { diffRecords, flattenRecord, runDiff } from "../src/diff.ts";
 import type { OracleTrace } from "../src/runner.ts";
 
@@ -51,7 +50,7 @@ const trace = (): OracleTrace => ({ formatVersion: 1, swfSha256: "x", input: {} 
 
 test("runDiff: engine failures are reported per golden, not thrown", () => {
   const res = runDiff([{ tag: "t", file: "00000.json.gz", trace: trace() }], () => {
-    throw new NotImplemented("simulateBattle");
+    throw new Error("NotImplemented: simulateBattle");
   });
   assert.equal(res.ko, 1);
   assert.equal(res.ok, 0);
@@ -88,7 +87,7 @@ test("runDiff: --limit applies per tag", () => {
 });
 
 test("runDiff: a battle over the step cap is aborted and reported KO", async () => {
-  const { simulateBattleCapped, StepCapExceeded } = await import("@mt/engine");
+  const { simulateBattleCapped, StepCapExceeded } = await import("@mt/engine/internal");
   const { readGoldenItems } = await import("../src/diff.ts");
   const { GOLDEN_DIR } = await import("../src/capture.ts");
   const g = readGoldenItems(GOLDEN_DIR, "basic").next().value!;

@@ -6,31 +6,32 @@ entrée donne toujours la même sortie.
 
 ## API
 
-```ts
-import {
-  simulateBattle, generateTrooper, toFlashvars, ENGINE_VERSION,
-  type BattleInput, type BattleArmyInput, type BattleTrooperInput, type TrooperPref,
-  type BattleRecord, type TrooperSnapshot,
-} from "@mt/engine";
+Deux points d'entrée (`package.json` `exports`) :
 
-const record: BattleRecord = simulateBattle(input);   // calcule tout le combat
-```
+- **`@mt/engine`** — API de jeu (serveur de l'étape 2) :
+  - `validateBattleInput(input)` → `{ ok: true }` ou `{ ok: false, errors }` (enums dans leurs plages, ids
+    uniques ≥ 0, graines int32, `choices` ∈ {-1} ∪ [0, choiceCount) rejoués sur le Ghost, noms UTF-16 bien
+    formés ≤ 20, compétences valides ; une armée vide est acceptée — cas prouvé par l'oracle —, 0v0 non).
+  - `simulateOutcome(input)` → `{ winner, graveyard, deployed, events }` (valide d'abord, lève
+    `InvalidBattleInput`).
+  - `describeTrooper(t)` → `TrooperSheet` (niveau, vie, spécialité, compétences, armes dans l'ordre du
+    sélecteur de la fiche, équipement, leftOver, physique) ; `levelUpOptions(t)` → `{ shown, drawn,
+    choiceCount }` ; `choiceIndexForSkill(t, skill)` ; `defaultLeftOver(t)` ; `reequip(t, rand)`.
+  - `upgradeCost`, `recruitCost`, `armyPower`, `trooperLevel` (formules de la classe `Data` du SWF).
+  - `battleData`, `trooperData`, `gridData`, `midData` (ClientMode 0/2/4/3, octet pour octet comme les pages
+    originales) et `clientParams(data, { endMsg?, onclick? })` → `data=…&chk=play&imageurl=/img/…`.
+  - `generateTrooper`, `toFlashvars` (flashvars de l'oracle, parité $GL), types d'entrée (`BattleInput`,
+    `BattleArmyInput`, `BattleTrooperInput`, `TrooperPref`), `Data` (tables gelées), enums, `Rand`,
+    `ENGINE_VERSION = "1.0.0"`.
+- **`@mt/engine/internal`** — banc de vérification uniquement (`tools/oracle`, golden, bench), pas une API de
+  jeu : `simulateBattle(input): BattleRecord` (lignes `TRP`/`EV` de l'oracle, `winner`, `graveyard`),
+  `simulateBattleCapped(input, maxSteps)` (plafond de pas ; le SWF n'en a aucun), `StepCapExceeded`,
+  `DEFAULT_MAX_STEPS`, `Battle`, `Trooper`, `as3Sort`, `OBF_KEYS`, `formatTrooperLine`, `projectGenerated`,
+  `trooperProjection`.
 
-- `simulateBattle(input: BattleInput): BattleRecord` : `troopers` (une ligne `TRP` par trooper
-  déployé, dans l'ordre de déploiement), `events` (lignes `EV`, = `Battle.history` du SWF),
-  `winner` (`0`, `1` ou `null`) et `graveyard` (ids des morts).
-- `generateTrooper(trooper, side, spawnOrder)` : génération d'un trooper (niveau, compétences,
-  armes, apparence) depuis sa graine, comme `Ghost` / `Trooper.init` du SWF.
-- `toFlashvars(input, gfxUrl)` : sérialise une entrée en flashvars du client original (sert à
-  rejouer la même entrée dans l'oracle).
-- `ENGINE_VERSION = "1.0.0"`.
-- `simulateBattleCapped(input, maxSteps)` : variante à plafond de pas, **pour le banc de
-  vérification uniquement** (le SWF et `simulateBattle` n'ont aucun plafond).
-
-Les types d'entrée (`BattleInput`, `BattleArmyInput`, `BattleTrooperInput`, `TrooperPref`) et de
-sortie (`BattleRecord`, `TrooperSnapshot`) sont ceux de `src/input/types.ts` et `src/simulate.ts`.
-Les autres exports (`Rand`, `Battle`, `Data`, `Trooper`, …) servent au banc `tools/oracle`, ce ne
-sont pas des API de jeu.
+`src/` se compile sans les types Node (`tsconfig.json`, `types: []`) ; tests et bench ont leur propre projet
+(`tsconfig.test.json`). `test/boundary/purity.test.ts` refuse `node:`, `process.`, `Math.random` et `Date`
+dans `src/`.
 
 ## Garanties
 

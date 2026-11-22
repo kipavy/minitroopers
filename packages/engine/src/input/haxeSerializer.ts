@@ -15,6 +15,11 @@ export class HaxeEnum {
 
 class Serializer {
   private readonly stringCache: string[] = [];
+  private readonly urlEncode: (s: string) => string;
+
+  constructor(urlEncode: (s: string) => string) {
+    this.urlEncode = urlEncode;
+  }
 
   run(v: unknown): string {
     if (v === null) return "n";
@@ -38,7 +43,7 @@ class Serializer {
     const i = this.stringCache.indexOf(s);
     if (i > -1) return `R${i}`;
     this.stringCache.push(s);
-    const enc = encodeURIComponent(s);
+    const enc = this.urlEncode(s);
     return `y${enc.length}:${enc}`;
   }
 
@@ -84,5 +89,19 @@ class Serializer {
   }
 }
 
-/** Haxe `Serializer.run` (index-based enums, string cache, no object cache). */
-export const serializeHaxe = (value: unknown): string => new Serializer().run(value);
+/**
+ * Haxe `Serializer.run` (index-based enums, string cache, no object cache). Strings are escaped with
+ * `urlEncode`: `encodeURIComponent` by default ($GL parity), `originalUrlEncode` to match the
+ * original server's pages.
+ */
+export const serializeHaxe = (value: unknown, urlEncode: (s: string) => string = encodeURIComponent): string =>
+  new Serializer(urlEncode).run(value);
+
+/**
+ * The string escaping of the original server (Haxe `StringTools.urlEncode`), as seen in every
+ * `data=` / `endMsg=` of the archived pages: `encodeURIComponent` that also escapes `! * ( )`
+ * (observed as `%21`, `%2A`, `%29` in the obfuscated keys and in endMsg).
+ * UNVERIFIED: `'` and `~` never occur in the archives; they are escaped too. `_` is kept.
+ */
+export const originalUrlEncode = (s: string): string =>
+  encodeURIComponent(s).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);

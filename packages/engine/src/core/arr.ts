@@ -1,5 +1,5 @@
 // swf: mt.bumdum9.Arr (§G0\x15\x01§) — client_fr.swf, package §`\x0b\x01§.§NOJE\x03§.
-// shuffle §D\x05X=\x02§. The SWF falls back to Std.random (Math.random) when no Rand is
+// shuffle §D\x05X=\x02§. The SWF falls back to Std.random (Flash's unseeded RNG) when no Rand is
 // given; the engine must stay deterministic, so `rand` is mandatory here.
 import type { Rand } from "./rand.ts";
 

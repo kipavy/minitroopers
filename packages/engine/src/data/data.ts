@@ -5,16 +5,25 @@ import type { ComRow, SkillRow, StatusRow, VehiculeRow, WeaponRow } from "./swfT
 
 export type { ComRow, SkillRow, StatusRow, VehiculeRow, WeaponRow };
 
+/** Freezes a table and everything it holds: Data is shared, read-only state (any write throws). */
+const deepFreeze = <T>(v: T): T => {
+  if (typeof v === "object" && v !== null && !Object.isFrozen(v)) {
+    Object.freeze(v);
+    for (const x of Object.values(v)) deepFreeze(x);
+  }
+  return v;
+};
+
 /** `Data.SKILL` (§\x05\x04;|§), indexed by Skill. */
-export const SKILL: readonly SkillRow[] = SKILL_ROWS;
+export const SKILL: readonly SkillRow[] = deepFreeze(SKILL_ROWS);
 /** `Data.WEAPONS` (§\x04jT1\x01§), indexed by Weapon. */
-export const WEAPON: readonly WeaponRow[] = WEAPON_ROWS;
+export const WEAPON: readonly WeaponRow[] = deepFreeze(WEAPON_ROWS);
 /** `Data.VEHICULES` (§\x01\x10\r\x03\x01§), indexed by Vehicule. */
-export const VEHICULE: readonly VehiculeRow[] = VEHICULE_ROWS;
+export const VEHICULE: readonly VehiculeRow[] = deepFreeze(VEHICULE_ROWS);
 /** `Data.STATUS` (§@)Z@§), indexed by Status. */
-export const STATUS: readonly StatusRow[] = STATUS_ROWS;
+export const STATUS: readonly StatusRow[] = deepFreeze(STATUS_ROWS);
 /** `Data.COMS` (§}}*h§), indexed by Com. */
-export const COMS: readonly ComRow[] = COM_ROWS;
+export const COMS: readonly ComRow[] = deepFreeze(COM_ROWS);
 
 /**
  * Accessor that throws on a missing element. Use it only where AS3 throws too, i.e. a field read
@@ -34,27 +43,27 @@ export const XMAX = 14;
 export const YMAX = 5;
 
 /** `Data.§x\x1bc\x19\x01§` ($GL `_obf_1afae07b`): deploy-square order. */
-export const DEPLOY_ORDER: readonly number[] = [
+export const DEPLOY_ORDER: readonly number[] = deepFreeze([
   2, 1, 3, 7, 6, 8, 12, 11, 13, 0, 4, 5, 9, 10, 14, 17, 16, 18, 15, 19, 22, 21, 23, 20, 24, 27, 26, 28, 25, 29, 32,
   31, 33, 30, 34, 37, 36, 38, 35, 39, 42, 41, 43, 40, 44,
-];
+]);
 
 /** `Data.§S\x18\x16^§` ($GL `_obf_1b788964`). */
-export const XP_LEVELS: readonly number[] = [0, 8, 24, 60, 120, 200, 340, 500, 720, 1000, 1300, 2000];
+export const XP_LEVELS: readonly number[] = deepFreeze([0, 8, 24, 60, 120, 200, 340, 500, 720, 1000, 1300, 2000]);
 
 /** `Data.§PyFL\x02§` (BODY_LOC): every BodyLoc, constructor order. */
-export const BODY_LOC: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7];
+export const BODY_LOC: readonly number[] = deepFreeze([0, 1, 2, 3, 4, 5, 6, 7]);
 
 /**
  * `Data.§P\x01z\x12\x02§` ($GL `_obf_c630e187`): Skill.(\x149N\x01, HaHO, \x03\x1cz-\x03, X\x1fU =
  * PISTOL, SHOTGUN, ASSAULT_RIFLE, SNIPER — the starting weapons a HUMAN Ghost draws one of.
  */
-export const START_WEAPON_SKILLS: readonly number[] = [SKILLS.PISTOL, SKILLS.SHOTGUN, SKILLS.ASSAULT_RIFLE, SKILLS.SNIPER];
+export const START_WEAPON_SKILLS: readonly number[] = deepFreeze([SKILLS.PISTOL, SKILLS.SHOTGUN, SKILLS.ASSAULT_RIFLE, SKILLS.SNIPER]);
 
 /**
  * `Data.§nb;\x13\x02§`: SkillCategory kP|r, SXJJ, \x18iJ\f, y0\rQ, a(c=, f[B, \b-\x17\x07 (indexes 0, 5..10).
  */
-export const CATEGORY_ORDER: readonly number[] = [0, 5, 6, 7, 8, 9, 10];
+export const CATEGORY_ORDER: readonly number[] = deepFreeze([0, 5, 6, 7, 8, 9, 10]);
 
 /**
  * `Data.§\x06\rQS\x02§(skill)`: `createEnum(Weapon, getEnumConstructs(Weapon)[2 + skill.index -
