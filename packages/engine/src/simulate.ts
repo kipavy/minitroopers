@@ -1,4 +1,5 @@
 import type { BattleInput } from "./input/types.ts";
+import { Battle } from "./logic/battle.ts";
 
 export interface TrooperSnapshot {
   id: number;
@@ -24,7 +25,5 @@ export class NotImplemented extends Error {
   }
 }
 
-/** Skeleton: the combat engine is ported task by task (see the etape1 plan). */
-export const simulateBattle = (_input: BattleInput): BattleRecord => {
-  throw new NotImplemented("simulateBattle");
-};
+/** Runs the battle like the SWF's Game (`resolve()` until true) and renders the oracle trace. */
+export const simulateBattle = (input: BattleInput): BattleRecord => new Battle(input).run();

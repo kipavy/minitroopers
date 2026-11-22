@@ -22,3 +22,7 @@ export {
   trooperProjection,
 } from "./logic/trooperGen.ts";
 export type { GeneratedTrooper, TrooperLineState } from "./logic/trooperGen.ts";
+export { Battle } from "./logic/battle.ts";
+export { BattleMsg, HitEvent, Announce } from "./msg/battleMsg.ts";
+export { HxEnum, haxeString } from "./msg/hx.ts";
+export { as3Sort } from "./core/sort.ts";
