@@ -3,3 +3,9 @@ MIT License, Copyright (c) 2026 YesLifeTechnology.
 https://gitlab.com/eternaltwin/minitroopers/minitroopers
 
 Game assets (assets/swf/) are (c) Motion-Twin and are not covered by this project's licence.
+
+packages/engine/test/core/fixtures/ruffle-array_sort_random.output.txt is copied from Ruffle
+(tests/tests/swfs/avm2/array_sort_random/output.txt, commit a111ceec), and
+packages/engine/src/core/sort.ts transliterates Ruffle's core/src/avm2/globals/array.rs `qsort`.
+Ruffle is licensed under MIT or Apache-2.0, Copyright (c) 2018-2022 Ruffle LLC and Ruffle
+contributors. https://github.com/ruffle-rs/ruffle

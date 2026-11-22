@@ -1,11 +1,15 @@
-// AS3 `Array.sort(compareFunction)` as Ruffle implements it (Ruffle a111ceec,
-// core/src/avm2/globals/array.rs `qsort`: "a port of the avmplus QuickSort implementation").
-// Not stable; with an inconsistent comparator (e.g. one that never returns 0) the result is
-// whatever this exact algorithm produces, so it is reproduced step by step. Only the sign of the
-// comparator result matters (> 0 Greater, < 0 Less, else Equal).
+// AS3 `Array.sort(compareFunction)` as Ruffle implements it. Transliterated from Ruffle commit
+// a111ceec3873b019c79e8554963bfdc8307adcc0, core/src/avm2/globals/array.rs:
+// - `sort` (l.1029-1110): the comparator result is coerced to Number; > 0 Greater, < 0 Less,
+//   else Equal (NaN included). No int truncation of the result, whatever the SWF version
+//   (client_fr.swf is SWF 10; Flash Player truncates there, Ruffle does not: Ruffle fait foi;
+//   every comparator of the logic returns -1/0/1 anyway).
+// - `sort_inner` (l.752-789): undefined elements sort last; never present in our arrays.
+// - `qsort` (l.801-883): "a port of the avmplus QuickSort implementation". Reproduced below
+//   line by line. Not stable; with an inconsistent comparator (e.g. one that never returns 0)
+//   the result is whatever this exact algorithm produces.
 
 const qsort = <T>(a: T[], lo: number, len: number, cmp: (x: T, y: T) => number): void => {
-  if (len <= 1) return;
   const sw = (i: number, j: number): void => {
     const t = a[lo + i] as T;
     a[lo + i] = a[lo + j] as T;
@@ -13,10 +17,14 @@ const qsort = <T>(a: T[], lo: number, len: number, cmp: (x: T, y: T) => number):
   };
   const gt = (i: number, j: number): boolean => cmp(a[lo + i] as T, a[lo + j] as T) > 0;
   const lt = (i: number, j: number): boolean => cmp(a[lo + i] as T, a[lo + j] as T) < 0;
+  // l.805-807: empty and one-element slices.
+  if (len <= 1) return;
+  // l.808-814: fast path for two elements.
   if (len === 2) {
     if (gt(0, 1)) sw(0, 1);
     return;
   }
+  // l.815-827: fast path for three elements.
   if (len === 3) {
     if (gt(0, 1)) sw(0, 1);
     if (gt(1, 2)) {
@@ -25,7 +33,9 @@ const qsort = <T>(a: T[], lo: number, len: number, cmp: (x: T, y: T) => number):
     }
     return;
   }
+  // l.831-832: middle element as pivot, moved to the front (`len / 2` on usize = floor).
   sw(0, Math.floor(len / 2));
+  // l.838-865: partition.
   let left = 0;
   let right = len;
   for (;;) {
@@ -40,8 +50,10 @@ const qsort = <T>(a: T[], lo: number, len: number, cmp: (x: T, y: T) => number):
     if (right < left) break;
     sw(left, right);
   }
+  // l.867-868: pivot to its final position.
   sw(0, right);
-  // fst = [0, right), snd = [left, len); the smaller one first (order is irrelevant: disjoint).
+  // l.875-882: fst = [0, right), snd = [left, len); the smaller one first (swap when
+  // fst.len() >= snd.len()).
   let f0 = 0;
   let fl = right;
   let s0 = left;
