@@ -7,8 +7,9 @@ import { Arr } from "../../src/core/arr.ts";
 
 // Independent reference: exact integer arithmetic, same recurrence as the decompiled
 // `seed = seed * 16807 % 2147483647` then `& 0x3FFFFFFF` (swf: mt.Rand, obfuscated §b\x17-*§).
+// The constructor's `|seed| + 131` is `negate_i`/`add_i` in the P-code: an int32 (wrapping) sum.
 const reference = (seed: number, n: number): number[] => {
-  let s = BigInt(Math.abs(seed)) + 131n;
+  let s = BigInt.asIntN(32, BigInt(Math.abs(seed)) + 131n);
   const out: number[] = [];
   for (let i = 0; i < n; i++) {
     s = (s * 16807n) % 2147483647n;
@@ -51,6 +52,16 @@ test("negative seeds are mirrored; seed is int-coerced", () => {
   assert.equal(new Rand(-5).seed, 136);
   assert.equal(new Rand(5).seed, 136);
   assert.equal(new Rand(2 ** 32 + 7).seed, 138);
+});
+
+test("constructor sum wraps like the SWF's add_i (golden edge/00009, troop seeds 2147483646)", () => {
+  assert.equal(new Rand(2147483646).seed, -2147483519);
+  assert.equal(new Rand(2147483516).seed, 2147483647);
+  assert.equal(new Rand(-2147483648).seed, -2147483517);
+  // Negative state: AS3 `%` keeps the dividend's sign, int() then & 0x3FFFFFFF.
+  const r = new Rand(2147483646);
+  const s1 = (-2147483519 * 16807) % 2147483647;
+  assert.equal(r.int(), (s1 | 0) & 0x3fffffff);
 });
 
 test("random(0) gives 0 (AS3 int(NaN))", () => {

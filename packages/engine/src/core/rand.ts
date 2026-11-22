@@ -5,12 +5,16 @@
 
 /** `seed * 16807` stays < 2^53 (seed < 2^31), so the double product is exact. */
 export class Rand {
-  /** AS3 `Number` field (§\fA2c§): `|seed| + 131` initially, then always < 2147483647. */
+  /**
+   * AS3 `Number` field (§\fA2c§). Initially `|seed| + 131` computed with `negate_i`/`add_i` (see
+   * the P-code; the decompiled AS3 hides it): an int32 sum that wraps, so seeds above 2147483516
+   * start negative (and stay negative). Afterwards `|seed| < 2147483647`.
+   */
   seed: number;
 
   constructor(seed = 0) {
     const p = seed | 0; // param1:int
-    this.seed = (p < 0 ? -p : p) + 131;
+    this.seed = ((p < 0 ? -p | 0 : p) + 131) | 0;
   }
 
   /** `random(max)`: `int(((int(seed = seed * 16807 % 2147483647)) & 0x3FFFFFFF) % max)`. */
