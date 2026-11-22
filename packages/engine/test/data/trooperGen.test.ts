@@ -133,3 +133,16 @@ test("Ghost: force applies after generation, leftOver removes the first occurren
   });
   assert.ok(!left.skills.includes(first));
 });
+
+test("Ghost.levelUp: an out-of-range choice reads int(undefined) = 0 → SOLDIER (no throw)", () => {
+  for (const c of [3, 7, -2]) {
+    const g = new Ghost({ id: 1, name: "a", seed: 42, type: 0, choices: [c], force: null, pref: null });
+    assert.equal(g.lvl, 1, `choice ${c}`);
+    assert.equal(g.skills[2], SKILLS.SOLDIER, `choice ${c}`); // [start weapon, levelUp(0), choice]
+    assert.equal(g.life, 10 + 1, `choice ${c}: SOLDIER adds choices.length`);
+  }
+  // -1 only levels up, without drawing.
+  const g = new Ghost({ id: 1, name: "a", seed: 42, type: 0, choices: [-1], force: null, pref: null });
+  assert.equal(g.lvl, 1);
+  assert.equal(g.skills.length, 2);
+});

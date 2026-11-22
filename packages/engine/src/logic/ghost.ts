@@ -139,7 +139,8 @@ export class Ghost {
       this.lvl++;
       return;
     }
-    const skill = at(this.drawOptions(), choice) | 0;
+    // int(§zUR§()[param1]): an out-of-range choice reads undefined → int(undefined) = 0 (SOLDIER).
+    const skill = (this.drawOptions()[choice] ?? 0) | 0;
     this.lvl++;
     this.apply(skill);
     this.rem(skill);

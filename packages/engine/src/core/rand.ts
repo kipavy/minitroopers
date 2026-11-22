@@ -47,7 +47,7 @@ export class Rand {
       h = ((h << 5) + h + (param1 >> 24)) | 0;
       param1 = h & 0x3fffffff;
     }
-    this.seed = (param1 & 0x1fffffff) + 131;
+    this.seed = ((param1 & 0x1fffffff) + 131) | 0; // add_i (cannot overflow)
   }
 
   getSeed(): number {
@@ -64,7 +64,7 @@ export class Rand {
     const d = delta | 0;
     this.seed = (((this.seed + d) % 2147483647) | 0) & 0x3fffffff;
     if (this.seed === 0) {
-      this.seed = d + 1;
+      this.seed = (d + 1) | 0; // add_i
     }
   }
 }

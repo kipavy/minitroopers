@@ -16,7 +16,11 @@ export const STATUS: readonly StatusRow[] = STATUS_ROWS;
 /** `Data.COMS` (§}}*h§), indexed by Com. */
 export const COMS: readonly ComRow[] = COM_ROWS;
 
-/** Row accessor that fails loudly instead of returning `undefined` (the AS3 code would throw a TypeError). */
+/**
+ * Accessor that throws on a missing element. Use it only where AS3 throws too, i.e. a field read
+ * on the element (`Data.SKILL[i].field` → TypeError on null). `int(array[i])` does NOT throw in
+ * AS3 (int(undefined) = 0): such sites must read `?? 0` instead.
+ */
 export const at = <T>(a: readonly T[], i: number): T => {
   const v = a[i];
   if (v === undefined) throw new RangeError(`index ${i} out of ${a.length}`);

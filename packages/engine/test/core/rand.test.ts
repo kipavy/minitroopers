@@ -160,3 +160,11 @@ test("Arr.shuffle uses rand.random(len + 1) with pop/insert order", () => {
   assert.deepEqual(a, out);
   assert.deepEqual([...a].sort(), [1, 2, 3, 4, 5]);
 });
+
+test("addSeed: the zero-state fallback `delta + 1` is add_i (int32 wrap)", () => {
+  // seed + delta ≡ 0 (mod 2147483647) → seed = delta + 1, wrapped.
+  const r = new Rand(0);
+  r.seed = 0;
+  r.addSeed(2147483647);
+  assert.equal(r.seed, -2147483648);
+});
