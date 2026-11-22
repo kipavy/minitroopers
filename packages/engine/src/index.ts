@@ -9,3 +9,16 @@ export { Num } from "./core/num.ts";
 export { BMath } from "./core/bmath.ts";
 export type { BCell } from "./core/bmath.ts";
 export { Arr } from "./core/arr.ts";
+export * from "./data/enums.ts";
+export * as Data from "./data/data.ts";
+export { Ghost } from "./logic/ghost.ts";
+export type { GhostData, GhostPhysical } from "./logic/ghost.ts";
+export {
+  clownData,
+  formatTrooperLine,
+  generateTrooper,
+  projectGenerated,
+  toGhostData,
+  trooperProjection,
+} from "./logic/trooperGen.ts";
+export type { GeneratedTrooper, TrooperLineState } from "./logic/trooperGen.ts";
