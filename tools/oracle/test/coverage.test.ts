@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analyze, evType, formatCoverage, type Golden } from "../src/coverage.ts";
+import { analyze, coverageProblems, evType, formatCoverage, type Golden } from "../src/coverage.ts";
 import type { OracleTrace } from "../src/runner.ts";
 import { fixture1v1 } from "./fixtures.ts";
 
@@ -49,4 +49,23 @@ test("analyze: tags, EV histogram, forced deployment, vehicles, leftOver violati
   const text = formatCoverage(cov);
   assert.match(text, /40:FIGHTER_JET \(0\/1 deployed, jet strikes in 1\)/);
   assert.match(text, /1 with a leftover skill still in TRP/);
+});
+
+test("coverageProblems: missing deployed vehicles, no jet strike, leftOver violations", () => {
+  const withVehicle = (idx: string) =>
+    golden("levels", (t) => {
+      t.record.troopers[0]!.line = `TRP 1|1|10|19|0|8|0:1:-1:0|0|${idx}|0|1`;
+    });
+  const ok = analyze(["0", "2", "3", "4"].map(withVehicle));
+  assert.deepEqual(coverageProblems(ok), []);
+  const gaps = analyze(
+    ["0", "2", "3"].map(withVehicle).map((g) => {
+      g.trace.record.events = ["EV 0|null|3"];
+      return g;
+    }),
+  );
+  assert.deepEqual(coverageProblems(gaps), [
+    "no deployed HEAVY_TANK (vehicle 4, skill 42) in any TRP line",
+    "no fighter-jet strike (EV type 21) in any golden",
+  ]);
 });

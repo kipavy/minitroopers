@@ -105,11 +105,18 @@ test("leftOver is [] everywhere except the forced-skill equipment extras", () =>
 test("vehicles: [PILOT, vehicle skill] forced first, companions after, every vehicle skill", () => {
   const seen = new Set<number>();
   for (const b of gen("vehicles", 100)) {
-    const forced = b.armies[0].troopers.filter((t) => t.force.length > 0);
+    const forced = b.armies[0].troopers.filter((t) => t.force[0] === 2);
     assert.ok(forced.length >= 1 && forced.length <= 2);
     assert.deepEqual(b.armies[0].troopers.slice(0, forced.length), forced, "pilots deploy first");
-    const companions = b.armies[0].troopers.length - forced.length;
-    assert.ok(companions >= 1 && companions <= 3);
+    const companions = b.armies[0].troopers.slice(forced.length);
+    if (forced[0]!.force[1] === 42) {
+      // heavy tank: 5 SCOUT companions -> 9 deploy squares, room for its 3x2 footprint
+      assert.equal(companions.length, 5);
+      assert.ok(companions.every((t) => t.force.length === 1 && t.force[0] === 4));
+    } else {
+      assert.ok(companions.length >= 1 && companions.length <= 3);
+      assert.ok(companions.every((t) => t.force.length === 0));
+    }
     for (const t of forced) {
       assert.equal(t.force.length, 2);
       assert.equal(t.force[0], 2);

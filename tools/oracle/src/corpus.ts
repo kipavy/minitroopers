@@ -28,7 +28,7 @@ export const CORPUS_VERSIONS: Record<CorpusTag, number> = {
   basic: 2,
   levels: 2,
   "forced-skill": 2,
-  vehicles: 3,
+  vehicles: 4,
   specialists: 2,
   large: 2,
   rats: 2,
@@ -211,20 +211,29 @@ const forcedSkill = (r: Rng, i: number): BattleInput => {
   return soloVs(r, (id) => withLeftOver(human(r, id, levelIn(r, 1, 10), { force: items }), r, items));
 };
 
-/** Battle i: 1-2 high-level troopers forced [PILOT, vehicle skill i % 5] (deployed first), then
- * 1-3 random companions on the same side, vs 1-4 random troopers. The vehicle is drawn per battle
- * from the battle seed (PILOT only raises the odds). Companions keep the side alive: a fighter-jet
- * trooper leaves the deployment pool and only strikes later (EV 21), so a side made of jets alone
- * loses before any strike. */
+const SCOUT = 4;
+const HEAVY_TANK_SKILL = 42;
+/** Rotation of the forced vehicle skill: HEAVY_TANK twice as often (it also needs the dice). */
+export const VEHICLE_ROTATION = [38, 39, 40, 41, 42, 42] as const;
+
+/** Battle i: 1-2 high-level troopers forced [PILOT, VEHICLE_ROTATION[i % 6]] (deployed first),
+ * then companions on the same side, vs 1-4 random troopers. The vehicle is drawn per battle from
+ * the battle seed (PILOT only raises the odds), and Player.deploy drops it when no deploy square
+ * fits its size.
+ * - Companions keep the side alive: a fighter-jet trooper leaves the deployment pool and only
+ *   strikes later (EV 21), so a side made of jets alone loses before any strike.
+ * - HEAVY_TANK (size index 2 = a 3x2 block) only fits when the side has >= 8 deploy squares:
+ *   dep = 4 + 1 per SCOUT that is not also Comms/Saboteur, so its 5 companions are forced SCOUT. */
 const vehicles = (r: Rng, i: number): BattleInput => {
-  const v = VEHICLE_SKILLS[i % VEHICLE_SKILLS.length]!;
+  const v = VEHICLE_ROTATION[i % VEHICLE_ROTATION.length]!;
   const pilots = r.int(1, 2);
+  const heavy = v === HEAVY_TANK_SKILL;
   const left = (id: number) =>
     id < pilots
       ? human(r, id, levelIn(r, 15, 30), { force: [PILOT, v] })
-      : human(r, id, levelIn(r, 1, 30));
+      : human(r, id, levelIn(r, 1, 30), heavy ? { force: [SCOUT] } : {});
   const opp = (id: number) => human(r, id, levelIn(r, 1, 30));
-  return battle(r, [pilots + r.int(1, 3), r.int(1, 4)], [left, opp]);
+  return battle(r, [pilots + (heavy ? 5 : r.int(1, 3)), r.int(1, 4)], [left, opp]);
 };
 
 /** Battle i: 1-3 troopers of level 7-30 forced specialization i % 8, half of them also forced

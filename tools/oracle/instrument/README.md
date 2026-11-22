@@ -263,7 +263,7 @@ Playwright. `ruffle_desktop.exe` (repli) ouvre une fenêtre visible par combat ;
 Capture : `npm run oracle:capture -- --tag <tag|all> [--count n] [--seed s] [--jobs 4]` →
 `tools/oracle/golden/<tag>/<NNNNN>.json.gz` (JSON `OracleTrace` gzip, NNNNN = index dans le corpus).
 Reprise : fichiers existants sautés ; `meta.json` fige la graine **et la version du corpus**
-(entrée du tag dans `CORPUS_VERSIONS` : 2, `vehicles` 3) : un dossier d'une autre version est refusé (le supprimer
+(entrée du tag dans `CORPUS_VERSIONS` : 2, `vehicles` 4) : un dossier d'une autre version est refusé (le supprimer
 pour recapturer). Écriture atomique (`.tmp` puis renommage). Échecs et délais dépassés (après
 une seconde tentative) : `<tag>/capture-failures.jsonl`, jamais ignorés.
 
@@ -274,9 +274,14 @@ puis 9 combats « plus de 3 équipements » : 4–6 équipements forcés, les 3 
 `selectedItems`, le reste dans `pref.leftOver` comme `getLeftOver` de $GL), `vehicles`
 (1–2 troopers niveau 15–30 forcés `[PILOT, compétence véhicule]`, déployés en premier, puis 1–3
 compagnons aléatoires du même côté — un côté fait d'avions seuls perd avant toute frappe —, les 5
-véhicules en rotation ;
+véhicules en rotation, HEAVY_TANK deux fois plus souvent ;
 le véhicule est tiré à chaque combat sur la graine du combat, PILOT ne fait qu'augmenter la
-probabilité), `specialists` (les 8 spécialisations forcées en rotation, une fois sur deux avec
+probabilité ; **et** `Player.deploy` l'annule si aucune case de déploiement n'est assez grande :
+la taille d'une case = plus grande empreinte `Battle.SIZE` qui tient dans les cases de
+déploiement marquées, HEAVY_TANK = `SIZE[2]`, un bloc 3×2 ; les cases de déploiement sont les
+`dep` premières de `Data._obf_1afae07b` = [2,1,3,7,6,8,12,11,…] (YMAX = 5), donc un 3×2 exige
+`dep` ≥ 8 ; `dep` = 4 + 1 par trooper du côté ayant SCOUT sans être aussi Comms/Saboteur. D'où,
+dans les combats HEAVY_TANK, 5 compagnons forcés `[SCOUT]` du côté du char (dep = 9)), `specialists` (les 8 spécialisations forcées en rotation, une fois sur deux avec
 une compétence qu'elle débloque), `large` (20–32 par côté), `rats`, `edge`.
 
 Avion de chasse (compétence 40, `Vehicule` index 7) : `Trooper.init` ne crée pas de véhicule
@@ -294,7 +299,9 @@ combats / `winner=null` / lignes TRP vs troopers d'entrée / combats avec frappe
 histogramme du champ `vehicle` des TRP ; l'histogramme des types `EV` ; pour `forced-skill`, si
 le trooper forcé a une ligne `TRP` (liste explicite des compétences jamais déployées) ; pour
 `vehicles`, le véhicule obtenu par compétence ; pour `leftOver`, qu'aucune compétence retirée
-ne figure dans la ligne TRP.
+ne figure dans la ligne TRP. Code de sortie ≠ 0 (`COVERAGE GAP: …`) si MOTO, LIGHT_TANK,
+HELICOPTER ou HEAVY_TANK n'apparaît dans aucune ligne TRP, si aucune frappe d'avion (`EV` 21)
+n'existe, ou si un `leftOver` n'est pas respecté.
 
 Durée (lot du 2026-11-22, Snapdragon X / Windows ARM64, Chromium x64 émulé, 4 jobs) :
 **≈ 3,9 s par combat** en moyenne (chargement de la page → `MTDONE`, dont ≈ 2,7 s de démarrage du

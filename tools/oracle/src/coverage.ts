@@ -99,7 +99,7 @@ export const analyze = (goldens: Iterable<Golden>): Coverage => {
       const v = side0[0]?.force[1];
       if (v !== undefined) {
         const h = cov.vehicleSkills.get(v) ?? new Map<string, number>();
-        for (const t of side0) if (t.force.length > 0) inc(h, trp.get(t.id)?.[8] ?? "no TRP");
+        for (const t of side0) if (t.force[0] === 2 && t.force.length === 2) inc(h, trp.get(t.id)?.[8] ?? "no TRP");
         cov.vehicleSkills.set(v, h);
         if (jet) inc(cov.vehicleSkillJet, v);
       }
@@ -172,6 +172,25 @@ export const formatCoverage = (cov: Coverage): string => {
   return out.join("\n");
 };
 
+/** Vehicle skill -> Vehicule index it spawns (Data: 38 LIGHT_TANK, 39 MOTO, 41 HELICOPTER,
+ * 42 HEAVY_TANK; 40 = jet, never deployed, checked through EV 21 instead). */
+export const DEPLOYED_VEHICLE: Record<number, number> = { 38: 2, 39: 0, 41: 3, 42: 4 };
+
+/** Coverage gaps that must fail the CLI (empty = OK). */
+export const coverageProblems = (cov: Coverage): string[] => {
+  const problems: string[] = [];
+  const all = new Map<string, number>();
+  for (const t of cov.tags.values()) for (const [k, v] of t.vehicles) inc(all, k, v);
+  for (const [skill, idx] of Object.entries(DEPLOYED_VEHICLE)) {
+    if (!all.get(String(idx))) {
+      problems.push(`no deployed ${VEHICULE_NAMES[idx]} (vehicle ${idx}, skill ${skill}) in any TRP line`);
+    }
+  }
+  if (!cov.evTypes.get(JET_EV_TYPE)) problems.push(`no fighter-jet strike (EV type ${JET_EV_TYPE}) in any golden`);
+  if (cov.leftOver.violations.length > 0) problems.push(`${cov.leftOver.violations.length} leftOver violations`);
+  return problems;
+};
+
 export function* readGoldens(dir: string): Generator<Golden> {
   for (const tag of readdirSync(dir, { withFileTypes: true })) {
     if (!tag.isDirectory()) continue;
@@ -184,5 +203,9 @@ export function* readGoldens(dir: string): Generator<Golden> {
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === import.meta.filename) {
   const { values } = parseArgs({ options: { dir: { type: "string", default: GOLDEN_DIR } } });
-  console.log(formatCoverage(analyze(readGoldens(values.dir))));
+  const cov = analyze(readGoldens(values.dir));
+  console.log(formatCoverage(cov));
+  const problems = coverageProblems(cov);
+  for (const p of problems) console.log(`COVERAGE GAP: ${p}`);
+  if (problems.length > 0) process.exitCode = 1;
 }

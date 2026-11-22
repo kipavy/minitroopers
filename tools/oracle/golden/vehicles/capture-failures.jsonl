@@ -1,4 +1,0 @@
-{"at":"2026-11-22T11:38:56.548Z","tag":"vehicles","seed":1,"index":94,"attempt":1,"kind":"timeout","ms":310731,"message":"oracle: no MTDONE within 30000 ms (0 trace lines received)","lines":0}
-{"at":"2026-11-22T11:38:56.639Z","tag":"vehicles","seed":1,"index":95,"attempt":1,"kind":"timeout","ms":310750,"message":"oracle: no MTDONE within 30000 ms (0 trace lines received)","lines":0}
-{"at":"2026-11-22T11:49:21.454Z","tag":"vehicles","seed":1,"index":97,"attempt":1,"kind":"error","ms":931022,"message":"page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:56900/\", waiting until \"load\"\u001b[22m\n"}
-{"at":"2026-11-22T11:49:21.471Z","tag":"vehicles","seed":1,"index":96,"attempt":1,"kind":"error","ms":931086,"message":"page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:56900/\", waiting until \"load\"\u001b[22m\n"}
