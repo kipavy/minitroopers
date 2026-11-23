@@ -2,7 +2,7 @@ import type { Context, Hono } from "hono";
 import { formBody } from "../form.ts";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
+import { battleAllowance, battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
@@ -13,7 +13,6 @@ import { armyUrl } from "../urls.ts";
 import { armyTitle, missingPage } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
-import { battleAllowance } from "./opp.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
 
 // UNVERIFIED: the original battle seed range is unknown; archived seeds are all below 2^25. Any int32 replays the same.

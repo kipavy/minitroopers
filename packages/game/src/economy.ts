@@ -1,3 +1,5 @@
+import { describeTrooper, type BattleTrooperInput } from "@mt/engine";
+
 /** Starting credits. UNVERIFIED: no evidence of a starting grant (original tooltip "Credits: You win these in combat"; $GL uses 100). */
 export const STARTING_CREDITS = 0;
 
@@ -8,6 +10,10 @@ export function battlesPerDay(troopers: { skills: number[] }[]): number {
   const n = troopers.filter((t) => t.skills.includes(COMMANDEMENT)).length;
   return Math.min(5, 3 + n);
 }
+
+/** Battles a day for these troopers (3, +1 per COMMANDEMENT trooper, max 5). */
+export const battleAllowance = (troopers: readonly BattleTrooperInput[]): number =>
+  battlesPerDay(troopers.map((t) => ({ skills: describeTrooper(t).skills })));
 
 /** Credits won per battle: 2 for a win, 1 otherwise (recon §2.12). */
 export function battleReward(win: boolean): number {

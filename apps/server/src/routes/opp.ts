@@ -1,6 +1,5 @@
 import type { Hono } from "hono";
-import { describeTrooper, type BattleTrooperInput } from "@mt/engine";
-import { battlesPerDay, dayKey, pickOpponents, type ArmyRef } from "@mt/game";
+import { battleAllowance, dayKey, pickOpponents, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { foeOf } from "../foes.ts";
 import { armyPowers, battlesUsed, freezeOpponents } from "../repo.ts";
@@ -22,10 +21,6 @@ export const BATTLE_ERRORS: Record<string, string> = {
   // UNVERIFIED: text of ours (an old attack link, replayed after another battle).
   stale: "Cette attaque n'est plus valable.",
 };
-
-/** Battles a day for these troopers (3, +1 per COMMANDEMENT trooper, max 5). */
-export const battleAllowance = (troopers: readonly BattleTrooperInput[]): number =>
-  battlesPerDay(troopers.map((t) => ({ skills: describeTrooper(t).skills })));
 
 export function registerOpp(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;

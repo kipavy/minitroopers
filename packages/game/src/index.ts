@@ -3,7 +3,7 @@ export { haxeTrim, host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
 export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";
 export { trooperName } from "./names.ts";
-export { battlesPerDay, battleReward, referralBounty, STARTING_CREDITS } from "./economy.ts";
+export { battleAllowance, battlesPerDay, battleReward, referralBounty, STARTING_CREDITS } from "./economy.ts";
 export { FACTIONS, factionBattleArmy } from "./factions.ts";
 export type { Faction, FactionTrooper } from "./factions.ts";
 export { fillerArmy, fillerBattleArmy, fillerId, parseFillerId } from "./fillers.ts";

@@ -3,12 +3,11 @@ import type { Html } from "../views/html.ts";
 import { formBody } from "../form.ts";
 import { rateLimited } from "../texts.ts";
 import { armyPower } from "@mt/engine";
-import { dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
+import { battleAllowance, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
 import { asMissionType, missionTypeOf } from "./mission.ts";
-import { battleAllowance } from "./opp.ts";
 import {
   armyByHost, armyById, battlesOfDay, defensesOf, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
   troopersOf, trooperInput, type ArmyRow, type DefenseRow,

@@ -1,7 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { battleAllowance } from "./routes/opp.ts";
-import { FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
+import { FACTIONS, battleAllowance, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
 import { Data, armyPower, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
