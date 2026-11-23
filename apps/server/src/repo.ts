@@ -457,15 +457,16 @@ export function battleOppOfDay(db: DatabaseSync, armyId: number, day: string, n:
  * A faction army is never deleted (false), nor an unknown id.
  */
 export function deleteArmy(db: DatabaseSync, armyId: number): boolean {
-  return (
-    immediate(db, () => {
-      const a = db.prepare("SELECT name, is_faction FROM armies WHERE id = ?").get(armyId) as { name: string; is_faction: number } | undefined;
-      if (!a || a.is_faction === 1) return null;
-      db.prepare("UPDATE battles SET defender_ref = ? WHERE defender_id = ?").run(`gone:${a.name}`, armyId);
-      db.prepare("DELETE FROM armies WHERE id = ?").run(armyId);
-      return true;
-    }) === true
-  );
+  return immediate(db, () => (deleteArmyTx(db, armyId) ? true : null)) === true;
+}
+
+/** deleteArmy's body, for a caller already inside a transaction. */
+function deleteArmyTx(db: DatabaseSync, armyId: number): boolean {
+  const a = db.prepare("SELECT name, is_faction FROM armies WHERE id = ?").get(armyId) as { name: string; is_faction: number } | undefined;
+  if (!a || a.is_faction === 1) return false;
+  db.prepare("UPDATE battles SET defender_ref = ? WHERE defender_id = ?").run(`gone:${a.name}`, armyId);
+  db.prepare("DELETE FROM armies WHERE id = ?").run(armyId);
+  return true;
 }
 
 export interface NewBattle {
@@ -524,6 +525,11 @@ export interface ArmySeed {
   isFaction: boolean;
   passwordHash: string | null;
   now: number;
+  /** Extermination progress (`armies.rats`, default 1) and whether missions are already unlocked (admin only). */
+  rats?: number;
+  missionsUnlocked?: boolean;
+  /** Admin `--force`: delete the army already at this host first (not a faction army: null), in the same transaction. */
+  replace?: boolean;
   troopers: { seed: number; name: string; choices: number[]; leftOver: number[] | null }[];
 }
 
@@ -531,11 +537,12 @@ export interface ArmySeed {
 export function insertArmy(db: DatabaseSync, a: ArmySeed): ArmyRow | null {
   try {
     return immediate(db, () => {
-      if (armyByHost(db, a.host)) return null;
+      const old = armyByHost(db, a.host);
+      if (old && (!a.replace || !deleteArmyTx(db, old.id))) return null;
       const id = Number(
         db
-          .prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, password_hash, is_faction) VALUES (?,?,?,?,?,?,?,?)")
-          .run(a.host, a.name, a.part, a.faction, a.credits, a.now, a.passwordHash, a.isFaction ? 1 : 0).lastInsertRowid,
+          .prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, password_hash, is_faction, rats, missions_unlocked) VALUES (?,?,?,?,?,?,?,?,?,?)")
+          .run(a.host, a.name, a.part, a.faction, a.credits, a.now, a.passwordHash, a.isFaction ? 1 : 0, a.rats ?? 1, a.missionsUnlocked ? 1 : 0).lastInsertRowid,
       );
       const ins = db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices, left_over) VALUES (?, ?, ?, ?, ?, ?)");
       a.troopers.forEach((t, slot) => ins.run(id, slot, t.seed, t.name, JSON.stringify(t.choices), t.leftOver === null ? null : JSON.stringify(t.leftOver)));

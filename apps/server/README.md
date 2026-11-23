@@ -59,7 +59,8 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | Commande | Effet |
 |---|---|
 | `seed-factions` | crée les armées de faction absentes (sans effet si elles existent déjà) |
-| `create-army --name <nom> --troopers <json \| @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P]` | crée une armée complète (mot de passe : `--password` ou `MT_ARMY_PASSWORD`, jamais vide) |
+| `create-army --name <nom> --troopers <json \| @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P] [--rats N] [--force]` | crée une armée complète (mot de passe : `--password` ou `MT_ARMY_PASSWORD`, jamais vide) ; `--rats` : rats de la prochaine extermination (défaut 1) ; `--force` : remplace l'armée de même hôte (jamais une faction) en une transaction |
+| `create-bro-army --name <nom> [--part 0-5] [--faction 0-5] [--count 12] [--rats 35] [--credits N] [--force]` | armée « du frère » : `count` troopers niveau 2 (Malin), extermination avancée, missions débloquées ; mot de passe **uniquement** par `MT_ARMY_PASSWORD` (obligatoire) |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
 
@@ -74,6 +75,10 @@ unset MT_ARMY_PASSWORD
 
 `--part` est l'article du formulaire de création (0 de, 1 d', 2 du, 3 de la, 4 des, 5 aucun) ; une armée de
 faction (`is_faction`) ne peut pas être ouverte par son nom.
+
+```sh
+MT_ARMY_PASSWORD='mot-de-passe' npm run admin -- create-bro-army --name "<nom de l'armée>" --part 4
+```
 
 ### Troopers de `create-army`
 

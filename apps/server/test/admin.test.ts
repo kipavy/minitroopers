@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { SKILLS, defaultLeftOver, levelUpOptions, type BattleTrooperInput } from "@mt/engine";
-import { FACTIONS, factionBattleArmy } from "@mt/game";
+import { SKILLS, defaultLeftOver, describeTrooper, levelUpOptions, type BattleTrooperInput } from "@mt/engine";
+import { FACTIONS, dayRats, factionBattleArmy, ratArmy, seedsOffering } from "@mt/game";
 import { openDb } from "../src/db.ts";
 import { verifyPassword } from "../src/password.ts";
 import { SpecError, buildTroopers } from "../src/admin/army.ts";
 import { seedFactions } from "../src/admin/factions.ts";
-import { addCredits, armyByHost, armySummaries, troopersOf, trooperInput } from "../src/repo.ts";
+import { addCredits, armyById, armyByHost, insertArmy, armySummaries, troopersOf, trooperInput } from "../src/repo.ts";
 import { foeByName } from "../src/foes.ts";
 import { setup } from "./helpers.ts";
 
@@ -124,7 +124,7 @@ test("admin CLI: seed-factions, create-army, give-credits, list, errors", () => 
     assert.match(c.stdout, /Armée créée : rats-morts .*2 troopers, niveaux 4, 1/);
     const dup = cli(dir, "create-army", "--name", "Rats Morts", "--troopers", '[{"seed":5,"name":"X"}]');
     assert.equal(dup.status, 1);
-    assert.match(dup.stderr, /déjà pris/);
+    assert.match(dup.stderr, /existe déjà/);
     const badSkill = cli(dir, "create-army", "--name", "Autre", "--troopers", '[{"seed":5,"name":"X","skills":["NOPE"]}]');
     assert.equal(badSkill.status, 1);
     assert.match(badSkill.stderr, /compétence inconnue/);
@@ -165,6 +165,88 @@ test("admin CLI: seed-factions, create-army, give-credits, list, errors", () => 
 
     assert.equal(cli(dir, "frobnicate").status, 1);
     assert.match(cli(dir).stdout, /Usage/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("admin CLI create-bro-army: SMART troopers, 35 rats, password from env only, --force replace", () => {
+  mkdirSync(join(REPO, "var"), { recursive: true });
+  const dir = mkdtempSync(join(REPO, "var", "admin-test-"));
+  const env = { MT_ARMY_PASSWORD: "x" };
+  try {
+    assert.equal(cli(dir, "seed-factions").status, 0);
+    // no password / empty password / --password: error, nothing stored
+    for (const [e, extra] of [[{}, []], [{ MT_ARMY_PASSWORD: "" }, []], [env, ["--password", "y"]]] as const) {
+      const r = cliEnv(dir, e, "create-bro-army", "--name", "Les Frangins", ...extra);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /MT_ARMY_PASSWORD|--password/);
+    }
+    assert.equal(cliEnv(dir, env, "create-bro-army").status, 1); // --name required
+    let db = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(db, "les-frangins"), null);
+    db.close();
+
+    const c = cliEnv(dir, env, "create-bro-army", "--name", "Les Frangins");
+    assert.equal(c.status, 0, c.stderr);
+    db = openDb(join(dir, "minitroopers.db"));
+    const a = armyByHost(db, "les-frangins")!;
+    const ts = troopersOf(db, a.id);
+    assert.equal(ts.length, 12);
+    assert.deepEqual(ts.map((t) => t.seed), seedsOffering(SKILLS.SMART, 12));
+    for (const t of ts) {
+      const d = describeTrooper(trooperInput(t));
+      assert.ok(d.skills.includes(SKILLS.SMART));
+      assert.equal(d.level, 2);
+    }
+    assert.equal(a.rats, 35);
+    assert.equal(a.missionsUnlocked, true);
+    assert.equal(a.createdCid ?? null, null);
+    assert.ok(verifyPassword("x", a.passwordHash!));
+    // first extermination (same builder as routes/mission.ts) opposes 35 rats
+    assert.equal(ratArmy(dayRats({ day: "2026-01-01", armyId: a.id, count: a.rats, salt: "missions" }), 0).troopers.length, 35);
+
+    // a battle it attacked, one it defended, a recruit
+    const mk = (att: number, def: number | null) => Number(db.prepare("INSERT INTO battles(day, attacker_id, defender_id, input, winner) VALUES ('2026-01-01', ?, ?, '{}', 0)").run(att, def).lastInsertRowid);
+    const other = Number(db.prepare("INSERT INTO armies(host, name, part, faction, credits, created_at) VALUES ('autre','Autre',0,0,0,1)").run().lastInsertRowid);
+    const mine = mk(a.id, other);
+    const theirs = mk(other, a.id);
+    const rec = Number(db.prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, recruiter_id) VALUES ('recrue','Recrue',0,0,0,1,?)").run(a.id).lastInsertRowid);
+    db.close();
+
+    const dup = cliEnv(dir, env, "create-bro-army", "--name", "Les Frangins");
+    assert.equal(dup.status, 1);
+    assert.match(dup.stderr, /existe déjà/);
+
+    const f = cliEnv(dir, env, "create-bro-army", "--name", "Les Frangins", "--force", "--count", "3", "--rats", "40");
+    assert.equal(f.status, 0, f.stderr);
+    db = openDb(join(dir, "minitroopers.db"));
+    const b = armyByHost(db, "les-frangins")!;
+    assert.notEqual(b.id, a.id);
+    assert.equal(troopersOf(db, b.id).length, 3);
+    assert.equal(b.rats, 40);
+    assert.equal(db.prepare("SELECT id FROM battles WHERE id = ?").get(mine), undefined);
+    assert.equal((db.prepare("SELECT defender_ref FROM battles WHERE id = ?").get(theirs) as { defender_ref: string }).defender_ref, "gone:Les Frangins");
+    assert.equal(armyById(db, rec)!.recruiterId, null);
+    db.close();
+
+    // create-army gains --rats and --force; a faction army is never replaced
+    const ca = cli(dir, "create-army", "--name", "Les Frangins", "--rats", "9", "--force", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(ca.status, 0, ca.stderr);
+    db = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(db, "les-frangins")!.rats, 9);
+    assert.equal(armyByHost(db, "les-frangins")!.missionsUnlocked, false);
+    db.close();
+    const fac = FACTIONS[0]!;
+    const rf = cliEnv(dir, env, "create-bro-army", "--name", fac.name, "--force");
+    assert.equal(rf.status, 1); // faction names are reserved by the name check already
+    db = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(db, fac.host)!.isFaction, true);
+    // and insertArmy itself refuses to replace a faction army (nothing deleted)
+    const seedOf = { host: fac.host, name: "X", part: 0, faction: 0, credits: 0, isFaction: false, passwordHash: null, now: 1, replace: true, troopers: [{ seed: 5, name: "X", choices: [], leftOver: null }] };
+    assert.equal(insertArmy(db, seedOf), null);
+    assert.equal(armyByHost(db, fac.host)!.isFaction, true);
+    db.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

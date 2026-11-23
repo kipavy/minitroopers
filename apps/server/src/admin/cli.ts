@@ -2,7 +2,8 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { FACTIONS, host as hostOf } from "@mt/game";
+import { Rand, SKILLS } from "@mt/engine";
+import { FACTIONS, host as hostOf, seedsOffering, trooperName } from "@mt/game";
 import { loadConfig, resolveDataDir } from "../config.ts";
 import { openDb } from "../db.ts";
 import { hashPassword } from "../password.ts";
@@ -17,11 +18,15 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
 
   seed-factions
       Crée les armées de faction absentes de la base (sans effet si elles y sont déjà).
-  create-army --name <nom> --troopers <json | @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P]
+  create-army --name <nom> --troopers <json | @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P] [--rats N] [--force]
       Crée une armée complète. Mot de passe : --password P, ou la variable MT_ARMY_PASSWORD (absente de ps et de
       l'historique) ; jamais vide. troopers : [{ "seed": 123, "name": "Nom", "skills": ["SMART", 12] }, ...]
       ("skills" : compétence choisie à chaque montée de niveau, parmi celles que le jeu propose ;
        ou "choices" : indices bruts des options). Voir apps/server/README.md.
+      --rats N : rats de la prochaine extermination (défaut 1) ; --force : remplace l'armée de même hôte (sauf faction).
+  create-bro-army --name <nom> [--part 0-5] [--faction 0-5] [--count 12] [--rats 35] [--credits N] [--force]
+      Armée « du frère » : count troopers (1-12) niveau 2 avec Malin, extermination avancée (rats), missions débloquées.
+      Mot de passe : uniquement la variable MT_ARMY_PASSWORD (obligatoire, jamais vide).
   give-credits --army <nom ou hôte> --amount <N>
       Ajoute N crédits (N négatif : en retire, jamais sous 0).
   list
@@ -51,6 +56,9 @@ function run(argv: string[]): string {
       faction: { type: "string" },
       credits: { type: "string" },
       password: { type: "string" },
+      rats: { type: "string" },
+      count: { type: "string" },
+      force: { type: "boolean" },
       army: { type: "string" },
       amount: { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -58,7 +66,7 @@ function run(argv: string[]): string {
   });
   const cmd = positionals[0];
   if (values.help || cmd === undefined || cmd === "help") return USAGE;
-  if (!["seed-factions", "create-army", "give-credits", "list"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
+  if (!["seed-factions", "create-army", "create-bro-army", "give-credits", "list"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
 
   const cfg = loadConfig(process.env);
   const dataDir = resolveDataDir(cfg.dataDir);
@@ -91,18 +99,29 @@ function run(argv: string[]): string {
       return `${a.host} : ${addCredits(db, a.id, amount)} crédits`;
     }
 
-    // create-army
+    const bro = cmd === "create-bro-army";
+    if (bro && (values.troopers !== undefined || values.password !== undefined)) throw new UsageError("create-bro-army : pas de --troopers ni --password (mot de passe : MT_ARMY_PASSWORD)");
+    if (!bro && values.count !== undefined) throw new UsageError("--count : réservé à create-bro-army");
     if (values.name === undefined) throw new UsageError("--name est obligatoire");
-    if (values.troopers === undefined) throw new UsageError("--troopers est obligatoire");
+    if (!bro && values.troopers === undefined) throw new UsageError("--troopers est obligatoire");
     const part = String(int(values.part, "part", 0, 5, 0));
     const v = checkArmyName(values.name, part);
     if (!v.ok) throw new UsageError(`--name : ${v.error}`);
     const faction = int(values.faction, "faction", 0, 1_000, 0);
     if (!FACTIONS.some((f) => f.id === faction)) throw new UsageError(`--faction : une des factions ${FACTIONS.map((f) => f.id).join(", ")}`);
-    const json = values.troopers.startsWith("@") ? readFileSync(values.troopers.slice(1), "utf8") : values.troopers;
+    // UNVERIFIED: 35 rats = "about 30 to 40" for the extermination reached by the brother's army (docs/game/unverified.md).
+    const rats = int(values.rats, "rats", 1, 1000, bro ? 35 : 1);
+    let json: string;
+    if (bro) {
+      const count = int(values.count, "count", 1, 12, 12);
+      json = JSON.stringify(seedsOffering(SKILLS.SMART, count).map((seed) => ({ seed, name: trooperName(new Rand(seed)), skills: ["SMART"] })));
+    } else {
+      json = values.troopers!.startsWith("@") ? readFileSync(values.troopers!.slice(1), "utf8") : values.troopers!;
+    }
     const troopers = buildTroopers(json);
     const envPass = process.env.MT_ARMY_PASSWORD;
     if (values.password !== undefined && envPass !== undefined) throw new UsageError("--password et MT_ARMY_PASSWORD : un seul des deux");
+    if (bro && (envPass === undefined || envPass === "")) throw new UsageError("MT_ARMY_PASSWORD : obligatoire et non vide pour create-bro-army");
     if (values.password === "") throw new UsageError("--password : le mot de passe ne peut pas être vide");
     if (envPass === "") throw new UsageError("MT_ARMY_PASSWORD : le mot de passe ne peut pas être vide");
     const password = values.password ?? envPass;
@@ -116,8 +135,14 @@ function run(argv: string[]): string {
       passwordHash: password !== undefined ? hashPassword(password) : null,
       now: Date.now(),
       troopers,
+      rats,
+      missionsUnlocked: bro,
+      replace: values.force === true,
     });
-    if (!army) throw new UsageError(`Ce nom est déjà pris : ${v.host}`);
+    if (!army) {
+      const old = armyByHost(db, v.host);
+      throw new UsageError(old?.isFaction ? `${v.host} est une armée de faction : refus` : `${v.host} existe déjà${values.force ? "" : " (--force pour la remplacer)"}`);
+    }
     return `Armée créée : ${army.host} (id ${army.id}, ${troopers.length} troopers, niveaux ${troopers.map((t) => t.choices.length + 1).join(", ")})`;
   } finally {
     db.close();
