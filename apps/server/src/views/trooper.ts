@@ -27,6 +27,8 @@ export interface SheetView {
   key: string;
   /** Cost of the next level-up, null at the level cap. */
   upgradeCost: number | null;
+  /** Number of level-up choices the trooper has now: the level the upgrade link is bound to. */
+  level: number;
   error?: string;
 }
 
@@ -99,7 +101,7 @@ export function sheetPage(cfg: Config, v: SheetView): Html {
   const upgrade =
     v.upgradeCost === null
       ? ""
-      : html`<div class="but b3"><div class="but_right b3_right"><a class="but_bg b3_bg img" href="${u(`/t/${v.slot}?levelup=${v.key}`)}">Améliorer
+      : html`<div class="but b3"><div class="but_right b3_right"><a class="but_bg b3_bg img" href="${u(`/t/${v.slot}?levelup=${v.key}&lv=${v.level}`)}">Améliorer
 pour
 ${v.upgradeCost}
 <img src="/img/token.png"/></a></div></div>

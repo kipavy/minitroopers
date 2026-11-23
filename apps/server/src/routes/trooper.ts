@@ -1,19 +1,23 @@
-import { randomInt } from "node:crypto";
 import type { Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { Rand, describeTrooper, levelUpOptions, reequip, upgradeCost } from "@mt/engine";
 import type { Deps, Env } from "../app.ts";
 import { hasKey, queryParam } from "../session.ts";
-import { renameTrooper, saveTrooperPref, startLevelUp, trooperInput, type TrooperRow } from "../repo.ts";
+import { reequipTrooper, renameTrooper, saveTrooperPref, startLevelUp, trooperInput, type TrooperRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
-import { checkTrooperName } from "../validate.ts";
+import { MAX_TROOPER_NAME, checkTrooperName } from "../validate.ts";
 import { applyPrefForm, defaultTrooperPref } from "../prefs.ts";
 import { sheetPage } from "../views/trooper.ts";
 import { missingPage } from "../views/soon.ts";
 import { ownedArmy, slotOf, type Owned } from "./owner.ts";
 
 const SLOT = "/t/:n{[0-9]{1,2}}";
-const ERR_RENAMED = "Ce trooper a déjà été renommé.";
+/** Messages a redirect may ask the sheet to show (`?err=code`): codes only, never text from the URL. */
+const FLASH: Record<string, string> = {
+  renamed: "Ce trooper a déjà été renommé.",
+  length: `Le nom doit faire entre 1 et ${MAX_TROOPER_NAME} caractères.`,
+  chars: "Le nom contient des caractères interdits.",
+};
 
 
 /** True when `name` is present in the query, even when its value cannot be decoded. */
@@ -35,6 +39,7 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
       sheet: describeTrooper(trooper, o.army.faction),
       pref: row.pref ?? defaultTrooperPref(),
       key,
+      level: row.choices.length,
       upgradeCost: levelUpOptions(trooper).choiceCount > 0 ? upgradeCost(row.choices.length) : null,
       ...(error ? { error } : {}),
     };
@@ -52,26 +57,37 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
     const key = c.get("session").key;
     const input = trooperInput(row);
 
-    if (queryParam(c, "levelup") !== undefined && hasKey(c, "levelup")) {
+    // Every action attempt ends in a redirect (post/redirect/get): the action URL never renders a page, so reloading,
+    // history or a bookmark cannot repeat it by itself.
+    const back = (err?: string): Response => to(c, o, `/t/${slot}${err ? `?err=${err}` : ""}`);
+    if (queryParam(c, "levelup") !== undefined) {
+      if (!hasKey(c, "levelup")) return back();
       const can = levelUpOptions(input).choiceCount > 0;
-      const r = startLevelUp(db, o.army.id, slot, (n) => (can ? upgradeCost(n) : null));
-      if (r === "started" || r === "pending") return to(c, o, `/levelup/${slot}`);
-      // not enough credits / level cap / bad key: the sheet again (as the original does)
-    } else if (hasParam(c, "name") && hasKey(c, "chk")) {
-      const v = checkTrooperName(queryParam(c, "name"));
-      if (!v.ok) return sheet(c, o, row, key, v.error, 400);
-      return renameTrooper(db, o.army.id, slot, v.name) ? to(c, o, `/t/${slot}`) : sheet(c, o, row, key, ERR_RENAMED, 400);
-    } else if (queryParam(c, "equip") !== undefined && hasKey(c, "equip")) {
-      const d = describeTrooper(input);
-      if (d.equipment.length > d.carry) {
-        // UNVERIFIED: the original re-equip draw is unknown; a fresh random carry-sized subset is kept (engine `reequip`).
-        const left = reequip(input, new Rand(randomInt(1, 2 ** 31 - 1)));
-        const pref = { ...(row.pref ?? defaultTrooperPref()), selectedItems: d.equipment.filter((s) => !left.includes(s)) };
-        saveTrooperPref(db, row.id, pref, left);
-      }
-      return to(c, o, `/t/${slot}`);
+      const lv = /^[0-9]{1,3}$/.test(queryParam(c, "lv") ?? "") ? Number(queryParam(c, "lv")) : -1;
+      const r = startLevelUp(db, o.army.id, slot, lv, (n) => (can ? upgradeCost(n) : null));
+      return r === "started" || r === "pending" ? to(c, o, `/levelup/${slot}`) : back(); // poor / cap / stale: the sheet again
     }
-    return sheet(c, o, row, key);
+    if (hasParam(c, "name")) {
+      if (!hasKey(c, "chk")) return back();
+      const v = checkTrooperName(queryParam(c, "name"));
+      if (!v.ok) return back(v.code);
+      return back(renameTrooper(db, o.army.id, slot, v.name) ? undefined : "renamed");
+    }
+    if (queryParam(c, "equip") !== undefined) {
+      if (!hasKey(c, "equip")) return back();
+      // UNVERIFIED: the original re-equip draw is unknown; the kept carry-sized subset is drawn with a Rand seeded by
+      // (trooper seed, level), so revisiting at the same level gives the same set (no fishing) and a level-up re-draws.
+      reequipTrooper(db, o.army.id, slot, (t) => {
+        const inp = trooperInput(t);
+        const d = describeTrooper(inp);
+        if (d.equipment.length <= d.carry) return null;
+        const left = reequip(inp, new Rand(1 + ((t.seed * 2654435761 + t.choices.length * 40503) >>> 1) % 2147483646));
+        return { pref: { ...(t.pref ?? defaultTrooperPref()), selectedItems: d.equipment.filter((x) => !left.includes(x)) }, leftOver: left };
+      });
+      return back();
+    }
+    const err = queryParam(c, "err");
+    return sheet(c, o, row, key, err !== undefined ? FLASH[err] : undefined, err !== undefined && FLASH[err] ? 400 : 200);
   });
 
   pages.post(SLOT, bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {

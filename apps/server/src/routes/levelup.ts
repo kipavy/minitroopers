@@ -8,6 +8,8 @@ import { levelUpPage } from "../views/levelup.ts";
 import { missingPage } from "../views/soon.ts";
 import { ownedArmy, slotOf, type Owned } from "./owner.ts";
 
+const ERR_SKILL = "Cette compétence n'est pas proposée."; // UNVERIFIED: our own text
+
 export function registerLevelUp(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;
   const to = (c: Context<Env>, o: Owned, path: string): Response => c.redirect(armyUrl(cfg, o.army.host, path));
@@ -33,6 +35,7 @@ export function registerLevelUp(pages: Hono<Env>, deps: Deps): void {
             level: describeTrooper(trooperInput(row)).level + 1,
             options: levelUpOptions(trooperInput(row)).shown,
             key,
+            choices: row.choices.length,
             ...(error ? { error } : {}),
           }),
         ),
@@ -40,8 +43,11 @@ export function registerLevelUp(pages: Hono<Env>, deps: Deps): void {
       );
 
     const given = queryParam(c, "skill");
-    if (given === undefined) return page();
+    if (given === undefined) return queryParam(c, "err") === "skill" ? page(ERR_SKILL, 400) : page();
     if (!hasKey(c, "chk")) return c.text("Forbidden", 403);
+    // Bound to the level the page was issued for, and every outcome redirects: the choice URL never renders.
+    const lv = /^[0-9]{1,3}$/.test(queryParam(c, "lv") ?? "") ? Number(queryParam(c, "lv")) : -1;
+    if (lv !== row.choices.length) return to(c, o, `/levelup/${slot}`);
     const skill = /^[0-9]{1,3}$/.test(given) ? Number(given) : -1;
     const r = finishLevelUp(db, o.army.id, slot, (t) => {
       const input = trooperInput(t);
@@ -54,6 +60,6 @@ export function registerLevelUp(pages: Hono<Env>, deps: Deps): void {
     });
     if (r === "done") return to(c, o, "/hq");
     if (r === "none") return to(c, o, `/t/${slot}`);
-    return page("Cette compétence n'est pas proposée.", 400);
+    return to(c, o, `/levelup/${slot}?err=skill`);
   });
 }

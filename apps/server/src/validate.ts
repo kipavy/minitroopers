@@ -37,16 +37,16 @@ export function checkArmyName(rawName: unknown, rawPart: unknown): NameCheck {
 
 export const MAX_TROOPER_NAME = 12; // maxlength of the original rename field (UTF-16 units, like the HTML attribute)
 
-export type TrooperNameCheck = { ok: true; name: string } | { ok: false; error: string };
+export type TrooperNameCheck = { ok: true; name: string } | { ok: false; error: string; code: "length" | "chars" };
 
 /**
  * New trooper name from the rename form: plain text only (same rules as army names), trimmed, 1..12 UTF-16 units.
  * UNVERIFIED: the original server-side character rules are unknown (archived names contain spaces, accents, punctuation).
  */
 export function checkTrooperName(raw: unknown): TrooperNameCheck {
-  const bad = { ok: false as const, error: `Le nom doit faire entre 1 et ${MAX_TROOPER_NAME} caractères.` };
+  const bad = { ok: false as const, code: "length" as const, error: `Le nom doit faire entre 1 et ${MAX_TROOPER_NAME} caractères.` };
   if (typeof raw !== "string" || raw.length > 200) return bad;
-  if (UNSAFE.test(raw)) return { ok: false, error: "Le nom contient des caractères interdits." };
+  if (UNSAFE.test(raw)) return { ok: false, code: "chars", error: "Le nom contient des caractères interdits." };
   const name = haxeTrim(raw);
   return name.length >= 1 && name.length <= MAX_TROOPER_NAME ? { ok: true, name } : bad;
 }

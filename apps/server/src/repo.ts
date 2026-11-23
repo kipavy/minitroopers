@@ -188,18 +188,19 @@ function immediate<T>(db: DatabaseSync, fn: () => T | null): T | null {
   }
 }
 
-export type StartLevelUp = "started" | "pending" | "poor" | "max" | "gone";
+export type StartLevelUp = "started" | "pending" | "poor" | "max" | "stale" | "gone";
 
 /**
  * Pays the next level-up of a trooper and marks it pending, atomically: a second call (reload, double click,
- * concurrent request) finds the pending mark and debits nothing. `costOf(choicesLength)` is null when the trooper cannot level up.
+ * concurrent request) finds the pending mark and debits nothing; `level` (choices length the link was issued for) must still match. `costOf(choicesLength)` is null when the trooper cannot level up.
  */
-export function startLevelUp(db: DatabaseSync, armyId: number, slot: number, costOf: (choicesLength: number) => number | null): StartLevelUp {
+export function startLevelUp(db: DatabaseSync, armyId: number, slot: number, level: number, costOf: (choicesLength: number) => number | null): StartLevelUp {
   let out: StartLevelUp = "gone";
   immediate(db, () => {
     const t = trooperBySlot(db, armyId, slot);
     if (!t) return null;
     if (t.pendingLevelup !== null) return (out = "pending"), null;
+    if (t.choices.length !== level) return (out = "stale"), null; // the URL was issued for another level
     const cost = costOf(t.choices.length);
     if (cost === null) return (out = "max"), null;
     const paid = db.prepare("UPDATE armies SET credits = credits - ? WHERE id = ? AND credits >= ?").run(cost, armyId, cost);
@@ -288,4 +289,20 @@ export function addTrooper(db: DatabaseSync, armyId: number, t: { seed: number; 
     throw e;
   }
   return out;
+}
+
+/**
+ * Re-equip, atomically against the stored trooper: `decide` sees it as stored (no pending level-up) and returns the
+ * new pref and leftOver, or null for no change. A concurrent level-up cannot interleave (BEGIN IMMEDIATE).
+ */
+export function reequipTrooper(db: DatabaseSync, armyId: number, slot: number, decide: (t: TrooperRow) => { pref: TrooperPref; leftOver: number[] } | null): boolean {
+  return (
+    immediate(db, () => {
+      const t = trooperBySlot(db, armyId, slot);
+      const d = t && t.pendingLevelup === null ? decide(t) : null;
+      if (!t || !d) return null;
+      saveTrooperPref(db, t.id, d.pref, d.leftOver);
+      return true;
+    }) !== null
+  );
 }

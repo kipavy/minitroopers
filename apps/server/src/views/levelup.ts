@@ -22,11 +22,13 @@ export interface LevelUpView {
   /** `levelUpOptions.shown`. */
   options: readonly number[];
   key: string;
+  /** Choices the trooper has now: the level the choice links are bound to. */
+  choices: number;
   error?: string;
 }
 
 function box(cfg: Config, v: LevelUpView, skill: number): Html {
-  const url = armyUrl(cfg, v.army.host, `/levelup/${v.slot}?skill=${skill}&chk=${v.key}`);
+  const url = armyUrl(cfg, v.army.host, `/levelup/${v.slot}?skill=${skill}&chk=${v.key}&lv=${v.choices}`);
   const onclick = esc(`if( confirm('Confirmer cette action ?') ) document.location = ${jsStr(url)}`);
   const t = TIPS[String(skill)];
   const desc = t ? raw(`<div class="s">${t.body.replaceAll("{name}", esc(v.trooper.name))}</div>`) : "";
