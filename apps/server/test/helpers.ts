@@ -1,6 +1,6 @@
 import { loadConfig, type Config } from "../src/config.ts";
 import { openDb } from "../src/db.ts";
-import { createApp } from "../src/app.ts";
+import { createApp, type Deps } from "../src/app.ts";
 import { mountPages } from "../src/routes/index.ts";
 import type { DatabaseSync } from "node:sqlite";
 
@@ -27,11 +27,11 @@ export interface Client {
   cookies: Record<string, string>;
 }
 
-export function setup(mode: Mode = "path", extra: Record<string, string> = {}): Env {
+export function setup(mode: Mode = "path", extra: Record<string, string> = {}, over: Pick<Deps, "battleSeed"> = {}): Env {
   const cfg = loadConfig({ ...ENV[mode], ...extra });
   const db = openDb(":memory:");
   const clock = { t: Date.parse("2026-11-23T10:00:00Z") };
-  const deps = { cfg, db, now: () => clock.t };
+  const deps: Deps = { cfg, db, now: () => clock.t, ...over };
   const app = createApp(deps, mountPages(deps));
   return {
     app,

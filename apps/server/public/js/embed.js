@@ -25,6 +25,7 @@
       parameters: fv || "",
       autoplay: "on",
       splashScreen: false,
+      unmuteOverlay: "hidden", // Ruffle's "click to unmute" overlay would cover the end-of-battle banner
       contextMenu: "off",
       backgroundColor: "#F2DDB8"
     };

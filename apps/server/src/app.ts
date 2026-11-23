@@ -23,6 +23,8 @@ export interface Deps {
   cfg: Config;
   db: DatabaseSync;
   now?: () => number;
+  /** Seed of a new battle (tests); default: a random one (routes/battle.ts). */
+  battleSeed?: () => number;
 }
 
 export const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));

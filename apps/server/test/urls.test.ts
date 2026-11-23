@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadConfig } from "../src/config.ts";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadConfig, resolveDataDir } from "../src/config.ts";
 import { armyUrl, resolveArmyHost } from "../src/urls.ts";
 
 test("loadConfig defaults", () => {
@@ -11,8 +13,26 @@ test("loadConfig defaults", () => {
   assert.equal(c.trustProxy, false);
   assert.equal(c.tzGame, "Europe/Paris");
   assert.equal(c.secureCookies, false);
-  assert.equal(loadConfig({ PUBLIC_URL: "https://x.example", TRUST_PROXY: "1", URL_MODE: "subdomain", PORT: "9000" }).secureCookies, true);
+  assert.equal(loadConfig({ PUBLIC_URL: "https://x.example", TRUST_PROXY: "1", URL_MODE: "subdomain", BASE_DOMAIN: "x.example", PORT: "9000" }).secureCookies, true);
   assert.throws(() => loadConfig({ URL_MODE: "nope" }));
+});
+
+test("subdomain mode needs a BASE_DOMAIN of two labels or more; PUBLIC_URL defaults to it", () => {
+  // Chromium keeps a Domain=localhost cookie away from <army>.localhost (verified in the e2e probe): the session
+  // could never reach the army subdomains.
+  assert.throws(() => loadConfig({ URL_MODE: "subdomain" }), /BASE_DOMAIN/);
+  assert.throws(() => loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "localhost:8080" }), /BASE_DOMAIN/);
+  assert.equal(loadConfig({ URL_MODE: "path" }).baseDomain, "localhost");
+  const c = loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "mt.localhost", PORT: "9000" });
+  assert.equal(c.publicUrl, "http://mt.localhost:9000");
+  assert.equal(armyUrl(c, "nsun", "/hq"), "http://nsun.mt.localhost:9000/hq");
+  assert.equal(loadConfig({ URL_MODE: "path", PORT: "9000" }).publicUrl, "http://localhost:9000");
+});
+
+test("resolveDataDir: relative to the repository root, absolute kept", () => {
+  assert.equal(resolveDataDir("var"), join(fileURLToPath(new URL("../../../", import.meta.url)), "var"));
+  const abs = resolve("/srv/mt");
+  assert.equal(resolveDataDir(abs), abs);
 });
 
 test("armyUrl in path mode", () => {

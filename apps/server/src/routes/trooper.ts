@@ -87,7 +87,8 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
       return back();
     }
     const err = queryParam(c, "err");
-    return sheet(c, o, row, key, err !== undefined ? FLASH[err] : undefined, err !== undefined && FLASH[err] ? 400 : 200);
+    const flash = err !== undefined && Object.hasOwn(FLASH, err) ? FLASH[err] : undefined; // never "constructor" & co.
+    return sheet(c, o, row, key, flash, flash ? 400 : 200);
   });
 
   pages.post(SLOT, bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {

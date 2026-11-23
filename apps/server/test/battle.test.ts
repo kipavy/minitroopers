@@ -283,13 +283,17 @@ for (const mode of MODES) {
   });
 
   test(`[${mode}] credits: +2 for a victory, +1 for a defeat`, async () => {
-    const env = setup(mode);
+    // fixed battle seed: both outcomes below are fixed by construction, not by how lopsided a random fight is
+    const env = setup(mode, {}, { battleSeed: () => 4242 });
     const { cl, key, id } = await warp(env);
+    // and a fixed first trooper (the offers, hence its seed, depend on the random client id)
+    env.db.prepare("UPDATE troopers SET seed = 3141592, name = 'Fixed' WHERE army_id = ?").run(id);
     foe(env, "weak", "Weak", [{ seed: 1234567, name: "Bob" }]);
     // a lone level-1 trooper against the faction army (6 troopers, levels 20..10): a defeat
     const before = credits(env, id);
     await get(env, cl, "/b/battle", { form: { chk: key, n: "0", friend: "Sang-surs" } });
     const lost = battles(env, id)[0]!;
+    assert.equal((JSON.parse(lost.input) as BattleInput).seed, 4242);
     assert.equal(lost.winner, 1);
     assert.equal(credits(env, id), before + 1);
     // the same army grown to 6 level-20 troopers against a lone level-1 trooper: a victory
@@ -298,6 +302,7 @@ for (const mode of MODES) {
     for (let i = 1; i < 6; i++) ins.run(id, i, 2000000 + i * 7919, `T${i}`, JSON.stringify(new Array(19).fill(0)));
     await get(env, cl, "/b/battle", { form: { chk: key, n: "1", friend: "Weak" } });
     const win = battles(env, id)[1]!;
+    assert.equal((JSON.parse(win.input) as BattleInput).seed, 4242);
     assert.equal(win.winner, 0);
     assert.equal(credits(env, id), before + 1 + 2);
     const page = await (await get(env, cl, `/b/fview/${win.id}`)).text();

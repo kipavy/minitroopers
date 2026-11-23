@@ -57,7 +57,7 @@ docs/             conception, plans, référence du jeu original
 | Étape | Contenu | État |
 |---|---|---|
 | 1 | Banc différentiel + moteur de combat exact | ✅ terminée (`@mt/engine` 1.0.0, 0 écart sur 10 000 combats oracle) |
-| 2 | Règles de jeu, serveur, création d'armée, HQ, recrutement, amélioration, combats quotidiens | à venir |
+| 2 | Règles de jeu, serveur, création d'armée, HQ, recrutement, amélioration, combats quotidiens | ✅ terminée (`npm run dev`) |
 | 3 | Missions (Extermination, Infiltration, Epic), raids, parrainage | à venir |
 | 4 | Historique, classements, protection, ordre de déploiement, fin de journée, Docker | à venir |
 
@@ -73,6 +73,18 @@ npm ci
 npm test          # tests unitaires + rejeu des golden
 npm run typecheck
 ```
+
+### Jouer en local
+
+```sh
+npm run dev                                  # http://localhost:8080/ (mode chemin), données dans var/
+npm run admin -- list                        # administration : seed-factions, create-army, give-credits, list
+URL_MODE=subdomain BASE_DOMAIN=mt.localhost npm run dev   # mode sous-domaines : http://mt.localhost:8080/
+```
+
+Au premier démarrage, les armées de faction sont créées. Configuration, CLI d'administration (dont
+`create-army` avec graines et compétences choisies) et test de bout en bout :
+[apps/server/README.md](apps/server/README.md).
 
 Le banc différentiel (`tools/oracle`) demande en plus Java 21 et JPEXS FFDec (instrumentation
 du SWF), ainsi que Chromium via Playwright ou `ruffle_desktop` (exécution). Ces outils ne servent

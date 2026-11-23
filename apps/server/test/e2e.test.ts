@@ -1,0 +1,195 @@
+// End to end: the real server (src/main.ts) and admin CLI (src/admin/cli.ts) as child processes, driven by headless
+// Chromium (Playwright, browsers under tools/bin/ms-playwright; skipped when absent), in both URL modes.
+// Path: create an army, give it credits (CLI), upgrade its trooper and pick a skill, buy a trooper, fight a battle;
+// the battle page loads Ruffle and client_fr_play.swf, whose end banner (VICTOIRE / DEFAITE) must show the winner
+// stored in the database, and whose `endBattle()` must lead to `/hq?money=<reward>`.
+//
+// Subdomain mode uses BASE_DOMAIN=mt.localhost: Chromium resolves every *.localhost name to the loopback without DNS,
+// and (verified, see README) shares a `Domain=mt.localhost` cookie with `<army>.mt.localhost`, which it does not do
+// for `Domain=localhost`.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
+import { join, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import type { BattleInput } from "@mt/engine";
+import { pngDistance } from "./png.ts";
+
+const REPO = resolve(import.meta.dirname, "../../..");
+const MAIN = join(REPO, "apps/server/src/main.ts");
+const CLI = join(REPO, "apps/server/src/admin/cli.ts");
+const BROWSERS = join(REPO, "tools/bin/ms-playwright");
+const TMP = join(REPO, "tools/bin/tmp");
+const FIXTURES = join(REPO, "tools/oracle/test/fixtures");
+process.env.PLAYWRIGHT_BROWSERS_PATH = BROWSERS;
+
+type Mode = "path" | "subdomain";
+const BASE_DOMAIN = "mt.localhost";
+
+/** Crop of the end banner title and the "continuer" button, relative to the 720x440 battle player (tools/oracle play test). */
+const BANNER = { dx: 300, dy: 160, width: 120, height: 24 };
+const CONTINUE = { dx: 360, dy: 267 };
+
+const browsersInstalled = (): boolean => existsSync(BROWSERS) && readdirSync(BROWSERS).some((d) => d.startsWith("chromium"));
+
+const freePort = (): Promise<number> =>
+  new Promise((ok, ko) => {
+    const s = createServer();
+    s.once("error", ko);
+    s.listen(0, "127.0.0.1", () => {
+      const { port } = s.address() as { port: number };
+      s.close(() => ok(port));
+    });
+  });
+
+/** Starts src/main.ts and resolves once it listens. */
+async function startServer(env: Record<string, string>): Promise<ChildProcess> {
+  const child = spawn(process.execPath, [MAIN], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+  let log = "";
+  await new Promise<void>((ok, ko) => {
+    const timer = setTimeout(() => ko(new Error(`server did not start:\n${log}`)), 20_000);
+    const onData = (b: Buffer): void => {
+      log += b.toString();
+      if (log.includes("MiniTroopers server on")) {
+        clearTimeout(timer);
+        ok();
+      }
+    };
+    child.stdout!.on("data", onData);
+    child.stderr!.on("data", onData);
+    child.once("exit", (code) => {
+      clearTimeout(timer);
+      ko(new Error(`server exited (${code}):\n${log}`));
+    });
+  });
+  child.removeAllListeners("exit");
+  return child;
+}
+
+const stop = (child: ChildProcess): Promise<void> =>
+  new Promise((ok) => {
+    if (child.exitCode !== null) return ok();
+    child.once("exit", () => ok());
+    child.kill("SIGTERM");
+  });
+
+function cli(dataDir: string, ...args: string[]): string {
+  const r = spawnSync(process.execPath, [CLI, ...args], { env: { ...process.env, DATA_DIR: dataDir }, encoding: "utf8" });
+  assert.equal(r.status, 0, `admin ${args.join(" ")}: ${r.stderr}`);
+  return r.stdout;
+}
+
+async function launch() {
+  const { chromium } = await import("playwright");
+  // Playwright and Chromium write temporary files under os.tmpdir(): keep them in the gitignored tools/bin/tmp.
+  mkdirSync(TMP, { recursive: true });
+  const saved = { TEMP: process.env.TEMP, TMP: process.env.TMP, TMPDIR: process.env.TMPDIR };
+  process.env.TEMP = process.env.TMP = process.env.TMPDIR = TMP;
+  try {
+    return await chromium.launch({ headless: true, env: { ...process.env, TEMP: TMP, TMP: TMP, TMPDIR: TMP } as Record<string, string> });
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
+}
+
+for (const mode of ["path", "subdomain"] as Mode[]) {
+  test(`[e2e ${mode}] create, upgrade, skill, buy, battle replayed by the SWF with the stored winner`, { timeout: 600_000 }, async (t) => {
+    if (!browsersInstalled()) return t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
+    mkdirSync(join(REPO, "var"), { recursive: true });
+    const dataDir = mkdtempSync(join(REPO, "var", `e2e-${mode}-`));
+    const port = await freePort();
+    const root = mode === "path" ? `http://localhost:${port}` : `http://${BASE_DOMAIN}:${port}`;
+    const at = (host: string, path: string): string => (mode === "path" ? `${root}/a/${host}${path}` : `http://${host}.${BASE_DOMAIN}:${port}${path}`);
+    const env: Record<string, string> = { URL_MODE: mode, PORT: String(port), DATA_DIR: dataDir, ...(mode === "subdomain" ? { BASE_DOMAIN } : {}) };
+    const server = await startServer(env);
+    const browser = await launch();
+    let db: DatabaseSync | undefined;
+    try {
+      // first start seeded the faction armies
+      const listed = cli(dataDir, "list");
+      assert.match(listed, /sang-surs/);
+      db = new DatabaseSync(join(dataDir, "minitroopers.db"), { readOnly: true });
+      const page = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();
+      page.on("dialog", (d) => void d.accept());
+
+      // 1. create an army on the root site; the session must follow to the army's HQ (subdomain: cookie domain)
+      await page.goto(`${root}/`);
+      await page.fill("#name", "Bidasses");
+      await page.click("#tr_1000 > ul");
+      await page.mouse.move(0, 0); // the skill tooltip follows the mouse and would cover the button
+      await page.waitForSelector("#submit:not([disabled])", { timeout: 15_000 });
+      await Promise.all([page.waitForURL(at("bidasses", "/hq")).catch(async (e: unknown) => {
+        throw new Error(`creation: at ${page.url()}: ${(await page.textContent("body"))?.replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
+      }), page.click("#submit")]);
+      assert.equal(page.url(), at("bidasses", "/hq"));
+      const army = db.prepare("SELECT id, credits FROM armies WHERE host = 'bidasses'").get() as { id: number; credits: number };
+      assert.ok(army, "army stored");
+      const trooperLink = JSON.stringify(mode === "path" ? "/a/bidasses/t/" : at("bidasses", "/t/"));
+      assert.ok((await page.content()).includes(trooperLink), "owner HQ (trooper grid links), not the recruit page");
+
+      // 2. credits from the admin CLI
+      assert.match(cli(dataDir, "give-credits", "--army", "Bidasses", "--amount", "100"), /bidasses/);
+
+      // 3. upgrade trooper 0 and choose the first skill offered
+      await page.goto(at("bidasses", "/t/0"));
+      await Promise.all([page.waitForURL(at("bidasses", "/levelup/0")), page.click('a[href*="levelup="]')]);
+      await Promise.all([page.waitForURL(at("bidasses", "/hq")), page.click(".box8 >> nth=0")]);
+      const t0 = db.prepare("SELECT choices FROM troopers WHERE army_id = ? AND slot = 0").get(army.id) as { choices: string };
+      assert.equal((JSON.parse(t0.choices) as number[]).length, 1);
+
+      // 4. buy a trooper
+      await page.goto(at("bidasses", "/add"));
+      await page.click("#tr_1000 > ul");
+      await page.mouse.move(0, 0); // the skill tooltip follows the mouse: leave the icons before aiming at the button
+      await Promise.all([page.waitForURL(at("bidasses", "/hq")), page.click("#valid")]);
+      assert.equal((db.prepare("SELECT COUNT(*) AS n FROM troopers WHERE army_id = ?").get(army.id) as { n: number }).n, 2);
+
+      // 5. fight the first opponent of the day
+      await page.goto(at("bidasses", "/b/opp"));
+      await Promise.all([page.waitForURL(at("bidasses", "/b/view/bat1")), page.click('a.button5[href*="/b/battle?"] >> nth=0')]);
+      const b = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ?").get(army.id) as { input: string; winner: number | null };
+      const won = b.winner !== null && b.winner === (JSON.parse(b.input) as BattleInput).attackerSide;
+
+      // 6. Ruffle replays it: the SWF's end banner shows the stored winner, its endBattle() goes to /hq?money=<reward>
+      const player = page.locator("ruffle-player#battle");
+      await player.waitFor({ timeout: 30_000 });
+      const box = (await player.boundingBox())!;
+      const victory = readFileSync(join(FIXTURES, "banner-victoire.png"));
+      const defeat = readFileSync(join(FIXTURES, "banner-defaite.png"));
+      const clip = { x: box.x + BANNER.dx, y: box.y + BANNER.dy, width: BANNER.width, height: BANNER.height };
+      const deadline = Date.now() + Number(process.env.MT_E2E_BATTLE_MS ?? 400_000);
+      // The crop matches a reference up to PNG encoding noise (measured: 0.0002 mean channel difference, banners 10.4 apart).
+      const banner = (png: Buffer): "VICTOIRE" | "DEFAITE" | null =>
+        pngDistance(png, victory) < 1 ? "VICTOIRE" : pngDistance(png, defeat) < 1 ? "DEFAITE" : null;
+      let shot = await page.screenshot({ clip });
+      while (banner(shot) === null) {
+        if (Date.now() > deadline) {
+          // kept for diagnosis (var/ is gitignored)
+          writeFileSync(join(REPO, "var", `e2e-${mode}-banner.png`), shot);
+          writeFileSync(join(REPO, "var", `e2e-${mode}-player.png`), await page.screenshot({ clip: { x: box.x, y: box.y, width: box.width, height: box.height } }));
+          assert.fail("no end-of-battle banner (crops saved in var/)");
+        }
+        await page.waitForTimeout(1000);
+        shot = await page.screenshot({ clip });
+      }
+      assert.equal(banner(shot), won ? "VICTOIRE" : "DEFAITE", "banner drawn by the SWF vs winner in the database");
+      const end = at("bidasses", `/hq?money=${won ? 2 : 1}`);
+      // Ruffle swallows the first click on a fresh page (activation); the next one reaches "continuer".
+      for (let i = 0; i < 4 && page.url() !== end; i++) {
+        await page.mouse.click(box.x + CONTINUE.dx, box.y + CONTINUE.dy);
+        await page.waitForURL(end, { timeout: 2_000 }).catch(() => {});
+      }
+      assert.equal(page.url(), end, "endBattle() called by the SWF");
+    } finally {
+      db?.close();
+      await browser.close();
+      await stop(server);
+      rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+}

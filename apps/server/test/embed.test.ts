@@ -24,6 +24,7 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
   assert.equal(c.parameters, "data=abc&chk=1");
   assert.equal(c.autoplay, "on");
   assert.equal(c.splashScreen, false);
+  assert.equal(c.unmuteOverlay, "hidden");
   assert.equal(c.contextMenu, "off");
   assert.equal(c.backgroundColor, "#F2DDB8");
   assert.equal(c.scale, "noscale");

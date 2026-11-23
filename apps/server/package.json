@@ -11,5 +11,8 @@
     "@mt/engine": "*",
     "@mt/game": "*",
     "hono": "^4.13.20"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
   }
 }

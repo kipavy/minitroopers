@@ -1,19 +1,26 @@
-import { mkdirSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
+import { seedFactions } from "./admin/factions.ts";
 import { createApp } from "./app.ts";
-import { loadConfig } from "./config.ts";
+import { loadConfig, resolveDataDir } from "./config.ts";
 import { openDb } from "./db.ts";
 import { startDailyJob } from "./jobs/daily.ts";
 import { mountPages } from "./routes/index.ts";
 
 const cfg = loadConfig(process.env);
-// A relative DATA_DIR is relative to the repository root (var/ is gitignored).
-const dataDir = isAbsolute(cfg.dataDir) ? cfg.dataDir : resolve(import.meta.dirname, "../../..", cfg.dataDir);
+const dataDir = resolveDataDir(cfg.dataDir);
 mkdirSync(dataDir, { recursive: true });
-const db = openDb(join(dataDir, "minitroopers.db"));
+const dbFile = join(dataDir, "minitroopers.db");
+const fresh = !existsSync(dbFile);
+const db = openDb(dbFile);
+// First start (new database): the faction armies exist from the beginning. Later: `npm run admin -- seed-factions`.
+if (fresh) {
+  const { created } = seedFactions(db, Date.now());
+  console.log(`New database: ${created.length} faction armies seeded`);
+}
 startDailyJob(db);
 const app = createApp({ cfg, db }, mountPages({ cfg, db }));
 serve({ fetch: app.fetch, port: cfg.port, hostname: "127.0.0.1" }, (i) => {
-  console.log(`MiniTroopers server on http://127.0.0.1:${i.port} (${cfg.urlMode} mode, data in ${dataDir})`);
+  console.log(`MiniTroopers server on http://127.0.0.1:${i.port} (${cfg.urlMode} mode, ${cfg.publicUrl}, data in ${dataDir})`);
 });

@@ -95,6 +95,8 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
     const form = await c.req.parseBody();
     const a = findLogin(form.login);
     if (!a) return homeError(c, ERR_LOGIN, 404);
+    // UNVERIFIED: a faction army (no owner, no password) is never opened by name; its recruit page instead.
+    if (a.isFaction) return c.redirect(armyUrl(cfg, a.host, "/"));
     if (a.passwordHash !== null) {
       // UNVERIFIED: attempt limits (10 per 10 min per IP+army, 40 per IP) are ours; the original's are unknown.
       if (!loginLimiter.hit(`${c.get("ip")}|${a.id}`) || !loginIpLimiter.hit(c.get("ip"))) return c.html(String(missingPage(cfg, ERR_RATE)), 429);

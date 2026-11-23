@@ -421,3 +421,59 @@ export function fight(
   });
   return out;
 }
+
+/** A complete army written by the admin CLI (faction armies, prepared armies). `troopers[i]` goes to slot i. */
+export interface ArmySeed {
+  host: string;
+  name: string;
+  part: number;
+  faction: number;
+  credits: number;
+  isFaction: boolean;
+  passwordHash: string | null;
+  now: number;
+  troopers: { seed: number; name: string; choices: number[]; leftOver: number[] | null }[];
+}
+
+/** Inserts an army and all its troopers atomically. Null when the host is already taken. */
+export function insertArmy(db: DatabaseSync, a: ArmySeed): ArmyRow | null {
+  try {
+    return immediate(db, () => {
+      if (armyByHost(db, a.host)) return null;
+      const id = Number(
+        db
+          .prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, password_hash, is_faction) VALUES (?,?,?,?,?,?,?,?)")
+          .run(a.host, a.name, a.part, a.faction, a.credits, a.now, a.passwordHash, a.isFaction ? 1 : 0).lastInsertRowid,
+      );
+      const ins = db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices, left_over) VALUES (?, ?, ?, ?, ?, ?)");
+      a.troopers.forEach((t, slot) => ins.run(id, slot, t.seed, t.name, JSON.stringify(t.choices), t.leftOver === null ? null : JSON.stringify(t.leftOver)));
+      return armyById(db, id);
+    });
+  } catch (e) {
+    if (/UNIQUE/i.test(String(e))) return null;
+    throw e;
+  }
+}
+
+/** Adds `amount` (may be negative) to an army's credits, never below 0. Returns the new balance, null for no such army. */
+export function addCredits(db: DatabaseSync, armyId: number, amount: number): number | null {
+  const r = db.prepare("UPDATE armies SET credits = MAX(0, credits + ?) WHERE id = ? RETURNING credits").get(amount, armyId) as { credits: number } | undefined;
+  return r ? Number(r.credits) : null;
+}
+
+export interface ArmySummary {
+  army: ArmyRow;
+  troopers: number;
+  /** Σ (5 + choices), like `armyPower`. */
+  power: number;
+}
+
+/** Every army with its trooper count and power, by id. */
+export function armySummaries(db: DatabaseSync): ArmySummary[] {
+  const rows = db
+    .prepare(
+      "SELECT a.*, COUNT(t.id) AS n_troopers, COALESCE(SUM(5 + json_array_length(t.choices)), 0) AS power FROM armies a LEFT JOIN troopers t ON t.army_id = a.id GROUP BY a.id ORDER BY a.id",
+    )
+    .all();
+  return rows.map((r) => ({ army: armyOf(r), troopers: Number(r.n_troopers), power: Number(r.power) }));
+}

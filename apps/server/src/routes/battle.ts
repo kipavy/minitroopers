@@ -30,6 +30,7 @@ interface Attack {
 export function registerBattle(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
+  const battleSeed = deps.battleSeed ?? (() => randomInt(1, SEED_MAX));
   const today = (): string => dayKey(new Date(now()), cfg.tzGame);
 
   /** Builds and resolves the battle against `foe`, reading the attacker as stored (inside the fight transaction). */
@@ -37,7 +38,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     if (foe.defenderId === army.id) return "self";
     const mine = troopersOf(db, army.id).map(trooperInput);
     if (mine.length === 0 || foe.army.troopers.length === 0) return "invalid"; // the engine only rejects 0 vs 0
-    const input = buildBattleInput(randomInt(1, SEED_MAX), { faction: army.faction, troopers: mine }, foe.army);
+    const input = buildBattleInput(battleSeed(), { faction: army.faction, troopers: mine }, foe.army);
     let winner: number | null;
     try {
       winner = simulateOutcome(input).winner;

@@ -29,7 +29,8 @@ export function bindArmy(db: DatabaseSync, key: string, armyId: number | null): 
 
 export function sessionMiddleware(cfg: Config, db: DatabaseSync, now: () => number = Date.now): MiddlewareHandler<Env> {
   // Subdomain mode: share the session between the root site and <host>.<BASE_DOMAIN> via Domain=<BASE_DOMAIN> (no port).
-  // UNVERIFIED in browsers for single-label domains (BASE_DOMAIN=localhost): Chromium may refuse Domain=localhost; use lvh.me if so.
+  // Verified in Chromium (test/e2e.test.ts): works for mt.localhost / lvh.me; Domain=localhost is never sent to
+  // <host>.localhost, so loadConfig refuses a single-label BASE_DOMAIN in subdomain mode.
   const domain = cfg.urlMode === "subdomain" ? { domain: cfg.baseDomain.replace(/:\d+$/, "") } : {};
   const opts = { httpOnly: true, sameSite: "Lax" as const, path: "/", secure: cfg.secureCookies, ...domain };
   return async (c, next) => {

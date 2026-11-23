@@ -163,6 +163,11 @@ for (const mode of MODES) {
     assert.equal(second.headers.get("location"), loc(env, mode, "/t/0?err=renamed")); // only once
     assert.ok((await (await get(env, cl, "/t/0?err=renamed")).text()).includes("déjà été renommé"));
     assert.ok(!(await (await get(env, cl, "/t/0?err=<b>")).text()).includes("<b>"));
+    for (const k of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {
+      const r = await get(env, cl, `/t/0?err=${k}`);
+      assert.equal(r.status, 200, k); // inherited Object members are not flash codes
+      assert.ok(!(await r.text()).includes("[native code]"), k);
+    }
     assert.equal(trooper0(env, id).name, hostile);
     for (const path of ["/t/0", "/hq"]) {
       const html = await (await get(env, cl, path)).text();
