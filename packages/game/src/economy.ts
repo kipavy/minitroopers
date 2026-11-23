@@ -22,3 +22,20 @@ export function referralBounty(recruitIndex: number): number {
   if (recruitIndex <= 34) return 5;
   return 0;
 }
+
+/** Missions (RECON3 §4/§7). UNVERIFIED: the SWF `Data` constants (5 unlock, 3 tries, 4 reward) are unnamed; mapping presumed. */
+export const MISSION_UNLOCK_COST = 5;
+export const MISSION_ATTEMPTS = 3;
+/** Credits for a won mission, 0 for a lost one. */
+export function missionReward(win: boolean): number {
+  return win ? 4 : 0;
+}
+
+/** Raids and epic (RECON3 §3/§7). UNVERIFIED: `Data` constants 4 / 20 / 100 unnamed; mapping presumed. */
+export const RAID_REWARD = 4;
+export const RAID_MAX_PHASE = 20;
+export const RAID_PER_BATTLE = 100;
+export const EPIC_MIN_RECRUITS = 10;
+export const EPIC_SIDE_MAX = 32;
+export const EPIC_NPC_MAX = 100;
+export const NPC_SEED_MAX = 100_000;

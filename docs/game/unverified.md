@@ -72,3 +72,14 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | Armées de faction semées | `npm run admin -- seed-factions` et premier démarrage : armées `is_faction`, sans mot de passe, 0 crédit, troopers identiques à `factionBattleArmy` ; une fois semées elles entrent dans les tirages d'adversaires comme toute armée stockée (donc seulement pour les armées à ±50 % de leur puissance) | statut et propriétaire des armées de faction originales inconnus | `apps/server/src/admin/factions.ts`, `src/main.ts` |
 | Connexion à une armée de faction | jamais ouverte par son nom (`POST /login` redirige vers sa page de recrutement) | sans propriétaire ni mot de passe, n'importe qui la prendrait | `apps/server/src/routes/hq.ts` |
 | Mode sous-domaines en local | `BASE_DOMAIN` à un seul label refusé (vérifié par le test « [e2e cookies] » de `apps/server/test/e2e.test.ts` : Chromium ne renvoie pas un cookie `Domain=localhost` à `<armée>.localhost`) ; utiliser `mt.localhost` ; non vérifié dans Firefox/Safari | comportement des navigateurs pour les domaines sans point | `apps/server/src/config.ts` |
+
+## Missions, raids, PNJ (`packages/game`, étape 3)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Type de mission du jour | hachage `jour\|armée\|mission\|sel` ; exterminer/infiltrer à parts égales, épique 1 jour sur 3 dès 10 recrues | règle d'origine inconnue (un type par jour archivé) | `packages/game/src/missions.ts` |
+| Croissance de l'épique | `epicPower(victoires) = raidPower(victoires + 11)` | épique archivé = 325 ≈ phase 11 ; croissance non documentée | `packages/game/src/raid.ts` |
+| Cible d'infiltration | une fois sur deux parmi les armées déjà combattues (s'il y en a), sinon uniforme | wiki : choix « biaisé » sans détail | `packages/game/src/missions.ts` |
+| Graines et choix des PNJ | graines `random(100000)`, choix 0/1 équiprobables, ordre des tirages de notre cru | formes archivées seulement (graines < 100 000, choix 0/1) | `packages/game/src/npc.ts` |
+| Rats du jour | tirés d'un hachage `jour\|armée\|rats\|sel` (mêmes pour les 3 essais) | dérivation serveur inconnue | `packages/game/src/rats.ts` |
+| Constantes `Data` (5, 3, 4, 4, 20, 100) | déblocage 5, 3 essais, mission 4, raid 4, 20 phases, 100 par combat | constantes SWF non nommées | `packages/game/src/economy.ts` |
