@@ -11,7 +11,7 @@ import { SpecError, buildTroopers } from "../src/admin/army.ts";
 import { seedFactions } from "../src/admin/factions.ts";
 import {
   addCredits, armyById, armyByHost, battleOfDay, battlesCounted, battlesOfDay, battlesUsed, fight, fightMission, fightRaid, insertArmy, armySummaries, missionDay,
-  missionsOfDay, raidDay, renameArmy, resetDay, troopersOf, trooperInput, type NewBattle, type NewModeBattle,
+  missionsOfDay, raidDay, renameArmy, resetDay, troopersOf, trooperInput, dayOpponents, type NewBattle, type NewModeBattle,
 } from "../src/repo.ts";
 import { foeByName } from "../src/foes.ts";
 import { create, setup } from "./helpers.ts";
@@ -345,6 +345,32 @@ test("reset-day battles: battle rows and replays kept, exactly one more full day
   assert.match(hq, new RegExp(`/b/view/bat${2 * allowance}"`));
   assert.doesNotMatch(hq, /\/b\/view\/bat1"/);
   assert.match(hq, /Tu as terminé tes batailles du jour/);
+});
+
+test("reset-day battles: the day's opponents are drawn again (frozen until the next reset); a pre-reset opponent is refused", async () => {
+  const env = setup();
+  const { cl, id, at } = await warpArmy(env);
+  const day = dayOf(env);
+  const opp = async (): Promise<string[]> => {
+    const r = await cl.req(at("/b/opp").url, { host: at("/b/opp").host });
+    assert.equal(r.status, 200);
+    return (dayOpponents<{ id: string }>(env.db, id, day) ?? []).map((x) => x.id);
+  };
+  const before = await opp();
+  assert.equal(before.length, 5);
+  assert.deepEqual(await opp(), before); // frozen: reloading draws nothing
+  resetDay(env.db, id, day, { mission: true, raid: true, shop: true }); // other quotas: the opponents stay
+  assert.deepEqual(await opp(), before);
+  resetDay(env.db, id, day, { battles: true });
+  const after = await opp();
+  assert.equal(after.length, 5);
+  assert.notDeepEqual(after, before);
+  assert.deepEqual(await opp(), after); // frozen again until the next reset
+  const gone = before.find((x) => !after.includes(x))!;
+  const u = at(`/b/battle?chk=${cl.key};n=0;opp=${encodeURIComponent(gone)}`);
+  const r = await cl.req(u.url, { host: u.host });
+  assert.match(r.headers.get("location")!, /\/b\/opp\?err=/); // no longer one of the day's opponents
+  assert.equal(battlesUsed(env.db, id, day), 0);
 });
 
 test("reset-day mission: same mission again, MISSION_ATTEMPTS fresh tries, a pre-reset URL replays nothing", async () => {

@@ -10,7 +10,7 @@ import { openDb } from "../db.ts";
 import { hashPassword } from "../password.ts";
 import {
   addCredits, armyByHost, armyById, armyFootprint, armySummaries, battlesCounted, battlesUsed, confirmRecruits, confirmedRecruitCount, deleteArmy, grantLevelUp,
-  insertArmy, levelUpTo, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, setPassword, storedDeployOrder, troopersOf, trooperInput,
+  insertArmy, levelUpTo, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, shopResets, setPassword, storedDeployOrder, troopersOf, trooperInput,
   type ArmyRow,
 } from "../repo.ts";
 import { isValidHost } from "../urls.ts";
@@ -44,9 +44,10 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
       État complet d'une armée : crédits, mot de passe, missions, rats, recruteur, recrues, troopers (niveau,
       compétences), ordre de déploiement, et la journée (défaut : aujourd'hui, fuseau TZ_GAME) : batailles,
       mission, raid.
-  reset-day --army <nom ou hôte> [--day AAAA-MM-JJ] [--what battles|mission|raid|all]
+  reset-day --army <nom ou hôte> [--day AAAA-MM-JJ] [--what battles|mission|raid|shop|all]
       Rend les quotas d'une journée (défaut : aujourd'hui, tout) sans rien effacer : batailles (une journée
-      complète de plus), mission (mêmes type et adversaire, essais rendus), raid (phase 1, recrues ressuscitées).
+      complète de plus), mission (mêmes type et adversaire, essais rendus), raid (phase 1, recrues ressuscitées),
+      boutique (nouvelles offres sur « Ajouter un trooper », un nouveau tirage à chaque appel).
       Les combats déjà joués restent visibles et les anciens liens d'action ne rejouent rien.
   set-credits --army <nom ou hôte> --amount <N>
       Fixe les crédits à N (N >= 0).
@@ -258,11 +259,13 @@ function dayLines(db: DatabaseSync, a: ArmyRow, day: string): string[] {
   const counted = battlesCounted(db, a.id, day);
   const m = missionDay(db, a.id, day);
   const r = raidDay(db, a.id, day);
+  const shops = shopResets(db, a.id, day);
   return [
     `Journée ${day} :`,
     `  Batailles : ${counted}/${battleAllowance(troopersOf(db, a.id).map(trooperInput))}${used !== counted ? ` (${used} dans la journée, avant remise à zéro comprises)` : ""}`,
     `  Mission : ${m.type ?? "pas encore tirée"}, essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`,
     `  Raid : phase ${r.phase}, terminé : ${yesNo(r.over)}, recrues tuées : ${r.dead.length}`,
+    `  Boutique : ${shops === 0 ? "offres du jour" : `nouvelles offres (remise à zéro ${shops} fois)`}`,
   ];
 }
 
@@ -302,9 +305,9 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
   if (cmd === "reset-day") {
     const day = dayArg(cfg, str(values.day));
     const what = str(values.what) ?? "all";
-    if (!["battles", "mission", "raid", "all"].includes(what)) throw new UsageError("--what : battles, mission, raid ou all");
+    if (!["battles", "mission", "raid", "shop", "all"].includes(what)) throw new UsageError("--what : battles, mission, raid, shop ou all");
     const all = what === "all";
-    resetDay(db, a.id, day, { battles: all || what === "battles", mission: all || what === "mission", raid: all || what === "raid" });
+    resetDay(db, a.id, day, { battles: all || what === "battles", mission: all || what === "mission", raid: all || what === "raid", shop: all || what === "shop" });
     return [`${a.host} : journée ${day} rendue (${what})`, ...dayLines(db, a, day)].join("\n");
   }
 

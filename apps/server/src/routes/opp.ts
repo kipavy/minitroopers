@@ -2,7 +2,7 @@ import type { Hono } from "hono";
 import { battleAllowance, dayKey, pickOpponents, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { foeOf } from "../foes.ts";
-import { armyPowers, battlesCounted, battlesUsed, freezeOpponents } from "../repo.ts";
+import { armyPowers, battlesCounted, battlesUsed, freezeOpponents, opponentsResets } from "../repo.ts";
 import { queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { oppPage, type OppFoe } from "../views/opp.ts";
@@ -33,12 +33,15 @@ export function registerOpp(pages: Hono<Env>, deps: Deps): void {
     const used = battlesUsed(db, o.army.id, day);
     if (battlesCounted(db, o.army.id, day) >= battleAllowance(o.troopers)) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
     // Drawn on the first visit of the day and frozen: reloading cannot fish for weaker opponents.
+    // An admin reset-day of the battles clears them and salts the next draw.
+    const resets = opponentsResets(db, o.army.id, day);
     const refs = freezeOpponents<ArmyRef>(db, o.army.id, day, () =>
       pickOpponents({
         self: { id: String(o.army.id), power: o.power },
         candidates: armyPowers(db).map((a) => ({ id: String(a.id), power: a.power })),
         day,
         clientId: c.get("session").clientId,
+        ...(resets > 0 ? { salt: `reset#${resets}` } : {}),
       }),
     );
     const foes: OppFoe[] = [];

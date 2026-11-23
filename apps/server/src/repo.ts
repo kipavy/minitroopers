@@ -495,27 +495,50 @@ export interface ResetWhat {
   battles?: boolean;
   mission?: boolean;
   raid?: boolean;
+  /** New offers on /add (a new draw at each call). */
+  shop?: boolean;
+}
+
+/** Shop resets of `day` (migration 008): 0 = the day's original offers. */
+export function shopResets(db: DatabaseSync, armyId: number, day: string): number {
+  const r = db.prepare("SELECT shop_reset FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as { shop_reset: number } | undefined;
+  return Number(r?.shop_reset ?? 0);
+}
+
+/** Battle resets of `day` (migration 008), which salt the opponents' draw: 0 = the day's original opponents. */
+export function opponentsResets(db: DatabaseSync, armyId: number, day: string): number {
+  const r = db.prepare("SELECT opponents_reset FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as { opponents_reset: number } | undefined;
+  return Number(r?.opponents_reset ?? 0);
 }
 
 /**
  * Admin `reset-day`: gives back the day's quotas of an army, in one BEGIN IMMEDIATE transaction. Nothing is deleted
  * and no counter goes back (battle history, replays and single-shot URLs stay as they are): the quotas restart from
  * offsets (migration 007).
- * - battles: the allowance counts again from the battles fought so far (a full day's worth more);
+ * - battles: the allowance counts again from the battles fought so far (a full day's worth more), and the day's
+ *   opponents are drawn again (salted by the reset count) at the next visit of /b/opp;
  * - mission: the tries count again from the tries made so far, the day is no longer won; same mission type and target;
  * - raid: phase 1 again with every recruit alive, at the next URL counter (`raid_phase` + 1) so that no URL issued
  *   before the reset can fight; a raid not started yet is left as it is.
- * Calling it again without new actions changes nothing.
+ * - shop: the offers of /add are drawn again (salted by the reset count); every call draws a new set.
+ * Calling it again without new actions changes nothing, except the draws (opponents, shop).
  */
 export function resetDay(db: DatabaseSync, armyId: number, day: string, what: ResetWhat): void {
   immediate(db, () => {
     db.prepare("INSERT INTO daily(army_id, day) VALUES (?, ?) ON CONFLICT(army_id, day) DO NOTHING").run(armyId, day);
-    if (what.battles) db.prepare("UPDATE daily SET battles_reset = ? WHERE army_id = ? AND day = ?").run(battlesUsed(db, armyId, day), armyId, day);
+    if (what.battles) {
+      db.prepare("UPDATE daily SET battles_reset = ?, opponents = NULL, opponents_reset = opponents_reset + 1 WHERE army_id = ? AND day = ?").run(
+        battlesUsed(db, armyId, day),
+        armyId,
+        day,
+      );
+    }
     if (what.mission) db.prepare("UPDATE daily SET missions_reset = missions_used, mission_won = 0 WHERE army_id = ? AND day = ?").run(armyId, day);
     const r = raidDay(db, armyId, day);
     if (what.raid && (r.phase > 1 || r.over || r.dead.length > 0)) {
       db.prepare("UPDATE daily SET raid_reset = raid_phase, raid_phase = raid_phase + 1, raid_dead = '[]', raid_over = 0 WHERE army_id = ? AND day = ?").run(armyId, day);
     }
+    if (what.shop) db.prepare("UPDATE daily SET shop_reset = shop_reset + 1 WHERE army_id = ? AND day = ?").run(armyId, day);
     return true;
   });
 }

@@ -45,8 +45,10 @@ function randomFaction(clientId: string, day: string): Faction {
   return FACTIONS[n % FACTIONS.length]!;
 }
 
-export function offersFor(c: Context<Env>, day: string, recruiter: string | null): OfferView[] {
-  return dailyOffers({ day, clientId: c.get("session").clientId, recruiter, salt: "offers" }).map((o) => ({
+/** The day's offers of this client; `shopResets` > 0 (admin `reset-day --what shop`, /add only) draws them again. */
+export function offersFor(c: Context<Env>, day: string, recruiter: string | null, shopResets = 0): OfferView[] {
+  const salt = shopResets === 0 ? "offers" : `offers#${shopResets}`;
+  return dailyOffers({ day, clientId: c.get("session").clientId, recruiter, salt }).map((o) => ({
     ...o,
     skills: describeTrooper({ id: 0, name: o.name, seed: o.seed, type: 0, choices: [], force: [], pref: null }).skills.slice(0, 2),
   }));

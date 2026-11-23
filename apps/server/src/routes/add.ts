@@ -4,7 +4,7 @@ import { ERR_OFFER } from "../texts.ts";
 import { recruitCost } from "@mt/engine";
 import { dayKey } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
-import { addTrooper, armyById } from "../repo.ts";
+import { addTrooper, armyById, shopResets } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { addPage } from "../views/add.ts";
 import { MAX_TROOPERS } from "../views/panel.ts";
@@ -24,7 +24,8 @@ export function registerAdd(pages: Hono<Env>, deps: Deps): void {
    */
   function offers(c: Context<Env>, o: Owned) {
     const recruiter = o.army.recruiterId === null ? null : (armyById(db, o.army.recruiterId)?.host ?? null);
-    return offersFor(c, dayKey(new Date(now()), cfg.tzGame), recruiter);
+    const day = dayKey(new Date(now()), cfg.tzGame);
+    return offersFor(c, day, recruiter, shopResets(db, o.army.id, day));
   }
 
   function render(c: Context<Env>, o: Owned, error?: string, status: 200 | 400 = 200): Response {
