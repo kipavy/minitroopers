@@ -77,7 +77,12 @@ export function queryParam(c: Context, name: string): string | undefined {
 
 /** True when query parameter `param` equals the session key (the anti-CSRF token of action URLs). */
 export function hasKey(c: Context<Env>, param: string): boolean {
-  const given = Buffer.from(queryParam(c, param) ?? "");
+  return isSessionKey(c, queryParam(c, param));
+}
+
+/** True when `value` (query parameter or form field) is the session key. */
+export function isSessionKey(c: Context<Env>, value: unknown): boolean {
+  const given = Buffer.from(typeof value === "string" ? value : "");
   const want = Buffer.from(c.get("session").key);
   return given.length === want.length && timingSafeEqual(given, want);
 }

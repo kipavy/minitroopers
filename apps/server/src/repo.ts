@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import { Data, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
+import { Data, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
 
@@ -305,4 +305,119 @@ export function reequipTrooper(db: DatabaseSync, armyId: number, slot: number, d
       return true;
     }) !== null
   );
+}
+
+/** Power of every army that has at least one trooper: Σ (5 + choices), like `armyPower`. */
+export function armyPowers(db: DatabaseSync): { id: number; power: number }[] {
+  return (
+    db
+      .prepare("SELECT army_id AS id, SUM(5 + json_array_length(choices)) AS power FROM troopers GROUP BY army_id ORDER BY army_id")
+      .all() as { id: number; power: number }[]
+  ).map((r) => ({ id: Number(r.id), power: Number(r.power) }));
+}
+
+/** Today's opponent list of an army, null when not drawn yet. */
+export function dayOpponents<T>(db: DatabaseSync, armyId: number, day: string): T[] | null {
+  const r = db.prepare("SELECT opponents FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as { opponents: string | null } | undefined;
+  return r?.opponents ? (JSON.parse(r.opponents) as T[]) : null;
+}
+
+/** The day's opponents, drawn by `pick` the first time and frozen in `daily.opponents` (the first draw wins a race). */
+export function freezeOpponents<T>(db: DatabaseSync, armyId: number, day: string, pick: () => T[]): T[] {
+  const have = dayOpponents<T>(db, armyId, day);
+  if (have) return have;
+  db.prepare(
+    "INSERT INTO daily(army_id, day, opponents) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET opponents = COALESCE(daily.opponents, excluded.opponents)",
+  ).run(armyId, day, JSON.stringify(pick()));
+  return dayOpponents<T>(db, armyId, day)!;
+}
+
+/** Battles (kind 'battle') an army attacked on `day`. */
+export function battlesUsed(db: DatabaseSync, armyId: number, day: string): number {
+  return Number((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'battle'").get(armyId, day) as { n: number }).n);
+}
+
+export interface BattleRow {
+  id: number;
+  day: string;
+  attackerId: number;
+  defenderId: number | null;
+  defenderRef: string | null;
+  input: BattleInput;
+  winner: number | null;
+  seen: boolean;
+}
+
+const battleOf = (r: Raw): BattleRow => ({
+  id: r.id as number,
+  day: r.day as string,
+  attackerId: r.attacker_id as number,
+  defenderId: (r.defender_id as number | null) ?? null,
+  defenderRef: (r.defender_ref as string | null) ?? null,
+  input: JSON.parse(r.input as string) as BattleInput,
+  winner: (r.winner as number | null) ?? null,
+  seen: r.seen === 1,
+});
+
+export function battleById(db: DatabaseSync, id: number): BattleRow | null {
+  const r = db.prepare("SELECT * FROM battles WHERE id = ? AND kind = 'battle'").get(id);
+  return r ? battleOf(r) : null;
+}
+
+/** The `n`-th (1-based) battle an army attacked on `day`, as numbered by `battlesOfDay`. */
+export function battleOfDay(db: DatabaseSync, armyId: number, day: string, n: number): BattleRow | null {
+  if (!Number.isInteger(n) || n < 1) return null;
+  const r = db.prepare("SELECT * FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'battle' ORDER BY id LIMIT 1 OFFSET ?").get(armyId, day, n - 1);
+  return r ? battleOf(r) : null;
+}
+
+/** Marks the battle as seen by its attacker. True only for the first call. */
+export function markSeen(db: DatabaseSync, id: number): boolean {
+  return Number(db.prepare("UPDATE battles SET seen = 1 WHERE id = ? AND seen = 0").run(id).changes) === 1;
+}
+
+export interface NewBattle {
+  defenderId: number | null;
+  defenderRef: string | null;
+  input: BattleInput;
+  winner: number | null;
+  reward: number;
+}
+
+export type FightResult =
+  | { ok: true; id: number; n: number }
+  | { ok: false; reason: "stale"; used: number }
+  | { ok: false; reason: "limit" }
+  | { ok: false; reason: "refused"; code: string };
+
+/**
+ * Fights one daily battle atomically (BEGIN IMMEDIATE). `used` is the number of battles of the day the action URL was
+ * issued for: a replay (reload, double click, concurrent request) finds a different count and fights nothing ("stale").
+ * Then the day's allowance is checked and `decide` (run inside the transaction, so it reads the armies as stored)
+ * builds and resolves the battle, or returns an error code. The battle row, the reward and the daily counter are
+ * written together.
+ */
+export function fight(
+  db: DatabaseSync,
+  p: { armyId: number; day: string; used: number; allowance: () => number; decide: () => NewBattle | string },
+): FightResult {
+  let out: FightResult = { ok: false, reason: "limit" };
+  immediate(db, () => {
+    const used = battlesUsed(db, p.armyId, p.day);
+    if (used !== p.used) return (out = { ok: false, reason: "stale", used }), null;
+    if (used >= p.allowance()) return (out = { ok: false, reason: "limit" }), null;
+    const d = p.decide();
+    if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
+    const id = Number(
+      db
+        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind) VALUES (?, ?, ?, ?, ?, ?, 'battle')")
+        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner).lastInsertRowid,
+    );
+    db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
+    db.prepare(
+      "INSERT INTO daily(army_id, day, battles_used) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET battles_used = excluded.battles_used",
+    ).run(p.armyId, p.day, used + 1);
+    return (out = { ok: true, id, n: used + 1 });
+  });
+  return out;
 }

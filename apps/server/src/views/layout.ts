@@ -15,8 +15,8 @@ export function tip(title: string, body: Html | string): Html {
 }
 
 export interface LayoutOpts {
-  /** Page title text (escaped); the document title is "MiniTroopers - <title>". */
-  title: string;
+  /** Page title text (escaped); the document title is "MiniTroopers - <title>", or just "MiniTroopers" when null (battle pages). */
+  title: string | null;
   content: Html;
   /** Current army host, for the footer link to the password page. */
   host?: string | null;
@@ -34,9 +34,9 @@ export function layout(cfg: Config, o: LayoutOpts): Html {
   const protect = o.host ? html` <a href="${armyUrl(cfg, o.host, "/protect")}">Modifier mon pass</a> ·` : raw(" ·");
   return html`<!DOCTYPE html>
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
-<title>MiniTroopers
+${o.title === null ? html`<title>MiniTroopers</title>` : html`<title>MiniTroopers
 -
-${o.title}</title>
+${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
 <link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
 <script type="text/javascript" src="/js/jquery.min.js"></script>
