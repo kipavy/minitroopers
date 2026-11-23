@@ -114,7 +114,7 @@ for (const mode of MODES) {
     assert.equal((await post(env, a, "boss", { chk: a.key!, pass: "secret", newpass: "n", passconf: "n" })).status, 303);
   });
 
-  test(`[${mode}] another computer (cid) cannot create the password; legacy NULL cid can`, async () => {
+  test(`[${mode}] another computer (cid) cannot create the password; NULL cid (legacy, CLI) is refused too`, async () => {
     const env = setup(mode);
     const a = await owner(env);
     const b = env.client("2.2.2.2");
@@ -128,11 +128,17 @@ for (const mode of MODES) {
     const res = await post(env, b, "boss", { chk: b.key!, pass: "evil", passconf: "evil" });
     assert.equal(res.status, 403);
     assert.equal(hash(env), null);
+    // created_cid NULL (left by 005 when no session survives, or a CLI army without password): nobody sets it by
+    // self-service, not even the owner's own computer; the admin uses `set-password`.
     env.db.prepare("UPDATE armies SET created_cid = NULL").run();
-    assert.ok((await (await get(env, b, "boss", "/protect")).text()).includes('name="passconf"'));
-    await protectIt(env, b);
-    assert.notEqual(hash(env), null);
-    void a;
+    for (const cl of [a, b]) {
+      const p = await (await get(env, cl, "boss", "/protect")).text();
+      assert.ok(p.includes('<div id="bad">') && p.includes("depuis l'ordinateur que tu utilises actuellement"));
+      assert.ok(!p.includes('name="passconf"'));
+      const r = await post(env, cl, "boss", { chk: cl.key!, pass: "evil", passconf: "evil" });
+      assert.equal(r.status, 403);
+      assert.equal(hash(env), null);
+    }
   });
 
   test(`[${mode}] POST without chk, with a wrong chk, without submit, or cross-origin has no effect`, async () => {
@@ -150,9 +156,12 @@ for (const mode of MODES) {
     });
     assert.equal(res.status, 403);
     // a stranger (not the owner) is redirected, nothing stored
+    // (it has a session of its own, with its own valid chk, bound to another army)
     const s = env.client("5.5.5.5");
-    const r = await post(env, s, "boss", { chk: "AAAAAA", pass: "x", passconf: "x" });
-    assert.ok(r.status === 302 || r.status === 403);
+    assert.equal((await create(env, s, "Other")).status, 302);
+    assert.ok(s.key);
+    const r = await post(env, s, "boss", { chk: s.key!, pass: "x", passconf: "x" });
+    assert.equal(r.status, 302);
     assert.equal(hash(env), null);
   });
 

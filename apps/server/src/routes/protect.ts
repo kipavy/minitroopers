@@ -22,9 +22,11 @@ export function registerProtect(pages: Hono<Env>, deps: Deps, limits: PasswordLi
   const { cfg, db } = deps;
 
   // UNVERIFIED: the original only lets the machine that created the army set its first password (machine id `mid`).
-  // Ours compares the `cid` cookie; armies without a recorded cid (created before the migration, or by the CLI) are allowed.
+  // Ours compares the `cid` cookie. An army with no recorded cid (005 found no session to backfill it from, or a CLI
+  // army created without a password) is refused too: it opens by name, so anyone could otherwise lock its owner out.
+  // The admin sets such a password with `npm run admin -- set-password`.
   const wrongComputer = (c: Parameters<typeof ownedArmy>[1], o: Owned): boolean =>
-    o.army.passwordHash === null && o.army.createdCid !== null && o.army.createdCid !== c.get("session").clientId;
+    o.army.passwordHash === null && (o.army.createdCid === null || o.army.createdCid !== c.get("session").clientId);
 
   const render = (c: Parameters<typeof ownedArmy>[1], o: Owned, status: 200 | 400 | 403 | 429, error?: string) =>
     c.html(String(protectPage(cfg, { army: o.army, troopers: o.troopers, power: o.power, chk: c.get("session").key, bad: wrongComputer(c, o), ...(error ? { error } : {}) })), status);

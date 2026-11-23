@@ -61,6 +61,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `seed-factions` | crée les armées de faction absentes (sans effet si elles existent déjà) |
 | `create-army --name <nom> --troopers <json \| @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P] [--rats N] [--force]` | crée une armée complète (mot de passe : `--password` ou `MT_ARMY_PASSWORD`, jamais vide) ; `--rats` : rats de la prochaine extermination (défaut 1) ; `--force` : remplace l'armée de même hôte (jamais une faction) en une transaction |
 | `create-bro-army --name <nom> [--part 0-5] [--faction 0-5] [--count 12] [--rats 35] [--credits N] [--force]` | armée « du frère » : `count` troopers niveau 2 (Malin), extermination avancée, missions débloquées ; mot de passe **uniquement** par `MT_ARMY_PASSWORD` (obligatoire) |
+| `set-password --name <hôte>` | pose ou remplace le mot de passe d'une armée, **uniquement** par `MT_ARMY_PASSWORD` (obligatoire, jamais vide) ; déconnecte ses sessions. Seule voie pour une armée dont l'ordinateur de création est inconnu (`created_cid` NULL), que `/protect` refuse |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
 

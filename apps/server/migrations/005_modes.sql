@@ -25,6 +25,10 @@ INSERT INTO armies_new (id, host, name, part, faction, credits, recruiter_id, cr
   SELECT id, host, name, part, faction, credits, recruiter_id, created_at, created_ip, password_hash, is_faction FROM armies;
 DROP TABLE armies;
 ALTER TABLE armies_new RENAME TO armies;
+CREATE INDEX armies_recruiter ON armies(recruiter_id);
+-- Stage-2 armies have no created_cid: take it from the oldest session bound to the army (normally the creator's);
+-- left NULL when none survives, which refuses a self-service first password (/protect; admin: set-password).
+UPDATE armies SET created_cid = (SELECT client_id FROM sessions WHERE army_id = armies.id ORDER BY created_at, rowid LIMIT 1) WHERE created_cid IS NULL;
 
 -- Rebuilt battles: the attacker's battles go with the attacker; a deleted defender leaves the battle (defender_ref
 -- is then set to 'gone:<name>' by deleteArmy). mode/phase/opp: see missions, raids and stale attack links.
@@ -47,6 +51,7 @@ INSERT INTO battles_new (id, day, attacker_id, defender_id, input, winner, kind,
 DROP TABLE battles;
 ALTER TABLE battles_new RENAME TO battles;
 CREATE INDEX battles_attacker ON battles(attacker_id, day);
+CREATE INDEX battles_defender ON battles(defender_id);
 
 ALTER TABLE daily ADD COLUMN missions_used INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE daily ADD COLUMN mission_won INTEGER NOT NULL DEFAULT 0;

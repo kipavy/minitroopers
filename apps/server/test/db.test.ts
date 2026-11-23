@@ -79,7 +79,9 @@ function stage2Db(): DatabaseSync {
   army.run("fac", "Fac", 3, 3, 0, null, 3, 1); // 3
   db.prepare("INSERT INTO troopers(army_id, slot, seed, name) VALUES (1, 0, 5, 'T')").run();
   db.prepare("INSERT INTO daily(army_id, day, battles_used, opponents) VALUES (1, '2026-11-22', 2, '[]')").run();
+  db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES ('K2', 'tok2', 1, 'later', 5)").run();
   db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES ('K1', 'tok', 1, 'c', 1)").run();
+  db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES ('K3', 'tok3', NULL, 'nobody', 0)").run();
   const bat = db.prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, seen) VALUES (?,?,?,?,?,?,?,?)");
   bat.run("2026-11-22", 1, 2, null, "{}", 0, "battle", 1); // 1: Boss attacks Recruit
   bat.run("2026-11-22", 1, null, "filler:5:9", "{}", 1, "battle", 0); // 2: filler
@@ -103,7 +105,10 @@ test("migration 005 keeps armies, battles (filler included), recruits and sessio
   assert.equal(filler.kind, "battle");
   assert.equal(filler.mode, null);
   assert.equal(count(db, "SELECT COUNT(*) AS n FROM troopers"), 1);
-  assert.equal(count(db, "SELECT COUNT(*) AS n FROM sessions WHERE army_id = 1"), 1);
+  assert.equal(count(db, "SELECT COUNT(*) AS n FROM sessions WHERE army_id = 1"), 2);
+  // created_cid backfilled from the oldest session bound to the army; none bound: stays NULL (recruit, above)
+  assert.equal((db.prepare("SELECT created_cid FROM armies WHERE id = 1").get() as { created_cid: string }).created_cid, "c");
+  assert.equal((db.prepare("SELECT created_cid FROM armies WHERE id = 3").get() as { created_cid: string | null }).created_cid, null);
   const d = db.prepare("SELECT * FROM daily").get() as Record<string, unknown>;
   assert.deepEqual({ missions_used: d.missions_used, mission_won: d.mission_won, mission_type: d.mission_type, raid_phase: d.raid_phase, raid_dead: d.raid_dead, raid_over: d.raid_over }, { missions_used: 0, mission_won: 0, mission_type: null, raid_phase: 1, raid_dead: "[]", raid_over: 0 });
   assert.ok(cols(db, "battles").includes("opp"));
@@ -112,6 +117,22 @@ test("migration 005 keeps armies, battles (filler included), recruits and sessio
   db.prepare("INSERT INTO armies(host, name, created_at) VALUES ('new', 'New', 9)").run();
   assert.equal(count(db, "SELECT MAX(id) AS n FROM armies"), 4);
   assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'battles_attacker'").get());
+  assertIndexes(db);
+});
+
+/** Indexes of the rebuilt tables (a rebuild drops the old ones): recruits of a recruiter, battles of a defender. */
+function assertIndexes(db: DatabaseSync): void {
+  const idx = (t: string): string[] => (db.prepare(`PRAGMA index_list(${t})`).all() as { name: string }[]).map((r) => r.name);
+  assert.ok(idx("armies").includes("armies_recruiter"), idx("armies").join());
+  assert.ok(idx("battles").includes("battles_defender"), idx("battles").join());
+  assert.ok(idx("battles").includes("battles_attacker"), idx("battles").join());
+  const cols = (i: string): string[] => (db.prepare(`PRAGMA index_info(${i})`).all() as { name: string }[]).map((r) => r.name);
+  assert.deepEqual(cols("armies_recruiter"), ["recruiter_id"]);
+  assert.deepEqual(cols("battles_defender"), ["defender_id"]);
+}
+
+test("a fresh database has the stage-3 indexes", () => {
+  assertIndexes(openDb(":memory:"));
 });
 
 test("deleteArmy: a defender's battle stays for its attacker as gone:<name>; its own battles, troopers and sessions go", () => {
@@ -131,7 +152,8 @@ test("deleteArmy: a recruiter's recruits keep existing with recruiter_id NULL; i
   migrate(db);
   assert.equal(deleteArmy(db, 1), true);
   assert.equal((db.prepare("SELECT recruiter_id FROM armies WHERE id = 2").get() as { recruiter_id: number | null }).recruiter_id, null);
-  for (const t of ["troopers", "daily", "sessions"]) assert.equal(count(db, `SELECT COUNT(*) AS n FROM ${t}`), 0, t);
+  for (const t of ["troopers", "daily"]) assert.equal(count(db, `SELECT COUNT(*) AS n FROM ${t}`), 0, t);
+  assert.equal(count(db, "SELECT COUNT(*) AS n FROM sessions WHERE key <> 'K3'"), 0); // K3: bound to no army
   assert.equal(count(db, "SELECT COUNT(*) AS n FROM battles WHERE attacker_id = 1"), 0);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal(deleteArmy(db, 3), false); // faction army

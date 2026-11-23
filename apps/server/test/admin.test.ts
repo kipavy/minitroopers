@@ -251,3 +251,39 @@ test("admin CLI create-bro-army: SMART troopers, 35 rats, password from env only
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("admin CLI set-password: password from MT_ARMY_PASSWORD only, never empty; signs out the army's sessions", () => {
+  mkdirSync(join(REPO, "var"), { recursive: true });
+  const dir = mkdtempSync(join(REPO, "var", "admin-test-"));
+  try {
+    assert.equal(cli(dir, "seed-factions").status, 0);
+    assert.equal(cli(dir, "create-army", "--name", "Sans Pass", "--troopers", '[{"seed":5,"name":"X"}]').status, 0);
+    let db = openDb(join(dir, "minitroopers.db"));
+    const a = armyByHost(db, "sans-pass")!;
+    assert.equal(a.passwordHash, null);
+    db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES ('KS', 'tokS', ?, 'c', 1)").run(a.id);
+    db.close();
+    for (const [e, extra] of [[{}, []], [{ MT_ARMY_PASSWORD: "" }, []], [{ MT_ARMY_PASSWORD: "p" }, ["--password", "y"]]] as const) {
+      const r = cliEnv(dir, e, "set-password", "--name", "sans-pass", ...extra);
+      assert.equal(r.status, 1);
+      assert.match(r.stderr, /MT_ARMY_PASSWORD|--password/);
+    }
+    assert.equal(cliEnv(dir, { MT_ARMY_PASSWORD: "p" }, "set-password").status, 1); // --name required
+    assert.match(cliEnv(dir, { MT_ARMY_PASSWORD: "p" }, "set-password", "--name", "inconnue").stderr, /introuvable/);
+    assert.match(cliEnv(dir, { MT_ARMY_PASSWORD: "p" }, "set-password", "--name", FACTIONS[0]!.host).stderr, /faction/);
+    db = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(db, "sans-pass")!.passwordHash, null);
+    assert.equal(armyByHost(db, FACTIONS[0]!.host)!.passwordHash, null);
+    db.close();
+
+    const ok = cliEnv(dir, { MT_ARMY_PASSWORD: "admin-set" }, "set-password", "--name", "Sans Pass");
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.match(ok.stdout, /sans-pass/);
+    db = openDb(join(dir, "minitroopers.db"));
+    assert.ok(verifyPassword("admin-set", armyByHost(db, "sans-pass")!.passwordHash!));
+    assert.equal((db.prepare("SELECT army_id FROM sessions WHERE key = 'KS'").get() as { army_id: number | null }).army_id, null);
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

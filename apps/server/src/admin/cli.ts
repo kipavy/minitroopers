@@ -7,7 +7,7 @@ import { FACTIONS, host as hostOf, seedsOffering, trooperName } from "@mt/game";
 import { loadConfig, resolveDataDir } from "../config.ts";
 import { openDb } from "../db.ts";
 import { hashPassword } from "../password.ts";
-import { addCredits, armyByHost, armySummaries, insertArmy } from "../repo.ts";
+import { addCredits, armyByHost, armySummaries, insertArmy, setPassword } from "../repo.ts";
 import { isValidHost } from "../urls.ts";
 import { checkArmyName } from "../validate.ts";
 import { armyTitle } from "../views/army.ts";
@@ -27,6 +27,9 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
   create-bro-army --name <nom> [--part 0-5] [--faction 0-5] [--count 12] [--rats 35] [--credits N] [--force]
       Armée « du frère » : count troopers (1-12) niveau 2 avec Malin, extermination avancée (rats), missions débloquées.
       Mot de passe : uniquement la variable MT_ARMY_PASSWORD (obligatoire, jamais vide).
+  set-password --name <hôte>
+      Pose (ou remplace) le mot de passe d'une armée : uniquement la variable MT_ARMY_PASSWORD (obligatoire, jamais
+      vide). Déconnecte toutes ses sessions. Seule voie pour une armée sans ordinateur de création connu.
   give-credits --army <nom ou hôte> --amount <N>
       Ajoute N crédits (N négatif : en retire, jamais sous 0).
   list
@@ -66,7 +69,7 @@ function run(argv: string[]): string {
   });
   const cmd = positionals[0];
   if (values.help || cmd === undefined || cmd === "help") return USAGE;
-  if (!["seed-factions", "create-army", "create-bro-army", "give-credits", "list"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
+  if (!["seed-factions", "create-army", "create-bro-army", "set-password", "give-credits", "list"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
 
   const cfg = loadConfig(process.env);
   const dataDir = resolveDataDir(cfg.dataDir);
@@ -88,6 +91,19 @@ function run(argv: string[]): string {
             .join("\t"),
         )
         .join("\n");
+    }
+
+    if (cmd === "set-password") {
+      if (values.password !== undefined) throw new UsageError("set-password : pas de --password (mot de passe : MT_ARMY_PASSWORD)");
+      if (values.name === undefined) throw new UsageError("--name est obligatoire");
+      const envPass = process.env.MT_ARMY_PASSWORD;
+      if (envPass === undefined || envPass === "") throw new UsageError("MT_ARMY_PASSWORD : obligatoire et non vide pour set-password");
+      const h = hostOf(values.name.slice(0, 100));
+      const a = isValidHost(h) ? armyByHost(db, h) : null;
+      if (!a) throw new UsageError(`armée introuvable : ${values.name}`);
+      if (a.isFaction) throw new UsageError(`${a.host} est une armée de faction : refus`);
+      setPassword(db, a.id, hashPassword(envPass));
+      return `Mot de passe enregistré : ${a.host}`;
     }
 
     if (cmd === "give-credits") {
