@@ -133,3 +133,10 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | `/global-ranks` | redirection 301 vers `/ranks` | page absente du jeu archivé (seulement sur le serveur de test) | `apps/server/src/routes/ranks.ts` |
 | Menu « Hiérarchie » / « Historique » / « Gérer mon armée » | puissance ≥ 20 / ≥ 1 recrue (confirmée ou non) / ≥ 5 troopers | pages archivées (RECON4 §5) ; seuil de recrue « en attente » non archivé | `apps/server/src/views/panel.ts` (`menuFlags`) |
 | Visiteur d'une armée non protégée sur `/ranks` | panneau des troopers sans menu | cas non archivé (le QG redirige ce visiteur) | `apps/server/src/views/panel.ts` |
+
+## Fin de journée (`apps/server`, étape 4)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Déclencheur de `/endDay` | première vue d'un combat, d'une mission ou d'un raid après laquelle tout est fini : combats du jour ≥ allocation, mission finie (non débloquée, gagnée ou 3 essais), raid fini (`raid_over` ou aucune recrue vivante) ; sinon `/hq?money=N` | RECON4 §4 : seulement « après le dernier combat disponible pour la journée » ; mission et raid sont notre lecture | `apps/server/src/repo.ts` (`dayOver`), `routes/{battle,mission,raid}.ts` |
+| Contenu de `/endDay` | publicités Motion-Twin et phrase « Pendant ce temps… » omises ; dernière phrase réduite au lien « Recruter des Troopers » (pas de forum) ; page vers `/hq` tant que la journée n'est pas finie | jeux tiers et forum absents de notre version | `apps/server/src/views/endday.ts`, `routes/endday.ts` |

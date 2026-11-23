@@ -11,7 +11,7 @@ import { buildModeInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeOf, type Foe } from "../foes.ts";
 import {
-  addNotice, armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
+  addNotice, armyById, dayOver, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
   recruitLeaders, setMissionTarget, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
 } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
@@ -169,7 +169,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
       defender,
       heading: b.mode === "infiltrate" ? `Infiltrer la base de ${defender}` : null,
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
+      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
     };

@@ -4,7 +4,7 @@ import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@
 import { RAID_PER_BATTLE, RAID_REWARD, dayKey, npcArmy, raidPower, raidTrooperRange } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildModeInput } from "../battleInput.ts";
-import { armyById, fightRaid, lastRaidOfDay, markSeen, type NewModeBattle, type RaidRecruit } from "../repo.ts";
+import { armyById, dayOver, fightRaid, lastRaidOfDay, markSeen, type NewModeBattle, type RaidRecruit } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
@@ -93,7 +93,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
       defender: "",
       heading: null,
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${RAID_REWARD}`) : hq,
+      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${RAID_REWARD}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
     };

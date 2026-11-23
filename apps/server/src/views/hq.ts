@@ -77,16 +77,21 @@ ${tiles}
 </div></div></div></div>`;
 }
 
-/** Countdown to the daily reset, as the original prints it in the mission box ("Nouvelle mission dans" + chrono). */
-function resetTimer(seconds: number, id = "miss_tip", label = "Nouvelle mission dans"): Html {
+/** The chrono itself (image and `mt.js.Timer`): `seconds` left, shown from a fixed base date. */
+export function chrono(seconds: number): Html {
   const base = Date.UTC(2000, 0, 1);
   const fmt = (ms: number): string => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
-  return html`<div class="hqtip"><img src="/img/info.png"/>
-<span id="${id}">${label}
-<img src="/img/anim_small_chrono.gif"/>
+  return html`<img src="/img/anim_small_chrono.gif"/>
 <script type="text/javascript">
 	mt.js.Timer.TIMES="jhms";
-	mt.js.Timer.alloc('${raw(fmt(base))}','${raw(fmt(base + Math.max(0, seconds) * 1000))}',2,null);</script>
+	mt.js.Timer.alloc('${raw(fmt(base))}','${raw(fmt(base + Math.max(0, seconds) * 1000))}',2,null);</script>`;
+}
+
+/** Countdown to the daily reset, as the original prints it in the mission box ("Nouvelle mission dans" + chrono). */
+export function resetTimer(seconds: number, id = "miss_tip", label = "Nouvelle mission dans"): Html {
+  return html`<div class="hqtip"><img src="/img/info.png"/>
+<span id="${id}">${label}
+${chrono(seconds)}
 </span></div>
 `;
 }

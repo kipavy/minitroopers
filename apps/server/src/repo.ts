@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
+import { battleAllowance } from "./routes/opp.ts";
 import { FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
 import { Data, armyPower, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
@@ -923,4 +924,17 @@ export function ranking(db: DatabaseSync, armyId: number): { recruiter: RankRow;
   const rows = (db.prepare(`${RANK_SELECT} WHERE ${where} GROUP BY a.id ORDER BY p DESC, a.id ASC LIMIT ${RANK_SHOWN}`).all(...args) as RankRaw[]).map(rankRow);
   const self = army.isFaction || rows.some((r) => r.id === army.id) ? null : one(army.id);
   return { recruiter, rows, self };
+}
+
+/**
+ * Whether `day` is finished for an army: every daily battle fought, the mission done (not unlocked, won or all its tries
+ * used) and the raid done (over, or no live recruit). Reached after the last of these actions, it sends the player to /endDay.
+ * UNVERIFIED: RECON4 §4 only says "after the last battle available for the day"; mission and raid are our reading.
+ */
+export function dayOver(db: DatabaseSync, armyId: number, day: string): boolean {
+  if (battlesUsed(db, armyId, day) < battleAllowance(troopersOf(db, armyId).map(trooperInput))) return false;
+  const army = armyById(db, armyId);
+  const m = missionDay(db, armyId, day);
+  if (army?.missionsUnlocked && !m.won && m.used < MISSION_ATTEMPTS) return false;
+  return raidDay(db, armyId, day).over || raidAlive(db, armyId, day).length === 0;
 }
