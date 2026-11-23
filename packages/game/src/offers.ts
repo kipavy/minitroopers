@@ -1,20 +1,12 @@
 import { Rand } from "@mt/engine";
 import { trooperName } from "./names.ts";
+import { fnv1a } from "./hash.ts";
 
 export type OfferTrooper = { seed: number; name: string; colour: number };
 
 const SEED_MIN = 273018; // observed range of original player trooper seeds (recon §2.1)
 const SEED_MAX = 16491340;
 const SLOTS = 5;
-
-function fnv1a(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
-}
 
 /**
  * The 5 daily offers of a client. UNVERIFIED: the original derivation is server-side and unknown; known inputs

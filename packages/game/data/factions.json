@@ -1,0 +1,44 @@
+[
+  { "id": 0, "name": "Sang-surs", "part": 0, "host": "sang-surs", "verified": true, "troopers": [
+    { "id": 0, "name": "Sgt.Krawney", "seed": 31958229, "level": 20 },
+    { "id": 1, "name": "Jackersen", "seed": 13652125, "level": 18 },
+    { "id": 2, "name": "Hulkows", "seed": 6850416, "level": 16 },
+    { "id": 3, "name": "Russeham", "seed": 17101081, "level": 14 },
+    { "id": 4, "name": "Sexy Anders", "seed": 16589479, "level": 12 },
+    { "id": 5, "name": "Kevo Lee", "seed": 25775299, "level": 10 } ] },
+  { "id": 1, "name": "Soleil rugissant", "part": 2, "host": "soleil-rugissant", "verified": true, "troopers": [
+    { "id": 0, "name": "MaxRogie", "seed": 10203179, "level": 20 },
+    { "id": 1, "name": "Goldison", "seed": 13114631, "level": 18 },
+    { "id": 2, "name": "Bombomes", "seed": 3839934, "level": 16 },
+    { "id": 3, "name": "Burtersen", "seed": 28544340, "level": 14 },
+    { "id": 4, "name": "Edu", "seed": 23438256, "level": 12 },
+    { "id": 5, "name": "Georgater", "seed": 24329918, "level": 10 } ] },
+  { "id": 2, "name": "Gecko nevrosé", "part": 2, "host": "gecko-nevrose", "verified": true, "troopers": [
+    { "id": 0, "name": "Edeiber", "seed": 20634579, "level": 20 },
+    { "id": 1, "name": "T-Joneves", "seed": 21347269, "level": 18 },
+    { "id": 2, "name": "T-Kevemack", "seed": 20668338, "level": 16 },
+    { "id": 3, "name": "Orlason", "seed": 4687580, "level": 14 },
+    { "id": 4, "name": "Don Maxi", "seed": 20021619, "level": 12 },
+    { "id": 5, "name": "Karlips", "seed": 18331880, "level": 10 } ] },
+  { "id": 3, "name": "Torses velus", "part": 4, "host": "torses-velus", "verified": false, "troopers": [
+    { "id": 0, "name": "Brueiber", "seed": 9632794, "level": 20 },
+    { "id": 1, "name": "Goldips Dick", "seed": 10192090, "level": 18 },
+    { "id": 2, "name": "Lukomes", "seed": 8514202, "level": 16 },
+    { "id": 3, "name": "Eduum", "seed": 9073498, "level": 14 },
+    { "id": 4, "name": "Karlater", "seed": 11869978, "level": 12 },
+    { "id": 5, "name": "Bombold", "seed": 12429274, "level": 10 } ] },
+  { "id": 4, "name": "Fol-ecume", "part": 0, "host": "fol-ecume", "verified": true, "troopers": [
+    { "id": 0, "name": "Maxoff-X", "seed": 9879995, "level": 20 },
+    { "id": 1, "name": "Van Georgeed", "seed": 8035197, "level": 18 },
+    { "id": 2, "name": "T-Davinson", "seed": 14458708, "level": 16 },
+    { "id": 3, "name": "Goldi", "seed": 23550997, "level": 14 },
+    { "id": 4, "name": "Harre", "seed": 13619293, "level": 12 },
+    { "id": 5, "name": "Samips", "seed": 23558064, "level": 10 } ] },
+  { "id": 5, "name": "Groin céleste", "part": 2, "host": "groin-celeste", "verified": true, "troopers": [
+    { "id": 0, "name": "Rogeter Samu", "seed": 14997688, "level": 20 },
+    { "id": 1, "name": "Hulkito Kong", "seed": 17249963, "level": 18 },
+    { "id": 2, "name": "G.I.Goldium", "seed": 25279721, "level": 16 },
+    { "id": 3, "name": "Lukater Edo", "seed": 23924483, "level": 14 },
+    { "id": 4, "name": "Rickas", "seed": 21776570, "level": 12 },
+    { "id": 5, "name": "Kevewis", "seed": 27803433, "level": 10 } ] }
+]
