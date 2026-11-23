@@ -1,5 +1,6 @@
-// Extracts the FR skill/weapon tooltips of the original pages into data/tips.fr.json.
-//   node apps/server/scripts/extract-tips.mjs [<html/fr dir> [<output json>]]
+// Extracts the FR skill/weapon tooltips found in the archived original pages (22 of them), as a reference for
+// gen-tips.mjs, which builds data/tips.fr.json from the SWF (tips.test.ts checks both agree).
+//   node apps/server/scripts/extract-tips.mjs [<html/fr dir> [<output json>]]   (no output: JSON on stdout)
 // Sources (same pages, same words): `mt.js.Tip.show(this,'...')` list items carrying a sprite offset of
 // /img/skills.png (home, add, t_0, ...) and the `box8` skill boxes of the level-up page (h2 + div.s).
 // The sprite is a 20-column grid of 30px cells whose index is the skill id (verified on 19/20 tips).
@@ -10,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIR = process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), "../../../docs/research/recon/assets/extra/site-elements/html/fr");
-const OUT = process.argv[3] ?? join(dirname(fileURLToPath(import.meta.url)), "../data/tips.fr.json");
+const OUT = process.argv[3];
 const COLS = 20;
 const CELL = 30;
 
@@ -41,5 +42,8 @@ for (const f of readdirSync(DIR).filter((n) => n.endsWith(".html")).sort()) {
 
 const out = {};
 for (const id of [...tips.keys()].sort((a, b) => a - b)) out[id] = { title: tips.get(id).title, body: tips.get(id).body };
-writeFileSync(OUT, JSON.stringify(out, null, 1) + "\n");
-console.log(`${tips.size} tips -> ${OUT}`);
+const json = JSON.stringify(out, null, 1) + "\n";
+if (OUT) {
+  writeFileSync(OUT, json);
+  console.log(`${tips.size} tips -> ${OUT}`);
+} else process.stdout.write(json);
