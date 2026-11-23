@@ -46,8 +46,10 @@
   if (F && F.prototype && F.prototype.submit) {
     var submit = F.prototype.submit;
     F.prototype.submit = function () {
-      if (String(this.method || "get").toLowerCase() !== "get" || !this.elements || this.elements.length !== 0 || !this.action) return submit.apply(this, arguments);
-      if (this.target && this.target !== "_self") w.open(this.action, this.target);
+      if (String(this.method || "get").toLowerCase() !== "get" || !this.elements || this.elements.length !== 0 || !this.hasAttribute("action")) return submit.apply(this, arguments);
+      // A new tab (`_blank`) gets no handle on this page (`window.opener`).
+      if (this.target === "_blank") w.open(this.action, this.target, "noopener");
+      else if (this.target && this.target !== "_self") w.open(this.action, this.target);
       else w.location.assign(this.action);
     };
   }

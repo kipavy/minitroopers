@@ -42,20 +42,26 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
 test("embed.js: a field-less GET form (Ruffle's navigateToURL) navigates to its whole action URL, query kept", () => {
   const native: any[] = [];
   const assigned: string[] = [];
-  const opened: [string, string][] = [];
+  const opened: unknown[][] = [];
   class HTMLFormElement {
     method = "get";
     target = "";
     elements = { length: 0 };
     action: string;
-    constructor(action: string) {
-      this.action = action;
+    hasAction: boolean;
+    /** Like the DOM: without an `action` attribute, `.action` is the document's URL (never empty). */
+    constructor(action: string | null) {
+      this.action = action ?? "http://h/a/boss/hq";
+      this.hasAction = action !== null;
+    }
+    hasAttribute(name: string): boolean {
+      return name === "action" && this.hasAction;
     }
     submit() {
       native.push(this);
     }
   }
-  const win: any = { HTMLFormElement, location: { assign: (u: string) => assigned.push(u) }, open: (u: string, t: string) => opened.push([u, t]), document: {} };
+  const win: any = { HTMLFormElement, location: { assign: (u: string) => assigned.push(u) }, open: (...a: unknown[]) => opened.push(a), document: {} };
   win.window = win;
   vm.runInNewContext(readFileSync(new URL("../public/js/embed.js", import.meta.url), "utf8"), win);
   new HTMLFormElement("http://h/a/boss/save?chk=K;c=-3:-1:0").submit();
@@ -67,7 +73,12 @@ test("embed.js: a field-less GET form (Ruffle's navigateToURL) navigates to its 
   const blank = new HTMLFormElement("http://motion-twin.fr/");
   blank.target = "_blank";
   blank.submit();
-  assert.deepEqual(opened, [["http://motion-twin.fr/", "_blank"]]);
+  // a new tab gets no handle on this page
+  assert.deepEqual(opened, [["http://motion-twin.fr/", "_blank", "noopener"]]);
+  const named = new HTMLFormElement("http://h/x");
+  named.target = "other";
+  named.submit();
+  assert.deepEqual(opened[1], ["http://h/x", "other"]);
   // forms with fields, and POST forms, are submitted natively
   const post = new HTMLFormElement("http://h/b/battle");
   post.method = "post";
@@ -75,6 +86,9 @@ test("embed.js: a field-less GET form (Ruffle's navigateToURL) navigates to its 
   const withFields = new HTMLFormElement("http://h/x?a=1");
   withFields.elements = { length: 2 };
   withFields.submit();
-  assert.deepEqual(native, [post, withFields]);
+  // no action attribute: `.action` is the page's URL, but the form is left to the browser
+  const noAction = new HTMLFormElement(null);
+  noAction.submit();
+  assert.deepEqual(native, [post, withFields, noAction]);
   assert.equal(assigned.length, 2);
 });
