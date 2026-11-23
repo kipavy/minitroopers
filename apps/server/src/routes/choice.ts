@@ -53,6 +53,7 @@ export function registerChoice(pages: Hono<Env>, deps: Deps): void {
   /**
    * "Valider" (`/save?chk=KEY;c=<ids joined by ':'>`): ids ≤ 0 are the army's troopers (slot = -id). Stored only when
    * they are exactly a permutation of the slots, then the HQ; anything else stores nothing and goes back to /choice.
+   * The SWF joins its whole grid, empty cells included (as "": `c=-3:-1:-4:0:-2:::…`, seen in Ruffle): those are skipped.
    * UNVERIFIED: ids > 0 (a recruit dragged into the army) are ignored; the original effect is unknown (RECON4 §3).
    */
   pages.get("/save", (c) => {
@@ -60,7 +61,7 @@ export function registerChoice(pages: Hono<Env>, deps: Deps): void {
     if (o instanceof Response) return o;
     if (!isSessionKey(c, queryParam(c, "chk"))) return c.text("Forbidden", 403);
     const raw = queryParam(c, "c") ?? "";
-    const ids = raw.length <= 400 ? raw.split(":") : [];
+    const ids = raw.length <= 400 ? raw.split(":").filter((x) => x !== "") : [];
     const ok = ids.length > 0 && ids.every((x) => /^-?[0-9]{1,9}$/.test(x));
     const slots = ok ? ids.map(Number).filter((n) => n <= 0).map((n) => -n) : [];
     const saved = ok && setDeployOrder(db, o.army.id, slots);

@@ -38,4 +38,17 @@
   }
 
   w.swfobject = { embedSWF: embedSWF };
+
+  // Ruffle runs the SWF's navigateToURL(url, target) by submitting a GET form whose action is `url` and whose fields are
+  // the request's variables (none here). A GET form replaces the query of its action with its fields, so /choice's
+  // "Valider" (`/save?chk=KEY;c=-3:-1:…`) reached `/save?`; Flash kept the query. Field-less GET forms go to the URL as is.
+  var F = w.HTMLFormElement;
+  if (F && F.prototype && F.prototype.submit) {
+    var submit = F.prototype.submit;
+    F.prototype.submit = function () {
+      if (String(this.method || "get").toLowerCase() !== "get" || !this.elements || this.elements.length !== 0 || !this.action) return submit.apply(this, arguments);
+      if (this.target && this.target !== "_self") w.open(this.action, this.target);
+      else w.location.assign(this.action);
+    };
+  }
 })();

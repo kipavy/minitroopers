@@ -100,13 +100,17 @@ for (const mode of MODES) {
   test(`[${mode}] /save refuses anything but an exact permutation; recruit ids are ignored; chk required`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await warp(env);
-    for (const c of ["0:0:-1:-2:-3", "0:-1:-2:-3", "0:-1:-2:-3:-7", "x", "", "0:-1:-2:-3:-4:", "0:-1:-2:-3:-4.5"]) {
+    for (const c of ["0:0:-1:-2:-3", "0:-1:-2:-3", "0:-1:-2:-3:-7", "x", "", ":::", "0:-1:-2:-3:-4.5", "0:-1:-2:-3:- 4"]) {
       const r = await get(env, cl, "warp", `/save?chk=${key};c=${c}`);
       assert.equal(r.status, 302, c);
       assert.equal(r.headers.get("location"), loc(mode, "warp", "/choice"), c);
       assert.deepEqual(deployOrder(env.db, id), [0, 1, 2, 3, 4], c);
     }
     assert.equal((env.db.prepare("SELECT deploy_order FROM armies WHERE id = ?").get(id) as { deploy_order: string | null }).deploy_order, null);
+    // the SWF's grid has 32 cells: empty ones are joined as "" (seen in Ruffle: `c=-3:-1:-4:0:-2:::…`, 31 colons)
+    const grid = await get(env, cl, "warp", `/save?chk=${key};c=-3:-1:-4:0:-2${":".repeat(27)}`);
+    assert.equal(grid.headers.get("location"), loc(mode, "warp", "/hq"));
+    assert.deepEqual(deployOrder(env.db, id), [3, 1, 4, 0, 2]);
     const r = await get(env, cl, "warp", `/save?chk=${key};c=12345:-4:-3:-2:-1:0`);
     assert.equal(r.headers.get("location"), loc(mode, "warp", "/hq"));
     assert.deepEqual(deployOrder(env.db, id), [4, 3, 2, 1, 0]);

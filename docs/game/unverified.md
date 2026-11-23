@@ -20,6 +20,7 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 - Formes des armées de mission et de raid (rats, PNJ, recrues, numérotation des ids) : 13 combats archivés décodés, RECON3 §1–2 ; `npcArmy`, `ratArmy`, `buildModeInput` les reproduisent.
 - Raid phase 1 = puissance 11 (`raidPower(1)`) : 3 raids archivés à 1 PNJ niveau 7, RECON3 §3.
 - Parcours complet de l'étape 3 dans un vrai navigateur, dans les deux modes d'URL (test « [e2e …] referral, mission and raid » de `apps/server/test/e2e.test.ts`) : parrainage confirmé sur `/history`, mission et raid rejoués par le SWF avec le vainqueur enregistré, mot de passe posé par `/protect` (contrôle d'origine des POST).
+- Parcours de l'étape 4 dans un vrai navigateur, dans les deux modes d'URL (test « [e2e …] stage-4 pages » de `apps/server/test/e2e.test.ts`) : aucune réponse 404 du site sur `/`, `/hq`, `/t/0`, `/add`, `/b/opp`, `/b/view/bat1`, `/history`, `/ranks`, `/choice`, `/protect`, `/endDay` ; « Valider » de `/choice` envoie à `/save` l'ordre affiché par le SWF (grille de 32 cases, cases vides en entrées vides, ignorées) ; l'animation des recrues de `/history` reste sur la page.
 
 ## Jeu hors combat (`@mt/game`)
 

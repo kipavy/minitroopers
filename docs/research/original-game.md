@@ -242,3 +242,18 @@ Recoupé à l'étape 3 (2026-11-23) sur les pages archivées et les flashvars d�
 - **Raid phase 1 = puissance 11** : 3 raids archivés opposent 1 PNJ niveau 7 (puissance 11), ce que donne
   `calculateRaidPower(1)` de $GL ; un 4e raid à 32 PNJ, puissance 325 ≈ phase 11 (326). Gain +4 par phase gagnée
   (endMsg FR archivé). Aucun boss de raid dans les 4 raids archivés.
+
+Recoupé à l'étape 4 (2026-11-23), RECON4 §3 et §7 et e2e Playwright :
+
+- **`/favicon.ico`** : icône 16×16 de `https://web.archive.org/web/20111218041829id_/http://minitroopers.fr/favicon.ico`
+  (1 150 o, SHA-1 base32 `EOBKFFWDRFZRNY74FHID5IV4SJST5UPJ`, même empreinte sur .fr, data.minitroopers.fr et .com ; le
+  « 1 410 o » de la CDX Wayback est la taille de l'enregistrement compressé). Affichée par `/history` et le cadre Raid du
+  QG (`.rcount`), demandée par les navigateurs.
+- **Images de `style.css` absentes de `public/`** : `art_1.jpg` (`.box2 .box2bg`, toujours surchargé par le `style`
+  en ligne des cadres du QG), `buttons/button.png` (`a.sbutton`), `upcup/bg.jpg` (`.headSpecial`), `loc/moreg_*.png`
+  (`h1.moreg_*`, bandeau « Plus de jeux » non reproduit) : sélecteurs jamais émis, liste `UNUSED_CSS_IMAGES`
+  (`apps/server/test/assets.test.ts`). Polices : aucune (Open Sans Condensed ne servait qu'au bandeau Braziball).
+- **« Valider » de `/choice`** : le SWF envoie toute sa grille de 32 cases, cases vides comprises
+  (`/save?c=-3:-1:-4:0:-2:::…`, 31 « : ») ; le serveur ignore les entrées vides. Ruffle exécute `navigateToURL` en
+  soumettant un formulaire GET, ce qui efface la requête de l'URL (`/save?`) : `public/js/embed.js` envoie un tel
+  formulaire sans champ vers son URL complète, comme Flash.

@@ -335,3 +335,121 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
     }
   });
 }
+
+// Stage 4: an army of 5 troopers with one recruit and one battle suffered walks every page (no same-site 404, the
+// favicon and the stylesheet's images included); /choice's "Valider" (`_.swfAction('client','save')`, the original
+// app.js helper calling the SWF's ExternalInterface `save`) sends the order the SWF read from /load to /save; the
+// /history recruits animation plays without leaving the page; the recruit (1 trooper) ends its day on /endDay.
+for (const mode of ["path", "subdomain"] as Mode[]) {
+  test(`[e2e ${mode}] stage-4 pages without a 404, /choice saved by the SWF, recruits animation, /endDay`, { timeout: 600_000 }, async (t) => {
+    if (!browsersInstalled()) return t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
+    mkdirSync(join(REPO, "var"), { recursive: true });
+    const dataDir = mkdtempSync(join(REPO, "var", `e2e4-${mode}-`));
+    const port = await freePort();
+    const root = mode === "path" ? `http://localhost:${port}` : `http://${BASE_DOMAIN}:${port}`;
+    const at = (host: string, path: string): string => (mode === "path" ? `${root}/a/${host}${path}` : `http://${host}.${BASE_DOMAIN}:${port}${path}`);
+    const env: Record<string, string> = { URL_MODE: mode, PORT: String(port), DATA_DIR: dataDir, ...(mode === "subdomain" ? { BASE_DOMAIN } : {}) };
+    const server = await startServer(env);
+    const browser = await launch();
+    let db: DatabaseSync | undefined;
+    try {
+      db = new DatabaseSync(join(dataDir, "minitroopers.db"));
+      const missing: string[] = [];
+      const sameSite = (u: string): boolean => {
+        const { hostname, port: p } = new URL(u);
+        return p === String(port) && (hostname === "localhost" || hostname === BASE_DOMAIN || hostname.endsWith(`.${BASE_DOMAIN}`));
+      };
+      const newPage = async (): Promise<Page> => {
+        const p = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();
+        p.on("dialog", (d) => void d.accept());
+        p.on("response", (r) => {
+          if (r.status() === 404 && sameSite(r.url())) missing.push(r.url());
+        });
+        return p;
+      };
+
+      // 1. Boss: created in the browser, 5 troopers, a stored deployment order that is not the slot order
+      const pa = await newPage();
+      await pa.goto(`${root}/`);
+      await createArmyIn(pa, "Boss", at("boss", "/hq"));
+      const boss = (db.prepare("SELECT id FROM armies WHERE host = 'boss'").get() as { id: number }).id;
+      const ins = db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices) VALUES (?, ?, ?, ?, '[0]')");
+      for (let s = 1; s < 5; s++) ins.run(boss, s, 1000 + s, `N${s}`);
+      const order = [3, 1, 4, 0, 2];
+      db.prepare("UPDATE armies SET deploy_order = ? WHERE id = ?").run(JSON.stringify(order), boss);
+
+      // 2. Warp signs up through Boss's link, attacks Boss by name ("Infiltrer !"), then ends its day with 2 battles
+      const pb = await newPage();
+      await pb.goto(at("boss", "/"));
+      await createArmyIn(pb, "Warp", at("warp", "/hq"));
+      await pb.goto(at("warp", "/b/opp"));
+      await pb.fill('#friends input[name="friend"]', "Boss");
+      await Promise.all([pb.waitForURL(at("warp", "/b/fview/1")), pb.click('a.button5:has-text("Infiltrer")')]);
+      assert.equal((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE defender_id = ?").get(boss) as { n: number }).n, 1, "battle suffered by Boss");
+      for (let i = 0; i < 2; i++) {
+        await pb.goto(at("warp", "/b/opp"));
+        await Promise.all([pb.waitForURL((u) => u.href.startsWith(at("warp", "/b/view/"))), pb.click('a.button5[href*="/b/battle?"] >> nth=0')]);
+      }
+      await pb.goto(at("warp", "/endDay"));
+      assert.equal(pb.url(), at("warp", "/endDay"), "Warp's day is over: /endDay is shown");
+      assert.ok((await pb.content()).includes("art_congrats.png"));
+
+      // 3. Boss fights one battle (its /b/view/bat1?d=), then walks the stage-4 pages
+      await pa.goto(at("boss", "/b/opp"));
+      await Promise.all([pa.waitForURL((u) => u.href.startsWith(at("boss", "/b/view/bat1?d="))), pa.click('a.button5[href*="/b/battle?"] >> nth=0')]);
+      await pa.locator("ruffle-player#battle").waitFor({ timeout: 30_000 });
+      for (const p of ["/hq", "/t/0", "/add", "/b/opp", "/ranks", "/protect"]) {
+        const res = await pa.goto(at("boss", p));
+        assert.equal(res?.status(), 200, p);
+        assert.equal(pa.url(), at("boss", p));
+      }
+      assert.ok((await pa.content()).includes("Gérer mon armée"), "menu with 5 troopers");
+      const visitor = await newPage();
+      await visitor.goto(`${root}/`);
+
+      // 4. /history: confirms the recruit, shows the defence, plays the recruits animation in place
+      await pa.goto(at("boss", "/history"));
+      const hist = await pa.content();
+      assert.match(hist, /<li class="(win|defeat)"><a href=/, "the defence is listed");
+      await pa.locator("ruffle-player#recuits").waitFor({ timeout: 30_000 });
+      await pa.waitForTimeout(5_000);
+      assert.equal(pa.url(), at("boss", "/history"), "the animation does not leave the page");
+
+      // 5. /choice: the SWF loads the troopers (/load), "Valider" sends its order to /save, back to /hq
+      const saves: string[] = [];
+      pa.on("request", (r) => {
+        if (r.url().includes("/save?")) saves.push(r.url());
+      });
+      const loaded = pa.waitForResponse((r) => r.url().startsWith(at("boss", "/load?pos=0;count=16")), { timeout: 30_000 });
+      await pa.goto(at("boss", "/choice"));
+      assert.equal((await loaded).status(), 200, "the SWF pages the recruits through /load");
+      await pa.locator("ruffle-player#client").waitFor({ timeout: 30_000 });
+      db.prepare("UPDATE armies SET deploy_order = NULL WHERE id = ?").run(boss); // the SWF already holds the order: /save must write it back
+      // The SWF registers its `save` callback before it has drawn the army: a call made too early throws inside the SWF
+      // (Error #1009, logged by Ruffle) and sends nothing, so "Valider" is retried until the page leaves for /hq.
+      const valider = (): Promise<void> => pa.evaluate(() => (globalThis as unknown as { _: { swfAction(s: string, n: string): void } })._.swfAction("client", "save"));
+      for (let i = 0; i < 30 && saves.length === 0; i++) {
+        await pa.waitForTimeout(1_000);
+        await valider().catch(() => {});
+      }
+      await pa.waitForURL(at("boss", "/hq"), { timeout: 15_000 });
+      assert.equal(saves.length, 1, `one /save: ${saves.join(" ")}`);
+      const ids = /[?;&]c=([^;&]*)/.exec(decodeURIComponent(saves[0]!))![1]!.split(":").filter((x) => x !== "").map(Number); // empty grid cells: ""
+      assert.deepEqual(ids.filter((id) => id <= 0).map((id) => Math.abs(id)), order, "/save gets the order shown by the SWF");
+      const stored = db.prepare("SELECT deploy_order FROM armies WHERE id = ?").get(boss) as { deploy_order: string | null };
+      assert.deepEqual(JSON.parse(stored.deploy_order ?? "null"), order, "deploy_order stored");
+
+      assert.deepEqual(missing, [], "no same-site 404");
+      // Playwright reports no response for /favicon.ico (not even for the <img src="/favicon.ico"/> of /history, observed
+      // with the file removed): fetched directly.
+      const fav = await pa.request.get(`${root}/favicon.ico`);
+      assert.equal(fav.status(), 200);
+      assert.equal(fav.headers()["content-type"], "image/x-icon");
+    } finally {
+      db?.close();
+      await browser.close();
+      await stop(server);
+      rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+}
