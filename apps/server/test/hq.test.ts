@@ -180,6 +180,29 @@ for (const mode of MODES) {
     assert.ok(in_.includes("but b1") && !in_.includes("insertpass"));
   });
 
+  test(`[${mode}] right column keeps the grid of fr/hq.html: a hidden .box3 stand-in for the ad, then the recruit box`, async () => {
+    const env = setup(mode);
+    const { cl, a } = await army(env);
+    const slot = /<h1 class="hbox">Raid<\/h1>[^]*?<\/div><\/div><\/div><\/div>\n\n<div class="box3" style="visibility:hidden"><\/div>\n<div class="box10">/;
+    assert.match(await (await hqOf(env, cl, "warp")).text(), slot);
+    env.db.prepare("UPDATE armies SET password_hash = ? WHERE id = ?").run(hashPassword("pw"), a.id);
+    assert.match(await (await hqOf(env, env.client("2.2.2.2"), "warp")).text(), slot);
+  });
+
+  test(`[${mode}] locked HQ shows « Nouvelle recrue disponible ! » like fr/hq.html; footer pass link only when protected`, async () => {
+    const env = setup(mode);
+    const { cl, a } = await army(env);
+    const own0 = await (await hqOf(env, cl, "warp")).text();
+    assert.ok(!own0.includes("Modifier mon pass")); // unprotected army (add.html, b_opp.html, protect.html)
+    assert.equal((await create(env, env.client("9.9.9.9"), "Fresh", { recruit: "warp" })).status, 302);
+    env.db.prepare("UPDATE armies SET password_hash = ? WHERE id = ?").run(hashPassword("pw"), a.id);
+    const html = await (await hqOf(env, env.client("2.2.2.2"), "warp")).text();
+    const history = mode === "path" ? "/a/warp/history" : "http://warp.lvh.me:8080/history";
+    assert.ok(html.includes("insertpass"));
+    assert.ok(html.includes(`<ul class="history"><li class="newchild"><a href="${history}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>`));
+    assert.ok(html.includes("Modifier mon pass"));
+  });
+
   test(`[${mode}] an open army seen by a stranger redirects to its recruit page, never to its HQ`, async () => {
     const env = setup(mode);
     await army(env);
@@ -229,7 +252,7 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   const env = setup("path");
   const a = armyByHost(env.db, "x");
   assert.equal(a, null);
-  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
+  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, pendingRecruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
   const mission = { type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" };
   const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, step: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
   const html = String(hqPage(env.cfg, view));

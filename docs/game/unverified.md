@@ -135,6 +135,7 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | `/global-ranks` | redirection 301 vers `/ranks` | page absente du jeu archivé (seulement sur le serveur de test) | `apps/server/src/routes/ranks.ts` |
 | Menu « Hiérarchie » / « Historique » / « Gérer mon armée » | puissance ≥ 20 / ≥ 1 recrue (confirmée ou non) / ≥ 5 troopers | pages archivées (RECON4 §5) ; seuil de recrue « en attente » non archivé | `apps/server/src/views/panel.ts` (`menuFlags`) |
 | Visiteur d'une armée non protégée sur `/ranks` | panneau des troopers sans menu | cas non archivé (le QG redirige ce visiteur) | `apps/server/src/views/panel.ts` |
+| `/protect` d'une armée protégée sans son mot de passe | redirection vers `/hq` (formulaire de mot de passe), au lieu de la page de protect-3.html (panneau des troopers, formulaire de mot de passe et formulaire de création du mot de passe) | écart volontaire : la page d'origine montrait à un tiers le formulaire de création, inutilisable sans session | `apps/server/src/routes/owner.ts` (`ownedArmy`) |
 
 ## Fin de journée (`apps/server`, étape 4)
 

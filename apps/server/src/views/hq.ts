@@ -7,7 +7,7 @@ import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
 import { BG, esc, html, jsq, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
-import { armyGrid, armyMenu, insertPass, menuOf } from "./panel.ts";
+import { armyGrid, armyMenu, insertPass, menuOf, newChildItem } from "./panel.ts";
 import { missionBox } from "./mission.ts";
 import { defenseItem } from "./history.ts";
 
@@ -137,6 +137,13 @@ ${rcount}
 `);
 }
 
+/**
+ * Empty, hidden stand-in for the ad `.box3` that both originals put right after the raid box (row 2, right of it):
+ * it keeps the grid of fr/hq.html, so the recruit box lands in row 3 on the left instead of floating into that slot
+ * 18 px off (`.box10` has a left margin, `.box3` none).
+ */
+const AD_SLOT = raw(`<div class="box3" style="visibility:hidden"></div>`);
+
 function recruitBox(cfg: Config, v: HqView): Html {
   const link = absoluteArmyUrl(cfg, v.army.host, "/");
   return html`<div class="box10"><p>
@@ -150,16 +157,17 @@ Ta prochaine recrue te rapportera ${v.nextBounty}
 
 /**
  * `ul.history` under the troopers panel: the "Nouvelle recrue disponible !" item, then the last defence only
- * (fr/hq.html, protected: both; fr/hq-levelup.html: the defence alone). Absent when both are.
+ * (fr/hq.html, protected: both, the item linking to /history like the owner's; fr/hq-levelup.html: the defence alone).
+ * Absent when both are.
  */
 function historyList(cfg: Config, v: HqView): Html | "" {
   const host = v.army.host;
-  const child = (v.pendingRecruits ?? 0) > 0 && !v.locked;
+  const child = (v.pendingRecruits ?? 0) > 0;
   // UNVERIFIED: the last defence is also shown to a visitor without the password (public `/b/fview/<id>` link);
   // fr/hq.html (protected view) shows it, but it is the only protected HQ archived.
   const d = v.lastDefense ?? null;
   if (!child && d === null) return "";
-  return html`<ul class="history">${child ? html`<li class="newchild"><a href="${armyUrl(cfg, host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>` : ""}${
+  return html`<ul class="history">${child ? newChildItem(cfg, host) : ""}${
     d === null ? "" : html`
 
 
@@ -215,10 +223,11 @@ ${battleBox(cfg, v)}
 
 ${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}
 ${raidBox(cfg, v)}
+${AD_SLOT}
 ${recruitBox(cfg, v)}
 
 <div class="clear"></div></td></tr></table></div>`;
-  return layout(cfg, { title, content, host: a.host });
+  return layout(cfg, { title, content, host: a.host, pass: a.passwordHash !== null });
 }
 
 /** The "Recruter un ami" popup fragment (`GET /recruit`, injected in #recruit by `_.startRecruit()`). */

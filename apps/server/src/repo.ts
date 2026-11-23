@@ -15,6 +15,8 @@ export interface ArmyRow {
   recruiterId: number | null;
   /** Armies created through this army's link, confirmed or not (menu "Historique"). */
   recruits: number;
+  /** Recruits not yet confirmed on /history ("Nouvelle recrue disponible !" under the troopers panel). */
+  pendingRecruits: number;
   createdAt: number;
   createdIp: string | null;
   passwordHash: string | null;
@@ -55,6 +57,7 @@ const armyOf = (r: Raw): ArmyRow => ({
   credits: r.credits as number,
   recruiterId: (r.recruiter_id as number | null) ?? null,
   recruits: Number(r.recruits ?? 0),
+  pendingRecruits: Number(r.pending_recruits ?? 0),
   createdAt: r.created_at as number,
   createdIp: (r.created_ip as string | null) ?? null,
   passwordHash: (r.password_hash as string | null) ?? null,
@@ -78,8 +81,10 @@ const trooperOf = (r: Raw): TrooperRow => ({
   leftOver: r.left_over === null ? null : (JSON.parse(r.left_over as string) as number[]),
 });
 
-/** Columns of an army row, with its recruit count. */
-const ARMY_COLS = "a.*, (SELECT COUNT(*) FROM armies r WHERE r.recruiter_id = a.id) AS recruits";
+/** Columns of an army row, with its recruit counts (all, and not yet confirmed). */
+const ARMY_COLS =
+  "a.*, (SELECT COUNT(*) FROM armies r WHERE r.recruiter_id = a.id) AS recruits," +
+  " (SELECT COUNT(*) FROM armies r WHERE r.recruiter_id = a.id AND r.recruit_confirmed_at IS NULL) AS pending_recruits";
 
 export function armyByHost(db: DatabaseSync, host: string): ArmyRow | null {
   const r = db.prepare(`SELECT ${ARMY_COLS} FROM armies a WHERE a.host = ?`).get(host);

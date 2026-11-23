@@ -165,6 +165,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     const defender = defenderTitle(db, b);
     const view = {
       host: o.army.host,
+      pass: o.army.passwordHash !== null,
       attacker: armyTitle(o.army.name, o.army.part),
       defender,
       heading: b.mode === "infiltrate" ? `Infiltrer la base de ${defender}` : null,

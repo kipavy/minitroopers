@@ -6,6 +6,8 @@ import { jsStr, swfEmbed } from "./swf.ts";
 export interface BattleView {
   /** Army host of the page frame (logo / footer links), null on the site root. */
   host: string | null;
+  /** That army has a password (footer "Modifier mon pass"). */
+  pass?: boolean;
   /** "L'armée de X" of both sides (plain text), attacker first. */
   attacker: string;
   defender: string;
@@ -55,5 +57,5 @@ ${v.heading}
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false });
 }

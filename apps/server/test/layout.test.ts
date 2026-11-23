@@ -28,7 +28,7 @@ test("layout escapes a <script> in the army name and title", () => {
 });
 
 test("layout keeps the original frame and wires local assets", () => {
-  const out = String(layout(cfg, { title: "MiniTroopers", content: html`<p>hi</p>`, host: "nsun" }));
+  const out = String(layout(cfg, { title: "MiniTroopers", content: html`<p>hi</p>`, host: "nsun", pass: true }));
   for (const cls of ["ptop", "bottomsite", "ptopsite", 'id="content"', "dbottom", 'class="copy"', "pbottomleft"]) assert.ok(out.includes(cls), cls);
   assert.ok(out.includes('href="/css/style.css'));
   assert.ok(out.includes('src="/js/jquery.min.js"'));
@@ -40,6 +40,18 @@ test("layout keeps the original frame and wires local assets", () => {
   assert.ok(!out.includes("google-analytics"));
   assert.ok(out.includes('(c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a>'));
   assert.ok(!/motion-twin/i.test(out), "no Motion-Twin credit or logo link in the frame");
+});
+
+test("footer: « Modifier mon pass » only for a protected army, no stray separator", () => {
+  const credit = '(c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a>';
+  const copy = (o: { host?: string; pass?: boolean }): string => /<div class="copy">(.*?)<\/div>/s.exec(String(layout(cfg, { title: "T", content: html``, ...o })))![1]!;
+  // site root (fr/_.html has no army): the credit alone
+  assert.equal(copy({}), credit);
+  // unprotected army (add.html, b_opp.html, protect.html): no password link
+  assert.equal(copy({ host: "nsun" }), credit);
+  assert.equal(copy({ host: "nsun", pass: false }), credit);
+  // protected army (hq.html, ranks.html…)
+  assert.equal(copy({ host: "nsun", pass: true }), `<a href="/a/nsun/protect">Modifier mon pass</a> · ${credit}`);
 });
 
 test("tip() produces the original Tip.show markup, escaped", () => {

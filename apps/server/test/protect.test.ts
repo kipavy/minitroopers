@@ -54,6 +54,21 @@ for (const mode of MODES) {
     assert.ok(!p2.includes("Protége ton armée avec un mot de passe !"));
   });
 
+  test(`[${mode}] footer « Modifier mon pass » only once protected; pending recruit item under the troopers panel`, async () => {
+    const env = setup(mode);
+    const a = await owner(env);
+    // protect.html (unprotected army): no password link in the footer
+    const p1 = await (await get(env, a, "boss", "/protect")).text();
+    assert.ok(!p1.includes("Modifier mon pass") && !p1.includes("newchild"));
+    assert.match(p1, /<div class="copy">\(c\) Killian Pavy · /);
+    assert.equal((await create(env, env.client("9.9.9.9"), "Fresh", { recruit: "boss" })).status, 302);
+    const p2 = await (await get(env, a, "boss", "/protect")).text();
+    assert.match(p2, /<span id="menuTip"><\/span><\/div><\/div><\/div><\/div>\n<ul class="history"><li class="newchild"><a href="[^"]*\/history"><p><img src="\/img\/newrecruit.gif"\/> Nouvelle recrue disponible !<\/p><\/a><\/li>\n<\/ul><\/td>/);
+    await protectIt(env, a);
+    const p3 = await (await get(env, a, "boss", "/protect")).text();
+    assert.match(p3, /<div class="copy"><a href="[^"]*\/protect">Modifier mon pass<\/a> · \(c\) Killian Pavy · /);
+  });
+
   test(`[${mode}] mismatch, empty, too long: message and nothing stored`, async () => {
     const env = setup(mode);
     const a = await owner(env);

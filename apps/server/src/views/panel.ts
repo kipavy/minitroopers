@@ -75,6 +75,11 @@ passe
 <input type="submit" value="Valider" class="button7"/></p></form></div>`;
 }
 
+/** First item of `ul.history` under the troopers panel (fr/hq.html, ranks.html, protect-3.html: also to a locked visitor). */
+export function newChildItem(cfg: Config, host: string): Html {
+  return html`<li class="newchild"><a href="${armyUrl(cfg, host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>`;
+}
+
 /** Left menu; `back` adds the "Quartier Général" entry the original shows on every page but the HQ. */
 export function armyMenu(cfg: Config, army: ArmyRow, flags: MenuFlags, back = false): Html {
   const u = (p: string): string => armyUrl(cfg, army.host, p);
@@ -146,11 +151,12 @@ ${left}
 <div class="tipbox"><div class="hqtip" style="display:none"><img src="/img/info.png"/>
 <span class="label">INFO :</span>
 <span id="menuTip"></span></div></div></div></div>
-</td>
+${visitor !== "stranger" && v.army.pendingRecruits > 0 ? html`<ul class="history">${newChildItem(cfg, v.army.host)}
+</ul>` : ""}</td>
 <td class="right">
 
 ${v.right}
 
 <div class="clear"></div></td></tr></table></div>`;
-  return layout(cfg, { title: v.title, content, host: v.army.host });
+  return layout(cfg, { title: v.title, content, host: v.army.host, pass: v.army.passwordHash !== null });
 }

@@ -27,8 +27,13 @@ export interface LayoutOpts {
   /** Page title text (escaped); the document title is "MiniTroopers - <title>", or just "MiniTroopers" when null (battle pages). */
   title: string | null;
   content: Html;
-  /** Current army host, for the footer link to the password page. */
+  /** Current army host (logo link; footer link to the password page). */
   host?: string | null;
+  /**
+   * The army has a password: the footer shows "Modifier mon pass" (fr/hq.html, ranks.html…), absent for an unprotected
+   * army (add.html, b_opp.html, protect.html).
+   */
+  pass?: boolean;
   /** Extra class on <body> (the original uses e.g. "hideSwf"). */
   bodyClass?: string;
 }
@@ -40,7 +45,7 @@ export interface LayoutOpts {
  */
 export function layout(cfg: Config, o: LayoutOpts): Html {
   const bodyAttr = o.bodyClass ? raw(` class="${esc(o.bodyClass)}"`) : "";
-  const protect = o.host ? html` <a href="${armyUrl(cfg, o.host, "/protect")}">Modifier mon pass</a> ·` : raw(" ·");
+  const protect = o.host && o.pass ? html`<a href="${armyUrl(cfg, o.host, "/protect")}">Modifier mon pass</a> · ` : "";
   return html`<!DOCTYPE html>
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
 ${o.title === null ? html`<title>MiniTroopers</title>` : html`<title>MiniTroopers
@@ -68,6 +73,6 @@ ${o.content}
 <div class="dbottom"><div class="pbottomleft"></div>
 <div class="art_mouse"></div>
 </div>
-<div class="copy">${protect} (c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a></div></div></div>
+<div class="copy">${protect}(c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a></div></div></div>
 </body></html>`;
 }

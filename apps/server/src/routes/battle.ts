@@ -7,7 +7,7 @@ import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeByName, foeOf, type Foe } from "../foes.ts";
-import { armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, dayOver, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
+import { armyByHost, armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, dayOver, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle, missingPage } from "../views/army.ts";
@@ -123,6 +123,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const hq = host !== null ? armyUrl(cfg, host, "/hq") : "/";
     const view = {
       host,
+      pass: host !== null && (armyByHost(db, host)?.passwordHash ?? null) !== null,
       attacker: attacker ? armyTitle(attacker.name, attacker.part) : "L'armée inconnue",
       defender: defenderTitle(db, b),
       // The replay takes the viewer's side (RECON4 §1.2: b_fview_262579954 seen by its defender has attackerSide 1);

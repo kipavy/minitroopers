@@ -90,6 +90,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     const endMsg = won ? (fresh ? WON_FIRST : "Tu as remporté ce combat !") : LOST;
     const view = {
       host: o.army.host,
+      pass: o.army.passwordHash !== null,
       attacker: armyTitle(o.army.name, o.army.part),
       defender: "",
       heading: null,

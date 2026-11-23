@@ -142,6 +142,25 @@ for (const mode of MODES) {
     assert.match(page, /<\/script><\/div>\n<div class="clear"><\/div>\n\n\n\n<div class="insertpass">/);
   });
 
+  test(`[${mode}] ranks: « Nouvelle recrue disponible ! » under the troopers panel (fr/ranks.html), owner and locked visitor`, async () => {
+    const env = setup(mode);
+    const cl = env.client("1.1.1.1");
+    assert.equal((await create(env, cl, "Warp")).status, 302);
+    const history = mode === "path" ? "/a/warp/history" : "http://warp.lvh.me:8080/history";
+    const item = `<ul class="history"><li class="newchild"><a href="${history}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>\n</ul></td>\n<td class="right">`;
+    assert.ok(!(await (await get(env, cl, "warp", "/ranks")).text()).includes("newchild"));
+    mk(env, "fresh", 6, { recruiter: "warp" });
+    const own = await (await get(env, cl, "warp", "/ranks")).text();
+    assert.ok(own.includes(`<span id="menuTip"></span></div></div></div></div>\n${item}`));
+    env.db.prepare("UPDATE armies SET password_hash = ? WHERE host = 'warp'").run(hashPassword("pw"));
+    const locked = await (await get(env, env.client("3.3.3.3"), "warp", "/ranks")).text();
+    assert.ok(locked.includes("insertpass") && locked.includes(item));
+    // a stranger on an open army sees no such item
+    mk(env, "open", 6);
+    mk(env, "fresh2", 6, { recruiter: "open" });
+    assert.ok(!(await (await get(env, env.client("3.3.3.3"), "open", "/ranks")).text()).includes("newchild"));
+  });
+
   test(`[${mode}] ranks: the owner gets the menu with « Quartier Général »`, async () => {
     const env = setup(mode);
     const cl = env.client("1.1.1.1");
