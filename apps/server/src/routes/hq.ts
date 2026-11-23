@@ -6,7 +6,8 @@ import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } fr
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
-import { armyByHost, armyById, battlesOfDay, pendingRecruits, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
+import { asMissionType, missionTypeOf } from "./mission.ts";
+import { armyByHost, armyById, battlesOfDay, freezeMissionType, missionDay, missionsOfDay, pendingRecruits, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
 import { hqPage, recruitFragment, type HqView } from "../views/hq.ts";
@@ -29,11 +30,13 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
 
-  function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number; notice?: Html | null }): HqView {
+  function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number; notice?: Html | null; key?: string }): HqView {
     const rows = troopersOf(db, army.id);
     const troopers = rows.map(trooperInput);
     const t = now();
     const day = dayKey(new Date(t), cfg.tzGame);
+    // The owner's first visit of the day draws and freezes the mission type; a stranger only sees it.
+    const type = o.locked ? (missionDay(db, army.id, day).type ?? missionTypeOf(db, army.id, day)) : freezeMissionType(db, army.id, day, () => missionTypeOf(db, army.id, day));
     return {
       army,
       troopers,
@@ -46,6 +49,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       moneyDelta: o.moneyDelta ?? 0,
       notice: o.notice ?? null,
       locked: o.locked,
+      mission: { type: asMissionType(type), unlocked: army.missionsUnlocked, tries: o.locked ? [] : missionsOfDay(db, army.id, day), key: o.key ?? "" },
       ...(o.lockError ? { lockError: o.lockError } : {}),
     };
   }
@@ -69,7 +73,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
     if (session.armyId === army.id) {
       const m = Number(queryParam(c, "money"));
       const moneyDelta = Number.isInteger(m) && m > 0 ? Math.min(m, army.credits) : 0;
-      return c.html(String(hqPage(cfg, hqView(army, { locked: false, moneyDelta, notice: notices(takeNotices(db, army.id)) }))));
+      return c.html(String(hqPage(cfg, hqView(army, { locked: false, moneyDelta, notice: notices(takeNotices(db, army.id)), key: session.key }))));
     }
     // Not the owner: a protected army asks for its password; an open one is only reachable through its recruit page / login.
     if (army.passwordHash !== null) return c.html(String(hqPage(cfg, hqView(army, { locked: true }))));

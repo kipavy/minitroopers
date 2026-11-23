@@ -15,7 +15,8 @@ const hqOf = async (env: Env, cl: ReturnType<Env["client"]>, host: string, q = "
   const at = env.at(host, "/hq" + q);
   return cl.req(at.url, { host: at.host });
 };
-const tilesOf = (html: string): string[] => [...html.matchAll(/<div class="b (bgo2|bwin|bdefeat)">/g)].map((m) => m[1]!);
+/** Tiles of the battle box (the mission box follows it). */
+const tilesOf = (html: string): string[] => [...html.split('<h1 class="hbox">Mission :')[0]!.matchAll(/<div class="b (bgo2|bwin|bdefeat)">/g)].map((m) => m[1]!);
 
 /** Seed 1000 with these 15 level-ups owns COMMANDEMENT (skill 69), found by scanning choiceIndexForSkill. */
 const COMMANDER = { seed: 1000, choices: JSON.stringify(new Array(15).fill(0)) };
@@ -58,8 +59,9 @@ for (const mode of MODES) {
     assert.ok(html.includes("Il te reste 3 batailles aujourd'hui !"));
     assert.ok(html.includes("Nouvelle mission dans") && !html.includes("Nouvelles batailles"));
     assert.ok(html.includes("Protége ton armée avec un mot de passe !"));
-    assert.ok(html.includes("Mission : Infiltrer") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
-    assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 2);
+    assert.match(html, /<h1 class="hbox">Mission : (Infiltrer|Exterminer)<\/h1>/);
+    assert.ok(html.includes("Débloquer pour 5") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
+    assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 1);
     for (const [p, label] of [["/history", "Historique"], ["/choice", "Gérer mon armée"], ["/protect", "Protéger mon armée"], ["/ranks", "Hiérarchie"]]) {
       assert.ok(html.includes(`<a href="${base}${p}" class="but_bg`), p);
       assert.ok(html.includes(`>${label}</a>`), label);
@@ -231,8 +233,9 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   const env = setup("path");
   const a = armyByHost(env.db, "x");
   assert.equal(a, null);
-  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null };
-  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false };
+  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
+  const mission = { type: "infiltrate" as const, unlocked: false, tries: [], key: "ABCDEF" };
+  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission };
   const html = String(hqPage(env.cfg, view));
   assert.ok(html.includes('<div id="notification"><div class="poptop">'));
   assert.ok(html.includes("Félicitations ! &lt;b&gt;x&lt;/b&gt;"));

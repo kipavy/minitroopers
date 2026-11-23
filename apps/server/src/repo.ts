@@ -1,4 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
+import type { ModeKind } from "./battleInput.ts";
+import { MISSION_ATTEMPTS } from "@mt/game";
 import { Data, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
@@ -17,6 +19,12 @@ export interface ArmyRow {
   isFaction: boolean;
   /** Client id (`cid` cookie) of the browser that created the army. */
   createdCid: string | null;
+  /** Missions unlocked (paid once). */
+  missionsUnlocked: boolean;
+  /** Rats of the next extermination (1 + extermination wins). */
+  rats: number;
+  /** Epic missions won (the NPC army grows with them). */
+  epicWins: number;
 }
 
 export interface TrooperRow {
@@ -49,6 +57,9 @@ const armyOf = (r: Raw): ArmyRow => ({
   passwordHash: (r.password_hash as string | null) ?? null,
   isFaction: r.is_faction === 1,
   createdCid: (r.created_cid as string | null) ?? null,
+  missionsUnlocked: r.missions_unlocked === 1,
+  rats: Number(r.rats ?? 1),
+  epicWins: Number(r.epic_wins ?? 0),
 });
 
 const trooperOf = (r: Raw): TrooperRow => ({
@@ -394,6 +405,12 @@ export interface BattleRow {
   input: BattleInput;
   winner: number | null;
   seen: boolean;
+  /** 'battle', 'mission' or 'raid'. */
+  kind: string;
+  /** Mission type or "raid" (null for daily battles). */
+  mode: string | null;
+  /** Raid phase (null otherwise). */
+  phase: number | null;
 }
 
 const battleOf = (r: Raw): BattleRow => ({
@@ -405,6 +422,9 @@ const battleOf = (r: Raw): BattleRow => ({
   input: JSON.parse(r.input as string) as BattleInput,
   winner: (r.winner as number | null) ?? null,
   seen: r.seen === 1,
+  kind: r.kind as string,
+  mode: (r.mode as string | null) ?? null,
+  phase: (r.phase as number | null) ?? null,
 });
 
 export function battleById(db: DatabaseSync, id: number): BattleRow | null {
@@ -558,4 +578,130 @@ export function setPassword(db: DatabaseSync, armyId: number, hash: string, keep
     db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify({ text: "Ton mot de passe a été enregistré." }));
     return true;
   });
+}
+
+// ---- missions (and the shared shape of mode battles, used by raids too) -----------------------------------------
+
+/** Today's mission state of an army (defaults when the day has no row yet). */
+export interface MissionDay {
+  /** Mission type frozen for the day, null before the first visit. */
+  type: string | null;
+  /** Tries made today. */
+  used: number;
+  won: boolean;
+  /** Frozen opponent: army id or filler id (infiltrate), `npc:<seed>` (epic); null before the first try. */
+  target: string | null;
+}
+
+export function missionDay(db: DatabaseSync, armyId: number, day: string): MissionDay {
+  const r = db.prepare("SELECT missions_used, mission_won, mission_type, mission_target FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as
+    | { missions_used: number; mission_won: number; mission_type: string | null; mission_target: string | null }
+    | undefined;
+  return { type: r?.mission_type ?? null, used: Number(r?.missions_used ?? 0), won: r?.mission_won === 1, target: r?.mission_target ?? null };
+}
+
+/** The day's mission type, drawn by `pick` the first time and frozen in `daily.mission_type` (the first draw wins a race). */
+export function freezeMissionType(db: DatabaseSync, armyId: number, day: string, pick: () => string): string {
+  const have = missionDay(db, armyId, day).type;
+  if (have !== null) return have;
+  db.prepare(
+    "INSERT INTO daily(army_id, day, mission_type) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET mission_type = COALESCE(daily.mission_type, excluded.mission_type)",
+  ).run(armyId, day, pick());
+  return missionDay(db, armyId, day).type!;
+}
+
+/** Freezes the day's mission opponent (call inside the fight transaction). */
+export function setMissionTarget(db: DatabaseSync, armyId: number, day: string, target: string): void {
+  db.prepare("INSERT INTO daily(army_id, day, mission_target) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET mission_target = excluded.mission_target").run(
+    armyId,
+    day,
+    target,
+  );
+}
+
+/** Armies this army has fought: the defenders of its battles and the attackers of the battles it defended (ids as strings). */
+export function foughtArmies(db: DatabaseSync, armyId: number): string[] {
+  return (
+    db
+      .prepare("SELECT defender_id AS id FROM battles WHERE attacker_id = ? AND defender_id IS NOT NULL UNION SELECT attacker_id AS id FROM battles WHERE defender_id = ?")
+      .all(armyId, armyId) as { id: number }[]
+  ).map((r) => String(r.id));
+}
+
+/** First trooper of every confirmed recruit of an army (recruits in creation order). */
+export function recruitLeaders(db: DatabaseSync, recruiterId: number): TrooperRow[] {
+  return db
+    .prepare("SELECT t.* FROM armies a JOIN troopers t ON t.army_id = a.id AND t.slot = 0 WHERE a.recruiter_id = ? AND a.recruit_confirmed_at IS NOT NULL ORDER BY a.id")
+    .all(recruiterId)
+    .map(trooperOf);
+}
+
+/** Pays the mission unlock once: a second call (reload, concurrent request) finds it unlocked and debits nothing. */
+export function unlockMissions(db: DatabaseSync, armyId: number, cost: number): "ok" | "already" | "poor" {
+  let out: "ok" | "already" | "poor" = "poor";
+  immediate(db, () => {
+    const a = armyById(db, armyId);
+    if (!a) return null;
+    if (a.missionsUnlocked) return (out = "already"), null;
+    const paid = db.prepare("UPDATE armies SET credits = credits - ?, missions_unlocked = 1 WHERE id = ? AND credits >= ?").run(cost, armyId, cost);
+    if (Number(paid.changes) !== 1) return (out = "poor"), null;
+    return (out = "ok");
+  });
+  return out;
+}
+
+/** A mission or raid battle to store: `mode` and, for raids, the phase and the recruits killed (trooper ids of the input). */
+export type NewModeBattle = NewBattle & { mode: ModeKind; phase?: number; dead?: number[] };
+
+export type ModeResult =
+  | { ok: true; id: number; n: number }
+  | { ok: false; reason: "stale" | "limit" | "locked" | "won"; used: number }
+  | { ok: false; reason: "refused"; code: string };
+
+/**
+ * One try of the mission of the day, atomically (BEGIN IMMEDIATE), like `fight`: refused when the missions are not
+ * unlocked; `used` (tries the URL was issued for) must match the stored count ("stale" otherwise: replays fight
+ * nothing); refused after a won mission or the last try. `decide` (inside the transaction) builds and resolves the
+ * battle. The battle (kind 'mission'), the reward, the daily counters and the win effects (exterminate: one more
+ * rat; epic: one more epic win) are written together.
+ */
+export function fightMission(db: DatabaseSync, p: { armyId: number; day: string; used: number; decide: () => NewModeBattle | string }): ModeResult {
+  let out: ModeResult = { ok: false, reason: "locked", used: 0 };
+  immediate(db, () => {
+    const a = armyById(db, p.armyId);
+    const m = missionDay(db, p.armyId, p.day);
+    if (!a || !a.missionsUnlocked) return (out = { ok: false, reason: "locked", used: m.used }), null;
+    if (m.used !== p.used) return (out = { ok: false, reason: "stale", used: m.used }), null;
+    if (m.won) return (out = { ok: false, reason: "won", used: m.used }), null;
+    if (m.used >= MISSION_ATTEMPTS) return (out = { ok: false, reason: "limit", used: m.used }), null;
+    const d = p.decide();
+    if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
+    const win = d.winner !== null && d.winner === d.input.attackerSide;
+    const id = Number(
+      db
+        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode) VALUES (?, ?, ?, ?, ?, ?, 'mission', ?)")
+        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, d.mode).lastInsertRowid,
+    );
+    db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
+    if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = rats + 1 WHERE id = ?").run(p.armyId);
+    if (win && d.mode === "epic") db.prepare("UPDATE armies SET epic_wins = epic_wins + 1 WHERE id = ?").run(p.armyId);
+    db.prepare(
+      "INSERT INTO daily(army_id, day, missions_used, mission_won) VALUES (?, ?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET missions_used = excluded.missions_used, mission_won = excluded.mission_won",
+    ).run(p.armyId, p.day, m.used + 1, win ? 1 : 0);
+    return (out = { ok: true, id, n: m.used + 1 });
+  });
+  return out;
+}
+
+/** The `n`-th (1-based) mission or raid battle of an army on `day`, oldest first (`/b/view/miss<n>`). */
+export function modeBattleOfDay(db: DatabaseSync, armyId: number, day: string, kind: "mission" | "raid", n: number): BattleRow | null {
+  if (!Number.isInteger(n) || n < 1) return null;
+  const r = db.prepare("SELECT * FROM battles WHERE attacker_id = ? AND day = ? AND kind = ? ORDER BY id LIMIT 1 OFFSET ?").get(armyId, day, kind, n - 1);
+  return r ? battleOf(r) : null;
+}
+
+/** Results of the day's mission tries, oldest first. */
+export function missionsOfDay(db: DatabaseSync, armyId: number, day: string): DayBattle[] {
+  const rows = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'mission' ORDER BY id").all(armyId, day) as { input: string; winner: number | null }[];
+  return rows.map((r, i) => ({ n: i + 1, win: r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide }));
 }

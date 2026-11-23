@@ -16,6 +16,12 @@ export interface BattleView {
   /** "Retour" button of the replay pages (absent from the page shown right after the battle). */
   back: string | null;
   battleId: string;
+  /**
+   * Title above the battle: absent = "<attacker> VS <defender>" (daily battles); a text = that title (infiltration:
+   * "Infiltrer la base de L'armée de X", b_view_miss1.html); null = no title (`swfframe` without `nam`: extermination,
+   * epic and raid pages, RECON3).
+   */
+  heading?: string | null;
 }
 
 /**
@@ -23,12 +29,22 @@ export interface BattleView {
  * b_view_bat1.html / b_fview_262579954.html (replay: `/hq`, "Retour"). Title "MiniTroopers" only, like the originals.
  */
 export function battlePage(cfg: Config, v: BattleView): Html {
-  const content = html`<div class="game"><div class="swfframe nam "><h1>
+  const title =
+    v.heading === undefined
+      ? html`<div class="swfframe nam "><h1>
 ${v.attacker}
 VS
 ${v.defender}
 </h1>
-${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div>
+`
+      : v.heading === null
+        ? html`<div class="swfframe ">
+`
+        : html`<div class="swfframe nam "><h1>
+${v.heading}
+</h1>
+`;
+  const content = html`<div class="game">${title}${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div>
 
 <script type="text/javascript">
 	function endBattle() {

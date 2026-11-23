@@ -1,4 +1,5 @@
 import type { BattleTrooperInput } from "@mt/engine";
+import { MISSION_ATTEMPTS, MISSION_UNLOCK_COST, type MissionType } from "@mt/game";
 import type { Config } from "../config.ts";
 import type { ArmyRow, DayBattle } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
@@ -7,6 +8,7 @@ import { esc, html, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu } from "./panel.ts";
+import { missionBox } from "./mission.ts";
 
 export interface HqView {
   army: ArmyRow;
@@ -30,6 +32,8 @@ export interface HqView {
   locked: boolean;
   /** Error shown with the locked view (wrong password). */
   lockError?: string;
+  /** The mission of the day (box title, unlock, tries) and the session key of its action links. */
+  mission: { type: MissionType; unlocked: boolean; tries: DayBattle[]; key: string };
 }
 
 const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;
@@ -148,7 +152,7 @@ ${(v.pendingRecruits ?? 0) > 0 && !v.locked ? html`<ul class="history"><li class
 
 ${battleBox(cfg, v)}
 
-${soonBox("Mission : Infiltrer", "sewer", resetTimer(v.resetIn))}
+${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}
 ${soonBox("Raid", "wood")}
 ${recruitBox(cfg, v)}
 
