@@ -227,6 +227,18 @@ for (const mode of MODES) {
     assert.equal(battles(env, id).length, 1);
   });
 
+  test(`[${mode}] malformed or future n goes to plain /b/opp, not err=stale`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
+    await get(env, cl, pathOf(mode, links[0]!.href));
+    for (const n of ["-1", "abc", "7", "99"]) {
+      const r = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[1]!.ref)};n=${n};chk=${key}`);
+      assert.equal(r.headers.get("location"), loc(mode, "/b/opp"), n);
+    }
+    assert.equal(battles(env, id).length, 1);
+  });
+
   test(`[${mode}] stale attack link: a link for another opponent after a battle is refused, the same one shows its battle`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await warp(env);

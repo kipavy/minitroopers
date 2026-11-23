@@ -105,7 +105,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
     }
     // UNVERIFIED: an army without password is opened by anyone who types its name (the original had no other check).
     bindArmy(db, persistSession(c, db).key, a.id);
-    return c.redirect(armyUrl(cfg, a.host, "/hq"));
+    return c.redirect(armyUrl(cfg, a.host, "/hq"), 303);
   });
 
   // "Recruter un trooper": AJAX fragment fetched at the absolute URL "/recruit" by the original app.js, so in path

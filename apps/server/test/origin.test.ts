@@ -25,7 +25,7 @@ test("POST /login: foreign Origin 403 and nothing changes; cross-site Sec-Fetch-
   assert.equal(count(env, "SELECT COUNT(*) AS n FROM sessions WHERE army_id IS NOT NULL"), 1); // only the owner's
   for (const h of [{ origin: "http://localhost:8080" }, { "sec-fetch-site": "same-origin" }, { "sec-fetch-site": "none" }, {}]) {
     const ok = await post(env, "/login", { login: "Warp" }, h);
-    assert.equal(ok.status, 302, JSON.stringify(h)); // a redirect, not 403
+    assert.equal(ok.status, 303, JSON.stringify(h));
   }
 });
 

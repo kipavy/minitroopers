@@ -14,7 +14,6 @@ function setup(env: Record<string, string> = {}) {
     pages.get("/act", actionKey("chk"), (c) => c.text("done"));
     pages.get("/persist", (c) => c.text(persistSession(c, c.get("db")).key));
     pages.get("/persist2", (c) => c.text(persistSession(c, c.get("db")).key === persistSession(c, c.get("db")).key ? "same" : "diff"));
-    pages.get("/persisted", (c) => c.text(String(c.get("session").persisted)));
   });
   return { app, db, cfg };
 }
@@ -29,27 +28,17 @@ const cookies = (res: Response): Record<string, string> => {
   return out;
 };
 
-test("lazy: anonymous visits store nothing and set no ssid, only cid; persistSession creates the row once", async () => {
+test("persistSession creates the row and ssid once, keeps the cid", async () => {
   const { app, db } = setup();
-  let cid: string | undefined;
-  for (let i = 0; i < 50; i++) {
-    const res = await app.request("/persisted", { headers: cid ? { cookie: `cid=${cid}` } : {} });
-    assert.equal(await res.text(), "false");
-    const c = cookies(res);
-    assert.equal(c.ssid, undefined);
-    cid ??= c.cid;
-  }
-  assert.ok(cid);
-  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 0);
+  const first = await app.request("/key");
+  const cid = cookies(first).cid!;
+  assert.equal(cookies(first).ssid, undefined);
   const res = await app.request("/persist", { headers: { cookie: `cid=${cid}` } });
   const key = await res.text();
   const c = cookies(res);
   assert.match(c.ssid!, /^[A-Za-z0-9_-]{22}$/);
   assert.equal(c.cid, undefined); // already held
   assert.deepEqual({ ...(db.prepare("SELECT key, token, client_id FROM sessions").get() as object) }, { key, token: c.ssid, client_id: cid });
-  const again = await app.request("/persisted", { headers: { cookie: `ssid=${c.ssid}; cid=${cid}` } });
-  assert.equal(await again.text(), "true");
-  assert.equal(again.headers.getSetCookie().length, 0);
 });
 
 test("persistSession is idempotent within a request", async () => {

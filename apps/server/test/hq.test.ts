@@ -170,7 +170,7 @@ for (const mode of MODES) {
     // log in with the password: the form's own flow
     const at = env.at("warp", "/login");
     const ok = await stranger.req(at.url, { host: at.host, form: { login: "warp", pass: "pw" } });
-    assert.equal(ok.status, 302);
+    assert.equal(ok.status, 303);
     assert.ok((await (await hqOf(env, stranger, "warp")).text()).includes("swf_tr_view"));
   });
 

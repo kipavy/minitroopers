@@ -16,6 +16,8 @@ import { missingPage } from "../views/soon.ts";
 /** UNVERIFIED: "~2 armées par jour et par IP" comes from the wiki (spec table); the exact figure is not confirmed. */
 export const MAX_ARMIES_PER_IP_PER_DAY = 2;
 
+/** A repeated creation POST within this delay of the army's creation is a double submission, not a name clash. */
+const DOUBLE_SUBMIT_MS = 10_000;
 const ERR_OFFER = "Cette action nécessite que tu sois enregistré sur le site."; // the only error text of the archived pages
 const ERR_TAKEN = "Ce nom est déjà pris.";
 const ERR_LIMIT = "Trop d'armées ont déjà été créées depuis cette adresse aujourd'hui. Reviens demain !";
@@ -121,8 +123,8 @@ export function registerHome(pages: Hono<Env>, deps: Deps): HomeError {
     const bound = session.persisted ? ((db.prepare("SELECT army_id FROM sessions WHERE key = ?").get(session.key) as { army_id: number | null } | undefined)?.army_id ?? null) : null;
     const existing = armyByHost(db, v.host);
     if (existing && bound === existing.id) return c.redirect(armyUrl(cfg, existing.host, "/hq"));
-    // Double submission before the first response (no session yet): the browser that just created this army gets in.
-    if (existing && !existing.isFaction && existing.passwordHash === null && existing.createdCid === session.clientId) {
+    // Double submission before the first response (no session yet, army made seconds ago): the browser that just created it gets in.
+    if (existing && !session.persisted && !existing.isFaction && existing.passwordHash === null && existing.createdCid === session.clientId && now() - existing.createdAt <= DOUBLE_SUBMIT_MS) {
       bindArmy(db, persistSession(c, db).key, existing.id);
       return c.redirect(armyUrl(cfg, existing.host, "/hq"));
     }

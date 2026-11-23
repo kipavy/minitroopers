@@ -85,7 +85,8 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     if (r.reason === "limit") return to("/hq");
     if (r.reason === "refused") return to(`/b/opp?err=${r.code}`);
     // stale: the battle this URL made, if it is the same target; any other old link is no longer valid
-    return to(used >= 0 && used < r.used && oppKey !== null && battleOppOfDay(db, o.army.id, day, used + 1) === oppKey ? `/b/view/bat${used + 1}` : "/b/opp?err=stale");
+    if (used < 0 || used >= r.used) return to("/b/opp"); // malformed or future count: no battle was made by this URL
+    return to(oppKey !== null && battleOppOfDay(db, o.army.id, day, used + 1) === oppKey ? `/b/view/bat${used + 1}` : "/b/opp?err=stale");
   }
 
   pages.get("/b/battle", (c) =>

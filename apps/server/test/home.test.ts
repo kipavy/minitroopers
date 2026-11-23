@@ -137,6 +137,47 @@ for (const mode of MODES) {
     assert.equal(Number((env.db.prepare("SELECT COUNT(*) n FROM troopers").get() as { n: number }).n), 1);
   });
 
+  test(`[${mode}] lazy sessions: 50 anonymous GET / store nothing; creating an army stores one`, async () => {
+    const env = setup(mode);
+    const cl = env.client();
+    let html = "";
+    for (let i = 0; i < 50; i++) html = await (await cl.req("/")).text();
+    assert.equal(Number((env.db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n), 0);
+    const res = await cl.req("/", { form: { part: "5", name: "Lazy", tselect: String(offerSeeds(html)[0]) } });
+    assert.equal(res.status, 302);
+    assert.equal(Number((env.db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n), 1);
+  });
+
+  test(`[${mode}] re-submit of the creation form: binds within 10 s, "taken" a minute later`, async () => {
+    const env = setup(mode);
+    const cl = env.client();
+    const html = await (await cl.req("/")).text();
+    const form = { part: "5", name: "Again", tselect: String(offerSeeds(html)[0]) };
+    assert.equal((await cl.req("/", { form })).status, 302);
+    // a browser that never got the first response (no ssid) re-submits at once: it is let in
+    const lost = env.client();
+    lost.cookies.cid = cl.cookies.cid!;
+    env.clock.t += 3000;
+    const quick = await lost.req("/", { form });
+    assert.equal(quick.status, 302);
+    assert.ok(lost.cookies.ssid);
+    assert.equal(count(env), 1);
+    // same cid, no session, a minute later: the normal "taken" message, nothing bound
+    const late = env.client();
+    late.cookies.cid = cl.cookies.cid!;
+    env.clock.t += 60_000;
+    const res = await late.req("/", { form });
+    assert.equal(res.status, 409);
+    assert.match(await res.text(), /Ce nom est déjà pris\./);
+    assert.equal(late.cookies.ssid, undefined);
+    // already bound to another army: no rebinding through the fallback either
+    const other = env.client("3.3.3.3");
+    await create(env, other, "Other", { part: "0" });
+    const again = await other.req("/", { form: { ...form, tselect: String(offerSeeds(await (await other.req("/")).text())[0]) } });
+    assert.ok(again.status === 409 || again.status === 400 || again.status === 302);
+    assert.notEqual((env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(other.cookies.ssid!) as { army_id: number }).army_id, armyByHost(env.db, "again")!.id);
+  });
+
   test(`[${mode}] recruiter page: "L'armée de X recrute", faction inherited, recruiter_id set`, async () => {
     const env = setup(mode);
     await create(env, env.client("1.1.1.1"), "Warp", { part: "0" });
@@ -205,7 +246,7 @@ for (const mode of MODES) {
     assert.equal(g.headers.get("location"), expected);
     assert.equal(cl.cookies.ssid, undefined); // no session for a visitor who is nobody
     const p = await cl.req("/login", { form: { login: "WARP" } });
-    assert.equal(p.status, 302);
+    assert.equal(p.status, 303);
     assert.equal(p.headers.get("location"), expected);
     assert.equal(env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(cl.cookies.ssid!)!.army_id, armyByHost(env.db, "warp")!.id);
     const missing = await env.client().req("/login", { form: { login: "Personne" } });
@@ -229,7 +270,7 @@ for (const mode of MODES) {
     assert.match(await bad.text(), /Mot de passe incorrect\./);
     assert.equal(cl.cookies.ssid, undefined); // no session for a visitor who is nobody
     const ok = await cl.req("/login", { form: { login: "warp", pass: "s3cret" } });
-    assert.equal(ok.status, 302);
+    assert.equal(ok.status, 303);
     assert.equal(env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(cl.cookies.ssid!)!.army_id, id);
   });
 

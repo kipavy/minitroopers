@@ -24,7 +24,7 @@ Les données (base SQLite `minitroopers.db`, WAL) vont dans `var/` (gitignoré).
 | `LISTEN_HOST` | `127.0.0.1` | adresse d'écoute (`0.0.0.0` pour toutes les interfaces, par exemple dans un conteneur). `HOST` est ignoré (avertissement au démarrage) : tcsh l'exporte avec le nom de la machine |
 | `URL_MODE` | `path` | `path` : armées sous `/a/<hôte>/hq` ; `subdomain` : `<hôte>.<BASE_DOMAIN>/hq` |
 | `BASE_DOMAIN` | `localhost` | domaine des sous-domaines d'armées (mode `subdomain`, au moins deux labels, **sans port** : le port des URL vient de `PUBLIC_URL`) |
-| `PUBLIC_URL` | `http://localhost:<PORT>` (`http://<BASE_DOMAIN>:<PORT>` en mode `subdomain`) | origine publique `http(s)://…` ; `https://` ⇒ cookies `Secure` |
+| `PUBLIC_URL` | `http://localhost:<PORT>` (`http://<BASE_DOMAIN>:<PORT>` en mode `subdomain`) | origine publique `http(s)://…` ; `https://` ⇒ cookies `Secure`. **Doit être exactement l'origine utilisée par le navigateur** (`127.0.0.1` ≠ `localhost`) : tout POST dont l'en-tête `Origin` diffère reçoit 403 « Requête refusée » |
 | `DATA_DIR` | `var` | dossier des données (relatif à la racine du dépôt) |
 | `TRUST_PROXY` | `0` | `0`/`false` ou `1`/`true` : IP client lue dans `CF-Connecting-IP` (derrière Cloudflare Tunnel seulement, voir ci-dessous) |
 | `TZ_GAME` | `Europe/Paris` | fuseau IANA du jour de jeu |
