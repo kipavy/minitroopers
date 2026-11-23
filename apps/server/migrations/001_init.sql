@@ -27,12 +27,12 @@ CREATE TABLE troopers (
   UNIQUE (army_id, slot)
 );
 
--- defender_id is TEXT: a real army id or a generated filler id ("filler:<power>:<seed>").
+-- defender_id is NULL for filler opponents: their identity lives in the stored `input`.
 CREATE TABLE battles (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   day         TEXT    NOT NULL,
   attacker_id INTEGER NOT NULL REFERENCES armies(id),
-  defender_id TEXT    NOT NULL,
+  defender_id INTEGER REFERENCES armies(id),
   input       TEXT    NOT NULL,
   winner      INTEGER,
   kind        TEXT    NOT NULL DEFAULT 'battle'

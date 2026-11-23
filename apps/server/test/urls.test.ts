@@ -41,3 +41,18 @@ test("resolveArmyHost from path or Host header", () => {
   assert.equal(resolveArmyHost(s, "evil.com", "/hq"), null);
   assert.equal(resolveArmyHost(s, "a.b.lvh.me", "/hq"), null);
 });
+
+import { validateArmyName } from "@mt/game";
+import { isValidHost } from "../src/urls.ts";
+
+test("a 20-char army name yields a host that is valid and resolves in both modes", () => {
+  const v = validateArmyName("abcdefghijklmnopqrst", 0);
+  assert.ok(v.ok);
+  if (!v.ok) return;
+  assert.equal(v.host.length, 20);
+  assert.ok(isValidHost(v.host));
+  const p = loadConfig({ URL_MODE: "path" });
+  assert.deepEqual(resolveArmyHost(p, "localhost", `/a/${v.host}/hq`), { host: v.host, path: "/hq" });
+  const s = loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me" });
+  assert.deepEqual(resolveArmyHost(s, `${v.host}.lvh.me:8080`, "/hq"), { host: v.host, path: "/hq" });
+});

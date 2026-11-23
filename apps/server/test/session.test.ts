@@ -95,3 +95,11 @@ test("a 404 under /a/<host>/ sets a single session cookie", async () => {
   assert.equal(res.status, 404);
   assert.equal(res.headers.getSetCookie().filter((s) => s.startsWith("ssid=")).length, 1);
 });
+
+test("subdomain mode sets Domain=BASE_DOMAIN on both cookies, path mode sets none", async () => {
+  const sub = setup({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me:8080" });
+  const set = (await sub.app.request("/key")).headers.getSetCookie();
+  assert.equal(set.length, 2);
+  for (const s of set) assert.match(s, /Domain=lvh\.me(;|$)/i);
+  for (const s of (await setup().app.request("/key")).headers.getSetCookie()) assert.doesNotMatch(s, /Domain=/i);
+});

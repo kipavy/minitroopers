@@ -1,7 +1,10 @@
 import type { Config } from "./config.ts";
 
-/** Army hosts are produced by @mt/game `host()` and validated names: lowercase letters, digits, '-'. */
-const HOST_RE = /^[a-z0-9-]{1,16}$/;
+/**
+ * Army hosts are produced by @mt/game `host()` and validated names: lowercase letters, digits, '-'.
+ * host() keeps a whole first segment >= 8 chars, and a name (<= 20 chars) can expand (ae/oe), so up to 40; DNS label max is 63.
+ */
+const HOST_RE = /^[a-z0-9-]{1,40}$/;
 export const isValidHost = (h: string): boolean => HOST_RE.test(h);
 
 /**
