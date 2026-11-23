@@ -5,6 +5,7 @@ import { createApp } from "./app.ts";
 import { loadConfig } from "./config.ts";
 import { openDb } from "./db.ts";
 import { startDailyJob } from "./jobs/daily.ts";
+import { mountPages } from "./routes/index.ts";
 
 const cfg = loadConfig(process.env);
 // A relative DATA_DIR is relative to the repository root (var/ is gitignored).
@@ -12,7 +13,7 @@ const dataDir = isAbsolute(cfg.dataDir) ? cfg.dataDir : resolve(import.meta.dirn
 mkdirSync(dataDir, { recursive: true });
 const db = openDb(join(dataDir, "minitroopers.db"));
 startDailyJob(db);
-const app = createApp({ cfg, db });
+const app = createApp({ cfg, db }, mountPages({ cfg, db }));
 serve({ fetch: app.fetch, port: cfg.port, hostname: "127.0.0.1" }, (i) => {
   console.log(`MiniTroopers server on http://127.0.0.1:${i.port} (${cfg.urlMode} mode, data in ${dataDir})`);
 });

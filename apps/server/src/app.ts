@@ -63,7 +63,10 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
   pages.use("*", sessionMiddleware(cfg, db, deps.now));
   mount?.(pages);
 
-  if (cfg.urlMode === "path") app.route("/a/:host", pages);
+  if (cfg.urlMode === "path") {
+    app.route("/a/:host", pages);
+    app.route("/a/:host/", pages); // armyUrl(host, "/") is "/a/<host>/": Hono is strict about the trailing slash
+  }
   app.route("/", pages);
   return app;
 }

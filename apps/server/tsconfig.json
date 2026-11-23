@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": ".", "outDir": "dist", "types": ["node"] },
-  "include": ["src"],
+  "compilerOptions": { "rootDir": ".", "outDir": "dist", "types": ["node"], "resolveJsonModule": true },
+  "include": ["src", "data/*.json"],
   "references": [{ "path": "../../packages/engine" }, { "path": "../../packages/game" }]
 }

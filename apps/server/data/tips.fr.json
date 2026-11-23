@@ -1,0 +1,90 @@
+{
+ "0": {
+  "title": "Soldat",
+  "body": "Pour chaque niveau, <i>{name}</i> obtient un point de vie supplémentaire. <em>Si tu ne cherche pas les responsabilités mais plutot la survie, Ce job est fait pour toi !</em>"
+ },
+ "8": {
+  "title": "Pistolet",
+  "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 7</li><li><b>Critiques</b> : x5</li><li><b>Visée</b> : 90%</li><li><b>Récupération</b> : 100</li></ul>"
+ },
+ "13": {
+  "title": "Fusil",
+  "body": "<ul><li><b>Dégâts</b> : 5-8</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Projette l'ennemi, Dégats de zone</li></ul>"
+ },
+ "15": {
+  "title": "Fusil double",
+  "body": "<ul><li><b>Dégâts</b> : 5-10</li><li><b>Portée</b> : 5</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Projette l'ennemi, Dégats de zone, Tire deux fois par rafale</li></ul>"
+ },
+ "16": {
+  "title": "Fusil à pompe",
+  "body": "<ul><li><b>Dégâts</b> : 5-10</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 90</li><li><b>Habilités</b> : Recharge automatiquement, Projette l'ennemi, Dégats de zone</li></ul>"
+ },
+ "17": {
+  "title": "Fusil à grenaille",
+  "body": "<ul><li><b>Dégâts</b> : 4-12</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x5</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Projette l'ennemi, Dégats de zone étendus</li></ul>"
+ },
+ "18": {
+  "title": "Fusil d'assaut",
+  "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 2-6</li><li><b>Critiques</b> : x5</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 100</li></ul>"
+ },
+ "19": {
+  "title": "M16",
+  "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 2-6</li><li><b>Critiques</b> : x10</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 80</li></ul>"
+ },
+ "25": {
+  "title": "Lance-roquettes",
+  "body": "<ul><li><b>Dégâts</b> : 8-15</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 120</li><li><b>Habilités</b> : Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "27": {
+  "title": "Tube Infernal",
+  "body": "<ul><li><b>Dégâts</b> : 14-28</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 95%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Arme lourde, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "32": {
+  "title": "Sniper",
+  "body": "<ul><li><b>Dégâts</b> : 4</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x15</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "56": {
+  "title": "Balle explosive",
+  "body": "<i>{name}</i> tire jusqu'à 6 balles explosives doublant leurs dégâts. <em>Boum, quand mon p'tit coeur fait boum !</em>"
+ },
+ "72": {
+  "title": "A couvert !",
+  "body": "Lorsque <i>{name}</i> recharge son arme, il a une chance sur deux d'éviter les tirs. <em>\"On vous avait bien dit de baisser la tête.\"</em>"
+ },
+ "84": {
+  "title": "Grenade gaz",
+  "body": "Empoisonne tous les troopers touchés. <em>\"Très efficace ! Enfin... Sauf en cas de rhume chez l'ennemi.\"</em>"
+ },
+ "86": {
+  "title": "Grenade fragment",
+  "body": "Se fragmente et fait entre 1 et 5 dégâts. <em>\"Aïe ! Aïe ! Aïe !... Mais ! Aïeuuuh ! \"</em>"
+ },
+ "93": {
+  "title": "Bourreau des coeurs",
+  "body": "Multiplie par 3 les chances de <i>{name}</i> d'effectuer une blessure fatale au coeur. <em>\"Oh Carl... Tu me brises le coeur ! Maman avait bien raison...\"</em>"
+ },
+ "94": {
+  "title": "Détecteur de chaleur",
+  "body": "+20% en visée. Les balles de <i>{name}</i> ne peuvent pas être esquivées. <em>\"- Ici ? <br/>- Ah non là, c'est froid... <br/>- Et là ? <br/>- Ah, tu chauffes ! <br/>- Ici alors ? <br/>- Bravo, tu brûles. \" <br/>PAN !</em>"
+ },
+ "103": {
+  "title": "Porte bonheur",
+  "body": "Un coup fatal laisse <i>{name}</i> avec 1 seul point de vie au lieu de mourir. <em>\"Quelle chance, l'obus s'est écrasé sur ma patte de lapin ! \"</em>"
+ },
+ "115": {
+  "title": "Oeil de lynx",
+  "body": "+50% en visée avec les armes à feu. <em>\"10$ que je lui fait sauter la molaire gauche à 500m. En plus elle est cariée, on dirait.\"</em>"
+ },
+ "128": {
+  "title": "Roulé-boulé",
+  "body": "<i>{name}</i> roule à terre pour esquiver certains tirs. <em>\"L'important, c'est d'éviter les flaques d'eau et la boue. Les mines, aussi.\"</em>"
+ },
+ "130": {
+  "title": "Inébranlable",
+  "body": "Lorsque <i>{name}</i> subit des dégâts, son action n'est pas interrompue. <em>\"Je me plains quand la bataille est finie. Pas avant.\"</em>"
+ },
+ "137": {
+  "title": "Coureur en zigzag",
+  "body": "Lorsque <i>{name}</i> se déplace, il esquive la moitié des tirs qui le ciblent. <em>\"C'est plus long, mais moi j'arrive au bout.\"</em>"
+ }
+}
