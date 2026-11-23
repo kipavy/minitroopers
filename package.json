@@ -4,13 +4,14 @@
   "type": "module",
   "workspaces": [
     "packages/*",
+    "apps/*",
     "tools/*"
   ],
   "engines": {
     "node": ">=24.12"
   },
   "scripts": {
-    "test": "node --test \"packages/*/test/**/*.test.ts\" \"tools/*/test/**/*.test.ts\"",
+    "test": "node --test \"apps/*/test/**/*.test.ts\" \"packages/*/test/**/*.test.ts\" \"tools/*/test/**/*.test.ts\"",
     "typecheck": "tsc -b",
     "test:play": "node tools/oracle/scripts/test-play.mjs",
     "oracle:capture": "node tools/oracle/src/capture.ts",
