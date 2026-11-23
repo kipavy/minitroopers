@@ -44,6 +44,7 @@ export function registerOpp(pages: Hono<Env>, deps: Deps): void {
     const foes: OppFoe[] = [];
     for (const r of refs) {
       const f = foeOf(db, r.id);
+      // UNVERIFIED: a stored army's grid is in its deploy order (`foeOf`), never archived for a reordered army.
       if (f) foes.push({ ref: r.id, title: f.title, power: f.power, faction: f.faction, troopers: f.army.troopers });
     }
     const err = queryParam(c, "err");

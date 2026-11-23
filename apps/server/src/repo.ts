@@ -864,6 +864,7 @@ export function defensesOf(db: DatabaseSync, armyId: number, limit: number): Def
     .map((r) => ({
       id: r.id as number,
       attacker: r.host === null ? null : { host: r.host as string, name: r.name as string, part: r.part as number },
+      // UNVERIFIED: a draw (winner null) reads as a defeat for the defender too; no archived draw in the history.
       won: r.winner !== null && r.winner !== r.side,
       createdAt: (r.created_at as number | null) ?? null,
       day: r.day as string,
@@ -915,7 +916,8 @@ export function ranking(db: DatabaseSync, armyId: number): { recruiter: RankRow;
     }
   }
   if (!recruiter) {
-    // A recruiter that no longer exists and no faction to fall back on: the army ranks alone.
+    // Defensive only: a deleted recruiter sets `recruiter_id` to NULL (ON DELETE SET NULL, migration 005), so the army
+    // joins its faction pool above. Reached only for an army whose faction is unknown: it ranks alone.
     return { recruiter: one(army.id), rows: [], self: null };
   }
   const where = `a.is_faction = 0 AND (${recruiterId !== null ? "a.recruiter_id = ? OR " : ""}${viaFaction !== null ? "(a.recruiter_id IS NULL AND a.faction = ?)" : "0"})`;

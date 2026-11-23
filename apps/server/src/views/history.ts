@@ -25,6 +25,7 @@ ${r.bounty ?? 0}
  */
 export function defenseItem(cfg: Config, host: string, d: DefenseRow, now: number): Html {
   const k = d.won ? "win" : "defeat";
+  // UNVERIFIED: a battle stored before `battles.created_at` (migration 006) has no time: "Le <j> <mois>" of its day.
   const date = d.createdAt === null ? dayDate(d.day) : historyDate(d.createdAt, now, cfg.tzGame);
   return html`<li class="${k}"><a href="${armyUrl(cfg, host, `/b/fview/${d.id}`)}"><p><em><img src="/img/${k}.png"/>
 ${d.won ? "Victoire" : "Défaite"}</em>

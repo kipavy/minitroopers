@@ -24,6 +24,7 @@ const stored = (db: DatabaseSync, id: number): Foe | null => {
   const a = armyById(db, id);
   if (!a) return null;
   // Deployment order (RECON4 §3): listed and spawned in that order as a defender too.
+  // UNVERIFIED: the /b/opp grids also show stored armies in deploy order; no archived opponent list shows a reordered army.
   const troopers: BattleTrooperInput[] = battleTroopers(db, a.id);
   if (troopers.length === 0) return null;
   return {
