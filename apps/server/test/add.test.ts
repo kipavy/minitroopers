@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { recruitCost } from "@mt/engine";
-import { armyByHost, troopersOf } from "../src/repo.ts";
+import { dayKey } from "@mt/game";
+import { armyByHost, resetDay, troopersOf } from "../src/repo.ts";
 import { create, offerSeeds, setup, type Client, type Env, type Mode } from "./helpers.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
@@ -52,6 +53,28 @@ for (const mode of MODES) {
     assert.equal(credits(env, id), 12);
     // the bought one is no longer offered
     assert.ok(!offerSeeds(await (await get(env, cl, "/add")).text()).includes(seed));
+  });
+
+  test(`[${mode}] admin reset-day shop: a fresh set of offers, buyable; the previous offers are refused`, async () => {
+    const env = setup(mode);
+    const { cl, id } = await army(env, 20);
+    const day = dayKey(new Date(env.clock.t), "Europe/Paris");
+    const before = offerSeeds(await (await get(env, cl, "/add")).text());
+    resetDay(env.db, id, day, { battles: true, mission: true, raid: true }); // other quotas: the shop is untouched
+    assert.deepEqual(offerSeeds(await (await get(env, cl, "/add")).text()), before);
+    resetDay(env.db, id, day, { shop: true });
+    const after = offerSeeds(await (await get(env, cl, "/add")).text());
+    assert.ok(after.length >= 4);
+    assert.ok(after.every((s) => !before.includes(s)), "every offer is new");
+    assert.deepEqual(offerSeeds(await (await get(env, cl, "/add")).text()), after); // stable until the next reset
+    const stale = await get(env, cl, "/add", { form: { tselect: String(before[0]) } });
+    assert.equal(stale.status, 400); // a pre-reset offer is no longer for sale
+    assert.equal(troopersOf(env.db, id).length, 1);
+    assert.equal((await get(env, cl, "/add", { form: { tselect: String(after[0]) } })).status, 302);
+    assert.equal(troopersOf(env.db, id)[1]!.seed, after[0]);
+    resetDay(env.db, id, day, { shop: true });
+    const third = offerSeeds(await (await get(env, cl, "/add")).text());
+    assert.ok(third.every((s) => !after.includes(s)), "each reset draws again");
   });
 
   test(`[${mode}] not enough credits: message, nothing bought; seed outside the offers refused`, async () => {

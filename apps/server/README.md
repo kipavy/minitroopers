@@ -74,7 +74,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
 | `show --army <x> [--day AAAA-MM-JJ]` | état complet d'une armée : crédits, mot de passe, missions, rats, recruteur, recrues confirmées / en attente, troopers (niveau, compétences), ordre de déploiement, et la journée (défaut : aujourd'hui dans `TZ_GAME`) : batailles jouées / permises, mission, raid |
-| `reset-day --army <x> [--day AAAA-MM-JJ] [--what battles\|mission\|raid\|all]` | rend les quotas d'une journée (défaut : aujourd'hui, `all`), sans rien effacer (voir plus bas) |
+| `reset-day --army <x> [--day AAAA-MM-JJ] [--what battles\|mission\|raid\|shop\|all]` | rend les quotas d'une journée (défaut : aujourd'hui, `all`), sans rien effacer (voir plus bas) |
 | `set-credits --army <x> --amount <N>` | fixe les crédits à N (≥ 0) |
 | `set-rats --army <x> --rats <1-100>` | rats de la prochaine extermination |
 | `unlock-missions --army <x> [--lock]` | débloque les missions sans les faire payer ; `--lock` les verrouille à nouveau |
@@ -134,11 +134,15 @@ zéro enregistre ce qui était déjà utilisé (`daily.battles_reset`, `missions
 - `mission` : la même mission (type et adversaire gelés) retrouve tous ses essais et n'est plus gagnée ;
 - `raid` : phase 1 avec toutes les recrues vivantes ; le compteur du lien (`/b/raid?phase=`) passe à une valeur
   jamais utilisée, la phase jouée étant ce compteur moins `raid_reset` ;
-- `all` (défaut) : les trois.
+- `shop` : nouvelles offres sur « Ajouter un trooper » (`/add`). Ces offres ne sont pas stockées : elles se
+  déduisent du jour, du navigateur et du recruteur. `daily.shop_reset` (migration 008) compte les remises à zéro et
+  change ce tirage ; à 0, ce sont les offres d'origine du jour. Contrairement aux autres, **chaque appel tire de
+  nouvelles offres**, et une offre d'avant la remise à zéro n'est plus achetable ;
+- `all` (défaut) : les quatre.
 
 Les liens d'action portent ces compteurs qui ne font que croître : un lien émis avant la remise à zéro (onglet
 resté ouvert, rechargement) ne correspond à aucun nouveau combat et ne rejoue rien, il affiche le combat qu'il
-avait produit ou renvoie au QG. Relancer `reset-day` sans nouveau combat ne change rien.
+avait produit ou renvoie au QG. Relancer `reset-day` sans nouveau combat ne change rien, sauf pour la boutique.
 
 Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
 l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :
