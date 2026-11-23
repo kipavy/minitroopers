@@ -87,6 +87,7 @@ async function main() {
     const ignored = excluder(join(REPO, ".dockerignore"));
     // The rules themselves, on paths that git does not track but a working tree can hold (docker build copies it).
     const MUST_EXCLUDE = ["deploy/data/minitroopers.db", "deploy/data/backup-2026-01-01.db", "deploy/data/minitroopers.db-wal", "deploy/.env", ".env",
+      ".env.local", "deploy/.env.production", "var/minitroopers.sqlite", "deploy/data/x.sqlite3", "x.sqlite-wal",
       "var/minitroopers.db", "var/minitroopers.db-shm", "x.db", "apps/server/node_modules/hono/index.js", "tools/bin/ms-playwright/x", "tools/oracle/golden-full/x"];
     const MUST_KEEP = ["Dockerfile", "package-lock.json", "apps/server/src/main.ts", "apps/server/migrations/001_init.sql", "apps/server/data/tips.fr.json",
       "apps/server/public/swf/client_fr_play.swf", "packages/engine/src/index.ts", "tools/oracle/package.json"];
