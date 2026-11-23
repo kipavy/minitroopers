@@ -1,15 +1,12 @@
-import { clientParams, gridData, type BattleTrooperInput } from "@mt/engine";
+import type { BattleTrooperInput } from "@mt/engine";
 import type { Config } from "../config.ts";
 import type { ArmyRow, DayBattle } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
 import { esc, html, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
-import { MINI_SWF, jsStr, swfEmbed } from "./swf.ts";
-
-export const MAX_TROOPERS = 12; // Data.XP_LEVELS.length
-const GRID_COLS = 3;
-const CELL_H = 72;
+import { jsStr } from "./swf.ts";
+import { armyGrid, armyMenu } from "./panel.ts";
 
 export interface HqView {
   army: ArmyRow;
@@ -34,53 +31,6 @@ export interface HqView {
 }
 
 const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;
-
-function grid(cfg: Config, v: HqView): Html {
-  const host = v.army.host;
-  const add = v.troopers.length < MAX_TROOPERS;
-  const rows = Math.max(1, Math.ceil((v.troopers.length + (add ? 1 : 0)) / GRID_COLS));
-  const data = gridData(
-    { army: v.troopers, xmax: GRID_COLS, ymax: rows, add, fac: v.army.faction, space: -1, action: "on" },
-    MINI_SWF,
-  );
-  const tips = [
-    ...(add ? ["Ajoute un nouveau trooper à ton armée !"] : [""]),
-    ...v.troopers.map((t) => `Accède aux informations du trooper <strong>${esc(t.name)}</strong>`),
-  ];
-  // onOver/onOut/onClick are called by the SWF with the trooper id (null for the "add" tile).
-  const script = `
-var ttips = [
-\t${tips.map(jsStr).join("\n\t,")}
-];
-function onOver(id) {
-\t_.showTip('menuTip',ttips[id == null?0:parseInt(id)+1]);
-}
-function onOut(id) {
-\t_.resetTip('menuTip');
-}
-function onClick(id) {
-\tdocument.location = id == null ? ${jsStr(armyUrl(cfg, host, "/add"))} : ${jsStr(armyUrl(cfg, host, "/t/"))}+id;
-}
-`;
-  return html`${swfEmbed({ id: "swf_tr_view", width: 214, height: CELL_H * rows, flashvars: clientParams(data), objId: "tr_view" })}
-<script type="text/javascript">${raw(script)}</script>`;
-}
-
-const menuBtn = (cls: string, href: string, label: string, tipText: string): Html =>
-  html`<div class="but ${cls}"><div class="but_right ${cls}_right"><a href="${href}" class="but_bg ${cls}_bg" onmouseover="${raw(`_.showTip('menuTip',${esc(jsStr(tipText))})`)}" onmouseout="_.resetTip('menuTip')">${label}</a></div></div>
-`;
-
-function menu(cfg: Config, v: HqView): Html {
-  const u = (p: string): string => armyUrl(cfg, v.army.host, p);
-  return html`
-<div class="but b1"><div class="but_right b1_right"><a href="javascript:_.startRecruit()" class="but_bg b1_bg" onmouseover="_.showTip('menuTip','Demande à tes amis de rejoindre ton armée !')" onmouseout="_.resetTip('menuTip')">Recruter un trooper</a></div></div>
-
-${menuBtn("b2", u("/history"), "Historique", "Historique de tes recrues et batailles ciblées !")}
-${menuBtn("b2", u("/choice"), "Gérer mon armée", "Change l'ordre de déploiement de tes troopers")}
-${v.army.passwordHash === null ? menuBtn("b3", u("/protect"), "Protéger mon armée", "Protége ton armée avec un mot de passe !") : ""}
-${menuBtn("b3", u("/ranks"), "Hiérarchie", "Ton classement avec les autres joueurs")}
-`;
-}
 
 function insertPass(cfg: Config, v: HqView): Html {
   return html`<div class="insertpass"><form method="POST" action="${armyUrl(cfg, v.army.host, "/login")}"><input type="hidden" name="login" value="${v.army.host}"/>
@@ -166,9 +116,9 @@ export function hqPage(cfg: Config, v: HqView): Html {
   const left = v.locked
     ? html`${insertPass(cfg, v)}
 </div>`
-    : html`${grid(cfg, v)}</div>
+    : html`${armyGrid(cfg, v.army, v.troopers)}</div>
 <div class="clear"></div>
-${menu(cfg, v)}`;
+${armyMenu(cfg, v.army)}`;
   const content = html`${notice}
 
 <div class="home">

@@ -169,3 +169,123 @@ export function battlesOfDay(db: DatabaseSync, armyId: number, day: string): Day
     return { n: i + 1, win: r.winner !== null && r.winner === side };
   });
 }
+
+export function trooperBySlot(db: DatabaseSync, armyId: number, slot: number): TrooperRow | null {
+  const r = db.prepare("SELECT * FROM troopers WHERE army_id = ? AND slot = ?").get(armyId, slot);
+  return r ? trooperOf(r) : null;
+}
+
+/** Runs `fn` in a BEGIN IMMEDIATE transaction: committed when it returns a non-null value, rolled back on null or error. */
+function immediate<T>(db: DatabaseSync, fn: () => T | null): T | null {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const r = fn();
+    db.exec(r === null ? "ROLLBACK" : "COMMIT");
+    return r;
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
+
+export type StartLevelUp = "started" | "pending" | "poor" | "max" | "gone";
+
+/**
+ * Pays the next level-up of a trooper and marks it pending, atomically: a second call (reload, double click,
+ * concurrent request) finds the pending mark and debits nothing. `costOf(choicesLength)` is null when the trooper cannot level up.
+ */
+export function startLevelUp(db: DatabaseSync, armyId: number, slot: number, costOf: (choicesLength: number) => number | null): StartLevelUp {
+  let out: StartLevelUp = "gone";
+  immediate(db, () => {
+    const t = trooperBySlot(db, armyId, slot);
+    if (!t) return null;
+    if (t.pendingLevelup !== null) return (out = "pending"), null;
+    const cost = costOf(t.choices.length);
+    if (cost === null) return (out = "max"), null;
+    const paid = db.prepare("UPDATE armies SET credits = credits - ? WHERE id = ? AND credits >= ?").run(cost, armyId, cost);
+    if (Number(paid.changes) !== 1) return (out = "poor"), null;
+    db.prepare("UPDATE troopers SET pending_levelup = ? WHERE id = ?").run(String(t.choices.length), t.id);
+    return (out = "started");
+  });
+  return out;
+}
+
+export interface LevelUpDone {
+  choices: number[];
+  /** New leftOver (null: leave the column alone). */
+  leftOver: number[] | null;
+  notice: unknown;
+}
+
+/**
+ * Applies the choice of a paid level-up. `decide` sees the trooper as stored (with its pending mark) and returns
+ * the new state, or null to refuse. The pending mark is cleared in the same statement, so a replay finds "none".
+ */
+export function finishLevelUp(db: DatabaseSync, armyId: number, slot: number, decide: (t: TrooperRow) => LevelUpDone | null): "done" | "none" | "bad" {
+  let out: "done" | "none" | "bad" = "none";
+  immediate(db, () => {
+    const t = trooperBySlot(db, armyId, slot);
+    if (!t || t.pendingLevelup !== String(t.choices.length)) return null;
+    const d = decide(t);
+    if (!d) return (out = "bad"), null;
+    db.prepare("UPDATE troopers SET choices = ?, pending_levelup = NULL, left_over = COALESCE(?, left_over) WHERE id = ?").run(
+      JSON.stringify(d.choices),
+      d.leftOver === null ? null : JSON.stringify(d.leftOver),
+      t.id,
+    );
+    db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify(d.notice));
+    return (out = "done");
+  });
+  return out;
+}
+
+/** Pending popups of an army, oldest first, removed as they are read. */
+export function takeNotices(db: DatabaseSync, armyId: number): unknown[] {
+  return (
+    immediate(db, () => {
+      const rows = db.prepare("SELECT id, data FROM notices WHERE army_id = ? ORDER BY id").all(armyId) as { id: number; data: string }[];
+      db.prepare("DELETE FROM notices WHERE army_id = ?").run(armyId);
+      return rows.map((r) => JSON.parse(r.data) as unknown);
+    }) ?? []
+  );
+}
+
+/** Renames a trooper once. False when it was already renamed (or does not exist). */
+export function renameTrooper(db: DatabaseSync, armyId: number, slot: number, name: string): boolean {
+  return Number(db.prepare("UPDATE troopers SET name = ?, renamed = 1 WHERE army_id = ? AND slot = ? AND renamed = 0").run(name, armyId, slot).changes) === 1;
+}
+
+/** Stores the AI preferences (and, when given, the leftOver set) of a trooper. */
+export function saveTrooperPref(db: DatabaseSync, trooperId: number, pref: TrooperPref, leftOver?: number[]): void {
+  db.prepare("UPDATE troopers SET pref = ?, left_over = COALESCE(?, left_over) WHERE id = ?").run(
+    JSON.stringify({ ...pref, leftOver: [] }),
+    leftOver === undefined ? null : JSON.stringify(leftOver),
+    trooperId,
+  );
+}
+
+export type AddTrooper = { ok: true } | { ok: false; reason: "full" | "poor" | "dup" };
+
+/**
+ * Buys a trooper: the slot is the current count, the price is `costOf(count)` (null when full). Count, funds and
+ * duplicate seed are checked inside the transaction, so a double submission buys once.
+ */
+export function addTrooper(db: DatabaseSync, armyId: number, t: { seed: number; name: string }, costOf: (count: number) => number | null): AddTrooper {
+  let out: AddTrooper = { ok: false, reason: "full" };
+  try {
+    immediate(db, () => {
+      const rows = troopersOf(db, armyId);
+      if (rows.some((r) => r.seed === t.seed)) return (out = { ok: false, reason: "dup" }), null;
+      const cost = costOf(rows.length);
+      if (cost === null) return (out = { ok: false, reason: "full" }), null;
+      const paid = db.prepare("UPDATE armies SET credits = credits - ? WHERE id = ? AND credits >= ?").run(cost, armyId, cost);
+      if (Number(paid.changes) !== 1) return (out = { ok: false, reason: "poor" }), null;
+      db.prepare("INSERT INTO troopers(army_id, slot, seed, name) VALUES (?, ?, ?, ?)").run(armyId, rows.length, t.seed, t.name);
+      return (out = { ok: true });
+    });
+  } catch (e) {
+    if (/UNIQUE/i.test(String(e))) return { ok: false, reason: "dup" };
+    throw e;
+  }
+  return out;
+}

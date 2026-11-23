@@ -75,12 +75,17 @@ export function queryParam(c: Context, name: string): string | undefined {
   return undefined;
 }
 
+/** True when query parameter `param` equals the session key (the anti-CSRF token of action URLs). */
+export function hasKey(c: Context<Env>, param: string): boolean {
+  const given = Buffer.from(queryParam(c, param) ?? "");
+  const want = Buffer.from(c.get("session").key);
+  return given.length === want.length && timingSafeEqual(given, want);
+}
+
 /** Guard for action URLs: query parameter `param` must equal the session key, else 403. */
 export function actionKey(param: string): MiddlewareHandler<Env> {
   return async (c, next) => {
-    const given = Buffer.from(queryParam(c, param) ?? "");
-    const want = Buffer.from(c.get("session").key);
-    if (given.length !== want.length || !timingSafeEqual(given, want)) return c.text("Forbidden", 403);
+    if (!hasKey(c, param)) return c.text("Forbidden", 403);
     await next();
   };
 }

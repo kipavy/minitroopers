@@ -29,7 +29,7 @@ export interface HomeView {
 
 const offerInput = (o: OfferView, i: number): BattleTrooperInput => ({ id: 1000 + i, name: o.name, seed: o.seed, type: 0, choices: [], force: [], pref: null });
 
-function offerItem(o: OfferView, i: number): Html {
+export function offerItem(o: OfferView, i: number): Html {
   const tid = 1000 + i;
   const onclick = `_.selectTrooper(${tid},${o.seed})`;
   const flashvars = clientParams(trooperData(offerInput(o, i), o.colour, MINI_SWF), { onclick });

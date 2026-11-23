@@ -44,7 +44,7 @@ function randomFaction(clientId: string, day: string): Faction {
   return FACTIONS[n % FACTIONS.length]!;
 }
 
-function offersFor(c: Context<Env>, day: string, recruiter: string | null): OfferView[] {
+export function offersFor(c: Context<Env>, day: string, recruiter: string | null): OfferView[] {
   return dailyOffers({ day, clientId: c.get("session").clientId, recruiter, salt: "offers" }).map((o) => ({
     ...o,
     skills: describeTrooper({ id: 0, name: o.name, seed: o.seed, type: 0, choices: [], force: [], pref: null }).skills.slice(0, 2),

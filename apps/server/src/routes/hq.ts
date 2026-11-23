@@ -1,14 +1,16 @@
 import type { Context, Hono } from "hono";
+import type { Html } from "../views/html.ts";
 import { bodyLimit } from "hono/body-limit";
 import { armyPower, describeTrooper } from "@mt/engine";
 import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, queryParam } from "../session.ts";
 import { createRateLimiter } from "../ratelimit.ts";
-import { armyByHost, armyById, battlesOfDay, recruitCount, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
+import { armyByHost, armyById, battlesOfDay, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
 import { hqPage, recruitFragment, type HqView } from "../views/hq.ts";
+import { notices } from "../views/levelup.ts";
 import { missingPage, soonPage } from "../views/soon.ts";
 import type { HomeError } from "./home.ts";
 
@@ -31,7 +33,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
   const loginLimiter = createRateLimiter({ limit: 10, windowMs: 600_000, now });
   const loginIpLimiter = createRateLimiter({ limit: 40, windowMs: 600_000, now });
 
-  function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number }): HqView {
+  function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number; notice?: Html | null }): HqView {
     const rows = troopersOf(db, army.id);
     const troopers = rows.map(trooperInput);
     const t = now();
@@ -45,7 +47,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
       nextBounty: referralBounty(recruitCount(db, army.id) + 1),
       moneyDelta: o.moneyDelta ?? 0,
-      notice: null,
+      notice: o.notice ?? null,
       locked: o.locked,
       ...(o.lockError ? { lockError: o.lockError } : {}),
     };
@@ -70,7 +72,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
     if (session.armyId === army.id) {
       const m = Number(queryParam(c, "money"));
       const moneyDelta = Number.isInteger(m) && m > 0 ? Math.min(m, army.credits) : 0;
-      return c.html(String(hqPage(cfg, hqView(army, { locked: false, moneyDelta }))));
+      return c.html(String(hqPage(cfg, hqView(army, { locked: false, moneyDelta, notice: notices(takeNotices(db, army.id)) }))));
     }
     // Not the owner: a protected army asks for its password; an open one is only reachable through its recruit page / login.
     if (army.passwordHash !== null) return c.html(String(hqPage(cfg, hqView(army, { locked: true }))));
