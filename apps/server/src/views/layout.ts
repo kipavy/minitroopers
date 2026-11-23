@@ -7,9 +7,18 @@ import { esc, html, Html, raw } from "./html.ts";
  * (`mt.js.Tip.show(this,'<div class=\'tiptop\'>…')`). A string body is text (escaped); pass an Html for markup.
  */
 export function tip(title: string, body: Html | string): Html {
+  return tipBox(`<h1>${esc(title)}</h1>${body instanceof Html ? body.value : esc(body)}`);
+}
+
+/** Tooltip whose whole content is one `<h2>` line (the faction cell of the ranking: `<h2>Faction de fol-ecume</h2>`). */
+export function tipH2(text: string): Html {
+  return tipBox(`<h2>${esc(text)}</h2>`);
+}
+
+function tipBox(content: string): Html {
   const inner =
     `<div class='tiptop'><div class='tipbottom'><div class='tipbg'><div class='tipcontent'>` +
-    `<img src='/img/pixel.gif' class='pixel' /><h1>${esc(title)}</h1>${body instanceof Html ? body.value : esc(body)}</div></div></div>`;
+    `<img src='/img/pixel.gif' class='pixel' />${content}</div></div></div>`;
   const js = inner.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\r?\n/g, "\\n");
   return raw(`onmouseover="mt.js.Tip.show(this,'${esc(js)}')" onmouseout="mt.js.Tip.hide()"`);
 }

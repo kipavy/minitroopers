@@ -5,7 +5,7 @@ import { hasKey, queryParam } from "../session.ts";
 import { finishLevelUp, trooperInput } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { levelUpPage } from "../views/levelup.ts";
-import { missingPage } from "../views/soon.ts";
+import { missingPage } from "../views/army.ts";
 import { ownedArmy, slotOf, type Owned } from "./owner.ts";
 
 const ERR_SKILL = "Cette compétence n'est pas proposée."; // UNVERIFIED: our own text

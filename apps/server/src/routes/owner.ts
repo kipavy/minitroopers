@@ -4,7 +4,7 @@ import { prevDay } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { armyByHost, armyById, troopersOf, trooperInput, type ArmyRow, type TrooperRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
-import { missingPage } from "../views/soon.ts";
+import { missingPage } from "../views/army.ts";
 import { queryParam } from "../session.ts";
 
 export interface Owned {
@@ -12,6 +12,14 @@ export interface Owned {
   rows: TrooperRow[];
   troopers: BattleTrooperInput[];
   power: number;
+}
+
+/** The army of the request: the one in the URL, else the session's. */
+export function requestArmy({ db }: Deps, c: Context<Env>): ArmyRow | null {
+  const h = c.get("armyHost");
+  if (h !== null) return armyByHost(db, h);
+  const id = c.get("session").armyId;
+  return id === null ? null : armyById(db, id);
 }
 
 /**

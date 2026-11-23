@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { Config } from "./config.ts";
-import { missingPage } from "./views/soon.ts";
+import { missingPage } from "./views/army.ts";
 
 /** The only error text of the archived pages for a missing offer (home page, /add). */
 export const ERR_OFFER = "Cette action nécessite que tu sois enregistré sur le site.";

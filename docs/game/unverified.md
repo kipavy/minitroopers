@@ -51,7 +51,7 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | `/hq` d'une armée par un tiers | protégée : formulaire de mot de passe (hq.html) ; non protégée : redirection vers sa page de recrutement | comportement de l'original non capturé | `apps/server/src/routes/hq.ts` |
 | Noms d'armée | texte brut seulement : rejet des caractères de contrôle, de format (0-largeur, bidi), substituts isolés, U+FFFD, séparateurs de ligne, privés/non assignés | règle serveur originale inconnue ; protège pages, infobulles et flashvars | `apps/server/src/validate.ts` |
 | Tuile de bataille gagnée / perdue | gagnée si `winner === attackerSide` de l'entrée stockée ; infobulles « Tu as remporté / perdu cette bataille ! » (par analogie avec « Tu as remporté la mission du jour ! ») ; « Il te reste N bataille(s) aujourd'hui ! », « Tu as terminé tes batailles du jour ! » à 0 | textes 0/1 reste non capturés | `apps/server/src/views/hq.ts` |
-| Boîtes Mission / Raid, entrées de menu des étapes 3-4 | verrouillées (« Bientôt disponible ! ») ; minuteur « Nouvelle mission dans » (texte original) affiché dans la boîte Mission verrouillée | pas encore implémentés | `apps/server/src/views/hq.ts` |
+| Boîtes Mission / Raid | verrouillées ; minuteur « Nouvelle mission dans » (texte original) affiché dans la boîte Mission verrouillée | pas encore implémentés | `apps/server/src/views/hq.ts` |
 | Infobulles de compétences | seules les 22 infobulles archivées (accueil, `/add`, fiche, montée de niveau) ; les autres compétences n'affichent que leur nom ; `{name}` remplace le trooper d'exemple | les descriptions FR ne sont pas dans le SWF ; l'indice du sprite `skills.png` = id de la compétence (20 colonnes de 30 px, vérifié sur 19/20 infobulles) | `apps/server/scripts/extract-tips.mjs`, `data/tips.fr.json` |
 | Déverrouillage des réglages par niveau | arme dès le niveau 1 (si plus d'une arme), localisation 2, ciblage 3, comportement 5, priorité 6 ; un champ verrouillé n'est pas affiché et est ignoré s'il est posté | wiki « Prefs by level » ; non observable dans les pages archivées (fiches de haut niveau) | `apps/server/src/prefs.ts` |
 | Rééquipement (`?equip=`) | tirage d'un sous-ensemble de `carryCapacity` équipements (moteur `reequip`), déterministe par (graine du trooper, nombre de choix) : revisiter au même niveau redonne le même jeu, une montée de niveau retire ; le jeu gardé est mémorisé dans `pref.selectedItems` et conservé aux montées de niveau suivantes ; lien « Rééquiper » (libellé FR non archivé, « Re-equip » en EN) | résultat original jamais capturé | `apps/server/src/routes/trooper.ts`, `routes/levelup.ts`, `views/trooper.ts` |
@@ -121,3 +121,15 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | Date d'un combat sans `created_at` | « Le <j> <mois> » de sa colonne `day` (combats antérieurs à la migration 006) | heure inconnue | `apps/server/src/views/history.ts` |
 | Plafond de l'animation des recrues | 50 recrues au plus (`n` = min(recrues, 50)) | wiki « up to 50 best recruits » ; aucun cas > 18 archivé | `apps/server/src/routes/history.ts` |
 | Combat défensif au QG d'une armée protégée | affiché aussi sans mot de passe (lien public `/b/fview/<id>`) | fr/hq.html (vue protégée) le montre ; seule cette page est archivée | `apps/server/src/views/hq.ts` |
+
+## Hiérarchie (`apps/server`, étape 4)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Égalités de puissance dans `/ranks` | id d'armée croissant | ordre d'origine non déductible (fr 265/265, com 18/18, 15/15/15) | `apps/server/src/repo.ts` (`ranking`) |
+| Libellé de la faction (infobulle `<h2>`) | « Faction de <hôte de la faction> » pour toutes les factions | seul « Faction de fol-ecume » (faction 4) est archivé | `apps/server/src/views/ranks.ts` |
+| Recruteur d'une armée créée depuis l'accueil | l'armée de faction (stockée si semée, sinon décrite par son effectif et sa puissance) ; co-recrues = armées non-faction sans recruteur de la même faction | chez nous `recruiter_id` est NULL pour ces armées ; l'original affiche « L'armée de Fol-ecume » (6 troopers, 114) | `apps/server/src/repo.ts` (`ranking`) |
+| Recruteur supprimé | l'armée est classée seule (tableau sans co-recrue) | cas absent de l'original | `apps/server/src/repo.ts` (`ranking`) |
+| `/global-ranks` | redirection 301 vers `/ranks` | page absente du jeu archivé (seulement sur le serveur de test) | `apps/server/src/routes/ranks.ts` |
+| Menu « Hiérarchie » / « Historique » / « Gérer mon armée » | puissance ≥ 20 / ≥ 1 recrue (confirmée ou non) / ≥ 5 troopers | pages archivées (RECON4 §5) ; seuil de recrue « en attente » non archivé | `apps/server/src/views/panel.ts` (`menuFlags`) |
+| Visiteur d'une armée non protégée sur `/ranks` | panneau des troopers sans menu | cas non archivé (le QG redirige ce visiteur) | `apps/server/src/views/panel.ts` |

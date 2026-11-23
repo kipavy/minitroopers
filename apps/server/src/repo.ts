@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX } from "@mt/game";
-import { Data, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
+import { FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
+import { Data, armyPower, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
 
@@ -13,6 +13,8 @@ export interface ArmyRow {
   faction: number;
   credits: number;
   recruiterId: number | null;
+  /** Armies created through this army's link, confirmed or not (menu "Historique"). */
+  recruits: number;
   createdAt: number;
   createdIp: string | null;
   passwordHash: string | null;
@@ -52,6 +54,7 @@ const armyOf = (r: Raw): ArmyRow => ({
   faction: r.faction as number,
   credits: r.credits as number,
   recruiterId: (r.recruiter_id as number | null) ?? null,
+  recruits: Number(r.recruits ?? 0),
   createdAt: r.created_at as number,
   createdIp: (r.created_ip as string | null) ?? null,
   passwordHash: (r.password_hash as string | null) ?? null,
@@ -75,13 +78,16 @@ const trooperOf = (r: Raw): TrooperRow => ({
   leftOver: r.left_over === null ? null : (JSON.parse(r.left_over as string) as number[]),
 });
 
+/** Columns of an army row, with its recruit count. */
+const ARMY_COLS = "a.*, (SELECT COUNT(*) FROM armies r WHERE r.recruiter_id = a.id) AS recruits";
+
 export function armyByHost(db: DatabaseSync, host: string): ArmyRow | null {
-  const r = db.prepare("SELECT * FROM armies WHERE host = ?").get(host);
+  const r = db.prepare(`SELECT ${ARMY_COLS} FROM armies a WHERE a.host = ?`).get(host);
   return r ? armyOf(r) : null;
 }
 
 export function armyById(db: DatabaseSync, id: number): ArmyRow | null {
-  const r = db.prepare("SELECT * FROM armies WHERE id = ?").get(id);
+  const r = db.prepare(`SELECT ${ARMY_COLS} FROM armies a WHERE a.id = ?`).get(id);
   return r ? armyOf(r) : null;
 }
 
@@ -608,7 +614,7 @@ export interface ArmySummary {
 export function armySummaries(db: DatabaseSync): ArmySummary[] {
   const rows = db
     .prepare(
-      `SELECT a.*, COUNT(t.id) AS n_troopers, COALESCE(${POWER_SQL}, 0) AS power FROM armies a LEFT JOIN troopers t ON t.army_id = a.id GROUP BY a.id ORDER BY a.id`,
+      `SELECT ${ARMY_COLS}, COUNT(t.id) AS n_troopers, COALESCE(${POWER_SQL}, 0) AS power FROM armies a LEFT JOIN troopers t ON t.army_id = a.id GROUP BY a.id ORDER BY a.id`,
     )
     .all();
   return rows.map((r) => ({ army: armyOf(r), troopers: Number(r.n_troopers), power: Number(r.power) }));
@@ -862,4 +868,59 @@ export function defensesOf(db: DatabaseSync, armyId: number, limit: number): Def
       createdAt: (r.created_at as number | null) ?? null,
       day: r.day as string,
     }));
+}
+
+/** One line of the ranking table. `id` is null for a faction army that is not stored. */
+export type RankRow = { id: number | null; host: string; name: string; part: number; faction: number; size: number; power: number };
+
+const RANK_SHOWN = 10;
+
+type RankRaw = { id: number; host: string; name: string; part: number; faction: number; n: number; p: number };
+const rankRow = (r: RankRaw): RankRow => ({ id: Number(r.id), host: r.host, name: r.name, part: Number(r.part), faction: Number(r.faction), size: Number(r.n), power: Number(r.p) });
+const RANK_SELECT = `SELECT a.id, a.host, a.name, a.part, a.faction, COUNT(t.id) AS n, COALESCE(${POWER_SQL}, 0) AS p FROM armies a LEFT JOIN troopers t ON t.army_id = a.id`;
+
+/**
+ * The ranking page of an army (RECON4 §2). Recruiter: the army's `recruiter_id`, else the army of its faction (the
+ * stored one, else the one `factionBattleArmy` describes); a faction army is its own recruiter. Then the 10 best armies
+ * (power descending, id ascending: UNVERIFIED tie order) among those the same recruiter recruited, faction armies
+ * excluded; `self` is the army itself when it is not among them.
+ */
+export function ranking(db: DatabaseSync, armyId: number): { recruiter: RankRow; rows: RankRow[]; self: RankRow | null } {
+  const army = armyById(db, armyId);
+  if (!army) throw new Error(`no army ${armyId}`);
+  const one = (id: number): RankRow => rankRow(db.prepare(`${RANK_SELECT} WHERE a.id = ? GROUP BY a.id`).get(id) as RankRaw);
+  const faction = FACTIONS.find((f) => f.id === army.faction);
+  // Where the pool comes from: a stored recruiter, or a faction (recruits of a faction have a NULL recruiter_id).
+  let recruiterId: number | null = null;
+  let viaFaction: number | null = null;
+  let recruiter: RankRow | null = null;
+  const parent = army.isFaction ? null : army.recruiterId !== null ? armyById(db, army.recruiterId) : null;
+  if (army.isFaction) {
+    recruiterId = army.id;
+    viaFaction = army.faction;
+    recruiter = one(army.id);
+  } else if (parent) {
+    recruiterId = parent.id;
+    viaFaction = parent.isFaction ? parent.faction : null;
+    recruiter = one(parent.id);
+  } else if (army.recruiterId === null && faction) {
+    const stored = armyByHost(db, faction.host);
+    viaFaction = faction.id;
+    if (stored) {
+      recruiterId = stored.id;
+      recruiter = one(stored.id);
+    } else {
+      const troopers = factionBattleArmy(faction).troopers;
+      recruiter = { id: null, host: faction.host, name: faction.name, part: faction.part, faction: faction.id, size: troopers.length, power: armyPower(troopers) };
+    }
+  }
+  if (!recruiter) {
+    // A recruiter that no longer exists and no faction to fall back on: the army ranks alone.
+    return { recruiter: one(army.id), rows: [], self: null };
+  }
+  const where = `a.is_faction = 0 AND (${recruiterId !== null ? "a.recruiter_id = ? OR " : ""}${viaFaction !== null ? "(a.recruiter_id IS NULL AND a.faction = ?)" : "0"})`;
+  const args = [...(recruiterId !== null ? [recruiterId] : []), ...(viaFaction !== null ? [viaFaction] : [])];
+  const rows = (db.prepare(`${RANK_SELECT} WHERE ${where} GROUP BY a.id ORDER BY p DESC, a.id ASC LIMIT ${RANK_SHOWN}`).all(...args) as RankRaw[]).map(rankRow);
+  const self = army.isFaction || rows.some((r) => r.id === army.id) ? null : one(army.id);
+  return { recruiter, rows, self };
 }

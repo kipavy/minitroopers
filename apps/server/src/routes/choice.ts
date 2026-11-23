@@ -5,12 +5,11 @@ import { battleTroopers, recruitsByLevel, setDeployOrder } from "../deploy.ts";
 import { confirmedRecruitCount } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
+import { CHOICE_MIN_TROOPERS } from "../views/panel.ts";
 import { choicePage } from "../views/choice.ts";
 import { MINI_SWF } from "../views/swf.ts";
 import { ownedArmy } from "./owner.ts";
 
-/** Troopers needed for "Gérer mon armée" (RECON4 §3: wiki, archives 6/8/12 shown, 1/2/4 absent). */
-export const CHOICE_MIN_TROOPERS = 5;
 /** Recruits per `/load` page (the SWF asks `count=16`). */
 const LOAD_MAX = 16;
 

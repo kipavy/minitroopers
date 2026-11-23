@@ -17,17 +17,12 @@ import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
 import { hqPage, recruitFragment, type HqView } from "../views/hq.ts";
 import { notices } from "../views/levelup.ts";
-import { missingPage, soonPage } from "../views/soon.ts";
+import { missingPage } from "../views/army.ts";
+import { requestArmy } from "./owner.ts";
 import type { HomeError } from "./home.ts";
 
 const ERR_LOGIN = "Aucune armée de ce nom.";
 const ERR_PASS = "Mot de passe incorrect.";
-
-/** Menu entries that stages 3-4 implement; until then they answer with a "bientôt" page. */
-const SOON: Record<string, string> = {
-  "/ranks": "Hiérarchie",
-  "/global-ranks": "Hiérarchie",
-};
 
 export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, limits: PasswordLimits): void {
   const { cfg, db } = deps;
@@ -76,21 +71,13 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
     };
   }
 
-  /** The army of the request: the one in the URL, else the session's. */
-  const requestArmy = (c: Context<Env>): ArmyRow | null => {
-    const h = c.get("armyHost");
-    if (h !== null) return armyByHost(db, h);
-    const id = c.get("session").armyId;
-    return id === null ? null : armyById(db, id);
-  };
-
   pages.get("/hq", (c) => {
     const session = c.get("session");
     if (c.get("armyHost") === null) {
       const own = session.armyId === null ? null : armyById(db, session.armyId);
       return c.redirect(own ? armyUrl(cfg, own.host, "/hq") : "/");
     }
-    const army = requestArmy(c);
+    const army = requestArmy(deps, c);
     if (!army) return c.html(String(missingPage(cfg, "Armée introuvable")), 404);
     if (session.armyId === army.id) {
       const m = Number(queryParam(c, "money"));
@@ -133,12 +120,8 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
   // "Recruter un trooper": AJAX fragment fetched at the absolute URL "/recruit" by the original app.js, so in path
   // mode it is served at the root too and resolves the army from the session.
   pages.get("/recruit", (c) => {
-    const army = requestArmy(c);
+    const army = requestArmy(deps, c);
     if (!army || c.get("session").armyId !== army.id) return c.text("Forbidden", 403);
     return c.html(String(recruitFragment(cfg, army, referralBounty(recruitCount(db, army.id) + 1))));
   });
-
-  for (const [path, label] of Object.entries(SOON)) {
-    pages.get(path, (c) => c.html(String(soonPage(cfg, requestArmy(c)?.host ?? null, label))));
-  }
 }

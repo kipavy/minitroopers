@@ -8,7 +8,7 @@ import { armyUrl } from "../urls.ts";
 import { MAX_TROOPER_NAME, checkTrooperName } from "../validate.ts";
 import { applyPrefForm, defaultTrooperPref } from "../prefs.ts";
 import { sheetPage } from "../views/trooper.ts";
-import { missingPage } from "../views/soon.ts";
+import { missingPage } from "../views/army.ts";
 import { ownedArmy, slotOf, type Owned } from "./owner.ts";
 
 const SLOT = "/t/:n{[0-9]{1,2}}";

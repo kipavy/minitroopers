@@ -10,9 +10,8 @@ import { createRateLimiter } from "../ratelimit.ts";
 import { armyByHost, armyById, createArmy } from "../repo.ts";
 import { checkArmyName } from "../validate.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
-import { armyTitle } from "../views/army.ts";
+import { armyTitle, missingPage } from "../views/army.ts";
 import { homePage, type HomeView, type OfferView } from "../views/home.ts";
-import { missingPage } from "../views/soon.ts";
 
 /** UNVERIFIED: "~2 armées par jour et par IP" comes from the wiki (spec table); the exact figure is not confirmed. */
 export const MAX_ARMIES_PER_IP_PER_DAY = 2;

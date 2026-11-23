@@ -63,10 +63,9 @@ for (const mode of MODES) {
     assert.ok(html.includes("Débloquer pour 5") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
     assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 0);
     assert.ok(html.includes("Recrute tes amis pour lancer un raid !"));
-    for (const [p, label] of [["/history", "Historique"], ["/choice", "Gérer mon armée"], ["/protect", "Protéger mon armée"], ["/ranks", "Hiérarchie"]]) {
-      assert.ok(html.includes(`<a href="${base}${p}" class="but_bg`), p);
-      assert.ok(html.includes(`>${label}</a>`), label);
-    }
+    // A new army (1 trooper, power 5, no recruit): only the entries the original shows.
+    assert.ok(html.includes(`<a href="${base}/protect" class="but_bg`) && html.includes(">Protéger mon armée</a>"));
+    for (const label of ["Historique", "Gérer mon armée", "Hiérarchie"]) assert.ok(!html.includes(`>${label}</a>`), label);
     assert.ok(html.includes("javascript:_.startRecruit()"));
     const link = mode === "path" ? "http://localhost:8080/a/warp/" : "http://warp.lvh.me:8080/";
     assert.ok(html.includes(`value="${link}"`));
@@ -186,17 +185,9 @@ for (const mode of MODES) {
     assert.equal((await hqOf(env, env.client("2.2.2.2"), "nobody-here")).status, 404);
   });
 
-  test(`[${mode}] menu entries of later stages answer "bientôt"; /recruit fragment for the owner`, async () => {
+  test(`[${mode}] /recruit fragment for the owner`, async () => {
     const env = setup(mode);
     const { cl } = await army(env);
-    for (const p of ["/ranks", "/global-ranks"]) {
-      const at = env.at("warp", p);
-      const res = await cl.req(at.url, { host: at.host });
-      assert.equal(res.status, 200, p);
-      const html = await res.text();
-      assert.ok(html.includes("Bientôt disponible !"), p);
-      assert.ok(html.includes(mode === "path" ? 'href="/a/warp/hq" class="button5"' : 'href="http://warp.lvh.me:8080/hq" class="button5"'), p);
-    }
     const at = env.at("warp", "/recruit");
     const frag = plain(await (await cl.req(at.url, { host: at.host })).text());
     assert.ok(frag.includes("Recruter un ami"));
@@ -234,7 +225,7 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   const env = setup("path");
   const a = armyByHost(env.db, "x");
   assert.equal(a, null);
-  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
+  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
   const mission = { type: "infiltrate" as const, unlocked: false, tries: [], key: "ABCDEF" };
   const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
   const html = String(hqPage(env.cfg, view));

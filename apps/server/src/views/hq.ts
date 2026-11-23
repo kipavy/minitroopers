@@ -7,7 +7,7 @@ import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
 import { esc, html, jsq, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
-import { armyGrid, armyMenu } from "./panel.ts";
+import { armyGrid, armyMenu, insertPass, menuOf } from "./panel.ts";
 import { missionBox } from "./mission.ts";
 import { defenseItem } from "./history.ts";
 
@@ -43,16 +43,6 @@ export interface HqView {
 
 /** Inline background of a box2 header (`/img/mode/<name>.jpg`), shared by the HQ and mission boxes. */
 export const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;
-
-function insertPass(cfg: Config, v: HqView): Html {
-  return html`<div class="insertpass"><form method="POST" action="${armyUrl(cfg, v.army.host, "/login")}"><input type="hidden" name="login" value="${v.army.host}"/>
-Mot
-de
-passe
-:
-<p><input name="pass" type="password" class="field"/>
-<input type="submit" value="Valider" class="button7"/></p></form></div>`;
-}
 
 function tile(cfg: Config, v: HqView, i: number): Html {
   const done = v.battles[i];
@@ -179,11 +169,11 @@ export function hqPage(cfg: Config, v: HqView): Html {
   const shownMoney = v.moneyDelta > 0 ? Math.max(0, a.credits - v.moneyDelta) : a.credits;
   const notice = v.locked ? (v.lockError ? notification(v.lockError, true) : "") : v.notice ? notification(v.notice) : "";
   const left = v.locked
-    ? html`${insertPass(cfg, v)}
+    ? html`${insertPass(cfg, v.army.host)}
 </div>`
     : html`${armyGrid(cfg, v.army, v.troopers)}</div>
 <div class="clear"></div>
-${armyMenu(cfg, v.army)}`;
+${armyMenu(cfg, v.army, menuOf(v.army, v.troopers, v.power))}`;
   const content = html`${notice}
 
 <div class="home">

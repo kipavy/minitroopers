@@ -1,6 +1,7 @@
 import type { Config } from "../config.ts";
 import { armyUrl } from "../urls.ts";
 import { html, type Html } from "./html.ts";
+import { layout } from "./layout.ts";
 
 /** Article of the army name, by `part` (original form: 0 "de ", 1 "d'", 2 "du ", 3 "de la ", 4 "des ", 5 none). */
 export const PART_LABELS: readonly string[] = ["de ", "d'", "du ", "de la ", "des ", ""];
@@ -23,4 +24,10 @@ export function notification(message: Html | string, error = false): Html {
 <p><a href="#" onclick="return _.hideNotif()" class="button5">Ok</a></p></div></div></div></div></div>
 <div class="black"></div>
 <script type="text/javascript">$('body').addClass('hideSwf')</script></div>`;
+}
+
+/** Unknown army (or page). */
+export function missingPage(cfg: Config, message: string): Html {
+  return layout(cfg, { title: message, content: html`<div class="home"><div class="add"><h1>${message}</h1>
+<p><a href="/" class="button5">Accueil</a></p></div></div>` });
 }

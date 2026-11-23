@@ -43,16 +43,48 @@ const menuBtn = (cls: string, href: string, label: string, tipText: string): Htm
   html`<div class="but ${cls}"><div class="but_right ${cls}_right"><a href="${href}" class="but_bg ${cls}_bg" onmouseover="${raw(`_.showTip('menuTip',${esc(jsStr(tipText))})`)}" onmouseout="_.resetTip('menuTip')">${label}</a></div></div>
 `;
 
+/** Troopers needed for "Gérer mon armée" (RECON4 §3: wiki, archives 6/8/12 shown, 1/2/4 absent). */
+export const CHOICE_MIN_TROOPERS = 5;
+/** Power needed for "Hiérarchie" (RECON4 §2: archived 20, 24, 39, 75, 98 shown; 16, 14, 11, 10, 7 absent). */
+export const RANKS_MIN_POWER = 20;
+
+export interface MenuFlags {
+  history: boolean;
+  choice: boolean;
+  protect: boolean;
+  ranks: boolean;
+}
+
+/** Which optional entries of the left menu the original shows (RECON4 §5). */
+export function menuFlags(p: { power: number; troopers: number; recruits: number; protected: boolean }): MenuFlags {
+  return { history: p.recruits >= 1, choice: p.troopers >= CHOICE_MIN_TROOPERS, protect: !p.protected, ranks: p.power >= RANKS_MIN_POWER };
+}
+
+/** Flags of an army's menu from what the page already holds. */
+export const menuOf = (army: ArmyRow, troopers: readonly BattleTrooperInput[], power: number): MenuFlags =>
+  menuFlags({ power, troopers: troopers.length, recruits: army.recruits, protected: army.passwordHash !== null });
+
+/** Password form shown instead of the troopers panel to a visitor of a protected army. */
+export function insertPass(cfg: Config, host: string): Html {
+  return html`<div class="insertpass"><form method="POST" action="${armyUrl(cfg, host, "/login")}"><input type="hidden" name="login" value="${host}"/>
+Mot
+de
+passe
+:
+<p><input name="pass" type="password" class="field"/>
+<input type="submit" value="Valider" class="button7"/></p></form></div>`;
+}
+
 /** Left menu; `back` adds the "Quartier Général" entry the original shows on every page but the HQ. */
-export function armyMenu(cfg: Config, army: ArmyRow, back = false): Html {
+export function armyMenu(cfg: Config, army: ArmyRow, flags: MenuFlags, back = false): Html {
   const u = (p: string): string => armyUrl(cfg, army.host, p);
   return html`
 <div class="but b1"><div class="but_right b1_right"><a href="javascript:_.startRecruit()" class="but_bg b1_bg" onmouseover="_.showTip('menuTip','Demande à tes amis de rejoindre ton armée !')" onmouseout="_.resetTip('menuTip')">Recruter un trooper</a></div></div>
 
-${menuBtn("b2", u("/history"), "Historique", "Historique de tes recrues et batailles ciblées !")}
-${menuBtn("b2", u("/choice"), "Gérer mon armée", "Change l'ordre de déploiement de tes troopers")}
-${army.passwordHash === null ? menuBtn("b3", u("/protect"), "Protéger mon armée", "Protége ton armée avec un mot de passe !") : ""}
-${menuBtn("b3", u("/ranks"), "Hiérarchie", "Ton classement avec les autres joueurs")}
+${flags.history ? menuBtn("b2", u("/history"), "Historique", "Historique de tes recrues et batailles ciblées !") : ""}
+${flags.choice ? menuBtn("b2", u("/choice"), "Gérer mon armée", "Change l'ordre de déploiement de tes troopers") : ""}
+${flags.protect ? menuBtn("b3", u("/protect"), "Protéger mon armée", "Protége ton armée avec un mot de passe !") : ""}
+${flags.ranks ? menuBtn("b3", u("/ranks"), "Hiérarchie", "Ton classement avec les autres joueurs") : ""}
 ${back ? menuBtn("b3", u("/hq"), "Quartier Général", "Retourner à la page de lancement des batailles.") : ""}
 `;
 }
@@ -67,10 +99,30 @@ export interface ShellView {
   right: Html;
   /** Popup (already built by `notification`). */
   notice?: Html;
+  /**
+   * Who looks: the owner (troopers panel and menu, default), a visitor of a protected army (password form, no menu) or
+   * of an open one (troopers panel without menu).
+   */
+  visitor?: "owner" | "locked" | "stranger";
 }
 
 /** Frame shared by the trooper sheet, level-up and add pages: money, power, left troopers panel and a right column. */
 export function shellPage(cfg: Config, v: ShellView): Html {
+  const visitor = v.visitor ?? "owner";
+  const left =
+    visitor === "owner"
+      ? html`${armyGrid(cfg, v.army, v.troopers)}</div>
+<div class="clear"></div>
+
+${armyMenu(cfg, v.army, menuOf(v.army, v.troopers, v.power), true)}
+</div>`
+      : visitor === "locked"
+        ? html`${insertPass(cfg, v.army.host)}
+</div>
+</div>`
+        : html`${armyGrid(cfg, v.army, v.troopers)}</div>
+<div class="clear"></div>
+</div>`;
   const content = html`${v.notice ?? ""}
 
 <div class="home">
@@ -86,11 +138,7 @@ ${v.army.credits}
 <h1 class="hbox">Mes Troopers</h1>
 <div class="box1bottom"><div class="box1bg"><div id="trhome">
 
-${armyGrid(cfg, v.army, v.troopers)}</div>
-<div class="clear"></div>
-
-${armyMenu(cfg, v.army, true)}
-</div>
+${left}
 <div class="tipbox"><div class="hqtip" style="display:none"><img src="/img/info.png"/>
 <span class="label">INFO :</span>
 <span id="menuTip"></span></div></div></div></div>
