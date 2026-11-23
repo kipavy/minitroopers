@@ -1,0 +1,574 @@
+<ul class="skills"><li class="soldier">
+<object type="application/x-shockwave-flash" id="showtr_7" class="swf_transparent" data="http://data.minitroopers.fr/swf/client_fr.swf?v=2" width="72" height="72" title=""><param name="menu" value="false"><param name="flashvars" value="data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y10%3AK%25C3%25A9viny8%3AV%251BE%257Coy9%3A%251DlQK%2503jy10%3AMoveSystem%3A0%3A0y13%3A%2511%2521%250Ea%2501jy12%3AReloadSystem%3A2%3A0y11%3A%25290%2519i%2503ahy15%3A%251A%2529%2513%253D%2501jy7%3ABodyLoc%3A1%3A0y13%3A%250BR%2510%251B%2502jy6%3AWeapon%3A27%3A0y13%3A%2515S%2517%253F%2503jy10%3ATargetType%3A1%3A1jy5%3ASkill%3A2%3A0y6%3A%253BuXEjy12%3ATargetSystem%3A1%3A0gy6%3A%250CA2ci4479877y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avai1zi1zi1zzhy5%3A7X%2501i7y13%3A%257D%2526%2516Y%2501ahgi3y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&amp;chk=17113e853723e6085fe738856b57635d"><param name="scale" value="noscale"><param name="allowScriptAccess" value="always"><param name="bgcolor" value="#F2DDB8"><param name="wmode" value="transparent"></object>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y10%3AK%25C3%25A9viny8%3AV%251BE%257Coy9%3A%251DlQK%2503jy10%3AMoveSystem%3A0%3A0y13%3A%2511%2521%250Ea%2501jy12%3AReloadSystem%3A2%3A0y11%3A%25290%2519i%2503ahy15%3A%251A%2529%2513%253D%2501jy7%3ABodyLoc%3A1%3A0y13%3A%250BR%2510%251B%2502jy6%3AWeapon%3A27%3A0y13%3A%2515S%2517%253F%2503jy10%3ATargetType%3A1%3A1jy5%3ASkill%3A2%3A0y6%3A%253BuXEjy12%3ATargetSystem%3A1%3A0gy6%3A%250CA2ci4479877y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avai1zi1zi1zzhy5%3A7X%2501i7y13%3A%257D%2526%2516Y%2501ahgi3y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=17113e853723e6085fe738856b57635d', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_7',72,72,'10.0.0',null,null,swfp,{ id : 'showtr_7', 'class' : 'swf_transparent' })</script></li>
+
+
+<li style="background : url('/img/skills.png') -0px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -0px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Pilote</h1><div class=&quot;s&quot;>Pour chaque niveau : augmente de 25% les chances d\'obtenir un véhicule. <em>Parcequ\'avec ton niveau actuel, une machine fera surement un meilleur boulot quoi toi troufion !</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -60px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -0px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Fusil</h1><div class=&quot;s&quot;><ul><li><b>Dégâts</b> : 5-8</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Projette l\'ennemi, Dégats de zone</li></ul></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -390px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -0px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -0px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -30px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Lizaro Jungle</h1><div class=&quot;s&quot;><ul><li><b>Dégâts</b> : 5</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x20</li><li><b>Visée</b> : 120%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Arme lourde, Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -420px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -30px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Balle explosive</h1><div class=&quot;s&quot;><i>Kévin</i> tire jusqu\'à 6 balles explosives doublant leurs dégâts. <em>Boum, quand mon p\'tit coeur fait boum !</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -480px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -120px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Grenade fragment</h1><div class=&quot;s&quot;>Se fragmente et fait entre 1 et 5 dégâts. <em>&quot;Aïe ! Aïe ! Aïe \n!... Mais \n! Aïeuuuh ! &quot;</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -180px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -120px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -180px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -270px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -330px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -570px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -0px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -120px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Grenade gaz</h1><div class=&quot;s&quot;>Empoisonne tous les troopers touchés. <em>&quot;Très efficace ! Enfin... Sauf en cas de rhume chez l\'ennemi.&quot;</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -120px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -390px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -210px -60px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Gros mollets</h1><div class=&quot;s&quot;>+3 points de vie et +25% en vitesse de déplacement. <em>&quot;L\'armée, c\'est pas pour les mous du genou !&quot;</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -270px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -420px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -480px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -510px -90px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -0px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -150px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -360px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -120px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -0px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -150px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -150px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Cascadeur</h1><div class=&quot;s&quot;>Si le véhicule de <i>Kévin</i> est détruit, les dégâts subis sont divisés par 2. <em>&quot;Comment ça ma doublure s\'est fait descendre hier ? &quot;</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -0px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -90px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -240px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -450px -180px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -540px -30px"></li>
+
+
+
+
+<li class="on" onmouseover="mt.js.Tip.show(this,'<div class=\'tiptop\'><div class=\'tipbottom\'><div class=\'tipbg\'><div class=\'tipcontent\'><img src=\'/img/pixel.gif\' class=\'pixel\' /><h1>Moto</h1><div class=&quot;s&quot;>La moto approche jusqu\'à la première cible à portée. <em>&quot;Ca ne vous fait pas peur de toujours foncer vers l\'ennemi en première ligne ? <br/>- Oh non. Ce qui me dérange c\'est d\'avaler ces saletés de \nmoustiques sur le chemin.&quot;</em></div></div></div></div>')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -570px -30px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -0px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -30px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -60px -60px"></li>
+
+
+
+<li style="background : url('/img/skills.png') -300px -120px"></li>
+
+</ul>

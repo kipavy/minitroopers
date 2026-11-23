@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+<title>MiniTroopers
+-
+Crée ton armée ! Ils sont petits, brutaux, et ils sont sous tes ordres !</title>
+<meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
+
+<link rel="stylesheet" type="text/css" href="http://data.minitroopers.fr/css/style.css?v=5"/>
+<script type="text/javascript" src="http://data.minitroopers.fr/js/jquery.min.js"></script>
+<script type="text/javascript" src="http://data.minitroopers.fr/js/swfobject.js"></script>
+<script type="text/javascript" src="http://data.minitroopers.fr/js/app.js?v=2"></script>
+<link href="http://fonts.googleapis.com/css?family=Open+Sans+Condensed:700&subset=latin,cyrillic" rel="stylesheet" type="text/css"/></head>
+<!--[if lte IE 6]>
+	<body class="ie ie6">
+	<![endif]-->
+<!--[if IE 7]>
+	<body class="ie">
+	<![endif]-->
+<!--[if gte IE 8]>
+	<body class="ie8">
+	<![endif]-->
+<!--[if !IE]>-->
+<body><!--<![endif]-->
+<div class="ptop"></div>
+<div class="bottomsite"><div class="site"><div class="sp"></div>
+<div class="pleft"></div>
+<a class="logo" href="/hq"></a>
+<div class="arthead"></div>
+<div class="camera"></div>
+<div class="ptopleft"></div>
+<div class="pright"></div>
+<div class="frame"><div class="ptopsite"><div id="content"><!-- PROMO BRAZIBALL -->
+<div style="width: 955px; height: 90px; background: url('http://data.braziball.com/img/news_bg.jpg') 55% center; position: relative; margin-bottom: 5px;vertical-align:center;"><a href="http://www.braziball.com/fr?utm_source=minitroopers&utm_medium=banner&utm_campaign=internal_launch" onclick="ga('send','event','outbound','btn_braziball_site');return true;" target="_blank"><img src="http://data.braziball.com/img/logo_small.png" style="margin-left:92px;margin-top:-20px;position:absolute;z-index: 20;"/></a>
+<div style="margin-left:300px;vertical-align:50%;margin-top:-20px;font-family:'Open Sans Condensed',sans-serif;text-align:center;font-size:24px;line-height:20px;color:#ffea00;text-shadow:1px 1px 0px black;display:inline-block;"><span style="display:block">Puzzle-game</span><span style="display:block">+</span><span style="display:block">Football</span></div>
+<img style="display:inline-block" src="http://data.braziball.com/img/player01.png" alt=""/>
+<img style="display:inline-block" src="http://data.braziball.com/img/puzzle_pub.png" alt=""/>
+<img style="display:inline-block" src="http://data.braziball.com/img/player02.png" alt=""/>
+<div style="display:inline-block"><a href="https://play.google.com/store/apps/details?id=air.com.motiontwin.Braziball&referrer=utm_source%3Dminitroopers%26utm_medium%3Dbanner%26utm_campaign%3Dinternal_launch" onclick="ga('send','event','outbound','btn_braziball_android');return true;" style="display:block" target="_blank"><img alt="" src="http://data.twinoid.com/img/lang/fr/app_google.png"/></a>
+<a href="https://itunes.apple.com/fr/app/id890915924?mt=8" onclick="ga('send','event','outbound','btn_braziball_ios');return true;" style="display:block" target="_blank"><img alt="" src="http://data.twinoid.com/img/lang/fr/appStore.png"/></a></div></div>
+<!-- END -->
+
+
+
+<div class="subscribe">
+<div class="cache"><img src="/img/fb/minitroopers1.png"/>
+<img src="/img/fb/minitroopers2.png"/>
+<img src="/img/fb/minitroopers3.png"/>
+<img src="/img/fb/minitroopers4.png"/>
+<img src="/img/fb/minitroopers5.png"/>
+<img src="/img/fb/minitroopers_general.png"/>
+<img src="/img/fb/minitroopers.png"/>
+<img src="http://data.minitroopers.fr/img/buttons/button4_over.png"/>
+<img src="http://data.minitroopers.fr/img/buttons/button7_over.png"/></div>
+<form action="/" method="POST" class="create"><div class="box4"><p><a href="http://warp.minitroopers.fr/hq">L'armée de Warp</a> recrute : crée ta propre armée !</p>
+<p class="nameit">
+Armée
+&nbsp;
+<select name="part" class="field">
+<option value="0">de </option>
+
+<option value="1">d'</option>
+
+<option value="2">du </option>
+
+<option value="3">de la </option>
+
+<option value="4">des </option>
+
+<option value="5"></option>
+</select>
+<input id="name" class="field" name="name" maxlength="20"/></p>
+<div class="host" style="display:none"><div class="hostcheck"></div>
+<div class="hostname"></div></div>
+<input id="mid" name="mid" type="hidden" value=""/>
+<input id="midc" name="midc" type="hidden" value=""/>
+<input id="tselect" name="tselect" type="hidden" value=""/></div>
+<div class="box5"><p>Choisis ton premier trooper parmi ceux-ci :</p>
+<ul class="troopers">
+<li class="trooper" id="tr_1000" onclick="_.selectTrooper(1000,14925351)" style="cursor:pointer">
+<div id="swf_showtr_1000" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y9%3AMcCrakoldy8%3AV%251BE%257Cny6%3A%250CA2ci14925351y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avahy5%3A7X%2501i1000y13%3A%257D%2526%2516Y%2501ahgi3y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=e2d17013eb38d18a1c8252828b5f8a9a&onclick=_.selectTrooper(1000,14925351)', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_1000',72,71,'10.0.0',null,null,swfp,{ id : 'showtr_1000', 'class' : 'swf_transparent' })</script>
+
+<ul>
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Sniper&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 4&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 3-max&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x15&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 150%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 100&lt;/li&gt;&lt;li&gt;&lt;b&gt;Habilités&lt;/b&gt; : Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -360px -30px"></li>
+
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Bourreau des coeurs&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;Multiplie par 3 les chances de &lt;i&gt;McCrakold&lt;/i&gt; d\'effectuer une blessure fatale au coeur. &lt;em&gt;&quot;Oh Carl... Tu me brises le coeur ! Maman avait bien raison...&quot;&lt;/em&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -390px -120px"></li>
+</ul></li>
+
+<li class="trooper" id="tr_1001" onclick="_.selectTrooper(1001,1846925)" style="cursor:pointer">
+<div id="swf_showtr_1001" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y7%3AJeffergy8%3AV%251BE%257Cny6%3A%250CA2ci1846925y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avahy5%3A7X%2501i1001y13%3A%257D%2526%2516Y%2501ahgi3y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=3f4665d839ab11b8d83fb0d6d397b715&onclick=_.selectTrooper(1001,1846925)', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_1001',72,71,'10.0.0',null,null,swfp,{ id : 'showtr_1001', 'class' : 'swf_transparent' })</script>
+
+<ul>
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Fusil d\'assaut&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 2-3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 2-6&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x5&lt;/li&gt;&lt;li&gt;&lt;b&gt;Rafales&lt;/b&gt; : 3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 80%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 100&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -540px -0px"></li>
+
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Balle explosive&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;i&gt;Jefferg&lt;/i&gt; tire jusqu\'à 6 balles explosives doublant leurs dégâts. &lt;em&gt;Boum, quand mon p\'tit coeur fait boum !&lt;/em&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -480px -60px"></li>
+</ul></li>
+
+<li class="trooper" id="tr_1002" onclick="_.selectTrooper(1002,8002784)" style="cursor:pointer">
+<div id="swf_showtr_1002" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y6%3ALukoumy8%3AV%251BE%257Cny6%3A%250CA2ci8002784y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avahy5%3A7X%2501i1002y13%3A%257D%2526%2516Y%2501ahgi4y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=7f271463884a3d6629e53a9a0377fccf&onclick=_.selectTrooper(1002,8002784)', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_1002',72,71,'10.0.0',null,null,swfp,{ id : 'showtr_1002', 'class' : 'swf_transparent' })</script>
+
+<ul>
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Pistolet&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 2-3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 7&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x5&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 90%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 100&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -240px -0px"></li>
+
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;M16&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 2-3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 2-6&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x10&lt;/li&gt;&lt;li&gt;&lt;b&gt;Rafales&lt;/b&gt; : 3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 80%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 80&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -570px -0px"></li>
+</ul></li>
+
+<li class="trooper" id="tr_1003" onclick="_.selectTrooper(1003,14475920)" style="cursor:pointer">
+<div id="swf_showtr_1003" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y4%3AYuchy8%3AV%251BE%257Cny6%3A%250CA2ci14475920y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avahy5%3A7X%2501i1003y13%3A%257D%2526%2516Y%2501ahgi5y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=97272cefc76ef136ee465369d7295d3e&onclick=_.selectTrooper(1003,14475920)', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_1003',72,71,'10.0.0',null,null,swfp,{ id : 'showtr_1003', 'class' : 'swf_transparent' })</script>
+
+<ul>
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Sniper&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 4&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 3-max&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x15&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 150%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 100&lt;/li&gt;&lt;li&gt;&lt;b&gt;Habilités&lt;/b&gt; : Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -360px -30px"></li>
+
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Fusil double&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 5-10&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 5&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x10&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 150%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 150&lt;/li&gt;&lt;li&gt;&lt;b&gt;Habilités&lt;/b&gt; : Projette l\'ennemi, Dégats de zone, Tire deux fois par rafale&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -450px -0px"></li>
+</ul></li>
+
+<li class="trooper" id="tr_1004" onclick="_.selectTrooper(1004,3584538)" style="cursor:pointer">
+<div id="swf_showtr_1004" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A2%3A2oy8%3A%25032%251A4y5%3AHarriy8%3AV%251BE%257Cny6%3A%250CA2ci3584538y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avahy5%3A7X%2501i1004y13%3A%257D%2526%2516Y%2501ahgi5y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=9a028eda819d0aaa5898ff9257497920&onclick=_.selectTrooper(1004,3584538)', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8' ,wmode : 'transparent' };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_showtr_1004',72,71,'10.0.0',null,null,swfp,{ id : 'showtr_1004', 'class' : 'swf_transparent' })</script>
+
+<ul>
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Pistolet&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;&lt;ul&gt;&lt;li&gt;&lt;b&gt;Dégâts&lt;/b&gt; : 2-3&lt;/li&gt;&lt;li&gt;&lt;b&gt;Portée&lt;/b&gt; : 7&lt;/li&gt;&lt;li&gt;&lt;b&gt;Critiques&lt;/b&gt; : x5&lt;/li&gt;&lt;li&gt;&lt;b&gt;Visée&lt;/b&gt; : 90%&lt;/li&gt;&lt;li&gt;&lt;b&gt;Récupération&lt;/b&gt; : 100&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -240px -0px"></li>
+
+
+<li onmouseover="mt.js.Tip.show(this,'&lt;div class=\'tiptop\'&gt;&lt;div class=\'tipbottom\'&gt;&lt;div class=\'tipbg\'&gt;&lt;div class=\'tipcontent\'&gt;&lt;img src=\'/img/pixel.gif\' class=\'pixel\' /&gt;&lt;h1&gt;Inébranlable&lt;/h1&gt;&lt;div class=&quot;s&quot;&gt;Lorsque &lt;i&gt;Harri&lt;/i&gt; subit des dégâts, son action n\'est pas interrompue. &lt;em&gt;&quot;Je me plains quand la bataille est finie. Pas avant.&quot;&lt;/em&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;')" onmouseout="mt.js.Tip.hide()" style="background : url('/img/skills.png') -300px -180px"></li>
+</ul></li>
+</ul></div>
+<input id="submit" class="button4 button_off" type="submit" value="Valider" disabled="disabled"/></form>
+<div class="alreadyhave"><form action="/login" method="POST"><p>As-tu déjà une armée ? :</p>
+<p><input class="field" name="login"/>
+<input class="button7" type="submit" value="Chercher"/></p></form></div>
+<script type="text/javascript">_.initCreate('minitroopers.fr');
+function onMID(mid,midc) { $("#mid").val(mid); $("#midc").val(midc) }</script>
+<div id="swf_regmid" class="swf"></div>
+<script type="text/javascript">var swfp = { menu : false, flashvars : 'data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A3%3A1y10%3A26%253A12269y8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g&chk=eb564f0271d6c9657cbd9575e2f2c2d0', scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8'  };
+	swfobject.embedSWF('http://data.minitroopers.fr/swf/client_fr.swf?v=2','swf_regmid',1,1,'10.0.0',null,null,swfp,{ id : 'regmid', 'class' : 'swf' })</script></div>
+</div></div></div>
+<div class="dbottom"><div class="pbottomleft"></div>
+<div class="mt"><a href="http://motion-twin.fr/" target="_blank"><img src="/img/pixel.gif"/></a></div>
+<div class="art_mouse"></div>
+<div class="dbg"><h1 class="moreg moreg_fr"><img src="/img/pixel.gif" alt="Plus de jeux :"/></h1>
+<div class="indust"></div>
+
+<div class="go goleft"><a href="javascript:_.adCycle(16625161,true)"><img src="/img/pixel.gif"/></a></div>
+<div class="go goright"><a href="javascript:_.adCycle(16625161,false)"><img src="/img/pixel.gif"/></a></div>
+<div id="xds">
+<ul class="dlinks">
+<li onclick="window.open('http://trax.motion-twin.com/goto/tr_small/arka')"><div class="animg"><img src="http://data.motion-twin.com/news/arkadeo_mini.jpg" class="img"/></div>
+<div class="antxt"><h2>Arkadeo</h2>
+<p>Jouez et empochez des chèques cadeau Amazon !</p></div></li>
+
+<li onclick="window.open('http://trax.motion-twin.com/goto/tr_small/hotel')"><div class="animg"><img src="http://data.minitroopers.fr/img/mt/s/croquemotel.jpg" class="img"/></div>
+<div class="antxt"><h2>Croquemotel</h2>
+<p>Devenez gérant d'un hôtel aux clients... particuliers.</p></div></li>
+
+<li onclick="window.open('http://trax.motion-twin.com/goto/tr_small/kingdom')"><div class="animg"><img src="http://data.minitroopers.fr/img/mt/s/kingdom.png" class="img"/></div>
+<div class="antxt"><h2>Kingdom</h2>
+<p>Gérez un royaume et devenez Empereur !</p></div></li>
+
+<li onclick="window.open('http://trax.motion-twin.com/goto/tr_small/drpg')"><div class="animg"><img src="http://data.minitroopers.fr/img/mt/s/dinorpg.jpg" class="img"/></div>
+<div class="antxt"><h2>Dinorpg</h2>
+<p>Elevez et faîtes combattre vos Dinoz !</p></div></li>
+</ul> </div></div></div>
+<div class="copy"><a href="/forum" target="_blank">Forum</a>
+·
+<a href="/protect">Modifier mon pass</a>
+· (c)2011 Motion-Twin · Tous droits réservés</div></div></div>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-114594-42', {'cookieDomain': 'minitroopers.fr'});
+  ga('send', 'pageview');
+
+</script>
+</body></html> 

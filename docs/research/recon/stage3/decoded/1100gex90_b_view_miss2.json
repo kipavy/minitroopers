@@ -1,0 +1,2974 @@
+#1 {"chk":"c2de876065ea61256710a758c7044e31","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Ce combat s'est soldé par un échec !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#3",
+     "gfx": "bg/road.jpg"
+    },
+    "id": 13593415,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "Babouche",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#28",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#7"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 2295073,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 0,
+        "force": []
+       },
+       {
+        "name": "Diabolo",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#17",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 1182576,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Titi",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#19",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 14980989,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "Starsky",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#77",
+          "Skill#54"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#26",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#4"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 7436325,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1
+        ],
+        "id": 3,
+        "force": []
+       },
+       {
+        "name": "Rouky",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#56"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#20",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 9470730,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0
+        ],
+        "id": 4,
+        "force": []
+       },
+       {
+        "name": "Gros minet",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#118"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#22",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 5584408,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 5,
+        "force": []
+       },
+       {
+        "name": "Rox",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#57",
+          "Skill#66"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#9",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 3390702,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 6,
+        "force": []
+       },
+       {
+        "name": "Dora",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#25",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#3"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 2574299,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 7,
+        "force": []
+       },
+       {
+        "name": "Eckle",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#15",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 2174256,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 8,
+        "force": []
+       },
+       {
+        "name": "Satanas",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#18",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 10380986,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         0,
+         1,
+         1
+        ],
+        "id": 9,
+        "force": []
+       },
+       {
+        "name": "Hutch",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#7",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#1"
+          ]
+         },
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 4790598,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 10,
+        "force": []
+       },
+       {
+        "name": "Jeckle",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#83"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#7",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13745442,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         0,
+         0
+        ],
+        "id": 11,
+        "force": []
+       },
+       {
+        "name": "11r90",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#23",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 10903322,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0
+        ],
+        "id": 12,
+        "force": []
+       },
+       {
+        "name": "spe3",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#27",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 10745018,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 13,
+        "force": []
+       },
+       {
+        "name": "spe 2",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#88",
+          "Skill#129"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 16405299,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1
+        ],
+        "id": 14,
+        "force": []
+       },
+       {
+        "name": "spe 1",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#103"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#25",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 14847542,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 15,
+        "force": []
+       },
+       {
+        "name": "attentionjar",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#19",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 9920913,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1
+        ],
+        "id": 16,
+        "force": []
+       },
+       {
+        "name": "Keves",
+        "pref": null,
+        "seed": 6152825,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 17,
+        "force": []
+       },
+       {
+        "name": "spe13",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#27",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 11214501,
+        "type": "TrooperType#0",
+        "choices": [
+         2,
+         2,
+         1,
+         1,
+         2,
+         1,
+         0
+        ],
+        "id": 18,
+        "force": []
+       },
+       {
+        "name": "spe12",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#60",
+          "Skill#88"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#11",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13160192,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 19,
+        "force": []
+       },
+       {
+        "name": "spe11",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#25",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 15696596,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0
+        ],
+        "id": 20,
+        "force": []
+       },
+       {
+        "name": "spe9",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#84"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#26",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 8448149,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 21,
+        "force": []
+       },
+       {
+        "name": "spe9",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#23",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13666990,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 22,
+        "force": []
+       },
+       {
+        "name": "spe8",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#8",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 6137355,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         2,
+         0,
+         2,
+         1,
+         2
+        ],
+        "id": 23,
+        "force": []
+       },
+       {
+        "name": "spe7",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#24",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 6137355,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         2,
+         0,
+         2,
+         2,
+         2
+        ],
+        "id": 24,
+        "force": []
+       },
+       {
+        "name": "spe6",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#20",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 1101646,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 25,
+        "force": []
+       },
+       {
+        "name": "spe5",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#25",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 4263074,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0
+        ],
+        "id": 26,
+        "force": []
+       },
+       {
+        "name": "spe4",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#22",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 12476915,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 27,
+        "force": []
+       },
+       {
+        "name": "devellopemen",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#25",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 9920913,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         2,
+         0,
+         2,
+         0
+        ],
+        "id": 28,
+        "force": []
+       },
+       {
+        "name": "spe44",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": "Weapon#29",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 2551364,
+        "type": "TrooperType#0",
+        "choices": [
+         2,
+         1,
+         2,
+         1,
+         1,
+         1
+        ],
+        "id": 29,
+        "force": []
+       },
+       {
+        "name": "Karlersen",
+        "pref": null,
+        "seed": 14672185,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         1,
+         0
+        ],
+        "id": 30,
+        "force": []
+       },
+       {
+        "name": "spe42",
+        "pref": null,
+        "seed": 12445977,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         1,
+         0
+        ],
+        "id": 31,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10,
+       11
+      ],
+      "faction": 0
+     },
+     {
+      "troopers": [
+       {
+        "name": "Joniwe",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 52428,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1
+        ],
+        "id": 32,
+        "force": null
+       },
+       {
+        "name": "McHarrill",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 77023,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         1,
+         1,
+         0,
+         0
+        ],
+        "id": 33,
+        "force": null
+       },
+       {
+        "name": "Rickito",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 23955,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "id": 34,
+        "force": null
+       },
+       {
+        "name": "Bombukins",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 30800,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         1,
+         1
+        ],
+        "id": 35,
+        "force": null
+       },
+       {
+        "name": "MaxBurtewis",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 27445,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 36,
+        "force": null
+       },
+       {
+        "name": "Luke Lee",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 18942,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 37,
+        "force": null
+       },
+       {
+        "name": "Solid Lukey",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 52032,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0
+        ],
+        "id": 38,
+        "force": null
+       },
+       {
+        "name": "Smithaum",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 4778,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1
+        ],
+        "id": 39,
+        "force": null
+       },
+       {
+        "name": "Davinnett",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 25439,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 40,
+        "force": null
+       },
+       {
+        "name": "Burtones",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 47143,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 41,
+        "force": null
+       },
+       {
+        "name": "Van Jackey",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 71905,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0
+        ],
+        "id": 42,
+        "force": null
+       },
+       {
+        "name": "Harrannell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 10213,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         1,
+         0
+        ],
+        "id": 43,
+        "force": null
+       },
+       {
+        "name": "Huffowney",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 41458,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 44,
+        "force": null
+       },
+       {
+        "name": "Crakauer",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 32631,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         1,
+         1
+        ],
+        "id": 45,
+        "force": null
+       },
+       {
+        "name": "Burtold",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 39757,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 46,
+        "force": null
+       },
+       {
+        "name": "Lukerg",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 41980,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         1,
+         1
+        ],
+        "id": 47,
+        "force": null
+       },
+       {
+        "name": "Jazey",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 16515,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 48,
+        "force": null
+       },
+       {
+        "name": "Jackaws",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 43598,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 49,
+        "force": null
+       },
+       {
+        "name": "Jeffason",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 26842,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 50,
+        "force": null
+       },
+       {
+        "name": "Harrando",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 12505,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 51,
+        "force": null
+       },
+       {
+        "name": "Georgiter",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 65344,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 52,
+        "force": null
+       },
+       {
+        "name": "Jeffo",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 8298,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0
+        ],
+        "id": 53,
+        "force": null
+       },
+       {
+        "name": "Meloff",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 8011,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0
+        ],
+        "id": 54,
+        "force": null
+       },
+       {
+        "name": "Chrison",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 30823,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0
+        ],
+        "id": 55,
+        "force": null
+       },
+       {
+        "name": "Georgey",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 3998,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1
+        ],
+        "id": 56,
+        "force": null
+       },
+       {
+        "name": "Sgt.Hulkando",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 88548,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 57,
+        "force": null
+       },
+       {
+        "name": "Maxenoff",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 47442,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 58,
+        "force": null
+       },
+       {
+        "name": "Super Hulko",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 4519,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 59,
+        "force": null
+       },
+       {
+        "name": "Smithonnell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 84936,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1
+        ],
+        "id": 60,
+        "force": null
+       },
+       {
+        "name": "Rogold Kong",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 96580,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 61,
+        "force": null
+       },
+       {
+        "name": "Jazersen",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 22668,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 62,
+        "force": null
+       },
+       {
+        "name": "Orlawen",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 94739,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0
+        ],
+        "id": 63,
+        "force": null
+       },
+       {
+        "name": "Rickust",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 34822,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0
+        ],
+        "id": 64,
+        "force": null
+       },
+       {
+        "name": "Jazust",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 21144,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 65,
+        "force": null
+       },
+       {
+        "name": "Burtield",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 77202,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0
+        ],
+        "id": 66,
+        "force": null
+       },
+       {
+        "name": "Karleed",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 26514,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 67,
+        "force": null
+       },
+       {
+        "name": "Huffauer",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 69277,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 68,
+        "force": null
+       },
+       {
+        "name": "Smitheiber",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 58504,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1
+        ],
+        "id": 69,
+        "force": null
+       },
+       {
+        "name": "Harronnell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 53612,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 70,
+        "force": null
+       },
+       {
+        "name": "Jeffeves",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 73287,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0
+        ],
+        "id": 71,
+        "force": null
+       },
+       {
+        "name": "Huffersen",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 47357,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1
+        ],
+        "id": 72,
+        "force": null
+       },
+       {
+        "name": "Jazater",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 45242,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0
+        ],
+        "id": 73,
+        "force": null
+       },
+       {
+        "name": "Lukito",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 6898,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1
+        ],
+        "id": 74,
+        "force": null
+       },
+       {
+        "name": "Burtones",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 14335,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 75,
+        "force": null
+       },
+       {
+        "name": "Hulkenser",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 79897,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1
+        ],
+        "id": 76,
+        "force": null
+       },
+       {
+        "name": "Michall",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 67272,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 77,
+        "force": null
+       },
+       {
+        "name": "Michall",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 56513,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0
+        ],
+        "id": 78,
+        "force": null
+       },
+       {
+        "name": "McKranson",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 65738,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 79,
+        "force": null
+       },
+       {
+        "name": "Melutt",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 294,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 80,
+        "force": null
+       },
+       {
+        "name": "Jeffie",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 7515,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 81,
+        "force": null
+       },
+       {
+        "name": "Georgi Joch",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 10490,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 82,
+        "force": null
+       },
+       {
+        "name": "Don Hulkeves",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 11274,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0
+        ],
+        "id": 83,
+        "force": null
+       },
+       {
+        "name": "Lukewen",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 30311,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0
+        ],
+        "id": 84,
+        "force": null
+       },
+       {
+        "name": "Bombold",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 90640,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 85,
+        "force": null
+       },
+       {
+        "name": "Georguws",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 24288,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 86,
+        "force": null
+       },
+       {
+        "name": "Edolds",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 21501,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 87,
+        "force": null
+       },
+       {
+        "name": "G.I.Hulkito",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 37966,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0
+        ],
+        "id": 88,
+        "force": null
+       },
+       {
+        "name": "Huffater",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 43664,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 89,
+        "force": null
+       },
+       {
+        "name": "Hulkater Yu",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 73968,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 90,
+        "force": null
+       },
+       {
+        "name": "Kralone",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 20249,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 91,
+        "force": null
+       },
+       {
+        "name": "Moonson",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 84508,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 92,
+        "force": null
+       },
+       {
+        "name": "Krach",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 93209,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 93,
+        "force": null
+       },
+       {
+        "name": "Rogey",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 71600,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 94,
+        "force": null
+       },
+       {
+        "name": "Lukotor Dick",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 80216,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 95,
+        "force": null
+       },
+       {
+        "name": "Samowe",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 62583,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 96,
+        "force": null
+       },
+       {
+        "name": "Burtersen",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 64417,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 97,
+        "force": null
+       },
+       {
+        "name": "McBombuney",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 99229,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 98,
+        "force": null
+       },
+       {
+        "name": "Bombips Khan",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 4923,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0
+        ],
+        "id": 99,
+        "force": null
+       },
+       {
+        "name": "Georgu Burto",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 62081,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1
+        ],
+        "id": 100,
+        "force": null
+       },
+       {
+        "name": "MaxBruws",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 2791,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 101,
+        "force": null
+       },
+       {
+        "name": "Hulkust",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 20923,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 102,
+        "force": null
+       },
+       {
+        "name": "Maxeiber",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 7958,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1
+        ],
+        "id": 103,
+        "force": null
+       },
+       {
+        "name": "Smithaum",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 25577,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 104,
+        "force": null
+       },
+       {
+        "name": "Harrield",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 32481,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 105,
+        "force": null
+       },
+       {
+        "name": "Hulkonnell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 67237,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 106,
+        "force": null
+       },
+       {
+        "name": "Mookins",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 79534,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 107,
+        "force": null
+       },
+       {
+        "name": "Maxi Hunter",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 74666,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 108,
+        "force": null
+       },
+       {
+        "name": "Huffauer",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 11533,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 109,
+        "force": null
+       },
+       {
+        "name": "Hulkie Jones",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 99607,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 110,
+        "force": null
+       },
+       {
+        "name": "Maxinson Jr",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 83740,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0
+        ],
+        "id": 111,
+        "force": null
+       },
+       {
+        "name": "Goldilone",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 60608,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0
+        ],
+        "id": 112,
+        "force": null
+       },
+       {
+        "name": "Maxikins",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 74217,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 113,
+        "force": null
+       },
+       {
+        "name": "Georgoff Yu",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 6262,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 114,
+        "force": null
+       },
+       {
+        "name": "Jeffater",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 34484,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 115,
+        "force": null
+       },
+       {
+        "name": "Crakas",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 86445,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 116,
+        "force": null
+       },
+       {
+        "name": "Samips",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 23281,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 117,
+        "force": null
+       },
+       {
+        "name": "Kevips",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 61066,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 118,
+        "force": null
+       },
+       {
+        "name": "Samewis",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 12569,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 119,
+        "force": null
+       },
+       {
+        "name": "Don Jackotor",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 83666,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 120,
+        "force": null
+       },
+       {
+        "name": "Karleed",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 7667,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1
+        ],
+        "id": 121,
+        "force": null
+       },
+       {
+        "name": "Smithonnell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 11285,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1
+        ],
+        "id": 122,
+        "force": null
+       },
+       {
+        "name": "Russeley",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 95870,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 123,
+        "force": null
+       },
+       {
+        "name": "Yutt",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 11044,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 124,
+        "force": null
+       },
+       {
+        "name": "Edold",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 33265,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 125,
+        "force": null
+       },
+       {
+        "name": "Jeffips",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 81580,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 126,
+        "force": null
+       },
+       {
+        "name": "Van Jonito",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 43959,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1
+        ],
+        "id": 127,
+        "force": null
+       },
+       {
+        "name": "Edips",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 71587,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 128,
+        "force": null
+       },
+       {
+        "name": "Smithold",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 80414,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 129,
+        "force": null
+       },
+       {
+        "name": "Hulkiham",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 30710,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 130,
+        "force": null
+       },
+       {
+        "name": "Lukinnell",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 35894,
+        "type": "TrooperType#0",
+        "choices": [
+         1
+        ],
+        "id": 131,
+        "force": null
+       }
+      ],
+      "__UP2": [],
+      "faction": 3
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}

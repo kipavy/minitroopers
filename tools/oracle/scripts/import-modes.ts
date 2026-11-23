@@ -1,15 +1,14 @@
 // Imports the archived mission/raid battle views (RECON3 §1: 13 battles) as engine fidelity fixtures
 // packages/engine/test/fixtures/modes/<name>.json = { source, input, winner, notes }.
-//   node tools/oracle/scripts/import-modes.ts [<recon dir>]   (default ~/minitroopers-work/recon)
+//   node tools/oracle/scripts/import-modes.ts [<recon dir>]   (default docs/research/recon)
 // The flashvars are decoded with the server's test decoder; `winner` comes from the archived endMsg
 // ("remporté"/"won"/"successfuly" → attackerSide, "échec"/"fail"/"lost" → the other side, anything else throws). Normalizations are listed in `notes`.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decodeBattleFlashvars, unserialize } from "../../../apps/server/test/hxdecode.ts";
 
-const RECON = process.argv[2] ?? join(homedir(), "minitroopers-work/recon");
+const RECON = process.argv[2] ?? fileURLToPath(new URL("../../../docs/research/recon", import.meta.url));
 const EX = join(RECON, "assets/extra/site-elements/html");
 const S3 = join(RECON, "stage3/wayback");
 const OUT = fileURLToPath(new URL("../../../packages/engine/test/fixtures/modes/", import.meta.url));

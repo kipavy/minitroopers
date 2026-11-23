@@ -1,0 +1,86 @@
+#1 {"chk":"b0235b1b854c9e2974965f37a1e9121d","imageurl":"http://data.minitroopers.com/img/","endMsg":"Congratulations, you have successfuly carried out the raid! Your army has earned +4 [T] and you can now try the next raid."}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#4",
+     "gfx": "bg/wood.jpg"
+    },
+    "id": 15981463,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "Sgt.Jonones",
+        "pref": null,
+        "seed": 6962835,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Bruson",
+        "pref": null,
+        "seed": 11717725,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "Hulkersen Yu",
+        "pref": null,
+        "seed": 13330074,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1
+        ],
+        "id": 3,
+        "force": []
+       }
+      ],
+      "__UP2": [],
+      "faction": 2
+     },
+     {
+      "troopers": [
+       {
+        "name": "MaxEdando",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 4468,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 0,
+        "force": null
+       }
+      ],
+      "__UP2": [],
+      "faction": 3
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.com/swf/army.swf?v=1"
+}

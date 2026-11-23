@@ -1,0 +1,813 @@
+#1 {"chk":"07960b9993f447c11e2400088dcc4b82","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Ce combat s'est soldé par un échec !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#2",
+     "gfx": "bg/sewer.jpg"
+    },
+    "id": 4019990,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "chté piraté!",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#20",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#6"
+          ]
+         },
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13258792,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 12,
+        "force": []
+       },
+       {
+        "name": "caca pipi pr",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": "Weapon#25",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#3"
+          ]
+         },
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 5669597,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0
+        ],
+        "id": 13,
+        "force": []
+       },
+       {
+        "name": "sa va ?",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#23",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#0"
+          ]
+         },
+         "targetSystem": "TargetSystem#2"
+        },
+        "seed": 6548760,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 14,
+        "force": []
+       },
+       {
+        "name": "james",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#60"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#17",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#6"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 16579574,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         0,
+         1,
+         1,
+         1
+        ],
+        "id": 15,
+        "force": []
+       },
+       {
+        "name": "killer",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#18",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#7"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 8074736,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         2,
+         0,
+         2,
+         2
+        ],
+        "id": 16,
+        "force": []
+       },
+       {
+        "name": "tes nul",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#21",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#2"
+        },
+        "seed": 1427255,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 17,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       12,
+       13,
+       14,
+       15,
+       16,
+       17
+      ],
+      "faction": 2
+     },
+     {
+      "troopers": [
+       {
+        "name": "Surf Blondin",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#59",
+          "Skill#66",
+          "Skill#88"
+         ],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": "Weapon#15",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 14679783,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0
+        ],
+        "id": 0,
+        "force": []
+       },
+       {
+        "name": "Surfer 6",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#60"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#9",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#0"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 8213853,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Surfer 7",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#83",
+          "Skill#46"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#20",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13820663,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         2,
+         1,
+         2,
+         1,
+         2,
+         1,
+         0,
+         2,
+         2,
+         0,
+         2,
+         1
+        ],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "Surfer Black",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": "Weapon#15",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 15192866,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         0,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         2,
+         1,
+         0,
+         2,
+         2,
+         2,
+         0,
+         2,
+         2,
+         0,
+         1,
+         1,
+         0,
+         2,
+         1
+        ],
+        "id": 3,
+        "force": []
+       },
+       {
+        "name": "SurfMitraill",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#77",
+          "Skill#68"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#16",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 9817559,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 4,
+        "force": []
+       },
+       {
+        "name": "SurferSniper",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#71"
+         ],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": "Weapon#8",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 8080551,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         2,
+         2,
+         2,
+         0,
+         1,
+         1,
+         2,
+         0,
+         1,
+         1,
+         2,
+         2,
+         2,
+         2
+        ],
+        "id": 5,
+        "force": []
+       },
+       {
+        "name": "SurferArgent",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#60",
+          "Skill#71",
+          "Skill#66",
+          "Skill#77"
+         ],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": "Weapon#7",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 1649147,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         1,
+         2,
+         0,
+         1,
+         0
+        ],
+        "id": 6,
+        "force": []
+       },
+       {
+        "name": "SurferToxic",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#85"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#20",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 14282723,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         0,
+         1,
+         0,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         2,
+         1,
+         0,
+         2,
+         2,
+         2,
+         1,
+         2,
+         2,
+         1,
+         0
+        ],
+        "id": 7,
+        "force": []
+       },
+       {
+        "name": "Surfer 12",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#58",
+          "Skill#77",
+          "Skill#133",
+          "Skill#109",
+          "Skill#66"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#26",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 3695650,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         2,
+         0,
+         2,
+         2
+        ],
+        "id": 8,
+        "force": []
+       },
+       {
+        "name": "Surfer Bombo",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#84",
+          "Skill#100"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#8",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 5435394,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         1
+        ],
+        "id": 9,
+        "force": []
+       },
+       {
+        "name": "Surfer 8",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#87",
+          "Skill#77",
+          "Skill#125",
+          "Skill#118"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#15",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 5150102,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 10,
+        "force": []
+       },
+       {
+        "name": "SurfCommando",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#60",
+          "Skill#84",
+          "Skill#77",
+          "Skill#94",
+          "Skill#66"
+         ],
+         "__CBody": null,
+         "__CWeapon": "Weapon#23",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 6718956,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1,
+         1,
+         0,
+         1,
+         1,
+         1,
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 11,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0,
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10,
+       11
+      ],
+      "faction": 4
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}
