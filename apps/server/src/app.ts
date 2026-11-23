@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { fileURLToPath } from "node:url";
 import type { DatabaseSync } from "node:sqlite";
 import { getConnInfo } from "@hono/node-server/conninfo";
@@ -27,6 +27,16 @@ export interface Deps {
   battleSeed?: () => number;
 }
 
+/**
+ * Headers of every page response (HTML, redirects, 404): no URL (they carry the session key `chk`) leaks to another
+ * site through Referer, and no other site frames the pages. Ruffle and the SWFs are same-origin, never framed.
+ */
+const securityHeaders: MiddlewareHandler<Env> = async (c, next) => {
+  await next();
+  c.res.headers.set("Referrer-Policy", "same-origin");
+  c.res.headers.set("X-Frame-Options", "SAMEORIGIN");
+};
+
 export const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
 
 /**
@@ -39,6 +49,7 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
   app.use("*", serveStatic(PUBLIC_DIR));
 
   const pages = new Hono<Env>();
+  pages.use("*", securityHeaders);
   pages.use("*", async (c, next) => {
     c.set("cfg", cfg);
     c.set("db", db);

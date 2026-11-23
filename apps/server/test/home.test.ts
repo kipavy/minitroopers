@@ -28,6 +28,21 @@ for (const mode of MODES) {
     assert.notDeepEqual(offerSeeds(await (await env.client().req("/")).text()), offerSeeds(html));
   });
 
+  test(`[${mode}] HTML pages carry Referrer-Policy: same-origin and X-Frame-Options: SAMEORIGIN`, async () => {
+    const env = setup(mode);
+    const cl = env.client();
+    const pages = [await cl.req("/"), await create(env, cl, "Warp", { part: "0" })];
+    const hq = env.at("warp", "/hq");
+    pages.push(await cl.req(hq.url, { host: hq.host }));
+    const missing = env.at("warp", "/nothing");
+    pages.push(await cl.req(missing.url, { host: missing.host }));
+    for (const res of pages) {
+      assert.equal(res.headers.get("referrer-policy"), "same-origin", res.url);
+      assert.equal(res.headers.get("x-frame-options"), "SAMEORIGIN", res.url);
+    }
+    assert.match(pages[2]!.headers.get("content-type")!, /text\/html/);
+  });
+
   test(`[${mode}] creation: offers -> POST -> cookie -> /hq 200 with the name`, async () => {
     const env = setup(mode);
     const cl = env.client();
