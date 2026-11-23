@@ -23,6 +23,7 @@ function fnv1a(s: string): number {
  */
 export function dailyOffers(p: { day: string; clientId: string; recruiter: string | null; salt: string }): OfferTrooper[] {
   const used = new Set<number>();
+  const names = new Set<string>();
   const out: OfferTrooper[] = [];
   const span = SEED_MAX - SEED_MIN + 1;
   for (let slot = 0; slot < SLOTS; slot++) {
@@ -31,7 +32,10 @@ export function dailyOffers(p: { day: string; clientId: string; recruiter: strin
     while (used.has(seed)) seed = SEED_MIN + ((seed - SEED_MIN + 1) % span);
     used.add(seed);
     const rand = new Rand(seed);
-    out.push({ seed, name: trooperName(rand), colour: 3 + rand.random(3) });
+    let name = trooperName(rand);
+    while (names.has(name)) name = trooperName(rand); // deterministic re-draw: names distinct within a day
+    names.add(name);
+    out.push({ seed, name, colour: 3 + rand.random(3) });
   }
   return out;
 }

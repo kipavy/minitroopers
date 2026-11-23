@@ -13,6 +13,19 @@ test("host: recon cases", () => {
   assert.equal(host("Groin céleste"), "groin-celeste");
 });
 
+test("host: dot kept (exact original)", () => {
+  assert.equal(host("a.b"), "a.b");
+  assert.equal(host("Sgt. Pepper"), "sgt.-pepper");
+  assert.equal(validateArmyName("Sgt. Pepper", 0).ok, false);
+});
+
+test("dailyOffers: distinct names", () => {
+  for (let i = 0; i < 300; i++) {
+    const o = dailyOffers({ day: "2026-11-22", clientId: "c" + i, recruiter: null, salt: "s" });
+    assert.equal(new Set(o.map((x) => x.name)).size, 5);
+  }
+});
+
 test("host: >16 chars", () => {
   assert.equal(host("a-bcdefghijklmnopqrs"), "a-bcdefghijklmno"); // 16 first chars, first part < 8
   assert.equal(host("a-bcdefghijklmn-opqr"), "a-bcdefghijklmn"); // cut ends on "-": removed

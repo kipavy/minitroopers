@@ -39,14 +39,13 @@ function haxeTrim(s: string): string {
 }
 
 /**
- * Common.host. Note: the original app.js keeps "." in the class ([^a-z0-9.-]); the test-server port and the
- * recon (§2.3) use [^a-z0-9-], which is what a single-label subdomain needs, so that one is followed.
+ * Exact port of Common.host (original app.js:8 keeps "." in the class [^a-z0-9.-]).
  */
 export function host(name: string): string {
   let h = removeAccentsUTF8(name).toLowerCase();
   h = haxeTrim(h);
   h = h.replace(/\s+/g, "-");
-  h = h.replace(/[^a-z0-9-]+/g, "");
+  h = h.replace(/[^a-z0-9.-]+/g, "");
   if (h.length > 16) {
     const first = h.split("-")[0]!;
     if (first.length >= 8) h = first;
@@ -71,6 +70,8 @@ export function validateArmyName(name: string, part: number): { ok: true; host: 
   if (n.length < 1 || n.length > 20) return { ok: false, error: "Le nom doit faire entre 1 et 20 caractères." };
   if (!Number.isInteger(part) || part < 0 || part > 5) return { ok: false, error: "Article invalide." };
   const h = host(n);
+  // UNVERIFIED: original server-side rule unknown; a dot would make a multi-label subdomain.
+  if (h.includes(".")) return { ok: false, error: "Le nom ne peut pas contenir de point." };
   if (h.length < 3) return { ok: false, error: "Nom trop court (3 caractères minimum une fois simplifié)." };
   if (RESERVED_HOSTS.includes(h)) return { ok: false, error: "Ce nom est réservé." };
   return { ok: true, host: h };
