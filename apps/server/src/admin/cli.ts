@@ -53,6 +53,8 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
       Fixe les crédits à N (N >= 0).
   set-rats --army <nom ou hôte> --rats <1-100>
       Rats de la prochaine extermination.
+  set-faction --army <nom ou hôte> --faction <0-5 | rouge|orange|jaune|vert|bleu|violet>
+      Faction, donc couleur de l'uniforme (aucun effet sur les combats ; les combats déjà joués gardent l'ancienne).
   unlock-missions --army <nom ou hôte> [--lock]
       Débloque les missions sans les faire payer (--lock : les verrouille à nouveau).
   rename --army <nom ou hôte> --name <nouveau nom>
@@ -78,7 +80,10 @@ class UsageError extends Error {}
 /** A command that only reports what it would do: printed on stdout, exit code 1. */
 class DryRun extends Error {}
 
-const EDITS = ["show", "reset-day", "set-credits", "set-rats", "unlock-missions", "rename", "level-up", "confirm-recruits", "delete-army"];
+/** Uniform colour of each faction (backgrounds .faction0-5 of the original style.css). */
+const FACTION_COLOURS = ["rouge", "orange", "jaune", "vert", "bleu", "violet"] as const;
+const factionLabel = (f: number): string => `${f} (${FACTION_COLOURS[f] ?? "?"})`;
+const EDITS = ["show", "reset-day", "set-credits", "set-rats", "set-faction", "unlock-missions", "rename", "level-up", "confirm-recruits", "delete-army"];
 /** Edits allowed on a faction army (nothing that changes how it fights or what it is). */
 const FACTION_OK = ["show", "set-credits", "confirm-recruits"];
 const yesNo = (b: boolean): string => (b ? "oui" : "non");
@@ -276,7 +281,7 @@ function show(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): string {
   return [
     `Armée ${a.id} : ${a.host} — ${armyTitle(a.name, a.part)}`,
     `Adresse : ${absoluteArmyUrl(cfg, a.host, "/")}`,
-    `Faction : ${a.faction}${a.isFaction ? " (armée de faction)" : ""}`,
+    `Faction : ${factionLabel(a.faction)}${a.isFaction ? " (armée de faction)" : ""}`,
     `Crédits : ${a.credits}`,
     `Puissance : ${armyPower(rows.map(trooperInput))}`,
     `Mot de passe : ${yesNo(a.passwordHash !== null)}`,
@@ -321,6 +326,15 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
     const n = int(str(values.rats), "rats", 1, RATS_MAX);
     setArmyField(db, a.id, "rats", n);
     return `${a.host} : ${n} rats à la prochaine extermination`;
+  }
+
+  if (cmd === "set-faction") {
+    const v = str(values.faction)?.toLowerCase();
+    const byName = v === undefined ? -1 : FACTION_COLOURS.indexOf(v as (typeof FACTION_COLOURS)[number]);
+    const f = byName >= 0 ? byName : v !== undefined && /^[0-5]$/.test(v) ? Number(v) : -1;
+    if (f < 0) throw new UsageError(`--faction : 0 à 5 ou ${FACTION_COLOURS.join(", ")}`);
+    setArmyField(db, a.id, "faction", f);
+    return `${a.host} : faction ${factionLabel(f)}`;
   }
 
   if (cmd === "unlock-missions") {

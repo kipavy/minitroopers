@@ -77,6 +77,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `reset-day --army <x> [--day AAAA-MM-JJ] [--what battles\|mission\|raid\|shop\|all]` | rend les quotas d'une journée (défaut : aujourd'hui, `all`), sans rien effacer (voir plus bas) |
 | `set-credits --army <x> --amount <N>` | fixe les crédits à N (≥ 0) |
 | `set-rats --army <x> --rats <1-100>` | rats de la prochaine extermination |
+| `set-faction --army <x> --faction <0-5 \| rouge\|orange\|jaune\|vert\|bleu\|violet>` | faction, donc couleur de l'uniforme (couleurs de `.faction0`…`.faction5` de la feuille de style d'origine) ; aucun effet sur les combats ; les combats déjà joués sont rejoués avec l'ancienne couleur |
 | `unlock-missions --army <x> [--lock]` | débloque les missions sans les faire payer ; `--lock` les verrouille à nouveau |
 | `rename --army <x> --name <nouveau nom>` | renomme l'armée (règles de la création, article conservé) ; refuse un hôte déjà pris ; les sessions restent ouvertes, la nouvelle adresse est affichée (en mode sous-domaines, l'adresse change avec l'hôte). Une attaque par nom (« ami ») rejouée après le renommage de son défenseur ne combat pas : déjà jouée, elle montre le combat qu'elle a produit ; jamais jouée, l'ancien nom n'existe plus (`/b/opp?err=missing`) |
 | `level-up --army <x> --slot <N> --skill <NOM \| id>` | une montée de niveau gratuite du trooper de l'emplacement N, avec cette compétence seulement si le jeu la propose à ce niveau (sinon : liste des compétences proposées) ; refusée si une montée payée attend son choix |
@@ -87,7 +88,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 `<x>` est le nom de l'armée ou son hôte (`"Mon Armée"` ou `mon-armee`). Les erreurs sont écrites en français
 sur la sortie d'erreur, avec le code de sortie 1. Chaque modification est une seule transaction
 (`BEGIN IMMEDIATE`), sans risque pendant que le serveur tourne. Les armées de faction sont refusées par
-`reset-day`, `set-rats`, `unlock-missions`, `rename`, `level-up` et `delete-army`.
+`reset-day`, `set-rats`, `set-faction`, `unlock-missions`, `rename`, `level-up` et `delete-army`.
 
 Un exemple par commande (noms à remplacer) :
 
@@ -103,6 +104,7 @@ npm run admin -- show --army <hôte>
 npm run admin -- reset-day --army <hôte> --what battles
 npm run admin -- set-credits --army <hôte> --amount 200
 npm run admin -- set-rats --army <hôte> --rats 20
+npm run admin -- set-faction --army <hôte> --faction vert
 npm run admin -- unlock-missions --army <hôte>
 npm run admin -- rename --army <hôte> --name "<nouveau nom>"
 npm run admin -- level-up --army <hôte> --slot 0 --skill SMART

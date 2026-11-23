@@ -699,7 +699,7 @@ export function insertArmy(db: DatabaseSync, a: ArmySeed): ArmyRow | null {
 }
 
 /** Admin: sets one plain army field (credits, rats, missions unlocked) in a BEGIN IMMEDIATE transaction. False for no such army. */
-export function setArmyField(db: DatabaseSync, armyId: number, field: "credits" | "rats" | "missions_unlocked", value: number): boolean {
+export function setArmyField(db: DatabaseSync, armyId: number, field: "credits" | "rats" | "missions_unlocked" | "faction", value: number): boolean {
   return immediate(db, () => (Number(db.prepare(`UPDATE armies SET ${field} = ? WHERE id = ?`).run(value, armyId).changes) === 1 ? true : null)) === true;
 }
 
