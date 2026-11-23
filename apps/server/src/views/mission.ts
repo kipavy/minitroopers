@@ -2,7 +2,7 @@ import type { MissionType } from "@mt/game";
 import type { Config } from "../config.ts";
 import type { DayBattle } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
-import { html, raw, type Html } from "./html.ts";
+import { html, jsq, raw, type Html } from "./html.ts";
 
 /** Box title ("Mission : Infiltrer", sitemap) and background (/img/mode/<bg>.jpg) of each mission type (RECON3 §4). */
 export const MISSION_BOX: Record<MissionType, { title: string; bg: string }> = {
@@ -41,7 +41,7 @@ export function missionBox(cfg: Config, v: MissionBoxView): Html {
   if (v.locked) return frame(0, "");
   if (!v.unlocked) {
     // UNVERIFIED: the unlock tile was never archived; text from $GL ("Débloquer pour 5" + token), drawn as a `bgo2` tile.
-    const tile = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/unlock?chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','Débloquer pour ${v.unlockCost}')" onmouseout="_.resetTip('miss_tip')">Débloquer pour ${v.unlockCost}
+    const tile = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/unlock?chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','${jsq(`Débloquer pour ${v.unlockCost}`)}')" onmouseout="_.resetTip('miss_tip')">Débloquer pour ${v.unlockCost}
 <img src="/img/token.png"/></a></div></div>
 `;
     return frame(1, html`
@@ -53,11 +53,11 @@ ${tile}${v.timer}`);
     const k = t.win ? "bwin" : "bdefeat";
     // UNVERIFIED: the tooltip of a lost try was never archived; the archived replay text is used.
     const text = t.win ? "Tu as remporté la mission du jour !" : "Ce combat s'est soldé par un échec !";
-    return html`<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.host, `/b/view/miss${t.n}`)}" class="b_bg ${k}_bg" onmouseover="_.showTip('miss_tip','${text}')" onmouseout="_.resetTip('miss_tip')"><img src="/img/${k}.gif"/></a></div></div>
+    return html`<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.host, `/b/view/miss${t.n}`)}" class="b_bg ${k}_bg" onmouseover="_.showTip('miss_tip','${jsq(text)}')" onmouseout="_.resetTip('miss_tip')"><img src="/img/${k}.gif"/></a></div></div>
 `;
   });
   // UNVERIFIED: tiles of the remaining tries and their tooltip ($GL "Il te reste N essais pour la mission du jour !").
-  const go = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/mission?n=${v.tries.length};chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','Il te reste ${left} essais pour la mission du jour !')" onmouseout="_.resetTip('miss_tip')"><img src="/img/bgo2.gif"/></a></div></div>
+  const go = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/mission?n=${v.tries.length};chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','${jsq(`Il te reste ${left} essais pour la mission du jour !`)}')" onmouseout="_.resetTip('miss_tip')"><img src="/img/bgo2.gif"/></a></div></div>
 `;
   const tiles = [...done, ...Array.from({ length: left }, () => go)];
   return frame(tiles.length, html`

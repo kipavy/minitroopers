@@ -181,6 +181,9 @@ for (const mode of MODES) {
     const hq = await (await get(env, cl, "/hq")).text();
     assert.equal(missionLinks(hq).length, 0);
     for (const n of [1, 2, 3]) assert.ok(hq.includes(`href="${loc(mode, `/b/view/miss${n}`)}" class="b_bg bdefeat_bg"`));
+    // the tooltip is a valid JS string: the apostrophe is escaped for JS, not only for HTML (which the browser decodes)
+    assert.ok(hq.includes(`onmouseover="_.showTip('miss_tip','Ce combat s\\'est soldé par un échec !')"`));
+    assert.ok(!hq.includes("s&#39;est soldé"));
     // first view of a defeat: failure message, back to the HQ, no button
     const page = await (await get(env, cl, "/b/view/miss2")).text();
     const dec = decodeBattleFlashvars(battleFlashvars(page));

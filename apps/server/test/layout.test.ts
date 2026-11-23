@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { loadConfig } from "../src/config.ts";
 import { openDb } from "../src/db.ts";
 import { createApp } from "../src/app.ts";
-import { html, raw, esc } from "../src/views/html.ts";
+import { html, jsq, raw, esc } from "../src/views/html.ts";
 import { layout, tip } from "../src/views/layout.ts";
 
 // sha256 of the original stylesheet (recon/assets/extra/site-elements/css/style.css of the work tree, not in the repository).
@@ -84,4 +84,9 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
   assert.equal((await app.request("/css/../../package.json")).status, 404);
   assert.equal((await app.request("/css/%2e%2e/%2e%2e/package.json")).status, 404);
   assert.equal((await app.request("/img/nope.png")).status, 404);
+});
+
+test("jsq: JS-escapes \\ ' and line breaks, then HTML-escapes &<>\" (safe in onmouseover=\"…('…')\")", () => {
+  assert.equal(jsq("s'est").value, "s\\'est");
+  assert.equal(jsq('a\\b\n<i>"&').value, "a\\\\b\\n&lt;i&gt;&quot;&amp;");
 });

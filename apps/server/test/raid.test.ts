@@ -284,6 +284,8 @@ for (const mode of MODES) {
     assert.equal(raidLinks(hq).length, 0);
     assert.ok(!hq.includes('class="b bgo"'));
     assert.ok(hq.includes(`<a href="${loc(mode, "/b/view/raid")}" class="b_bg bdefeat_bg"`));
+    assert.ok(hq.includes(`onmouseover="_.showTip('raid_tip','Ce combat s\\'est soldé par un échec !')"`));
+    assert.ok(!hq.includes("s&#39;est soldé"));
     assert.ok(hq.includes("Nouveau raid dans"));
     // replayed: nothing
     await get(env, cl, `/b/raid?phase=1;chk=${key}`);

@@ -4,7 +4,7 @@ import type { Config } from "../config.ts";
 import type { ArmyRow, DayBattle } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
-import { esc, html, raw, type Html } from "./html.ts";
+import { esc, html, jsq, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu } from "./panel.ts";
@@ -55,7 +55,7 @@ function tile(cfg: Config, v: HqView, i: number): Html {
   if (done) {
     const k = done.win ? "bwin" : "bdefeat";
     const text = done.win ? "Tu as remporté cette bataille !" : "Tu as perdu cette bataille !";
-    return html`<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.army.host, `/b/view/bat${done.n}`)}" class="b_bg ${k}_bg" onmouseover="_.showTip('bat_tip','${text}')" onmouseout="_.resetTip('bat_tip')"><img src="/img/${k}.gif"/></a></div></div>
+    return html`<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.army.host, `/b/view/bat${done.n}`)}" class="b_bg ${k}_bg" onmouseover="_.showTip('bat_tip','${jsq(text)}')" onmouseout="_.resetTip('bat_tip')"><img src="/img/${k}.gif"/></a></div></div>
 `;
   }
   return html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.army.host, "/b/opp")}" class="b_bg bgo2_bg" onmouseover="_.showTip('bat_tip','Lance une bataille !')" onmouseout="_.resetTip('bat_tip')"><img src="/img/bgo2.gif"/></a></div></div>
@@ -127,12 +127,12 @@ function raidBox(cfg: Config, v: HqView): Html {
     const text = r.lastWin ? "Tu as remporté le raid !" : "Ce combat s'est soldé par un échec !";
     return frame(1, html`
 ${rcount}
-<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.army.host, "/b/view/raid")}" class="b_bg ${k}_bg" onmouseover="_.showTip('raid_tip','${text}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/${k}.gif"/></a></div></div>
+<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.army.host, "/b/view/raid")}" class="b_bg ${k}_bg" onmouseover="_.showTip('raid_tip','${jsq(text)}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/${k}.gif"/></a></div></div>
 ${resetTimer(v.resetIn, "raid_tip", "Nouveau raid dans")}`);
   }
   return frame(1, html`
 ${rcount}
-<div class="b bgo"><div class="b_right bgo_right"><a href="${armyUrl(cfg, v.army.host, `/b/raid?phase=${r.phase};chk=${r.key}`)}" class="b_bg bgo_bg" onmouseover="_.showTip('raid_tip','Lancer un raid avec les ${r.alive} recrues encore vivantes !')" onmouseout="_.resetTip('raid_tip')"><img src="/img/bgo.gif"/></a></div></div>
+<div class="b bgo"><div class="b_right bgo_right"><a href="${armyUrl(cfg, v.army.host, `/b/raid?phase=${r.phase};chk=${r.key}`)}" class="b_bg bgo_bg" onmouseover="_.showTip('raid_tip','${jsq(`Lancer un raid avec les ${r.alive} recrues encore vivantes !`)}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/bgo.gif"/></a></div></div>
 <div class="hqtip"><img src="/img/info.png"/>
 <span id="raid_tip">Encore ${r.alive} recrues disponibles pour le raid !</span></div>
 `);
