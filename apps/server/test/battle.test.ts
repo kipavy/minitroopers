@@ -4,6 +4,7 @@ import { battleReward, dayKey } from "@mt/game";
 import { clientParams, gridData, simulateOutcome, type BattleInput } from "@mt/engine";
 import { armyByHost, createArmy, trooperInput, troopersOf } from "../src/repo.ts";
 import { MINI_SWF } from "../src/views/swf.ts";
+import { seedFactions } from "../src/admin/factions.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
 
@@ -109,6 +110,29 @@ for (const mode of MODES) {
     foe(env, "newcomer", "Newcomer", [{ seed: 7654321, name: "Al", choices: [0, 0] }]);
     const again = attackLinks(await (await get(env, cl, "/b/opp")).text());
     assert.deepEqual(again.map((l) => l.ref), links.map((l) => l.ref));
+  });
+
+  test(`[${mode}] /b/opp with the seeded factions: a new army gets fillers, factions only near its power`, async () => {
+    const env = setup(mode);
+    seedFactions(env.db, env.clock.t);
+    const factionIds = env.db.prepare("SELECT id FROM armies WHERE is_faction = 1").all().map((r) => String(r.id));
+    assert.equal(factionIds.length, 6);
+    const { cl } = await warp(env); // power 5
+    const near = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob", choices: [0, 0] }]); // power 7
+    const refs = attackLinks(await (await get(env, cl, "/b/opp")).text()).map((l) => l.ref);
+    assert.equal(refs.length, 5);
+    assert.ok(refs.includes(String(near)), "a real army of comparable power is listed");
+    assert.equal(refs.filter((r) => r.startsWith("filler:")).length, 4, "the far factions leave their slots to fillers");
+    assert.ok(!refs.some((r) => factionIds.includes(r)));
+    // a strong army (power 105) is within the bound of the factions (114): they are listed
+    const strong = setup(mode);
+    seedFactions(strong.db, strong.clock.t);
+    const ids = strong.db.prepare("SELECT id FROM armies WHERE is_faction = 1").all().map((r) => String(r.id));
+    const w = await warp(strong);
+    strong.db.prepare("UPDATE troopers SET choices = ? WHERE army_id = ?").run(JSON.stringify(new Array(100).fill(0)), w.id);
+    const strongRefs = attackLinks(await (await get(strong, w.cl, "/b/opp")).text()).map((l) => l.ref);
+    assert.equal(strongRefs.length, 5);
+    assert.ok(strongRefs.every((r) => ids.includes(r)), "the factions are of comparable power");
   });
 
   test(`[${mode}] attack: one battle stored, reward credited, replay page decodes to the stored input`, async () => {

@@ -97,11 +97,24 @@ test("pickOpponents: prefers the closest power", () => {
   assert.deepEqual(ids, ["a1", "a2", "a3", "a4", "a5"]);
 });
 
-test("pickOpponents: widens the window progressively", () => {
+test("pickOpponents: widens the window progressively, up to +-50 % of the own power", () => {
   const self = real(0, 100);
   const candidates = [real(1, 102), real(2, 98), real(3, 150), real(4, 60), real(5, 300), real(6, 900)];
   const out = pickOpponents({ self, candidates, ...base });
-  assert.deepEqual(out.map((x) => x.id).sort(), ["a1", "a2", "a3", "a4", "a5"]); // 900 is farthest, left out
+  // 150 and 60 are reached by widening; 300 and 900 are beyond the bound: fillers take their slots
+  assert.deepEqual(out.filter((x) => !x.isFiller).map((x) => x.id).sort(), ["a1", "a2", "a3", "a4"]);
+  assert.equal(out.filter((x) => x.isFiller).length, 1);
+});
+
+test("pickOpponents: real armies far from the own power are never picked (seeded factions vs a new army)", () => {
+  const factions = Array.from({ length: 6 }, (_, i) => real(100 + i, 114));
+  const fresh = pickOpponents({ self: real(0, 5), candidates: factions, ...base });
+  assert.equal(fresh.length, 5);
+  assert.ok(fresh.every((x) => x.isFiller), "a power-5 army only gets fillers");
+  const near = pickOpponents({ self: real(0, 5), candidates: [...factions, real(1, 8), real(2, 10), real(3, 11)], ...base });
+  assert.deepEqual(near.filter((x) => !x.isFiller).map((x) => x.id).sort(), ["a1", "a2"]); // bound max(5, 10) * 50 % = 5 -> 0..10
+  const strong = pickOpponents({ self: real(0, 100), candidates: factions, ...base });
+  assert.equal(strong.filter((x) => !x.isFiller).length, 5); // 114 is within 100 +- 50
 });
 
 test("pickOpponents: real armies first, completed with fillers", () => {
