@@ -5,6 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
+import { inflateSync } from "node:zlib";
 import { armyByHost } from "../src/repo.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 
@@ -119,3 +120,50 @@ for (const mode of MODES) {
     }
   });
 }
+
+/** Pixels (premultiplied ARGB, 4 bytes each) of the DefineBitsLossless2 tags of a CWS SWF, by character id. */
+function swfBitmaps(swf: Buffer): Map<number, { width: number; height: number; argb: Buffer }> {
+  assert.equal(swf.toString("latin1", 0, 3), "CWS");
+  const body = inflateSync(swf.subarray(8));
+  let o = Math.ceil((5 + 4 * (body[0]! >> 3)) / 8) + 4;
+  const out = new Map<number, { width: number; height: number; argb: Buffer }>();
+  while (o < body.length) {
+    const head = body.readUInt16LE(o);
+    let len = head & 63;
+    o += 2;
+    if (len === 63) {
+      len = body.readUInt32LE(o);
+      o += 4;
+    }
+    const d = body.subarray(o, o + len);
+    if (head >> 6 === 36 && d[2] === 5) out.set(d.readUInt16LE(0), { width: d.readUInt16LE(3), height: d.readUInt16LE(5), argb: inflateSync(d.subarray(7)) });
+    o += len;
+    if (head >> 6 === 0) break;
+  }
+  return out;
+}
+
+// The original makes the opaque white of bitmaps 17 (status icons of the trooper cards) and 19 (arrows) transparent at
+// startup with BitmapData.threshold(); the pinned Ruffle (a111ceec) stores that colour unpremultiplied and draws it
+// white (fixed upstream by 1d2b894), so client_fr_play.swf ships them already transparent
+// (tools/oracle/instrument/patch-play-bitmaps.mjs).
+test("client_fr_play.swf: bitmaps 17 and 19 have no opaque-white pixel; the served copy is assets/swf's", () => {
+  const swf = readFileSync(join(PUBLIC, "swf/client_fr_play.swf"));
+  assert.ok(swf.equals(readFileSync(resolve(import.meta.dirname, "../../../assets/swf/client_fr_play.swf"))));
+  const bitmaps = swfBitmaps(swf);
+  for (const [id, size] of [[17, 160], [19, 64]] as const) {
+    const b = bitmaps.get(id);
+    assert.ok(b, `bitmap ${id}`);
+    assert.deepEqual([b.width, b.height], [size, size]);
+    let white = 0;
+    let clear = 0;
+    for (let i = 0; i < b.argb.length; i += 4) {
+      const p = b.argb.readUInt32BE(i);
+      if (p === 0xffffffff) white++;
+      if (p === 0) clear++;
+    }
+    assert.equal(white, 0, `bitmap ${id}: opaque-white pixels`);
+    assert.equal(b.argb.readUInt32BE(0), 0, `bitmap ${id}: corner pixel transparent`);
+    assert.ok(clear > b.width * b.height / 2, `bitmap ${id}: background transparent`);
+  }
+});

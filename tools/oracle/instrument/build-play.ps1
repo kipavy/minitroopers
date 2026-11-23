@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-  Builds assets/swf/client_fr_play.swf: client_fr.swf with ONLY the chk check bypassed.
+  Builds assets/swf/client_fr_play.swf: client_fr.swf with ONLY the chk check bypassed, plus
+  bitmaps 17/19 made transparent ahead of the original's threshold() (patch-play-bitmaps.mjs, data only).
 
 .DESCRIPTION
   The original refuses its `data` flashvar unless `chk` equals a home-made hash the server

@@ -418,8 +418,8 @@ SWF servi aux navigateurs pour tous les éléments Flash du site (combats, fiche
 `client_fr.swf` (même source vérifiée par SHA-256) dont **une seule branche** est modifiée, celle du
 contrôle d'intégrité `chk` de `Main._rsq` (`if (hash(data) != chk) return;`, voir `PC_MAIN` ci-dessus).
 Le hash est un algorithme maison exécuté par un interpréteur embarqué que le serveur ne peut pas
-calculer : l'original n'affiche rien sans un `chk` valide. Aucun helper de trace, aucune autre
-modification.
+calculer : l'original n'affiche rien sans un `chk` valide. Aucun helper de trace ; seule autre
+modification, des **données d'image** (aucun code) : voir « Icônes transparentes » ci-dessous.
 
 - Construction : `build-play.ps1` (appelle `build.ps1 -Play`, mêmes outils, même `-replace` P-code ;
   `-WorkDir` par défaut `..\minitroopers-work\oracle-build-play`, `-Verify` liste les différences P-code).
@@ -428,6 +428,27 @@ modification.
   `ifeq` saute vers l'instruction suivante dans les deux cas, donc **tout `chk` (ou aucun) est accepté**
   (le serveur envoie `chk=play`, cf. `clientParams` du moteur).
 - Résultat : `client_fr_play.swf` + `.sha256`, reproductible (deux builds donnent le même SHA-256).
+
+### Icônes transparentes (bitmaps 17 et 19, bogue de Ruffle a111ceec)
+
+Au démarrage, l'original rend transparent le blanc opaque de deux bitmaps (classe décompilée `§$9Y\x01§`) :
+`bmp.threshold(bmp, bmp.rect, new Point(0,0), "==", -1, 0x00FFFFFF)` sur le DefineBitsLossless2 **17**
+(160×160, icônes d'état 16×16 de la colonne gauche des cartes de trooper : gilet, etc.) et **19** (64×64, flèches).
+Le Ruffle épinglé (nightly 2025.7.28, `a111ceec`, même cœur que l'oracle) écrit la couleur de `threshold` **sans la
+prémultiplier** (`core/src/bitmap/operations.rs` : `set_pixel32_raw(…, Color::from(colour))`) : 0x00FFFFFF est
+stocké alpha 0 avec RVB 255, que le mélange prémultiplié dessine en **blanc** (carré blanc derrière l'icône).
+Corrigé en amont par ruffle-rs/ruffle `1d2b894` (2025-11-06, `to_premultiplied_alpha(true)`), après notre épingle.
+
+`patch-play-bitmaps.mjs` (Node, sans dépendance, appelé par `build.ps1 -Play` après le `-replace`) applique ce même
+seuil à l'avance : les pixels ARGB exactement 0xFFFFFFFF de ces deux bitmaps deviennent 0x00000000 (ce que Flash Player
+stocke après le `threshold`), soit 21 560 pixels pour 17 et 3 583 pour 19 ; le `threshold` d'exécution ne trouve plus
+rien. Seules les données zlib de ces deux balises changent, les autres balises sont recopiées octet pour octet ;
+idempotent (relancé sur `client_fr_play.swf`, il redonne le même fichier) :
+`node tools/oracle/instrument/patch-play-bitmaps.mjs assets/swf/client_fr_play.swf <sortie>`.
+SHA-256 : avant (chk seul) `0b22159735b96b721516957851487db23a69c393831b59b1549c10c89df37409`, après
+`294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856b`. Copie servie : `apps/server/public/swf/client_fr_play.swf`
+(identique, vérifié avec les bitmaps par `apps/server/test/assets.test.ts`). L'oracle (`client_fr_trace.swf`) n'est pas
+concerné : il ne dessine pas ces icônes et garde son propre SWF.
 - Innocuité (`build-play.ps1 -Verify`) : un seul fichier P-code diffère sur 290,
   `§,7u\x1f§` (Main) ; hors renumérotation des labels de saut (`ofs0081` → `ofs0080`, `ofs00f0` → `ofs00ef`,
   conséquence du retrait d'une instruction d'un octet), le diff est exactement :

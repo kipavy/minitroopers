@@ -166,6 +166,12 @@ New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 Invoke-FFDec @("-importScript", $Step1, $Out, $Import)
 }
+# 4b. -Play only: bitmaps 17/19 made transparent ahead of the original's threshold() (Ruffle a111ceec draws them
+#     white; README "client_fr_play.swf"). Bitmap data only, no code.
+if ($Play) {
+  & node (Join-Path $PSScriptRoot "patch-play-bitmaps.mjs") $Out $Out
+  if ($LASTEXITCODE -ne 0) { throw "patch-play-bitmaps.mjs failed" }
+}
 
 # 5. hash
 $hash = Get-Sha256 $Out
