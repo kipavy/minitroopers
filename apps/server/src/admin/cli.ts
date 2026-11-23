@@ -3,19 +3,19 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import type { DatabaseSync } from "node:sqlite";
-import { Rand, SKILLS, armyPower, choiceIndexForSkill, defaultLeftOver, describeTrooper, levelUpOptions } from "@mt/engine";
+import { Rand, SKILLS, armyPower, describeTrooper, levelUpOptions } from "@mt/engine";
 import { FACTIONS, MISSION_ATTEMPTS, RATS_MAX, battleAllowance, dayKey, host as hostOf, referralBounty, seedsOffering, trooperName } from "@mt/game";
 import { loadConfig, resolveDataDir, type Config } from "../config.ts";
 import { openDb } from "../db.ts";
 import { hashPassword } from "../password.ts";
 import {
   addCredits, armyByHost, armyById, armyFootprint, armySummaries, battlesCounted, battlesUsed, confirmRecruits, confirmedRecruitCount, deleteArmy, grantLevelUp,
-  insertArmy, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, setPassword, storedDeployOrder, troopersOf, trooperInput,
+  insertArmy, levelUpTo, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, setPassword, storedDeployOrder, troopersOf, trooperInput,
   type ArmyRow,
 } from "../repo.ts";
-import { armyUrl, isValidHost } from "../urls.ts";
+import { isValidHost } from "../urls.ts";
 import { checkArmyName } from "../validate.ts";
-import { armyTitle } from "../views/army.ts";
+import { absoluteArmyUrl, armyTitle } from "../views/army.ts";
 import { MAX_TROOPERS } from "../views/panel.ts";
 import { SpecError, buildTroopers, label, skillId } from "./army.ts";
 import { seedFactions } from "./factions.ts";
@@ -252,12 +252,6 @@ function dayArg(cfg: Config, v: string | undefined): string {
   return v;
 }
 
-/** Absolute address of an army's home page (path mode: under PUBLIC_URL). */
-const homeUrl = (cfg: Config, host: string): string => {
-  const u = armyUrl(cfg, host, "/");
-  return u.startsWith("/") ? `${cfg.publicUrl}${u}` : u;
-};
-
 /** The day's quotas of an army, as `show` and `reset-day` print them. */
 function dayLines(db: DatabaseSync, a: ArmyRow, day: string): string[] {
   const used = battlesUsed(db, a.id, day);
@@ -278,7 +272,7 @@ function show(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): string {
   const order = storedDeployOrder(db, a.id);
   return [
     `Armée ${a.id} : ${a.host} — ${armyTitle(a.name, a.part)}`,
-    `Adresse : ${homeUrl(cfg, a.host)}`,
+    `Adresse : ${absoluteArmyUrl(cfg, a.host, "/")}`,
     `Faction : ${a.faction}${a.isFaction ? " (armée de faction)" : ""}`,
     `Crédits : ${a.credits}`,
     `Puissance : ${armyPower(rows.map(trooperInput))}`,
@@ -338,7 +332,7 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
     const v = checkArmyName(name, String(a.part));
     if (!v.ok) throw new UsageError(`--name : ${v.error}`);
     if (!renameArmy(db, a.id, v.name, v.host)) throw new UsageError(`${v.host} existe déjà`);
-    return `${a.host} → ${v.host} (${armyTitle(v.name, v.part)}) : ${homeUrl(cfg, v.host)}`;
+    return `${a.host} → ${v.host} (${armyTitle(v.name, v.part)}) : ${absoluteArmyUrl(cfg, v.host, "/")}`;
   }
 
   if (cmd === "level-up") {
@@ -347,14 +341,9 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
     if (given === undefined) throw new UsageError("--skill est obligatoire");
     const skill = skillId(/^[0-9]{1,4}$/.test(given) ? Number(given) : given, "--skill");
     const r = grantLevelUp(db, a.id, slot, (t) => {
-      const input = trooperInput(t);
-      const o = levelUpOptions(input);
-      if (o.shown.length === 0) return `${t.name} ne peut plus monter de niveau`;
-      const idx = choiceIndexForSkill(input, skill); // null unless `skill` is one of the options shown (as /levelup)
-      if (idx === null) return `${label(skill)} n'est pas proposée ; proposées : ${o.shown.map(label).join(", ")}`;
-      const choices = [...t.choices, idx];
-      const left = defaultLeftOver({ ...input, choices, pref: t.pref });
-      return { choices, leftOver: left.length > 0 || t.leftOver !== null ? left : null, notice: { trooper: t.name, level: choices.length + 1, skill } };
+      const shown = levelUpOptions(trooperInput(t)).shown;
+      if (shown.length === 0) return `${t.name} ne peut plus monter de niveau`;
+      return levelUpTo(t, skill) ?? `${label(skill)} n'est pas proposée ; proposées : ${shown.map(label).join(", ")}`;
     });
     if (r === "gone") throw new UsageError(`trooper introuvable : emplacement ${slot}`);
     if (r === "pending") throw new UsageError("une montée de niveau payée attend son choix sur le site : refus");

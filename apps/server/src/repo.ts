@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
 import { FACTIONS, battleAllowance, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
-import { Data, armyPower, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
+import { Data, armyPower, choiceIndexForSkill, defaultLeftOver, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
 
@@ -319,6 +319,30 @@ export interface LevelUpDone {
 }
 
 /**
+ * The level-up of `t` picking `skill`, as the web choice (/levelup) and the admin `level-up` apply it: null unless
+ * `skill` is one of the options the game shows at this level. The new skill may be equipment beyond the carry capacity:
+ * what is left over is recomputed (kept set = pref.selectedItems). The notice is the HQ level-up popup.
+ */
+export function levelUpTo(t: TrooperRow, skill: number): LevelUpDone | null {
+  const input = trooperInput(t);
+  const idx = choiceIndexForSkill(input, skill);
+  if (idx === null) return null;
+  const choices = [...t.choices, idx];
+  const left = defaultLeftOver({ ...input, choices, pref: t.pref });
+  return { choices, leftOver: left.length > 0 || t.leftOver !== null ? left : null, notice: { trooper: t.name, level: choices.length + 1, skill } };
+}
+
+/** Writes a level-up (and clears any pending mark) with its notice; call inside the transaction. */
+function writeLevelUp(db: DatabaseSync, armyId: number, t: TrooperRow, d: LevelUpDone): void {
+  db.prepare("UPDATE troopers SET choices = ?, pending_levelup = NULL, left_over = COALESCE(?, left_over) WHERE id = ?").run(
+    JSON.stringify(d.choices),
+    d.leftOver === null ? null : JSON.stringify(d.leftOver),
+    t.id,
+  );
+  addNotice(db, armyId, d.notice);
+}
+
+/**
  * Applies the choice of a paid level-up. `decide` sees the trooper as stored (with its pending mark) and returns
  * the new state, or null to refuse. The pending mark is cleared in the same statement, so a replay finds "none".
  */
@@ -329,12 +353,7 @@ export function finishLevelUp(db: DatabaseSync, armyId: number, slot: number, de
     if (!t || t.pendingLevelup !== String(t.choices.length)) return null;
     const d = decide(t);
     if (!d) return (out = "bad"), null;
-    db.prepare("UPDATE troopers SET choices = ?, pending_levelup = NULL, left_over = COALESCE(?, left_over) WHERE id = ?").run(
-      JSON.stringify(d.choices),
-      d.leftOver === null ? null : JSON.stringify(d.leftOver),
-      t.id,
-    );
-    addNotice(db, armyId, d.notice);
+    writeLevelUp(db, armyId, t, d);
     return (out = "done");
   });
   return out;
@@ -688,8 +707,7 @@ export function grantLevelUp(db: DatabaseSync, armyId: number, slot: number, dec
     if (t.pendingLevelup !== null) return (out = "pending"), null;
     const d = decide(t);
     if (typeof d === "string") return (out = d), null;
-    db.prepare("UPDATE troopers SET choices = ?, left_over = COALESCE(?, left_over) WHERE id = ?").run(JSON.stringify(d.choices), d.leftOver === null ? null : JSON.stringify(d.leftOver), t.id);
-    addNotice(db, armyId, d.notice);
+    writeLevelUp(db, armyId, t, d);
     return (out = trooperBySlot(db, armyId, slot)!);
   });
   return out;

@@ -78,7 +78,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `set-credits --army <x> --amount <N>` | fixe les crédits à N (≥ 0) |
 | `set-rats --army <x> --rats <1-100>` | rats de la prochaine extermination |
 | `unlock-missions --army <x> [--lock]` | débloque les missions sans les faire payer ; `--lock` les verrouille à nouveau |
-| `rename --army <x> --name <nouveau nom>` | renomme l'armée (règles de la création, article conservé) ; refuse un hôte déjà pris ; les sessions restent ouvertes, la nouvelle adresse est affichée (en mode sous-domaines, l'adresse change avec l'hôte) |
+| `rename --army <x> --name <nouveau nom>` | renomme l'armée (règles de la création, article conservé) ; refuse un hôte déjà pris ; les sessions restent ouvertes, la nouvelle adresse est affichée (en mode sous-domaines, l'adresse change avec l'hôte). Une attaque par nom (« ami ») rejouée après le renommage de son défenseur ne combat pas : déjà jouée, elle montre le combat qu'elle a produit ; jamais jouée, l'ancien nom n'existe plus (`/b/opp?err=missing`) |
 | `level-up --army <x> --slot <N> --skill <NOM \| id>` | une montée de niveau gratuite du trooper de l'emplacement N, avec cette compétence seulement si le jeu la propose à ce niveau (sinon : liste des compétences proposées) ; refusée si une montée payée attend son choix |
 | `confirm-recruits --army <x>` | confirme les recrues en attente et crédite leurs primes, exactement comme l'ouverture de `/history` |
 | `delete-army --army <x> [--yes]` | supprime l'armée, ses troopers et les combats qu'elle a lancés (ses défenses restent chez leurs attaquants, ses recrues perdent leur recruteur) ; sans `--yes`, affiche seulement ce qui serait supprimé et sort avec le code 1 |
@@ -129,8 +129,8 @@ rejouent à l'identique, et leurs numéros (`/b/view/bat<n>`, `/b/view/miss<n>`)
 zéro enregistre ce qui était déjà utilisé (`daily.battles_reset`, `missions_reset`, `raid_reset`, migration
 007) et les quotas comptent à partir de là :
 
-- `battles` : la limite du jour compte de nouveau depuis les batailles déjà jouées, soit une journée complète de
-  batailles en plus ; la page QG n'affiche plus que les batailles jouées depuis ;
+- `battles` : toutes les batailles du jour sont rendues (la limite complète du jour, de nouveau), comptées à partir
+  des batailles déjà jouées ; la page QG n'affiche plus que les batailles jouées depuis ;
 - `mission` : la même mission (type et adversaire gelés) retrouve tous ses essais et n'est plus gagnée ;
 - `raid` : phase 1 avec toutes les recrues vivantes ; le compteur du lien (`/b/raid?phase=`) passe à une valeur
   jamais utilisée, la phase jouée étant ce compteur moins `raid_reset` ;

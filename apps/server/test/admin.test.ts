@@ -478,7 +478,7 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     assert.equal(armyById(db, a.id)!.credits, 42);
     // a recruit to confirm, a battle and mission state to reset
     db.prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, recruiter_id) VALUES ('recrue','Recrue',0,0,0,1,?)").run(a.id);
-    const today = dayKey(new Date(), "Europe/Paris");
+    const today = "2026-01-15"; // explicit --day below: never flaky around midnight
     db.prepare("INSERT INTO battles(day, attacker_id, input, winner) VALUES (?, ?, '{}', 0)").run(today, a.id);
     db.prepare("INSERT INTO daily(army_id, day, missions_used, mission_won, mission_type) VALUES (?, ?, 1, 1, 'epic')").run(a.id, today);
     db.close();
@@ -489,15 +489,15 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     assert.match(cr.stdout, /1 recrue\(s\) confirmée\(s\), \+100 crédits/);
     assert.match(cli(dir, "confirm-recruits", "--army", "rats-morts").stdout, /0 recrue\(s\) confirmée\(s\), \+0 crédits/);
 
-    assert.match(cli(dir, "show", "--army", "rats-morts").stdout, /Batailles : 1\/\d+/);
+    assert.match(cli(dir, "show", "--army", "rats-morts", "--day", today).stdout, /Batailles : 1\/\d+/);
     err(cli(dir, "reset-day", "--army", "rats-morts", "--what", "tout"), /--what/);
     err(cli(dir, "reset-day", "--army", "rats-morts", "--day", "2026-02-30"), /--day/);
     err(cli(dir, "reset-day", "--army", fac), /faction/);
-    const rd = cli(dir, "reset-day", "--army", "rats-morts", "--what", "battles");
+    const rd = cli(dir, "reset-day", "--army", "rats-morts", "--day", today, "--what", "battles");
     assert.equal(rd.status, 0, rd.stderr);
     assert.match(rd.stdout, /Batailles : 0\//);
     assert.match(rd.stdout, /Mission : epic, essais 1\/3, gagnée : oui/);
-    assert.match(cli(dir, "reset-day", "--army", "rats-morts").stdout, /Mission : epic, essais 0\/3, gagnée : non/);
+    assert.match(cli(dir, "reset-day", "--army", "rats-morts", "--day", today).stdout, /Mission : epic, essais 0\/3, gagnée : non/);
     db = openDb(join(dir, "minitroopers.db"));
     assert.equal((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE attacker_id = ?").get(a.id) as { n: number }).n, 1);
     db.close();
