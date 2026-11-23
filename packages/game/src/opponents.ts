@@ -19,8 +19,9 @@ const MAX_WINDOW = 0.5;
  * window 10 % of the own power, doubled until 5 are found but capped at ±50 % (a real army farther than that is never picked,
  * fillers take the slots), order inside a window by hash(day|clientId|id), fillers within ±20 %.
  */
-export function pickOpponents(p: { self: ArmyRef; candidates: ArmyRef[]; day: string; clientId: string }): ArmyRef[] {
-  const key = (id: string): number => fnv1a(`${p.day}|${p.clientId}|${id}`);
+export function pickOpponents(p: { self: ArmyRef; candidates: ArmyRef[]; day: string; clientId: string; salt?: string }): ArmyRef[] {
+  // `salt` (admin reset-day): another draw for the same day; absent, the original derivation.
+  const key = (id: string): number => fnv1a(p.salt ? `${p.day}|${p.clientId}|${p.salt}|${id}` : `${p.day}|${p.clientId}|${id}`);
   const seen = new Set<string>([p.self.id]);
   const pool: ArmyRef[] = [];
   for (const c of p.candidates) {

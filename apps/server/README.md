@@ -130,7 +130,11 @@ zéro enregistre ce qui était déjà utilisé (`daily.battles_reset`, `missions
 007) et les quotas comptent à partir de là :
 
 - `battles` : toutes les batailles du jour sont rendues (la limite complète du jour, de nouveau), comptées à partir
-  des batailles déjà jouées ; la page QG n'affiche plus que les batailles jouées depuis ;
+  des batailles déjà jouées ; la page QG n'affiche plus que les batailles jouées depuis. Les adversaires du jour
+  (figés dans `daily.opponents` à la première visite de `/b/opp`) sont effacés et **retirés** à la visite suivante :
+  `daily.opponents_reset` (migration 008) change le tirage, et un adversaire de l'ancien tirage n'est plus attaquable.
+  Selon les armées existantes, les vraies armées de puissance proche peuvent revenir ; l'ordre et les armées
+  générées changent ;
 - `mission` : la même mission (type et adversaire gelés) retrouve tous ses essais et n'est plus gagnée ;
 - `raid` : phase 1 avec toutes les recrues vivantes ; le compteur du lien (`/b/raid?phase=`) passe à une valeur
   jamais utilisée, la phase jouée étant ce compteur moins `raid_reset` ;
@@ -142,7 +146,7 @@ zéro enregistre ce qui était déjà utilisé (`daily.battles_reset`, `missions
 
 Les liens d'action portent ces compteurs qui ne font que croître : un lien émis avant la remise à zéro (onglet
 resté ouvert, rechargement) ne correspond à aucun nouveau combat et ne rejoue rien, il affiche le combat qu'il
-avait produit ou renvoie au QG. Relancer `reset-day` sans nouveau combat ne change rien, sauf pour la boutique.
+avait produit ou renvoie au QG. Relancer `reset-day` sans nouveau combat ne change rien, sauf les tirages (adversaires, boutique).
 
 Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
 l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :
