@@ -18,7 +18,7 @@ import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
-import { ownedArmy } from "./owner.ts";
+import { ownedArmy, viewDay } from "./owner.ts";
 
 // UNVERIFIED: the original battle seed range is unknown (same range as the daily battles).
 const SEED_MAX = 0x40000000;
@@ -132,8 +132,8 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     const day = today();
     freezeMissionType(db, o.army.id, day, () => missionTypeOf(db, o.army.id, day));
     const r = fightMission(db, { armyId: o.army.id, day, used, decide: () => decide(o.army.id, day) });
-    if (r.ok) return to(`/b/view/miss${r.n}`);
-    if (r.reason === "stale" && used >= 0 && used < r.used) return to(`/b/view/miss${used + 1}`);
+    if (r.ok) return to(`/b/view/miss${r.n}?d=${day}`);
+    if (r.reason === "stale" && used >= 0 && used < r.used) return to(`/b/view/miss${used + 1}?d=${day}`);
     return to("/hq");
   });
 
@@ -145,7 +145,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
   pages.get("/b/view/:m{miss[0-9]{1,2}}", (c: Context<Env>) => {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
-    const b = modeBattleOfDay(db, o.army.id, today(), "mission", Number(c.req.param("m")!.slice(4)));
+    const b = modeBattleOfDay(db, o.army.id, viewDay(c, today()), "mission", Number(c.req.param("m")!.slice(4)));
     const hq = armyUrl(cfg, o.army.host, "/hq");
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);

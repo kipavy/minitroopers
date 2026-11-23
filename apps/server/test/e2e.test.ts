@@ -300,7 +300,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await pa.goto(at("bidasses", "/hq"));
       await Promise.all([pa.waitForURL(at("bidasses", "/hq")), pa.click('a[href*="/b/unlock?chk="]')]);
       assert.equal(armyOf("bidasses")!.credits, 100 - MISSION_UNLOCK_COST);
-      await Promise.all([pa.waitForURL(at("bidasses", "/b/view/miss1")), pa.click('a[href*="/b/mission?n=0;chk="]')]);
+      await Promise.all([pa.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/miss1?d="))), pa.click('a[href*="/b/mission?n=0;chk="]')]);
       const m = db.prepare("SELECT input, winner, mode FROM battles WHERE attacker_id = ? AND kind = 'mission'").get(a.id) as { input: string; winner: number | null; mode: string };
       assert.ok(["exterminate", "infiltrate", "epic"].includes(m.mode), `mission type ${m.mode}`);
       const mWon = m.winner !== null && m.winner === (JSON.parse(m.input) as BattleInput).attackerSide;
@@ -311,7 +311,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
 
       // 5. A raids with B (phase 1)
       await pa.goto(at("bidasses", "/hq"));
-      await Promise.all([pa.waitForURL(at("bidasses", "/b/view/raid")), pa.click('a[href*="/b/raid?phase=1;chk="]')]);
+      await Promise.all([pa.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/raid?d="))), pa.click('a[href*="/b/raid?phase=1;chk="]')]);
       const r = db.prepare("SELECT input, winner, phase FROM battles WHERE attacker_id = ? AND kind = 'raid'").get(a.id) as { input: string; winner: number | null; phase: number };
       assert.equal(r.phase, 1);
       const rInput = JSON.parse(r.input) as BattleInput;

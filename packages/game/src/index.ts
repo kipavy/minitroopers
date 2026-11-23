@@ -1,4 +1,4 @@
-export { dayKey, nextResetAt } from "./day.ts";
+export { dayKey, nextResetAt, prevDay } from "./day.ts";
 export { host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
 export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";

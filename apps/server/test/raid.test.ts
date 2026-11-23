@@ -167,6 +167,26 @@ for (const mode of MODES) {
     assert.equal((await get(env, cl, "/b/view/raid")).headers.get("location"), loc(mode, "/hq"));
   });
 
+  test(`[${mode}] a raid at 23:59:59 is still shown (first view, once) after midnight; ?d= only today/yesterday`, async () => {
+    const env = setup(mode);
+    env.clock.t = Date.parse("2026-11-23T22:59:59Z"); // 23:59:59 in Paris (UTC+1)
+    const { cl, key, id } = await warp(env);
+    recruit(env, id, "weak", 1, 7);
+    const r = await get(env, cl, `/b/raid?phase=1;chk=${key}`);
+    assert.equal(r.headers.get("location"), loc(mode, "/b/view/raid?d=2026-11-23"));
+    env.clock.t += 2000; // 00:00:01, the next day
+    assert.equal(today(env), "2026-11-24");
+    const page = await get(env, cl, "/b/view/raid?d=2026-11-23");
+    assert.equal(page.status, 200);
+    const first = await page.text();
+    assert.deepEqual(decodeBattleFlashvars(battleFlashvars(first)).input, JSON.parse(raids(env, id)[0]!.input));
+    assert.ok(!first.includes("Retour</a>"), "first view: no button");
+    assert.ok((await (await get(env, cl, "/b/view/raid?d=2026-11-23")).text()).includes("Retour</a>"), "single-shot first view");
+    for (const q of ["", "?d=2026-11-22", "?d=2026-11-25", "?d=junk"]) {
+      assert.equal((await get(env, cl, `/b/view/raid${q}`)).headers.get("location"), loc(mode, "/hq"), q);
+    }
+  });
+
   test(`[${mode}] recruits of levels 3, 1, 2 attack in level order against the phase-1 NPC army (power 11)`, async () => {
     const env = setup(mode);
     const { cl, key, id, faction } = await warp(env);
@@ -182,7 +202,7 @@ for (const mode of MODES) {
     assert.deepEqual(raidLinks(hq), [{ phase: 1, key }]);
     const r = await get(env, cl, `/b/raid?phase=1;chk=${key}`);
     assert.equal(r.status, 302);
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/raid"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/raid?d=${today(env)}`));
     const [row] = raids(env, id);
     assert.ok(row);
     assert.equal(row.phase, 1);
@@ -205,7 +225,7 @@ for (const mode of MODES) {
     const { cl, key, id } = await warp(env);
     const recs = [recruit(env, id, "weak", 1, 7), recruit(env, id, "hero", STRONG, 1_000_000), recruit(env, id, "hera", STRONG, 1_007_919)];
     const r = await get(env, cl, `/b/raid?phase=1;chk=${key}`);
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/raid"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/raid?d=${today(env)}`));
     const [row] = raids(env, id);
     assert.ok(won(row!), "two level-21 recruits beat power 11");
     assert.equal(credits(env, id), 104);
@@ -234,7 +254,7 @@ for (const mode of MODES) {
     assert.ok(hq.includes(`Encore ${alive} recrues disponibles pour le raid !`));
     // the phase-1 URL replayed: no battle, the raid it made
     const again = await get(env, cl, `/b/raid?phase=1;chk=${key}`);
-    assert.equal(again.headers.get("location"), loc(mode, "/b/view/raid"));
+    assert.equal(again.headers.get("location"), loc(mode, `/b/view/raid?d=${today(env)}`));
     assert.equal(raids(env, id).length, 1);
     assert.equal(credits(env, id), 104);
     // phase 2: without the dead
@@ -269,7 +289,7 @@ for (const mode of MODES) {
     const { cl, key, id } = await warp(env);
     const weak = recruit(env, id, "weak", 1, 7);
     const r = await get(env, cl, `/b/raid?phase=1;chk=${key}`);
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/raid"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/raid?d=${today(env)}`));
     const [row] = raids(env, id);
     assert.ok(!won(row!), "a lone level-1 recruit loses against power 11");
     assert.equal(credits(env, id), 100);
@@ -309,7 +329,7 @@ for (const mode of MODES) {
     await get(env, cl, "/b/raid?phase=1;chk=XXXXXX");
     assert.equal(raids(env, id).length, 0);
     const all = await Promise.all(Array.from({ length: 5 }, () => get(env, cl, `/b/raid?phase=1;chk=${key}`)));
-    assert.ok(all.every((r) => r.headers.get("location") === loc(mode, "/b/view/raid")));
+    assert.ok(all.every((r) => r.headers.get("location") === loc(mode, `/b/view/raid?d=${today(env)}`)));
     assert.equal(raids(env, id).length, 1);
   });
 }

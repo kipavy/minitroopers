@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Rand } from "@mt/engine";
 import {
-  dayKey, nextResetAt, host, validateArmyName, dailyOffers, trooperName,
+  dayKey, nextResetAt, prevDay, host, validateArmyName, dailyOffers, trooperName,
   battlesPerDay, battleReward, referralBounty, STARTING_CREDITS,
 } from "../src/index.ts";
 
@@ -99,6 +99,13 @@ test("economy", () => {
   assert.equal(battleReward(true), 2);
   assert.equal(battleReward(false), 1);
   assert.equal(STARTING_CREDITS, 0);
+});
+
+test("prevDay: the calendar day before a day key (month, year, leap day)", () => {
+  assert.equal(prevDay("2026-11-24"), "2026-11-23");
+  assert.equal(prevDay("2026-03-01"), "2026-02-28");
+  assert.equal(prevDay("2028-03-01"), "2028-02-29");
+  assert.equal(prevDay("2027-01-01"), "2026-12-31");
 });
 
 test("dayKey / nextResetAt Europe/Paris", () => {

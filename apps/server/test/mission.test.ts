@@ -151,6 +151,35 @@ for (const mode of MODES) {
     assert.ok((await (await get(poor, p.cl, "/hq")).text()).includes("Pas assez d&#39;argent pour débloquer la mission."));
   });
 
+  test(`[${mode}] a try at 23:59:59 is still shown (first view, once) after midnight; ?d= only today/yesterday`, async () => {
+    const env = setup(mode);
+    env.clock.t = Date.parse("2026-11-23T22:59:59Z"); // 23:59:59 in Paris (UTC+1)
+    const { cl, key, id } = await warp(env);
+    prepare(env, id, "exterminate");
+    const r = await get(env, cl, `/b/mission?n=0;chk=${key}`);
+    assert.equal(r.headers.get("location"), loc(mode, "/b/view/miss1?d=2026-11-23"));
+    env.clock.t += 2000; // 00:00:01, the next day
+    assert.equal(today(env), "2026-11-24");
+    const path = "/b/view/miss1?d=2026-11-23";
+    const page = await get(env, cl, path);
+    assert.equal(page.status, 200);
+    const first = await page.text();
+    const row = missions(env, id)[0]!;
+    assert.deepEqual(decodeBattleFlashvars(battleFlashvars(first)).input, JSON.parse(row.input));
+    assert.ok(!first.includes("Retour</a>"), "first view: no button");
+    const replay = await (await get(env, cl, path)).text();
+    assert.ok(replay.includes("Retour</a>"), "single-shot first view");
+    // without d: today, nothing; other days or junk: today, nothing
+    for (const q of ["", "?d=2026-11-22", "?d=2026-11-25", "?d=junk", "?d=2026-11-23T00"]) {
+      assert.equal((await get(env, cl, `/b/view/miss1${q}`)).headers.get("location"), loc(mode, "/hq"), q);
+    }
+    // another army cannot see it with ?d= either (its own tries only)
+    const other = env.client("7.7.7.7");
+    await create(env, other, "Autre");
+    const o = env.at("autre", path);
+    assert.equal((await other.req(o.url, { host: o.host })).headers.get("location"), mode === "path" ? "/a/autre/hq" : "http://autre.lvh.me:8080/hq");
+  });
+
   test(`[${mode}] exterminate: 3 defeats then the 4th try is refused; same rats each try`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await warp(env);
@@ -160,7 +189,7 @@ for (const mode of MODES) {
     for (let n = 0; n < 3; n++) {
       const r = await get(env, cl, `/b/mission?n=${n};chk=${key}`);
       assert.equal(r.status, 302);
-      assert.equal(r.headers.get("location"), loc(mode, `/b/view/miss${n + 1}`));
+      assert.equal(r.headers.get("location"), loc(mode, `/b/view/miss${n + 1}?d=${today(env)}`));
     }
     const rows = missions(env, id);
     assert.equal(rows.length, 3);
@@ -205,7 +234,7 @@ for (const mode of MODES) {
     setTroopers(env, id, strong);
     prepare(env, id, "exterminate");
     const r = await get(env, cl, `/b/mission?n=0;chk=${key}`);
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/miss1"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/miss1?d=${today(env)}`));
     const [row] = missions(env, id);
     assert.ok(won(row!), "12 troopers of level 21 beat one rat");
     assert.equal(JSON.parse(row!.input).armies[1].troopers.length, 1);
@@ -216,7 +245,7 @@ for (const mode of MODES) {
     const r2 = await get(env, cl, `/b/mission?n=1;chk=${key}`);
     assert.equal(r2.headers.get("location"), loc(mode, "/hq"));
     const r3 = await get(env, cl, `/b/mission?n=0;chk=${key}`);
-    assert.equal(r3.headers.get("location"), loc(mode, "/b/view/miss1"));
+    assert.equal(r3.headers.get("location"), loc(mode, `/b/view/miss1?d=${today(env)}`));
     assert.equal(missions(env, id).length, 1);
     assert.equal(credits(env, id), 104);
     // first view: victory message and the counter animation
@@ -288,7 +317,7 @@ for (const mode of MODES) {
     army(env, "pending", [{ seed: 3_000_000, name: "P" }], { recruiterId: id }); // not confirmed: left out
     prepare(env, id, "epic");
     const r = await get(env, cl, `/b/mission?n=0;chk=${key}`);
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/miss1"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/miss1?d=${today(env)}`));
     const [row] = missions(env, id);
     const input = JSON.parse(row!.input) as BattleInput;
     assert.equal(input.background.gfx, "bg/road.jpg");
@@ -311,7 +340,7 @@ for (const mode of MODES) {
     const { cl, key, id } = await warp(env);
     prepare(env, id, "exterminate");
     const all = await Promise.all(Array.from({ length: 5 }, () => get(env, cl, `/b/mission?n=0;chk=${key}`)));
-    assert.ok(all.every((r) => r.headers.get("location") === loc(mode, "/b/view/miss1")));
+    assert.ok(all.every((r) => r.headers.get("location") === loc(mode, `/b/view/miss1?d=${today(env)}`)));
     assert.equal(missions(env, id).length, 1);
     assert.equal(daily(env, id)!.missions_used, 1);
   });

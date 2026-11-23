@@ -10,7 +10,7 @@ import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
-import { ownedArmy } from "./owner.ts";
+import { ownedArmy, viewDay } from "./owner.ts";
 
 // UNVERIFIED: the original battle seed range is unknown (same range as the daily battles).
 const SEED_MAX = 0x40000000;
@@ -66,8 +66,8 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     const phase = q !== undefined && /^[0-9]{1,3}$/.test(q) ? Number(q) : -1;
     const day = today();
     const r = fightRaid(db, { armyId: o.army.id, day, phase, decide: (alive) => decide(o.army.id, day, phase, alive) });
-    if (r.ok) return to("/b/view/raid");
-    if ((r.reason === "stale" || r.reason === "limit") && phase >= 1 && phase <= r.used && lastRaidOfDay(db, o.army.id, day)) return to("/b/view/raid");
+    if (r.ok) return to(`/b/view/raid?d=${day}`);
+    if ((r.reason === "stale" || r.reason === "limit") && phase >= 1 && phase <= r.used && lastRaidOfDay(db, o.army.id, day)) return to(`/b/view/raid?d=${day}`);
     return to("/hq");
   });
 
@@ -79,7 +79,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     const hq = armyUrl(cfg, o.army.host, "/hq");
-    const b = lastRaidOfDay(db, o.army.id, today());
+    const b = lastRaidOfDay(db, o.army.id, viewDay(c, today()));
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;

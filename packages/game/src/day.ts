@@ -22,6 +22,12 @@ export function dayKey(now: Date, tz: string): string {
   return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
 }
 
+/** The calendar day before a "YYYY-MM-DD" day key (pure date arithmetic, no time zone involved). */
+export function prevDay(day: string): string {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+}
+
 /** Next local midnight (strictly after `now`) in `tz`. */
 export function nextResetAt(now: Date, tz: string): Date {
   const p = parts(now.getTime(), tz);
