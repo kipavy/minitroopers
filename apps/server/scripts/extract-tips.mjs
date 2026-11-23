@@ -9,7 +9,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DIR = process.argv[2] ?? "/home/dev/minitroopers-work/recon/assets/extra/site-elements/html/fr";
+const DIR = process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), "../../../docs/research/recon/assets/extra/site-elements/html/fr");
 const OUT = process.argv[3] ?? join(dirname(fileURLToPath(import.meta.url)), "../data/tips.fr.json");
 const COLS = 20;
 const CELL = 30;

@@ -1,0 +1,111 @@
+#1 {"chk":"e2d17013eb38d18a1c8252828b5f8a9a","onclick":"_.selectTrooper(1000,14925351)"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 2,
+  "args": [
+   {
+    "name": "McCrakold",
+    "pref": null,
+    "seed": 14925351,
+    "type": "TrooperType#0",
+    "choices": [],
+    "id": 1000,
+    "force": []
+   },
+   3
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#2 {"chk":"3f4665d839ab11b8d83fb0d6d397b715","onclick":"_.selectTrooper(1001,1846925)"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 2,
+  "args": [
+   {
+    "name": "Jefferg",
+    "pref": null,
+    "seed": 1846925,
+    "type": "TrooperType#0",
+    "choices": [],
+    "id": 1001,
+    "force": []
+   },
+   3
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#3 {"chk":"7f271463884a3d6629e53a9a0377fccf","onclick":"_.selectTrooper(1002,8002784)"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 2,
+  "args": [
+   {
+    "name": "Lukoum",
+    "pref": null,
+    "seed": 8002784,
+    "type": "TrooperType#0",
+    "choices": [],
+    "id": 1002,
+    "force": []
+   },
+   4
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#4 {"chk":"97272cefc76ef136ee465369d7295d3e","onclick":"_.selectTrooper(1003,14475920)"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 2,
+  "args": [
+   {
+    "name": "Yuch",
+    "pref": null,
+    "seed": 14475920,
+    "type": "TrooperType#0",
+    "choices": [],
+    "id": 1003,
+    "force": []
+   },
+   5
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#5 {"chk":"9a028eda819d0aaa5898ff9257497920","onclick":"_.selectTrooper(1004,3584538)"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 2,
+  "args": [
+   {
+    "name": "Harri",
+    "pref": null,
+    "seed": 3584538,
+    "type": "TrooperType#0",
+    "choices": [],
+    "id": 1004,
+    "force": []
+   },
+   5
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#6 {"chk":"eb564f0271d6c9657cbd9575e2f2c2d0"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 3,
+  "args": [
+   "26:12269"
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}

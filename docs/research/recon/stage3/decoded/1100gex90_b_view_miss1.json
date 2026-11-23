@@ -1,0 +1,437 @@
+#1 {"chk":"559ebb806bca428f34dfb2c8a33a6fd7","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Tu as remporté ce combat !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#2",
+     "gfx": "bg/sewer.jpg"
+    },
+    "id": 19823937,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "Babouche",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#28",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#7"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 2295073,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Diabolo",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#17",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 1182576,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0
+        ],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "Titi",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#19",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 14980989,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 3,
+        "force": []
+       },
+       {
+        "name": "Starsky",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#77",
+          "Skill#54"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#26",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#4"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 7436325,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1
+        ],
+        "id": 4,
+        "force": []
+       },
+       {
+        "name": "Rouky",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#56"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#20",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 9470730,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0
+        ],
+        "id": 5,
+        "force": []
+       },
+       {
+        "name": "Gros minet",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#118"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#22",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 5584408,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 6,
+        "force": []
+       },
+       {
+        "name": "Rox",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#57",
+          "Skill#66"
+         ],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#9",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 3390702,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 7,
+        "force": []
+       },
+       {
+        "name": "Dora",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#25",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#3"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 2574299,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         0,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 8,
+        "force": []
+       },
+       {
+        "name": "Eckle",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#15",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 2174256,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 9,
+        "force": []
+       },
+       {
+        "name": "Satanas",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#18",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 10380986,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         0,
+         1,
+         1
+        ],
+        "id": 10,
+        "force": []
+       },
+       {
+        "name": "Hutch",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#7",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#1"
+          ]
+         },
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 4790598,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 11,
+        "force": []
+       },
+       {
+        "name": "Jeckle",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#83"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#7",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 13745442,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0,
+         0,
+         0
+        ],
+        "id": 12,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10,
+       11,
+       12
+      ],
+      "faction": 0
+     },
+     {
+      "troopers": [
+       {
+        "name": "groslooser",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": "Weapon#1",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 248722,
+        "type": "TrooperType#0",
+        "choices": [],
+        "id": 0,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0
+      ],
+      "faction": 1
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}

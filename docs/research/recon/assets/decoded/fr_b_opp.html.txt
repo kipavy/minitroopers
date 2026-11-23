@@ -1,0 +1,441 @@
+#1 {"chk":"4e2b7ab0b8232b221392fa4cadbf2c00"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "killer",
+      "pref": {
+       "moveSystem": "MoveSystem#2",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#1",
+       "__CWeapon": "Weapon#18",
+       "targetType": {
+        "enum": "TargetType",
+        "idx": 1,
+        "args": [
+         "Skill#7"
+        ]
+       },
+       "targetSystem": "TargetSystem#3"
+      },
+      "seed": 8074736,
+      "type": "TrooperType#0",
+      "choices": [
+       0,
+       1,
+       1,
+       2,
+       0,
+       2,
+       2
+      ],
+      "id": 0,
+      "force": []
+     },
+     {
+      "name": "james",
+      "pref": {
+       "moveSystem": "MoveSystem#2",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [
+        "Skill#60"
+       ],
+       "__CBody": "BodyLoc#0",
+       "__CWeapon": "Weapon#17",
+       "targetType": {
+        "enum": "TargetType",
+        "idx": 1,
+        "args": [
+         "Skill#6"
+        ]
+       },
+       "targetSystem": "TargetSystem#3"
+      },
+      "seed": 16579574,
+      "type": "TrooperType#0",
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       1,
+       1,
+       1
+      ],
+      "id": 1,
+      "force": []
+     },
+     {
+      "name": "caca pipi pr",
+      "pref": {
+       "moveSystem": "MoveSystem#0",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#3",
+       "__CWeapon": "Weapon#25",
+       "targetType": {
+        "enum": "TargetType",
+        "idx": 1,
+        "args": [
+         "Skill#3"
+        ]
+       },
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 5669597,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0
+      ],
+      "id": 2,
+      "force": []
+     },
+     {
+      "name": "sa va ?",
+      "pref": {
+       "moveSystem": "MoveSystem#0",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#0",
+       "__CWeapon": "Weapon#23",
+       "targetType": {
+        "enum": "TargetType",
+        "idx": 1,
+        "args": [
+         "Skill#0"
+        ]
+       },
+       "targetSystem": "TargetSystem#2"
+      },
+      "seed": 6548760,
+      "type": "TrooperType#0",
+      "choices": [
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "id": 3,
+      "force": []
+     },
+     {
+      "name": "tes nul",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#1",
+       "__CWeapon": "Weapon#21",
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#2"
+      },
+      "seed": 1427255,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "id": 4,
+      "force": []
+     },
+     {
+      "name": "chté piraté!",
+      "pref": {
+       "moveSystem": "MoveSystem#2",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#1",
+       "__CWeapon": "Weapon#20",
+       "targetType": {
+        "enum": "TargetType",
+        "idx": 1,
+        "args": [
+         "Skill#6"
+        ]
+       },
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 13258792,
+      "type": "TrooperType#0",
+      "choices": [
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0,
+       1
+      ],
+      "id": 5,
+      "force": []
+     }
+    ],
+    "xmax": 3,
+    "ymax": 3,
+    "add": true,
+    "fac": 2,
+    "space": -1,
+    "action": "on"
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#2 {"chk":"2c6dc5d54eec52b02bcdd018d9903b16"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Joshua",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [
+        "Skill#87",
+        "Skill#133",
+        "Skill#46"
+       ],
+       "__CBody": null,
+       "__CWeapon": null,
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 11980233,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       1
+      ],
+      "id": 0,
+      "force": []
+     }
+    ],
+    "xmax": 4,
+    "ymax": 1,
+    "add": false,
+    "fac": 3,
+    "space": -1,
+    "action": null
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#3 {"chk":"58b46c21b7f33731fb79b44ca135ab2b"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Georgonnell",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": null,
+       "__CWeapon": "Weapon#9",
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 11224110,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       0
+      ],
+      "id": 0,
+      "force": []
+     }
+    ],
+    "xmax": 4,
+    "ymax": 1,
+    "add": false,
+    "fac": 0,
+    "space": -1,
+    "action": null
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#4 {"chk":"ec7d44aeaa487ad87df9c30716878882"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Harrerg",
+      "pref": null,
+      "seed": 6742289,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1
+      ],
+      "id": 0,
+      "force": []
+     }
+    ],
+    "xmax": 4,
+    "ymax": 1,
+    "add": false,
+    "fac": 1,
+    "space": -1,
+    "action": null
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#5 {"chk":"5c88952a07f701ce57b5fa762cb1c767"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Maxason",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [
+        "Skill#82"
+       ],
+       "__CBody": null,
+       "__CWeapon": "Weapon#9",
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 9336880,
+      "type": "TrooperType#0",
+      "choices": [
+       0,
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "id": 0,
+      "force": []
+     }
+    ],
+    "xmax": 4,
+    "ymax": 1,
+    "add": false,
+    "fac": 4,
+    "space": -1,
+    "action": null
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}
+#6 {"chk":"b8d9108f3df4b04f1cd07a21b678ce99"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Huffimiller",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [
+        "Skill#54",
+        "Skill#66"
+       ],
+       "__CBody": null,
+       "__CWeapon": null,
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 16460035,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0
+      ],
+      "id": 0,
+      "force": []
+     }
+    ],
+    "xmax": 4,
+    "ymax": 1,
+    "add": false,
+    "fac": 1,
+    "space": -1,
+    "action": null
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}

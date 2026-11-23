@@ -19,7 +19,7 @@ test("tips.fr.json holds the archived FR tooltips by skill id", () => {
   assert.ok(tips["137"]!.body.includes("<i>{name}</i>"));
 });
 
-const SRC = "/home/dev/minitroopers-work/recon/assets/extra/site-elements/html/fr";
+const SRC = fileURLToPath(new URL("../../../docs/research/recon/assets/extra/site-elements/html/fr", import.meta.url));
 
 test("the extractor reproduces data/tips.fr.json", { skip: !existsSync(SRC) && "archived pages not available" }, () => {
   const dir = mkdtempSync(join(tmpdir(), "tips-"));

@@ -1,0 +1,142 @@
+#1 {"chk":"b9bc92f1c363127013d8ae6728fc316b","imageurl":"http://data.minitroopers.com/img/","endMsg":"You have won the battle!"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#1",
+     "gfx": "bg/attic.jpg"
+    },
+    "id": 16039121,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "TITU",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 16161491,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         1,
+         1
+        ],
+        "id": 0,
+        "force": []
+       },
+       {
+        "name": "gaspi",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": "Weapon#17",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 13591639,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1
+        ],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Strelok",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 15534854,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "ASISINATO",
+        "pref": null,
+        "seed": 11965936,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 3,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0,
+       1,
+       2,
+       3
+      ],
+      "faction": 2
+     },
+     {
+      "\"c)4p\\u0003\"": 0,
+      "troopers": [
+       {
+        "name": "rat",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 34888,
+        "type": "TrooperType#2",
+        "choices": [],
+        "id": 4,
+        "force": [
+         "Skill#131",
+         "Skill#70"
+        ]
+       }
+      ],
+      "__UP2": [],
+      "faction": 0,
+      "\"U,*~\\u0001\"": null
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.com/swf/army.swf?v=1"
+}

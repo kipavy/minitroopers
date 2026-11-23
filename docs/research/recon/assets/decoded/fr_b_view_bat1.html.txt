@@ -1,0 +1,280 @@
+#1 {"chk":"aa2fea2bf882cba783f30ddc0077eb1e","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Tu as remporté ce combat !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#0",
+     "gfx": "bg/garden.jpg"
+    },
+    "id": 14502412,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "McBombewis",
+        "pref": null,
+        "seed": 6652102,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 1,
+        "force": []
+       },
+       {
+        "name": "Meleiber",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#103",
+          "Skill#94"
+         ],
+         "__CBody": "BodyLoc#3",
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 14006280,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1
+        ],
+        "id": 2,
+        "force": []
+       },
+       {
+        "name": "Bruws",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#133"
+         ],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#1"
+          ]
+         },
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 10071527,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 3,
+        "force": []
+       },
+       {
+        "name": "Smithold",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [
+          "Skill#101",
+          "Skill#77"
+         ],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#25",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#1"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 13470926,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         0,
+         0,
+         0,
+         1,
+         1,
+         0
+        ],
+        "id": 4,
+        "force": []
+       },
+       {
+        "name": "Krawney",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": "Weapon#14",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#3"
+          ]
+         },
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 16695356,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         1,
+         1,
+         0,
+         1
+        ],
+        "id": 5,
+        "force": []
+       },
+       {
+        "name": "Edonnell",
+        "pref": {
+         "moveSystem": "MoveSystem#2",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#1",
+         "__CWeapon": "Weapon#20",
+         "targetType": {
+          "enum": "TargetType",
+          "idx": 1,
+          "args": [
+           "Skill#6"
+          ]
+         },
+         "targetSystem": "TargetSystem#3"
+        },
+        "seed": 8551096,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         1,
+         0,
+         0,
+         1
+        ],
+        "id": 6,
+        "force": []
+       },
+       {
+        "name": "Maxu Yu",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#23",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#1"
+        },
+        "seed": 16369599,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         1,
+         1,
+         0,
+         1,
+         0,
+         1
+        ],
+        "id": 7,
+        "force": []
+       },
+       {
+        "name": "Jonones",
+        "pref": {
+         "moveSystem": "MoveSystem#0",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#2",
+         "__CWeapon": "Weapon#11",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 14583547,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0,
+         1,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 8,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8
+      ],
+      "faction": 2
+     },
+     {
+      "troopers": [
+       {
+        "name": "Samando",
+        "pref": null,
+        "seed": 14220369,
+        "type": "TrooperType#0",
+        "choices": [
+         0
+        ],
+        "id": 0,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0
+      ],
+      "faction": 3
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}

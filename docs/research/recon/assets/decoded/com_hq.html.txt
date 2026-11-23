@@ -1,0 +1,103 @@
+#1 {"chk":"40580fa9c8c32c3cba4c005f7b07a20d"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "TITU",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#1",
+       "__CWeapon": null,
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 16161491,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       1
+      ],
+      "id": 0,
+      "force": []
+     },
+     {
+      "name": "gaspi",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#3",
+       "__CWeapon": "Weapon#17",
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#1"
+      },
+      "seed": 13591639,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       0,
+       1,
+       1
+      ],
+      "id": 1,
+      "force": []
+     },
+     {
+      "name": "Strelok",
+      "pref": {
+       "moveSystem": "MoveSystem#1",
+       "reloadSystem": "ReloadSystem#2",
+       "leftOver": [],
+       "__CBody": "BodyLoc#0",
+       "__CWeapon": null,
+       "targetType": "TargetType#0",
+       "targetSystem": "TargetSystem#0"
+      },
+      "seed": 15534854,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "id": 2,
+      "force": []
+     },
+     {
+      "name": "ASISINATO",
+      "pref": null,
+      "seed": 11965936,
+      "type": "TrooperType#0",
+      "choices": [
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "id": 3,
+      "force": []
+     }
+    ],
+    "xmax": 3,
+    "ymax": 2,
+    "add": true,
+    "fac": 2,
+    "space": -1,
+    "action": "on"
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.com/swf/mini.swf?v=1"
+}

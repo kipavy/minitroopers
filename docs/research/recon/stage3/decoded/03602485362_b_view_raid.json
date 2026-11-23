@@ -1,0 +1,68 @@
+#1 {"chk":"db39b1b7903975b70bc30fa7e0fd8fb1","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Ce combat s'est soldé par un échec !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#4",
+     "gfx": "bg/wood.jpg"
+    },
+    "id": 3980263,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "Van Melolone",
+        "pref": null,
+        "seed": 13835746,
+        "type": "TrooperType#0",
+        "choices": [
+         0,
+         0
+        ],
+        "id": 1,
+        "force": []
+       }
+      ],
+      "__UP2": [],
+      "faction": 0
+     },
+     {
+      "troopers": [
+       {
+        "name": "Harrinnett",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 84189,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         1,
+         0,
+         1,
+         0
+        ],
+        "id": 0,
+        "force": null
+       }
+      ],
+      "__UP2": [],
+      "faction": 4
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}

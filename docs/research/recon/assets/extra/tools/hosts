@@ -1,0 +1,78 @@
+# Copyright (c) 1993-2009 Microsoft Corp.
+#
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+#
+# This file contains the mappings of IP addresses to host names. Each
+# entry should be kept on an individual line. The IP address should
+# be placed in the first column followed by the corresponding host name.
+# The IP address and the host name should be separated by at least one
+# space.
+#
+# Additionally, comments (such as these) may be inserted on individual
+# lines or following the machine name denoted by a '#' symbol.
+#
+# For example:
+#
+#      102.54.94.97     rhino.acme.com          # source server
+#       38.25.63.10     x.acme.com              # x client host
+
+# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+
+# Main websites FR / EN / ES
+178.32.123.64 minitroopers.fr
+178.32.123.64 data.minitroopers.fr
+178.32.123.64 minitroopers.com
+178.32.123.64 data.minitroopers.com
+178.32.123.64 minitroopers.es
+178.32.123.64 data.minitroopers.es
+
+# --------------------------------------------------------- #
+# My armies : Add here every single armies you want access
+178.32.123.64 name.minitroopers.fr
+178.32.123.64 friend.minitroopers.es
+178.32.123.64 ennemy.minitroopers.com
+# --------------------------------------------------------- #
+
+# Factions FR
+178.32.123.64 sang-surs.minitroopers.fr
+178.32.123.64 soleil-rugissant.minitroopers.fr
+178.32.123.64 gecko-nevrose.minitroopers.fr
+178.32.123.64 enchantee.minitroopers.fr
+178.32.123.64 fol-ecume.minitroopers.fr
+178.32.123.64 groin-celeste.minitroopers.fr
+# Factions EN
+178.32.123.64 the-exploding-ca.minitroopers.com
+178.32.123.64 the-party-loving.minitroopers.com
+178.32.123.64 the-ok-lumberjac.minitroopers.com
+178.32.123.64 the-dalai-farmer.minitroopers.com
+178.32.123.64 the-order-of-the.minitroopers.com
+178.32.123.64 the-wretched-ind.minitroopers.com
+# Factions ES
+178.32.123.64 sangre-fria.minitroopers.es
+178.32.123.64 sol-creciente.minitroopers.es
+178.32.123.64 gran-imperio.minitroopers.es
+178.32.123.64 hombres-peludos.minitroopers.es
+178.32.123.64 corazon-salvaje.minitroopers.es
+178.32.123.64 ceno-fruncido.minitroopers.es
+
+# extra
+178.32.123.64 deepnight.minitroopers.fr
+178.32.123.64 hiko.minitroopers.fr
+178.32.123.64 dalek.minitroopers.fr
+178.32.123.64 eole.minitroopers.fr
+178.32.123.64 warp.minitroopers.fr
+178.32.123.64 whitetigle.minitroopers.fr
+178.32.123.64 centerlink.minitroopers.com
+178.32.123.64 jrorangee.minitroopers.com
+178.32.123.64 overlap.minitroopers.com
+178.32.123.64 ac201.minitroopers.com
+178.32.123.64 bumbaclot.minitroopers.com
+178.32.123.64 xteen.minitroopers.com
+178.32.123.64 sombrerodepaja.minitroopers.es
+178.32.123.64 la-mole.minitroopers.es
+178.32.123.64 miguel3.minitroopers.es
+178.32.123.64 miguel02.minitroopers.es
+178.32.123.64 ejercito-6996.minitroopers.es
+178.32.123.64 miguel14.minitroopers.es

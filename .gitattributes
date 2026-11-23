@@ -1,2 +1,5 @@
 *.swf binary
 * text=auto eol=lf
+
+# archived captures: keep the original bytes (CRLF included)
+docs/research/recon/** -text

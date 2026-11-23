@@ -1,0 +1,64 @@
+#1 {"chk":"dfee578090ad3fb8a06192e47e3ad3e6"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 4,
+  "args": [
+   {
+    "army": [
+     {
+      "name": "Jeffones",
+      "pref": null,
+      "seed": 14592119,
+      "type": "TrooperType#0",
+      "choices": [
+       0
+      ],
+      "id": 0,
+      "force": []
+     },
+     {
+      "name": "Orlason",
+      "pref": null,
+      "seed": 5028597,
+      "type": "TrooperType#0",
+      "choices": [
+       1
+      ],
+      "id": 1,
+      "force": []
+     },
+     {
+      "name": "Liubender",
+      "pref": null,
+      "seed": 5578473,
+      "type": "TrooperType#0",
+      "choices": [
+       0
+      ],
+      "id": 2,
+      "force": []
+     },
+     {
+      "name": "Huffoll",
+      "pref": null,
+      "seed": 1895232,
+      "type": "TrooperType#0",
+      "choices": [
+       1
+      ],
+      "id": 3,
+      "force": []
+     }
+    ],
+    "xmax": 3,
+    "ymax": 2,
+    "add": true,
+    "fac": 4,
+    "space": -1,
+    "action": "on"
+   }
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+}

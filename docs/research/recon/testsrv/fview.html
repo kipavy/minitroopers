@@ -1,0 +1,469 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <title>MiniTroopers - Battle View</title>
+    <meta name="description" content="They&amp;rsquo;re small, they&amp;rsquo;re brutal, there are loads of  &amp;rsquo;em and they&amp;rsquo;re under your orders! Build the most powerful army with your friends! Choose the most explosive combination of skills and weapons! Most important of all... Show the whole world who&amp;rsquo;s in charge here!" />
+    <link rel="stylesheet" type="text/css" href="https://data.trooperstest.gued.es/css/style.css?v=7" />
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/ruffle/ruffle.js?v=2"></script>
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/ruffleobject.js"></script>
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/app.js?v=1"></script>
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/select-grid.js?v=3"></script>
+    <!-- iOS-only: swaps card <img> SVGs for inline <svg> so Safari re-renders them
+         crisply on pinch-zoom (no-op on every other browser) -->
+    <script type="text/javascript" src="https://data.trooperstest.gued.es/js/card-svg-ios.js?v=1" defer></script>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans+Condensed:700&subset=latin,cyrillic" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div class="ptop"></div>
+    <div class="bottomsite">
+      <div class="site">
+        <div class="sp"></div>
+        <div class="pleft"></div>
+        <a class="logo" href="/hq"></a>
+        <div class="arthead"></div>
+        <div class="camera"></div>
+        <div class="ptopleft"></div>
+        <div class="pright"></div>
+        <div class="frame">
+          <div class="ptopsite">
+            <div id="content"> 
+
+
+
+<div class="game">
+    <div class="swfframe nam">
+        <h1>
+            Replay: plux276-15 VS bourrepif (<span class="battle-date" data-ts="2026-11-22T21:22:33.220Z">22/11/2026 21:22 UTC</span>)
+        </h1>
+        
+        <script type="text/javascript">
+            // Render the battle timestamp in the viewer's local timezone. The server
+            // emits it as an ISO-8601 UTC instant (data-ts) with a UTC fallback as the
+            // initial text content for the no-JS case.
+            (function () {
+                document.querySelectorAll('.battle-date').forEach(function (el) {
+                    var d = new Date(el.getAttribute('data-ts'));
+                    if (isNaN(d.getTime())) return;
+                    var pad = function (n) { return n.toString().padStart(2, '0'); };
+                    el.textContent =
+                        pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' +
+                        pad(d.getHours()) + ':' + pad(d.getMinutes());
+                });
+            })();
+        </script>
+        
+        <div id="swf_battle" class="swf"></div>
+        <script type="text/javascript">
+            // Dev tracing: open this replay with ?trace=1 to load the instrumented
+            // SWF (client_en_trace.swf) instead of the normal one. That build calls
+            // ExternalInterface.call("simlog", <event>) per battle event; Ruffle
+            // routes it to window.simlog below, which logs each event to the console
+            // and buffers them on window.__simlog. This is the live, in-order
+            // equivalent of the desktop trace capture (scripts/trace-as.js) and
+            // avoids that path's bursty-stdout line drops. Compare against the JS
+            // simulator (scripts/trace-sim.js) to find divergences.
+            var __useTrace = new URLSearchParams(window.location.search).has('trace');
+            window.__simlog = [];
+            window.simlog = function (payload) {
+                window.__simlog.push(payload);
+                console.log('simlog:', payload);
+            };
+
+            var swfp = {
+                menu: false,
+                flashvars: "data=oy10%3A%253B%2501%250CZjy10%3AClientMode%3A0%3A2oy5%3A7X%2501i70187891y5%3A*M%2501oy8%3A%2524PS%2501y15%3Abg%252Fgarden.jpgR2jy14%3ABackgroundType%3A0%3A0gy11%3Aa%255De%251B%2502aoy11%3A%25601%251F*%2502aoy8%3A%25032%251A4y7%3ABrayuwsy6%3A%250CA2ci20879728y6%3AAn%25256jy11%3ATrooperType%3A0%3A0R2zy8%3A%250Az%250Avazzzzzzzzzzzzzzzzzhy13%3A%257D%2526%2516Y%2501ahy8%3AV%251BE%257Coy13%3A%250BR%2510%251B%2502ny13%3A%251A)%2513%253D%2501ny6%3A%253BuXEjy12%3ATargetSystem%3A0%3A0y13%3A%2515S%2517%253F%2503jy10%3ATargetType%3A0%3A0y9%3A%251DlQK%2503jy10%3AMoveSystem%3A1%3A0y11%3A%2511!%250Ea%2501jy12%3AReloadSystem%3A2%3A0y9%3A)0%2519i%2503ahgghy9%3AOPz%2516%2503zy11%3AK)%2516%250A%2502azhgoR8aoR9y9%3AGriserzioR11i79521890R12jR13%3A0%3A0R2i1R14azi1zzzi1i1zi1zzzi1zzi1zzi1i1hR15ahR16oR17nR18jy7%3ABodyLoc%3A0%3A0R19jR20%3A2%3A0R21jR22%3A0%3A0R23jR24%3A0%3A0R25jR26%3A2%3A0R27ajy5%3ASkill%3A86%3A0jR32%3A13%3A0jR32%3A22%3A0hgghR28i5R29ai1hghgzR4y64%3Ahttps%253A%252F%252Fdata.trooperstest.gued.es%252Fswf%252Farmy.swf%253Fv%253D1g&chk=gitlabRickGuedesOpentroopers&imageurl=https://data.trooperstest.gued.es/img/&endMsg=plux276-15%20claimed%20victory%20on%20the%20battlefield!",
+                scale: 'noscale',
+                allowScriptAccess: 'always',
+                bgcolor: '#F2DDB8'
+            };
+            var __swfFile = __useTrace ? 'client_en_trace.swf' : 'client_en.swf';
+            embedRuffleSWF('https://data.trooperstest.gued.es/swf/' + __swfFile + '?v=2', 'swf_battle', 720, 440, '10.0.0', null, null, swfp, { id: 'battle', 'class': 'swf' });
+            if (__useTrace) console.log('%c[trace] loaded ' + __swfFile + ' — battle events will log here; window.__simlog holds the buffer.', 'color:#c80;font-weight:bold');
+        </script>
+    </div>
+
+    
+    <details class="battle-log">
+        <summary>Click here to see the full battle log</summary>
+        <style>
+            .battle-log {
+                max-width: 736px;
+                margin: 18px auto 0 auto;
+                background: #efe2c4;
+                border: 1px solid #000;
+                border-radius: 6px;
+                overflow: hidden;
+                text-align: left;
+            }
+            /* Summary styled like the in-game SWF frame header: the gold camo
+               texture (cropped from swfframe2.png) with the white embossed
+               game-h1 title text, and a chevron that flags it as collapsible. */
+            .battle-log > summary {
+                position: relative;
+                cursor: pointer;
+                padding: 12px 30px 8px;
+                text-align: center;
+                font: bold 1.2em Arial, sans-serif;
+                color: #fff;
+                text-shadow: -1px 0px 2px rgba(0,0,0,0.5), 0px 1px 2px rgba(0,0,0,0.5), 1px 0px 2px rgba(0,0,0,0.5);
+                background: #D4A244 url('https://data.trooperstest.gued.es/img/battle-log-header.png') center / cover no-repeat;
+                box-shadow: inset 0 -2px 3px rgba(107,67,32,0.45), inset 0 1px 0 rgba(255,240,200,0.5);
+                user-select: none;
+                list-style: none;
+            }
+            .battle-log > summary::-webkit-details-marker { display: none; }
+            /* Collapse/expand chevron — points right when closed, down when open. */
+            .battle-log > summary::after {
+                content: '\25BE';
+                position: absolute;
+                right: 12px; top: 50%;
+                font-size: 0.85em;
+                transform: translateY(-50%) rotate(-90deg);
+                transition: transform 0.15s ease;
+            }
+            .battle-log[open] > summary::after { transform: translateY(-50%) rotate(0deg); }
+            .battle-log > summary:hover { filter: brightness(1.07); }
+            .bl-scroll {
+                max-height: 360px;
+                overflow-y: auto;
+                padding: 8px 14px 12px 14px;
+            }
+            .bl-line {
+                font: 13px/1.55 "Consolas", "Menlo", monospace;
+                color: #3a2c18;
+                padding: 1px 0;
+                border-bottom: 1px dotted rgba(150, 130, 95, 0.25);
+            }
+            /* The battle clock, styled like the in-game HUD timer: the engine's
+               7x7 chrono sprite + the time in game-yellow (0xFFFF00) on a dark
+               chip (yellow is unreadable on the parchment, so we mirror the
+               game's dark HUD background). */
+            .bl-time {
+                display: inline-block;
+                min-width: 25px;
+                margin-right: 10px;
+                padding: 0 4px 0 13px;
+                text-align: right;
+                font-size: 11px;
+                font-weight: bold;
+                color: #fff000;
+                background-color: #3f301c;
+                background-image: url('https://data.trooperstest.gued.es/img/battle-clock.png');
+                background-repeat: no-repeat;
+                background-position: 3px center;
+                image-rendering: pixelated;
+                border-radius: 4px;
+            }
+            /* Timeline-affecting events (pre-battle, or a time-rebate skill).
+               The original client (Game.as) cycles the timer colour every frame
+               through cyan -> magenta -> green: [0x00FFFF, 0xFF00FF, 0x00FF00].
+               step-end holds each colour then jumps, matching the per-frame swap. */
+            .bl-time.bl-warp {
+                animation: bl-warp-blink 0.21s step-end infinite;
+            }
+            @keyframes bl-warp-blink {
+                0%     { color: #00ffff; }
+                33.3%  { color: #ff00ff; }
+                66.6%  { color: #00ff00; }
+                100%   { color: #00ffff; }
+            }
+            .bl-noise { opacity: 0.45; font-size: 11px; }
+            /* In-game HUD modifier bar (pool / dep / com / sab) — dark chip with
+               the engine's icons + the HUD palette (HQ.as maj()). */
+            .bl-hud {
+                display: inline-flex;
+                align-items: center;
+                vertical-align: middle;
+                padding: 1px 4px;
+                line-height: 1;
+                background-color: #3f301c;
+                border-radius: 4px;
+            }
+            .bl-stat {
+                display: inline-flex;
+                align-items: center;
+                margin: 0px 4px 0px 0px;
+                font-weight: bold;
+                font-size: 11px;
+                line-height: 1;
+            }
+            /* The icons are white alpha-silhouettes (exported from the game's
+               HUD MovieClip); we tint them to each stat's colour with a mask +
+               currentColor, exactly as the client does at runtime (Col.setColor). */
+            .bl-stat::before {
+                content: '';
+                display: inline-block;
+                width: 15px;
+                height: 15px;
+                margin-right: 2px;
+                background-color: currentColor;
+                -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+                -webkit-mask-position: center;  mask-position: center;
+                -webkit-mask-size: contain;     mask-size: contain;
+            }
+            
+            .bl-stat-pool { color: #ffffff; }
+            .bl-stat-pool::before { -webkit-mask-image: url('https://data.trooperstest.gued.es/img/stat-pool.png'); mask-image: url('https://data.trooperstest.gued.es/img/stat-pool.png'); }
+            .bl-stat-dep  { color: #ffffff; }
+            .bl-stat-dep::before  { -webkit-mask-image: url('https://data.trooperstest.gued.es/img/stat-dep.png');  mask-image: url('https://data.trooperstest.gued.es/img/stat-dep.png');  }
+            .bl-stat-com  { color: #00ffff; }
+            .bl-stat-com::before  { -webkit-mask-image: url('https://data.trooperstest.gued.es/img/stat-com.png');  mask-image: url('https://data.trooperstest.gued.es/img/stat-com.png');  }
+            .bl-stat-sab  { color: #44ff00; }
+            .bl-stat-sab::before  { -webkit-mask-image: url('https://data.trooperstest.gued.es/img/stat-sab.png');  mask-image: url('https://data.trooperstest.gued.es/img/stat-sab.png');  }
+            .bl-name   { font-weight: bold; }
+            .bl-side   { font-weight: bold; }
+            /* Little faction-tinted trooper head before each trooper name
+               (generated from favicon.ico, hue/sat per faction, lightness kept). */
+            .bl-name::before {
+                content: '';
+                display: inline-block;
+                width: 14px;
+                height: 14px;
+                vertical-align: -2px;
+                margin-right: 1px;
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: contain;
+            }
+            .bl-name.faction-0::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-0.png'); }
+            .bl-name.faction-1::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-1.png'); }
+            .bl-name.faction-2::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-2.png'); }
+            .bl-name.faction-3::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-3.png'); }
+            .bl-name.faction-4::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-4.png'); }
+            .bl-name.faction-5::before { background-image: url('https://data.trooperstest.gued.es/img/trooper-5.png'); }
+            /* RAT and CLOWN/DUMMY (PUPPET) troopers use fixed art, no faction
+               tint. Defined after the faction rules so they win the ::before. */
+            .bl-name.unit-rat::before   { background-image: url('https://data.trooperstest.gued.es/img/rat.png'); }
+            .bl-name.unit-clown::before { background-image: url('https://data.trooperstest.gued.es/img/clown.png'); }
+            .bl-weapon { font-weight: bold; color: #0a6b6b; }
+            .bl-skill  { font-weight: bold; color: #8e44ad; }
+            .bl-vehicle { font-weight: bold; color: #2c6e8f; }
+            /* Poison — static toxic-green (pulse animation disabled for now). */
+            .bl-poison {
+                font-weight: bold;
+                color: #4e9a2e;
+            }
+            /* Equipment item icon (grenade / special ammo / gear) — a 16x16 tile
+               from the game's item sheet (Gfx.eq); the per-skill tile is set via
+               inline background-position (eid). */
+            .bl-eqicon {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                vertical-align: -4px;
+                margin-right: 1px;
+                background-image: url('https://data.trooperstest.gued.es/img/equipment.png');
+                background-repeat: no-repeat;
+                image-rendering: pixelated;
+            }
+            /* Skill badge (non-equipment skills) — a 30x30 tile from skills.png
+               (20 per row), shown at 16x16 (sheet 600x210 scaled to 320x112). */
+            .bl-sicon {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                vertical-align: -4px;
+                margin-right: 2px;
+                background-image: url('https://data.trooperstest.gued.es/img/skills.png');
+                background-repeat: no-repeat;
+                background-size: 320px 112px;
+            }
+            /* Weapon icon — a variable-width (34/50) x 18 sprite from the weapon
+               sheet (Gfx.weap); width + background-position are set inline. */
+            .bl-wicon {
+                display: inline-block;
+                height: 18px;
+                vertical-align: -5px;
+                margin-right: 2px;
+                background-image: url('https://data.trooperstest.gued.es/img/weapons.png');
+                background-repeat: no-repeat;
+                image-rendering: pixelated;
+            }
+            .bl-dmg    { font-weight: bold; color: #b03030; }
+            .bl-status { font-weight: bold; color: #9a6a00; }
+            .bl-loc    { font-style: italic; color: #7a6a52; }
+            .bl-coord  { color: #8a7758; }
+            .bl-kill   { font-weight: bold; color: #7a1414; }
+            /* Overkill — damage wasted on an already-dead target. Muted/dimmed. */
+            .bl-overkill { color: #9a7b5c; font-style: italic; }
+            .bl-fatal  { font-weight: bold; color: #d11414; text-transform: uppercase; }
+            /* Log-only name-text colours — darker shades tuned for readability
+               on the parchment (the head ICONS use the real bright palette).
+               LOG classes (.faction-N, hyphenated); the web pages' global
+               .factionN classes are untouched. */
+            .faction-0 { color: #c0392b; } /* red    */
+            .faction-1 { color: #d35400; } /* orange */
+            .faction-2 { color: #b8860b; } /* yellow */
+            .faction-3 { color: #4f6b22; } /* army green */
+            .faction-4 { color: #2456b8; } /* blue   */
+            .faction-5 { color: #7d3c98; } /* purple */
+        </style>
+        <div class="bl-scroll">
+            
+                <div class="bl-line bl-stats"><span class="bl-time">0</span><span class="bl-side faction-0">plux276-15</span> <span class="bl-hud"><span class="bl-stat bl-stat-pool">01</span><span class="bl-stat bl-stat-dep">+05</span></span></div>
+            
+                <div class="bl-line bl-stats"><span class="bl-time">0</span><span class="bl-side faction-5">bourrepif</span> <span class="bl-hud"><span class="bl-stat bl-stat-pool">01</span><span class="bl-stat bl-stat-dep">+04</span></span></div>
+            
+                <div class="bl-line bl-system"><span class="bl-time">0</span><span class="bl-side faction-0">plux276-15</span><span class="bl-plain"> deploys: </span><span class="bl-name faction-0">Brayuws</span></div>
+            
+                <div class="bl-line bl-system"><span class="bl-time">0</span><span class="bl-side faction-5">bourrepif</span><span class="bl-plain"> deploys: </span><span class="bl-name faction-5">Griserzio</span></div>
+            
+                <div class="bl-line bl-super"><span class="bl-time bl-warp">0</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> uses </span><span class="bl-eqicon" style="background-position:0px -16px"></span><span class="bl-skill">Grenade</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-super"><span class="bl-time bl-warp">0</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> throws </span><span class="bl-eqicon" style="background-position:0px -16px"></span><span class="bl-skill">Grenade</span><span class="bl-plain"> at </span><span class="bl-coord">(12, 2)</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">0</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-5">Griserzio</span></div>
+            
+                <div class="bl-line bl-move"><span class="bl-time">28</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> moves to </span><span class="bl-coord">(4, 2)</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">173</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> launches </span><span class="bl-wicon" style="width:50px;background-position:-152px -18px"></span><span class="bl-weapon">Rocket Launcher</span><span class="bl-plain"> at </span><span class="bl-coord">(4, 2)</span></div>
+            
+                <div class="bl-line bl-move"><span class="bl-time">194</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> moves to </span><span class="bl-coord">(1, 2)</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">249</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-0">Brayuws</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">250</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> brawls </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> with </span><span class="bl-weapon">Fists</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> in </span><span class="bl-loc">the left arm</span><span class="bl-plain"> for </span><span class="bl-dmg">3</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-reload"><span class="bl-time bl-warp">250</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> switches to </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">296</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-0">Brayuws</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">297</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> brawls </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> with </span><span class="bl-weapon">Fists</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">333</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-5">Griserzio</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the left arm</span><span class="bl-plain"> for </span><span class="bl-dmg">3</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the left arm</span><span class="bl-plain"> for </span><span class="bl-dmg">8</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the head</span><span class="bl-plain"> for </span><span class="bl-dmg">2</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the right leg</span><span class="bl-plain"> for </span><span class="bl-dmg">4</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">338</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the right torso</span><span class="bl-plain"> for </span><span class="bl-dmg">3</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">393</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-0">Brayuws</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">394</span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> brawls </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> with </span><span class="bl-weapon">Fists</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> in </span><span class="bl-loc">the right leg</span><span class="bl-plain"> for </span><span class="bl-dmg">3</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-5">Griserzio</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the right leg</span><span class="bl-plain"> for </span><span class="bl-dmg">8</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time bl-warp">394</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> takes aim at </span><span class="bl-name faction-5">Griserzio</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> hit </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> in </span><span class="bl-loc">the head</span><span class="bl-plain"> for </span><span class="bl-dmg">16</span><span class="bl-plain"> dmg!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-5">Griserzio</span><span class="bl-kill"> is killed!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-overkill"> overkills </span><span class="bl-name faction-5">Griserzio</span><span class="bl-overkill"> for </span><span class="bl-overkill">3</span><span class="bl-overkill">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-overkill"> overkills </span><span class="bl-name faction-5">Griserzio</span><span class="bl-overkill"> for </span><span class="bl-overkill">3</span><span class="bl-overkill">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-overkill"> overkills </span><span class="bl-name faction-5">Griserzio</span><span class="bl-overkill"> for </span><span class="bl-overkill">4</span><span class="bl-overkill">!</span></div>
+            
+                <div class="bl-line bl-combat"><span class="bl-time">408</span><span class="bl-name faction-0">Brayuws</span><span class="bl-plain"> fires </span><span class="bl-wicon" style="width:50px;background-position:-202px 0px"></span><span class="bl-weapon">Comanche Auto</span><span class="bl-plain"> at </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain"> —</span><span class="bl-plain"> missed </span><span class="bl-name faction-5">Griserzio</span><span class="bl-plain">!</span></div>
+            
+                <div class="bl-line bl-system"><span class="bl-time">408</span><span class="bl-side faction-0">plux276-15</span><span class="bl-kill"> wins the battle!</span></div>
+            
+        </div>
+    </details>
+    
+
+    <div class="share-battle" style="text-align: center; margin: 20px 0 0 0;">
+        <style>
+            .share-battle .measure-text {
+                position: absolute;
+                visibility: hidden;
+                height: auto;
+                width: auto;
+                white-space: nowrap;
+                font: 14px Arial;
+            }
+        </style>
+        <p style="padding-bottom: 0px;">Share this battle replay with your allies: 
+            <span class="measure-text" id="measure">https://bourrepif.trooperstest.gued.es/b/fview/17715841</span>
+            <input onclick="this.select(); navigator.clipboard.writeText(this.value)" 
+                readonly="readonly" 
+                value="https://bourrepif.trooperstest.gued.es/b/fview/17715841" 
+                class="field" 
+                style="margin-left: 4px; width: auto;" 
+                title="Click to copy battle replay URL"/>
+        </p>
+        <script>
+            // Set input width based on content
+            const input = document.querySelector('.share-battle input');
+            const measure = document.getElementById('measure');
+            input.style.width = (measure.offsetWidth) + 'px';
+        </script>
+    </div>
+
+
+    <script type="text/javascript">
+        function endBattle() {
+            document.location = '/hq';
+        }
+    </script>
+
+    
+    <a href="/hq" class="button5">Back</a>
+    
+</div>
+
+            </div>
+          </div>
+        </div>
+        <div class="alert-banner" style="background-color: white; padding: 15px; border: 2px solid #ff4444; text-align: center;">
+          <h1 style="font-size: 24px; margin: 0; color: #333;">
+            🔫 Test server notice 🔫<br>
+            <span style="font-size: 20px;">This is a development server not yet officially hosted by Eternaltwin<br>
+            Your army</span>
+            <span style="color: #ff0000; font-weight: bold; font-size: 28px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">WILL BE DELETED (LOST FOREVER)</span>
+            <span style="font-size: 20px;">when the testing phase concludes!<br/>Help us by reporting bugs before the release and have fun reliving the game</span>
+          </h1>
+        </div>
+        <div class="dbottom">
+          <div class="pbottomleft"></div>
+          <div class="mt">
+            <a href="https://motion-twin.com/" target="_blank">
+              <img src="https://data.trooperstest.gued.es/img/pixel.gif" />
+            </a>
+          </div>
+          <div class="art_mouse"></div>
+          <div class="dbg">
+            <div class="indust"></div>
+            
+            <div id="xds">
+              <ul class="dlinks">
+                <li class="disclaimer">
+                  <img src="https://data.trooperstest.gued.es/img/werror.png" alt="Warning" />
+                  <span>EARLY ALPHA VERSION: This is a fan-made recreation, reversed and rebuilt from scratch. It's NOT affiliated with Motion Twin but they gave permission for this project. EXPECT BUGS, SERVER CRASHES, AND FREQUENT DATA RESETS! For bug reports and support, for now join the #minitroopers channel on <a href="https://discord.gg/ERc3svy" target="_blank">Eternaltwin Discord</a></span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="copy">
+          
+          (c)2011 Motion-Twin · All Rights Reserved
+        </div>
+      </div>
+    </div>
+  </body>
+</html> 

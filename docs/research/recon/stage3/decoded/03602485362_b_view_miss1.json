@@ -1,0 +1,140 @@
+#1 {"chk":"83b3d737bf4f439fc257778f108aab46","imageurl":"http://data.minitroopers.fr/img/","endMsg":"Ce combat s'est soldé par un échec !"}
+{
+ "mode": {
+  "enum": "ClientMode",
+  "idx": 0,
+  "args": [
+   {
+    "bg": {
+     "id": "BackgroundType#1",
+     "gfx": "bg/attic.jpg"
+    },
+    "id": 22534290,
+    "armies": [
+     {
+      "troopers": [
+       {
+        "name": "Bombakins",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": "BodyLoc#0",
+         "__CWeapon": "Weapon#25",
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 9620036,
+        "type": "TrooperType#0",
+        "choices": [
+         1,
+         0,
+         0,
+         0,
+         0,
+         0
+        ],
+        "id": 0,
+        "force": []
+       }
+      ],
+      "__UP2": [
+       0
+      ],
+      "faction": 0
+     },
+     {
+      "\"c)4p\\u0003\"": 0,
+      "troopers": [
+       {
+        "name": "rat",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 65793,
+        "type": "TrooperType#2",
+        "choices": [],
+        "id": 1,
+        "force": [
+         "Skill#53",
+         "Skill#76"
+        ]
+       },
+       {
+        "name": "rat",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 80487,
+        "type": "TrooperType#2",
+        "choices": [],
+        "id": 2,
+        "force": [
+         "Skill#116",
+         "Skill#70"
+        ]
+       },
+       {
+        "name": "rat",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 71499,
+        "type": "TrooperType#2",
+        "choices": [],
+        "id": 3,
+        "force": [
+         "Skill#117",
+         "Skill#123"
+        ]
+       },
+       {
+        "name": "rat",
+        "pref": {
+         "moveSystem": "MoveSystem#1",
+         "reloadSystem": "ReloadSystem#2",
+         "leftOver": [],
+         "__CBody": null,
+         "__CWeapon": null,
+         "targetType": "TargetType#0",
+         "targetSystem": "TargetSystem#0"
+        },
+        "seed": 38341,
+        "type": "TrooperType#2",
+        "choices": [],
+        "id": 4,
+        "force": [
+         "Skill#112",
+         "Skill#74"
+        ]
+       }
+      ],
+      "__UP2": [],
+      "faction": 0,
+      "\"U,*~\\u0001\"": null
+     }
+    ]
+   },
+   0
+  ]
+ },
+ "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+}

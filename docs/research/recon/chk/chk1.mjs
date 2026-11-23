@@ -1,0 +1,15 @@
+import fs from 'node:fs'; import crypto from 'node:crypto';
+const src = fs.readFileSync(process.argv[2],'utf8').split('\n')[1];
+const s = src.slice(src.indexOf('"')+1);
+const fv = "data="+s.replace(/";\s*$/,'').replace(/&amp;/g,'&');
+const params = Object.fromEntries(fv.split('&').map(p=>{const i=p.indexOf('=');return [p.slice(0,i), unescape(p.slice(i+1))]}));
+const data = params.data; const chk = params.chk;
+console.log('data len', data.length, data.slice(0,60), '...', data.slice(-60)); console.log('chk', chk);
+const cs = "0123456798abcdef";
+const md5 = crypto.createHash('md5').update(Buffer.from(data,'utf8')).digest();
+const enc = b => [...b].map(x=>cs[x&15]+cs[x>>4]).join('');
+const dec = c => Buffer.from([...Array(16)].map((_,i)=>cs.indexOf(c[2*i]) | (cs.indexOf(c[2*i+1])<<4)));
+const cb = dec(chk);
+console.log('md5     ', md5.toString('hex')); console.log('chk dec ', cb.toString('hex'));
+console.log('mask    ', Buffer.from(cb.map((x,i)=>x^md5[i])).toString('hex'));
+console.log('enc(md5)', enc(md5));
