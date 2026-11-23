@@ -83,6 +83,50 @@ export function recruitCount(db: DatabaseSync, armyId: number): number {
   return Number((db.prepare("SELECT COUNT(*) AS n FROM armies WHERE recruiter_id = ?").get(armyId) as { n: number }).n);
 }
 
+/** Recruits of an army not yet confirmed on its /history page (shown as "Nouvelle recrue disponible !"). */
+export function pendingRecruits(db: DatabaseSync, recruiterId: number): number {
+  return Number((db.prepare("SELECT COUNT(*) AS n FROM armies WHERE recruiter_id = ? AND recruit_confirmed_at IS NULL").get(recruiterId) as { n: number }).n);
+}
+
+/** Recruits whose bounty was credited (confirmed on /history). */
+export function confirmedRecruitCount(db: DatabaseSync, recruiterId: number): number {
+  return Number((db.prepare("SELECT COUNT(*) AS n FROM armies WHERE recruiter_id = ? AND recruit_confirmed_at IS NOT NULL").get(recruiterId) as { n: number }).n);
+}
+
+/**
+ * Confirms every pending recruit of an army and credits the bounties, in one BEGIN IMMEDIATE transaction: a concurrent
+ * or repeated call finds nothing pending and credits nothing. `rank` = creation rank among the recruiter's recruits
+ * (1-based, pending ones included). UNVERIFIED: a recruit created from the recruiter's own client id (`created_cid`)
+ * is confirmed with bounty 0 (anti self-referral); the original's check is unknown.
+ */
+export function confirmRecruits(db: DatabaseSync, recruiterId: number, now: number, bountyOf: (rank: number) => number): { confirmed: number; credited: number } {
+  const r = immediate(db, () => {
+    const pending = db.prepare("SELECT id, created_cid FROM armies WHERE recruiter_id = ? AND recruit_confirmed_at IS NULL ORDER BY id").all(recruiterId) as { id: number; created_cid: string | null }[];
+    if (pending.length === 0) return null;
+    const own = (db.prepare("SELECT created_cid FROM armies WHERE id = ?").get(recruiterId) as { created_cid: string | null } | undefined)?.created_cid ?? null;
+    let credited = 0;
+    for (const p of pending) {
+      const rank = Number((db.prepare("SELECT COUNT(*) AS n FROM armies WHERE recruiter_id = ? AND id <= ?").get(recruiterId, p.id) as { n: number }).n);
+      const bounty = own !== null && p.created_cid === own ? 0 : bountyOf(rank);
+      db.prepare("UPDATE armies SET recruit_confirmed_at = ?, recruit_bounty = ? WHERE id = ?").run(now, bounty, p.id);
+      credited += bounty;
+    }
+    db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(credited, recruiterId);
+    return { confirmed: pending.length, credited };
+  });
+  return r ?? { confirmed: 0, credited: 0 };
+}
+
+export type RecruitRow = { armyId: number; host: string; name: string; part: number; bounty: number | null; confirmedAt: number | null };
+
+/** Confirmed recruits of an army, most recent first. */
+export function recruitsOf(db: DatabaseSync, recruiterId: number, limit: number): RecruitRow[] {
+  return db
+    .prepare("SELECT id, host, name, part, recruit_bounty, recruit_confirmed_at FROM armies WHERE recruiter_id = ? AND recruit_confirmed_at IS NOT NULL ORDER BY recruit_confirmed_at DESC, id DESC LIMIT ?")
+    .all(recruiterId, limit)
+    .map((r) => ({ armyId: r.id as number, host: r.host as string, name: r.name as string, part: r.part as number, bounty: (r.recruit_bounty as number | null) ?? null, confirmedAt: (r.recruit_confirmed_at as number | null) ?? null }));
+}
+
 /** A trooper as the engine and the client SWF see it. `leftOver` (when stored) is merged into the pref. */
 export function trooperInput(t: TrooperRow): BattleTrooperInput {
   let pref: TrooperPref | null = t.pref;

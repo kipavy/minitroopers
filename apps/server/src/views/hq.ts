@@ -18,6 +18,8 @@ export interface HqView {
   battleTotal: number;
   /** Seconds until the daily reset. */
   resetIn: number;
+  /** Recruits waiting for their confirmation on /history. */
+  pendingRecruits?: number;
   /** What the next recruit through this army's link pays. */
   nextBounty: number;
   /** `?money=N`: the counter animates from credits-N up to credits (`_.deltaMoney`). */
@@ -140,6 +142,7 @@ ${left}
 <div class="tipbox"><div class="hqtip" style="display:none"><img src="/img/info.png"/>
 <span class="label">INFO :</span>
 <span id="menuTip"></span></div></div></div></div>
+${(v.pendingRecruits ?? 0) > 0 && !v.locked ? html`<ul class="history"><li class="newchild"><a href="${armyUrl(cfg, a.host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li></ul>` : ""}
 </td>
 <td class="right">
 

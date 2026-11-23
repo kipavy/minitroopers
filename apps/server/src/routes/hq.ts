@@ -6,7 +6,7 @@ import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } fr
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import { createRateLimiter } from "../ratelimit.ts";
-import { armyByHost, armyById, battlesOfDay, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
+import { armyByHost, armyById, battlesOfDay, pendingRecruits, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
 import { hqPage, recruitFragment, type HqView } from "../views/hq.ts";
@@ -20,7 +20,6 @@ const ERR_RATE = "Trop de tentatives. Réessaie dans quelques minutes.";
 
 /** Menu entries that stages 3-4 implement; until then they answer with a "bientôt" page. */
 const SOON: Record<string, string> = {
-  "/history": "Historique",
   "/choice": "Gérer mon armée",
   "/protect": "Protéger mon armée",
   "/ranks": "Hiérarchie",
@@ -45,6 +44,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
       battles: o.locked ? [] : battlesOfDay(db, army.id, day),
       battleTotal: battlesPerDay(troopers.map((tr) => ({ skills: describeTrooper(tr).skills }))),
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
+      pendingRecruits: pendingRecruits(db, army.id),
       nextBounty: referralBounty(recruitCount(db, army.id) + 1),
       moneyDelta: o.moneyDelta ?? 0,
       notice: o.notice ?? null,
