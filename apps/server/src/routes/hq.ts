@@ -47,7 +47,13 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       moneyDelta: o.moneyDelta ?? 0,
       notice: o.notice ?? null,
       locked: o.locked,
-      mission: { type: asMissionType(type), unlocked: army.missionsUnlocked, tries: o.locked ? [] : missionsOfDay(db, army.id, day), key: o.key ?? "" },
+      mission: {
+        type: asMissionType(type),
+        unlocked: army.missionsUnlocked,
+        tries: o.locked ? [] : missionsOfDay(db, army.id, day),
+        next: o.locked ? 0 : missionDay(db, army.id, day).used,
+        key: o.key ?? "",
+      },
       raid: raidBox(army, day, o.key ?? ""),
       ...(o.lockError ? { lockError: o.lockError } : {}),
     };
@@ -63,6 +69,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
     const last = r.over ? lastRaidOfDay(db, army.id, day) : null;
     return {
       phase: r.phase,
+      step: r.step,
       alive: raidAlive(db, army.id, day).length,
       over: r.over,
       lastWin: last !== null && last.winner !== null && last.winner === last.input.attackerSide,

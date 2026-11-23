@@ -2,7 +2,7 @@ import type { Hono } from "hono";
 import { battleAllowance, dayKey, pickOpponents, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { foeOf } from "../foes.ts";
-import { armyPowers, battlesUsed, freezeOpponents } from "../repo.ts";
+import { armyPowers, battlesCounted, battlesUsed, freezeOpponents } from "../repo.ts";
 import { queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { oppPage, type OppFoe } from "../views/opp.ts";
@@ -31,7 +31,7 @@ export function registerOpp(pages: Hono<Env>, deps: Deps): void {
     if (o instanceof Response) return o;
     const day = dayKey(new Date(now()), cfg.tzGame);
     const used = battlesUsed(db, o.army.id, day);
-    if (used >= battleAllowance(o.troopers)) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
+    if (battlesCounted(db, o.army.id, day) >= battleAllowance(o.troopers)) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
     // Drawn on the first visit of the day and frozen: reloading cannot fish for weaker opponents.
     const refs = freezeOpponents<ArmyRef>(db, o.army.id, day, () =>
       pickOpponents({

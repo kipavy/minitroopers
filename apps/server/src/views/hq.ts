@@ -36,9 +36,12 @@ export interface HqView {
   /** Error shown with the locked view (wrong password). */
   lockError?: string;
   /** The mission of the day (box title, unlock, tries) and the session key of its action links. */
-  mission: { type: MissionType; unlocked: boolean; tries: DayBattle[]; key: string };
-  /** Today's raid: phase to fight (or last fought once over), living recruits, outcome of the last phase once over. */
-  raid: { phase: number; alive: number; over: boolean; lastWin: boolean; key: string };
+  mission: { type: MissionType; unlocked: boolean; tries: DayBattle[]; next: number; key: string };
+  /**
+   * Today's raid: phase to fight (or last fought once over), URL counter of its link (`RaidDay.step`), living recruits,
+   * outcome of the last phase once over.
+   */
+  raid: { phase: number; step: number; alive: number; over: boolean; lastWin: boolean; key: string };
 }
 
 function tile(cfg: Config, v: HqView, i: number): Html {
@@ -128,7 +131,7 @@ ${resetTimer(v.resetIn, "raid_tip", "Nouveau raid dans")}`);
   }
   return frame(1, html`
 ${rcount}
-<div class="b bgo"><div class="b_right bgo_right"><a href="${armyUrl(cfg, v.army.host, `/b/raid?phase=${r.phase};chk=${r.key}`)}" class="b_bg bgo_bg" onmouseover="_.showTip('raid_tip','${jsq(`Lancer un raid avec les ${r.alive} recrues encore vivantes !`)}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/bgo.gif"/></a></div></div>
+<div class="b bgo"><div class="b_right bgo_right"><a href="${armyUrl(cfg, v.army.host, `/b/raid?phase=${r.step};chk=${r.key}`)}" class="b_bg bgo_bg" onmouseover="_.showTip('raid_tip','${jsq(`Lancer un raid avec les ${r.alive} recrues encore vivantes !`)}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/bgo.gif"/></a></div></div>
 <div class="hqtip"><img src="/img/info.png"/>
 <span id="raid_tip">Encore ${r.alive} recrues disponibles pour le raid !</span></div>
 `);

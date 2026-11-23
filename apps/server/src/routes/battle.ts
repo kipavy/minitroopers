@@ -59,7 +59,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     if (o instanceof Response) return o;
     const to = (path: string): Response => c.redirect(armyUrl(cfg, o.army.host, path), status);
     if (!isSessionKey(c, a.chk)) return to("/b/opp");
-    const used = typeof a.n === "string" && /^[0-9]{1,2}$/.test(a.n) ? Number(a.n) : -1;
+    const used = typeof a.n === "string" && /^[0-9]{1,3}$/.test(a.n) ? Number(a.n) : -1;
     const t = now();
     const day = dayOf(t);
     const byName = a.friend !== undefined;
@@ -136,7 +136,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
   }
 
   // The owner's battles of the day (`?d=`: today or yesterday, see viewDay), numbered like the HQ tiles.
-  pages.get("/b/view/:b{bat[0-9]{1,2}}", (c) => {
+  pages.get("/b/view/:b{bat[0-9]{1,3}}", (c) => {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     const n = Number(c.req.param("b").slice(3));

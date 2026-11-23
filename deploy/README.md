@@ -62,6 +62,10 @@ docker exec minitroopers npm run admin -- backup --out /data/backup-$(date +%F).
 docker cp minitroopers:/data/backup-$(date +%F).db .
 ```
 
+Avec Docker Compose : `docker compose exec minitroopers npm run admin -- <commande>`. Toutes les commandes
+(afficher une armée, crédits, quotas du jour avec `reset-day`, renommer, montée de niveau, supprimer…) :
+[apps/server/README.md#administration](../apps/server/README.md#administration).
+
 Dans le conteneur, `--out` doit être un chemin absolu sous `/data` : c'est le seul dossier où l'utilisateur
 `node` peut écrire, et le seul conservé quand le conteneur est recréé. `backup` écrit une copie cohérente (`VACUUM INTO`) même pendant les écritures du serveur, et refuse d'écraser
 un fichier existant. Pour restaurer : arrêter le conteneur, remplacer `/data/minitroopers.db` par la copie (et

@@ -17,8 +17,10 @@ export interface MissionBoxView {
   /** Protected army seen without the password: title only (hq.html: empty `bcount0` action). */
   locked: boolean;
   unlocked: boolean;
-  /** The day's tries, oldest first. */
+  /** The day's tries (since an admin `reset-day`), oldest first. */
   tries: DayBattle[];
+  /** Tries made today, resets included: the `n=` of the next try's URL. */
+  next: number;
   attempts: number;
   unlockCost: number;
   /** Session key (`chk`) of the action links. */
@@ -55,7 +57,7 @@ ${tile}${v.timer}`);
 `;
   });
   // UNVERIFIED: tiles of the remaining tries and their tooltip ($GL "Il te reste N essais pour la mission du jour !").
-  const go = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/mission?n=${v.tries.length};chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','${jsq(`Il te reste ${left} essais pour la mission du jour !`)}')" onmouseout="_.resetTip('miss_tip')"><img src="/img/bgo2.gif"/></a></div></div>
+  const go = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.host, `/b/mission?n=${v.next};chk=${v.key}`)}" class="b_bg bgo2_bg" onmouseover="_.showTip('miss_tip','${jsq(`Il te reste ${left} essais pour la mission du jour !`)}')" onmouseout="_.resetTip('miss_tip')"><img src="/img/bgo2.gif"/></a></div></div>
 `;
   const tiles = [...done, ...Array.from({ length: left }, () => go)];
   return frame(tiles.length, html`

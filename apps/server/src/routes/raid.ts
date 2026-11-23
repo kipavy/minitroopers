@@ -55,8 +55,9 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
   }
 
   /**
-   * One raid phase (`/b/raid?phase=<p>;chk=KEY`), post/redirect/get: the phase counter makes a used URL inert, and a
-   * replayed one (reload, double click, concurrent requests) shows the last raid instead.
+   * One raid phase (`/b/raid?phase=<p>;chk=KEY`), post/redirect/get: the phase counter (`RaidDay.step`, the phase
+   * until an admin `reset-day`) makes a used URL inert, and a replayed one (reload, double click, concurrent requests)
+   * shows the last raid instead.
    */
   pages.get("/b/raid", (c) => {
     const o = ownedArmy(deps, c);
@@ -67,7 +68,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     const phase = q !== undefined && /^[0-9]{1,3}$/.test(q) ? Number(q) : -1;
     const t = now();
     const day = dayOf(t);
-    const r = fightRaid(db, { armyId: o.army.id, day, now: t, phase, decide: (alive) => decide(o.army.id, day, phase, alive) });
+    const r = fightRaid(db, { armyId: o.army.id, day, now: t, phase, decide: (alive, p) => decide(o.army.id, day, p, alive) });
     if (r.ok) return to(`/b/view/raid?d=${day}`);
     if ((r.reason === "stale" || r.reason === "limit") && phase >= 1 && phase <= r.used && lastRaidOfDay(db, o.army.id, day)) return to(`/b/view/raid?d=${day}`);
     return to("/hq");

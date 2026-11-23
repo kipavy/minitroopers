@@ -78,13 +78,14 @@ npm run typecheck
 
 ```sh
 npm run dev                                  # http://localhost:8080/ (mode chemin), données dans var/
-npm run admin -- list                        # administration : seed-factions, create-army, give-credits, list, backup
+npm run admin -- list                        # administration : voir apps/server/README.md#administration
 URL_MODE=subdomain BASE_DOMAIN=mt.localhost npm run dev   # mode sous-domaines : http://mt.localhost:8080/
 ```
 
-Au premier démarrage, les armées de faction sont créées. Configuration, CLI d'administration (dont
-`create-army` avec graines et compétences choisies) et test de bout en bout :
-[apps/server/README.md](apps/server/README.md).
+Au premier démarrage, les armées de faction sont créées. Configuration et test de bout en bout :
+[apps/server/README.md](apps/server/README.md). Administration (créer, afficher, modifier une armée, rendre les
+quotas du jour, renommer, supprimer, sauvegarder ; en local ou dans Docker) :
+[apps/server/README.md#administration](apps/server/README.md#administration).
 
 ### Héberger son instance
 

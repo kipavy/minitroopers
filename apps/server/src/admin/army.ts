@@ -21,9 +21,11 @@ export class SpecError extends Error {}
 
 const SKILL_NAMES = new Map(Object.entries(SKILLS).map(([k, v]) => [k.toUpperCase(), v as number]));
 const SKILL_OF = new Map(Object.entries(SKILLS).map(([k, v]) => [v as number, k]));
-const label = (s: number): string => `${SKILL_OF.get(s) ?? "?"}(${s})`;
+/** "SMART(12)": a skill as the admin commands print it. */
+export const label = (s: number): string => `${SKILL_OF.get(s) ?? "?"}(${s})`;
 
-function skillId(v: unknown, where: string): number {
+/** A skill id from its id or its SKILLS name (any case); SpecError otherwise. */
+export function skillId(v: unknown, where: string): number {
   if (typeof v === "number" && Number.isInteger(v) && SKILL_OF.has(v)) return v;
   if (typeof v === "string" && SKILL_NAMES.has(v.toUpperCase())) return SKILL_NAMES.get(v.toUpperCase())!;
   throw new SpecError(`${where} : compétence inconnue ${JSON.stringify(v)}`);

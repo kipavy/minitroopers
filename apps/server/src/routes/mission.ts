@@ -130,7 +130,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     const to = (path: string): Response => c.redirect(armyUrl(cfg, o.army.host, path));
     if (!isSessionKey(c, queryParam(c, "chk"))) return to("/hq");
     const n = queryParam(c, "n");
-    const used = n !== undefined && /^[0-9]{1,2}$/.test(n) ? Number(n) : -1;
+    const used = n !== undefined && /^[0-9]{1,3}$/.test(n) ? Number(n) : -1;
     const t = now();
     const day = dayOf(t);
     freezeMissionType(db, o.army.id, day, () => missionTypeOf(db, o.army.id, day));
@@ -145,7 +145,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
    * mission du jour ! Ton armée gagne +4 [T]" → `/hq?money=4`, or the failure text → `/hq`, no button. Later views:
    * archived replay texts, `/hq`, "Retour". Title only for the infiltration.
    */
-  pages.get("/b/view/:m{miss[0-9]{1,2}}", (c: Context<Env>) => {
+  pages.get("/b/view/:m{miss[0-9]{1,3}}", (c: Context<Env>) => {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     const b = modeBattleOfDay(db, o.army.id, viewDay(c, today()), "mission", Number(c.req.param("m")!.slice(4)));

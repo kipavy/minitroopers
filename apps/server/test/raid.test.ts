@@ -339,13 +339,13 @@ test("HQ raid box: won out (20 phases) and protected views", async () => {
   const { hqPage } = await import("../src/views/hq.ts");
   const env = setup("path");
   const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
-  const mission = { type: "infiltrate" as const, unlocked: false, tries: [], key: "ABCDEF" };
+  const mission = { type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" };
   const base = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: null, mission };
-  const done = String(hqPage(env.cfg, { ...base, locked: false, raid: { phase: RAID_MAX_PHASE, alive: 4, over: true, lastWin: true, key: "ABCDEF" } }));
+  const done = String(hqPage(env.cfg, { ...base, locked: false, raid: { phase: RAID_MAX_PHASE, step: RAID_MAX_PHASE, alive: 4, over: true, lastWin: true, key: "ABCDEF" } }));
   assert.ok(done.includes(`<h1 class="hbox">Raid Phase ${RAID_MAX_PHASE}</h1>`));
   assert.ok(done.includes(`<a href="/a/nsun/b/view/raid" class="b_bg bwin_bg" onmouseover="_.showTip('raid_tip','Tu as remporté le raid !')"`));
   assert.ok(done.includes('<span id="raid_tip">Nouveau raid dans'));
   assert.equal(raidLinks(done).length, 0);
-  const locked = String(hqPage(env.cfg, { ...base, locked: true, raid: { phase: 2, alive: 2, over: false, lastWin: false, key: "" } }));
+  const locked = String(hqPage(env.cfg, { ...base, locked: true, raid: { phase: 2, step: 2, alive: 2, over: false, lastWin: false, key: "" } }));
   assert.ok(locked.includes(`<h1 class="hbox">Raid Phase 2</h1>\n<div class="box2bottom"><div class="action bcount1"></div></div></div></div>`));
 });

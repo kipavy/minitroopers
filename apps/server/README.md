@@ -73,7 +73,72 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `set-password --name <hôte>` | pose ou remplace le mot de passe d'une armée, **uniquement** par `MT_ARMY_PASSWORD` (obligatoire, jamais vide) ; déconnecte ses sessions. Seule voie pour une armée dont l'ordinateur de création est inconnu (`created_cid` NULL), que `/protect` refuse |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
+| `show --army <x> [--day AAAA-MM-JJ]` | état complet d'une armée : crédits, mot de passe, missions, rats, recruteur, recrues confirmées / en attente, troopers (niveau, compétences), ordre de déploiement, et la journée (défaut : aujourd'hui dans `TZ_GAME`) : batailles jouées / permises, mission, raid |
+| `reset-day --army <x> [--day AAAA-MM-JJ] [--what battles\|mission\|raid\|all]` | rend les quotas d'une journée (défaut : aujourd'hui, `all`), sans rien effacer (voir plus bas) |
+| `set-credits --army <x> --amount <N>` | fixe les crédits à N (≥ 0) |
+| `set-rats --army <x> --rats <1-100>` | rats de la prochaine extermination |
+| `unlock-missions --army <x> [--lock]` | débloque les missions sans les faire payer ; `--lock` les verrouille à nouveau |
+| `rename --army <x> --name <nouveau nom>` | renomme l'armée (règles de la création, article conservé) ; refuse un hôte déjà pris ; les sessions restent ouvertes, la nouvelle adresse est affichée (en mode sous-domaines, l'adresse change avec l'hôte) |
+| `level-up --army <x> --slot <N> --skill <NOM \| id>` | une montée de niveau gratuite du trooper de l'emplacement N, avec cette compétence seulement si le jeu la propose à ce niveau (sinon : liste des compétences proposées) ; refusée si une montée payée attend son choix |
+| `confirm-recruits --army <x>` | confirme les recrues en attente et crédite leurs primes, exactement comme l'ouverture de `/history` |
+| `delete-army --army <x> [--yes]` | supprime l'armée, ses troopers et les combats qu'elle a lancés (ses défenses restent chez leurs attaquants, ses recrues perdent leur recruteur) ; sans `--yes`, affiche seulement ce qui serait supprimé et sort avec le code 1 |
 | `backup --out <fichier>` | copie cohérente de la base (`VACUUM INTO`), possible pendant que le serveur tourne ; refuse un fichier existant ; dans le conteneur Docker, chemin absolu sous `/data` |
+
+`<x>` est le nom de l'armée ou son hôte (`"Mon Armée"` ou `mon-armee`). Les erreurs sont écrites en français
+sur la sortie d'erreur, avec le code de sortie 1. Chaque modification est une seule transaction
+(`BEGIN IMMEDIATE`), sans risque pendant que le serveur tourne. Les armées de faction sont refusées par
+`reset-day`, `set-rats`, `unlock-missions`, `rename`, `level-up` et `delete-army`.
+
+Un exemple par commande (noms à remplacer) :
+
+```sh
+npm run admin -- seed-factions
+npm run admin -- create-army --name "<nom de l'armée>" --troopers @armee.json
+MT_ARMY_PASSWORD='<mot de passe>' npm run admin -- create-bro-army --name "<nom de l'armée>"
+MT_ARMY_PASSWORD='<mot de passe>' npm run admin -- set-password --name <hôte>
+npm run admin -- give-credits --army <hôte> --amount 50
+npm run admin -- list
+npm run admin -- backup --out var/sauvegarde.db
+npm run admin -- show --army <hôte>
+npm run admin -- reset-day --army <hôte> --what battles
+npm run admin -- set-credits --army <hôte> --amount 200
+npm run admin -- set-rats --army <hôte> --rats 20
+npm run admin -- unlock-missions --army <hôte>
+npm run admin -- rename --army <hôte> --name "<nouveau nom>"
+npm run admin -- level-up --army <hôte> --slot 0 --skill SMART
+npm run admin -- confirm-recruits --army <hôte>
+npm run admin -- delete-army --army <hôte>          # aperçu ; ajouter --yes pour supprimer
+```
+
+### Dans Docker
+
+La CLI tourne dans le conteneur, sur la même base (`/data`), pendant que le serveur tourne :
+
+```sh
+docker compose exec minitroopers npm run admin -- show --army <hôte>     # deploy/compose.yaml
+docker exec minitroopers npm run admin -- show --army <hôte>             # conteneur lancé par docker run --name minitroopers
+```
+
+Pour un mot de passe : `docker exec -e MT_ARMY_PASSWORD minitroopers npm run admin -- set-password --name <hôte>`
+(la variable est reprise de l'environnement du shell, après `read -rs MT_ARMY_PASSWORD && export MT_ARMY_PASSWORD`).
+
+### `reset-day` : rendre une journée sans effacer l'historique
+
+Rien n'est supprimé et aucun compteur ne recule : les combats déjà joués restent dans l'historique et se
+rejouent à l'identique, et leurs numéros (`/b/view/bat<n>`, `/b/view/miss<n>`) restent uniques. La remise à
+zéro enregistre ce qui était déjà utilisé (`daily.battles_reset`, `missions_reset`, `raid_reset`, migration
+007) et les quotas comptent à partir de là :
+
+- `battles` : la limite du jour compte de nouveau depuis les batailles déjà jouées, soit une journée complète de
+  batailles en plus ; la page QG n'affiche plus que les batailles jouées depuis ;
+- `mission` : la même mission (type et adversaire gelés) retrouve tous ses essais et n'est plus gagnée ;
+- `raid` : phase 1 avec toutes les recrues vivantes ; le compteur du lien (`/b/raid?phase=`) passe à une valeur
+  jamais utilisée, la phase jouée étant ce compteur moins `raid_reset` ;
+- `all` (défaut) : les trois.
+
+Les liens d'action portent ces compteurs qui ne font que croître : un lien émis avant la remise à zéro (onglet
+resté ouvert, rechargement) ne correspond à aucun nouveau combat et ne rejoue rien, il affiche le combat qu'il
+avait produit ou renvoie au QG. Relancer `reset-day` sans nouveau combat ne change rien.
 
 Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
 l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :
