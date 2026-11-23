@@ -47,6 +47,19 @@ test("validateArmyName", () => {
   assert.equal(validateArmyName("a-b-c-d-e-f-g-h-i-j-", 5).ok, true);
 });
 
+test("validateArmyName: hosts a browser or DNS cannot reach are refused", () => {
+  // new URL("http://xn--a.mt.localhost") throws: "xn--" starts a punycode label
+  assert.equal(validateArmyName("xn--abc", 0).ok, false);
+  assert.equal(validateArmyName("XN--Warp", 0).ok, false);
+  // a DNS label cannot start or end with "-"
+  assert.equal(validateArmyName("-Warp", 0).ok, false);
+  assert.equal(validateArmyName("Warp-", 0).ok, false);
+  assert.equal(validateArmyName("- Warp -", 0).ok, false);
+  assert.equal(validateArmyName("---", 0).ok, false);
+  assert.equal(validateArmyName("! Warp", 0).ok, false); // "!" dropped, the space became a leading "-"
+  assert.deepEqual(validateArmyName("War-p", 0), { ok: true, host: "war-p" });
+});
+
 test("dailyOffers: deterministic, 5 distinct, sensitive to inputs", () => {
   const p = { day: "2026-11-22", clientId: "c1", recruiter: null, salt: "s" };
   const a = dailyOffers(p);

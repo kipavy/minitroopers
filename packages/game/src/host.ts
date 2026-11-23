@@ -73,6 +73,9 @@ export function validateArmyName(name: string, part: number): { ok: true; host: 
   // UNVERIFIED: original server-side rule unknown; a dot would make a multi-label subdomain.
   if (h.includes(".")) return { ok: false, error: "Le nom ne peut pas contenir de point." };
   if (h.length < 3) return { ok: false, error: "Nom trop court (3 caractères minimum une fois simplifié)." };
+  // UNVERIFIED: original server-side rule unknown. A DNS label cannot start or end with "-" (this also refuses "---"),
+  // and "xn--" starts a punycode label that browsers refuse (new URL("http://xn--a.mt.localhost") throws).
+  if (h.startsWith("-") || h.endsWith("-") || h.startsWith("xn--")) return { ok: false, error: "Ce nom ne peut pas servir d'adresse." };
   if (RESERVED_HOSTS.includes(h)) return { ok: false, error: "Ce nom est réservé." };
   return { ok: true, host: h };
 }
