@@ -56,6 +56,8 @@ for (const mode of MODES) {
     assert.ok(html.includes('<div class="action bcount3">'));
     assert.ok(html.includes(`<a href="${base}/b/opp" class="b_bg bgo2_bg"`));
     assert.ok(html.includes("Il te reste 3 batailles aujourd'hui !"));
+    assert.ok(html.includes("Nouvelle mission dans") && !html.includes("Nouvelles batailles"));
+    assert.ok(html.includes("Protége ton armée avec un mot de passe !"));
     assert.ok(html.includes("Mission : Infiltrer") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
     assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 2);
     for (const [p, label] of [["/history", "Historique"], ["/choice", "Gérer mon armée"], ["/protect", "Protéger mon armée"], ["/ranks", "Hiérarchie"]]) {
@@ -155,14 +157,16 @@ for (const mode of MODES) {
     assert.ok(html.includes('type="password"'));
     assert.ok(html.includes("Cette armée est protégée. Identifie-toi sur la gauche."));
     assert.deepEqual(tilesOf(html), []);
-    assert.ok(!html.includes("swf_tr_view") && !html.includes("startRecruit") && !html.includes('class="box10"'));
+    assert.ok(!html.includes("swf_tr_view") && !html.includes("startRecruit"));
+    assert.ok(html.includes('class="box10"')); // the original locked view keeps the recruit link
+    assert.ok(html.includes("Modifier mon pass")); // footer of every page
     assert.equal((await stranger.req("/recruit")).status, 403);
     // another army's session is a stranger too
     const other = await army(env, "Autre", "3.3.3.3");
     assert.ok((await (await hqOf(env, other.cl, "warp")).text()).includes("insertpass"));
     // the owner (and nobody else) gets the real HQ; the protect entry is gone once a password is set
     const own = await (await hqOf(env, cl, "warp")).text();
-    assert.ok(own.includes("swf_tr_view") && !own.includes("insertpass") && !own.includes("Protéger mon armée"));
+    assert.ok(own.includes("swf_tr_view") && !own.includes("insertpass") && !own.includes("Protéger mon armée") && own.includes("Modifier mon pass"));
     // log in with the password: the form's own flow
     const at = env.at("warp", "/login");
     const ok = await stranger.req(at.url, { host: at.host, form: { login: "warp", pass: "pw" } });

@@ -115,6 +115,7 @@ export type CreateResult = { ok: true; army: ArmyRow } | { ok: false; reason: "t
  */
 export function createArmy(db: DatabaseSync, p: NewArmy): CreateResult {
   db.exec("BEGIN IMMEDIATE");
+  let open = true;
   try {
     if (armyByHost(db, p.host)) {
       db.exec("ROLLBACK");
@@ -135,9 +136,10 @@ export function createArmy(db: DatabaseSync, p: NewArmy): CreateResult {
     );
     db.prepare("INSERT INTO troopers(army_id, slot, seed, name) VALUES (?, 0, ?, ?)").run(id, p.trooper.seed, p.trooper.name);
     db.exec("COMMIT");
+    open = false;
     return { ok: true, army: armyById(db, id)! };
   } catch (e) {
-    db.exec("ROLLBACK");
+    if (open) db.exec("ROLLBACK");
     if (/UNIQUE/i.test(String(e))) return { ok: false, reason: "taken" };
     throw e;
   }

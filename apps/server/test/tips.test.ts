@@ -1,7 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { skillIconStyle, skillTip } from "../src/views/tips.ts";
 import { jsStr } from "../src/views/swf.ts";
 
@@ -16,10 +19,17 @@ test("tips.fr.json holds the archived FR tooltips by skill id", () => {
   assert.ok(tips["137"]!.body.includes("<i>{name}</i>"));
 });
 
-test("the extractor reproduces data/tips.fr.json", () => {
-  const before = readFileSync(DATA, "utf8");
-  execFileSync("node", [new URL("../scripts/extract-tips.mjs", import.meta.url).pathname], { stdio: "pipe" });
-  assert.equal(readFileSync(DATA, "utf8"), before);
+const SRC = "/home/dev/minitroopers-work/recon/assets/extra/site-elements/html/fr";
+
+test("the extractor reproduces data/tips.fr.json", { skip: !existsSync(SRC) && "archived pages not available" }, () => {
+  const dir = mkdtempSync(join(tmpdir(), "tips-"));
+  try {
+    const out = join(dir, "tips.json");
+    execFileSync("node", [fileURLToPath(new URL("../scripts/extract-tips.mjs", import.meta.url)), SRC, out], { stdio: "pipe" });
+    assert.equal(readFileSync(out, "utf8"), readFileSync(DATA, "utf8"));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("skill icons: 20-column sprite of 30px cells indexed by skill id", () => {

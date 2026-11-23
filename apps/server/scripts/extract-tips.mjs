@@ -1,5 +1,5 @@
 // Extracts the FR skill/weapon tooltips of the original pages into data/tips.fr.json.
-//   node apps/server/scripts/extract-tips.mjs [<html/fr dir>]
+//   node apps/server/scripts/extract-tips.mjs [<html/fr dir> [<output json>]]
 // Sources (same pages, same words): `mt.js.Tip.show(this,'...')` list items carrying a sprite offset of
 // /img/skills.png (home, add, t_0, ...) and the `box8` skill boxes of the level-up page (h2 + div.s).
 // The sprite is a 20-column grid of 30px cells whose index is the skill id (verified on 19/20 tips).
@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIR = process.argv[2] ?? "/home/dev/minitroopers-work/recon/assets/extra/site-elements/html/fr";
-const OUT = join(dirname(fileURLToPath(import.meta.url)), "../data/tips.fr.json");
+const OUT = process.argv[3] ?? join(dirname(fileURLToPath(import.meta.url)), "../data/tips.fr.json");
 const COLS = 20;
 const CELL = 30;
 

@@ -77,7 +77,7 @@ function menu(cfg: Config, v: HqView): Html {
 
 ${menuBtn("b2", u("/history"), "Historique", "Historique de tes recrues et batailles ciblées !")}
 ${menuBtn("b2", u("/choice"), "Gérer mon armée", "Change l'ordre de déploiement de tes troopers")}
-${v.army.passwordHash === null ? menuBtn("b3", u("/protect"), "Protéger mon armée", "Protège ton armée avec un mot de passe !") : ""}
+${v.army.passwordHash === null ? menuBtn("b3", u("/protect"), "Protéger mon armée", "Protége ton armée avec un mot de passe !") : ""}
 ${menuBtn("b3", u("/ranks"), "Hiérarchie", "Ton classement avec les autres joueurs")}
 `;
 }
@@ -116,29 +116,34 @@ function battleBox(cfg: Config, v: HqView): Html {
   const left = Math.max(0, v.battleTotal - v.battles.length);
   const tiles = Array.from({ length: count }, (_, i) => tile(cfg, v, i));
   const tipText = left === 0 ? "Tu as terminé tes batailles du jour !" : `Il te reste ${left} ${left > 1 ? "batailles" : "bataille"} aujourd'hui !`;
-  const base = Date.UTC(2000, 0, 1);
-  const fmt = (ms: number): string => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
   return html`<div class="box2"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>
 <div class="box2bottom"><div class="action bcount${count}">
 
 ${tiles}
 <div class="hqtip"><img src="/img/info.png"/>
 <span id="bat_tip">${tipText}</span></div>
-<div class="hqtip"><img src="/img/info.png"/>
-<span>Nouvelles batailles dans
-<img src="/img/anim_small_chrono.gif"/>
-<script type="text/javascript">
-	mt.js.Timer.TIMES="jhms";
-	mt.js.Timer.alloc('${raw(fmt(base))}','${raw(fmt(base + Math.max(0, v.resetIn) * 1000))}',2,null);</script>
-</span></div>
 </div></div></div></div>`;
 }
 
-const soonBox = (title: string, bg: string): Html => html`<div class="box2"><div class="box2bg" ${raw(BG(bg))}><h1 class="hbox">${title}</h1>
+/** Countdown to the daily reset, as the original prints it in the mission box ("Nouvelle mission dans" + chrono). */
+function resetTimer(seconds: number): Html {
+  const base = Date.UTC(2000, 0, 1);
+  const fmt = (ms: number): string => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+  return html`<div class="hqtip"><img src="/img/info.png"/>
+<span id="miss_tip">Nouvelle mission dans
+<img src="/img/anim_small_chrono.gif"/>
+<script type="text/javascript">
+	mt.js.Timer.TIMES="jhms";
+	mt.js.Timer.alloc('${raw(fmt(base))}','${raw(fmt(base + Math.max(0, seconds) * 1000))}',2,null);</script>
+</span></div>
+`;
+}
+
+const soonBox = (title: string, bg: string, timer: Html | "" = ""): Html => html`<div class="box2"><div class="box2bg" ${raw(BG(bg))}><h1 class="hbox">${title}</h1>
 <div class="box2bottom"><div class="action bcount0">
 <div class="hqtip"><img src="/img/info.png"/>
 <span>Bientôt disponible !</span></div>
-</div></div></div></div>
+${timer}</div></div></div></div>
 `;
 
 function recruitBox(cfg: Config, v: HqView): Html {
@@ -190,9 +195,9 @@ ${left}
 
 ${battleBox(cfg, v)}
 
-${soonBox("Mission : Infiltrer", "sewer")}
+${soonBox("Mission : Infiltrer", "sewer", resetTimer(v.resetIn))}
 ${soonBox("Raid", "wood")}
-${v.locked ? "" : recruitBox(cfg, v)}
+${recruitBox(cfg, v)}
 
 <div class="clear"></div></td></tr></table></div>`;
   return layout(cfg, { title, content, host: a.host });
