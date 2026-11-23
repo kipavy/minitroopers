@@ -12,3 +12,9 @@ docs
 **/test
 **/dist
 **/*.tsbuildinfo
+# Local data and secrets, wherever they are (deploy/data is the compose bind mount, inside the build context).
+deploy/data
+**/.env
+**/*.db
+**/*.db-wal
+**/*.db-shm

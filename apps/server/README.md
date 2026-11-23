@@ -73,7 +73,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `set-password --name <hôte>` | pose ou remplace le mot de passe d'une armée, **uniquement** par `MT_ARMY_PASSWORD` (obligatoire, jamais vide) ; déconnecte ses sessions. Seule voie pour une armée dont l'ordinateur de création est inconnu (`created_cid` NULL), que `/protect` refuse |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
-| `backup --out <fichier>` | copie cohérente de la base (`VACUUM INTO`), possible pendant que le serveur tourne ; refuse un fichier existant |
+| `backup --out <fichier>` | copie cohérente de la base (`VACUUM INTO`), possible pendant que le serveur tourne ; refuse un fichier existant ; dans le conteneur Docker, chemin absolu sous `/data` |
 
 Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
 l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :

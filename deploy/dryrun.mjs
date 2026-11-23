@@ -85,6 +85,14 @@ async function main() {
   try {
     // 1. Build context
     const ignored = excluder(join(REPO, ".dockerignore"));
+    // The rules themselves, on paths that git does not track but a working tree can hold (docker build copies it).
+    const MUST_EXCLUDE = ["deploy/data/minitroopers.db", "deploy/data/backup-2026-01-01.db", "deploy/data/minitroopers.db-wal", "deploy/.env", ".env",
+      "var/minitroopers.db", "var/minitroopers.db-shm", "x.db", "apps/server/node_modules/hono/index.js", "tools/bin/ms-playwright/x", "tools/oracle/golden-full/x"];
+    const MUST_KEEP = ["Dockerfile", "package-lock.json", "apps/server/src/main.ts", "apps/server/migrations/001_init.sql", "apps/server/data/tips.fr.json",
+      "apps/server/public/swf/client_fr_play.swf", "packages/engine/src/index.ts", "tools/oracle/package.json"];
+    for (const p of MUST_EXCLUDE) if (!ignored(p)) throw new Error(`.dockerignore does not exclude ${p}`);
+    for (const p of MUST_KEEP) if (ignored(p)) throw new Error(`.dockerignore excludes ${p}`);
+    console.log(`.dockerignore: ${MUST_EXCLUDE.length} planted paths excluded, ${MUST_KEEP.length} needed paths kept`);
     const files = execFileSync("git", ["ls-files", "-z"], { cwd: REPO, encoding: "utf8" }).split("\0").filter(Boolean);
     let copied = 0;
     for (const f of files) {

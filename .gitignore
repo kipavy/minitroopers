@@ -5,3 +5,8 @@ tools/oracle/golden-full/
 *.tsbuildinfo
 dist/
 var/
+deploy/.env
+deploy/data/
+*.db
+*.db-wal
+*.db-shm

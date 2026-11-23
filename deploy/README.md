@@ -18,7 +18,14 @@ docker run -d --name minitroopers -p 127.0.0.1:8080:8080 -v minitroopers-data:/d
 ```
 
 Puis ouvrir <http://localhost:8080/>. Au premier démarrage (base absente), les armées de faction sont créées.
-`docker ps` affiche l'état de santé (`HEALTHCHECK` sur `GET /healthz`, sans `curl`).
+`docker ps` affiche l'état de santé (`HEALTHCHECK` sur `GET /healthz`, sans `curl`). La sonde interroge
+`127.0.0.1` dans le conteneur : laisser `LISTEN_HOST=0.0.0.0` (valeur de l'image), sinon le conteneur
+reste « unhealthy » ou n'est plus joignable.
+
+L'étiquette de base `node:24.12-bookworm-slim` suit les correctifs de Node 24.12 et de Debian : deux
+constructions à des dates différentes peuvent donner des images différentes. Pour une construction
+reproductible, épingler le condensé (`FROM node:24.12-bookworm-slim@sha256:…`, donné par
+`docker buildx imagetools inspect node:24.12-bookworm-slim`) et le mettre à jour volontairement.
 
 `PUBLIC_URL` doit être **exactement** l'origine tapée dans le navigateur (`127.0.0.1` ≠ `localhost`) : sinon
 tout formulaire est refusé (403 « Requête refusée »).
@@ -55,7 +62,8 @@ docker exec minitroopers npm run admin -- backup --out /data/backup-$(date +%F).
 docker cp minitroopers:/data/backup-$(date +%F).db .
 ```
 
-`backup` écrit une copie cohérente (`VACUUM INTO`) même pendant les écritures du serveur, et refuse d'écraser
+Dans le conteneur, `--out` doit être un chemin absolu sous `/data` : c'est le seul dossier où l'utilisateur
+`node` peut écrire, et le seul conservé quand le conteneur est recréé. `backup` écrit une copie cohérente (`VACUUM INTO`) même pendant les écritures du serveur, et refuse d'écraser
 un fichier existant. Pour restaurer : arrêter le conteneur, remplacer `/data/minitroopers.db` par la copie (et
 supprimer `minitroopers.db-wal` / `-shm` s'ils existent), redémarrer.
 
@@ -75,7 +83,7 @@ démarrage suivant. Faire un `backup` avant une mise à jour.
 ## Derrière Cloudflare Tunnel (Docker Compose)
 
 [`compose.yaml`](compose.yaml) lance le serveur **sans port publié**, sur un réseau Docker partagé avec le
-conteneur `cloudflared` du tunnel. Créer `deploy/.env` (jamais commité) :
+conteneur `cloudflared` du tunnel. Créer `deploy/.env` (ignoré par git et par `.dockerignore`, comme `deploy/data/`) :
 
 ```sh
 PUBLIC_URL=https://minitroopers.example.org
@@ -93,6 +101,9 @@ docker compose up -d --build
 
 Dans la configuration du tunnel, faire pointer le nom public vers `http://minitroopers:8080`.
 
+- **Le réseau `${CF_NETWORK}` ne doit contenir que `cloudflared`** (et ce serveur) : avec `TRUST_PROXY=1`,
+  tout conteneur de ce réseau peut joindre le port 8080 et forger `CF-Connecting-IP`. Créer un réseau dédié
+  (`docker network create <réseau>`) plutôt que réutiliser un réseau partagé avec d'autres services.
 - **`TRUST_PROXY=1` seulement sans port publié** : le serveur croit alors l'en-tête `CF-Connecting-IP` (limites
   par IP). Si le port était joignable directement, n'importe qui pourrait forger cet en-tête. `compose.yaml`
   n'a donc aucune ligne `ports:` ; avec `docker run -p`, laisser `TRUST_PROXY` à `0`.

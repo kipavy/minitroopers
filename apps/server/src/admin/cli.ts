@@ -36,6 +36,7 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
       Liste les armées.
   backup --out <fichier>
       Copie cohérente de la base (VACUUM INTO), possible pendant que le serveur tourne. Refuse un fichier existant.
+      Dans le conteneur Docker : chemin absolu sous /data (seul dossier accessible en écriture et conservé).
 
 DATA_DIR (défaut var/) désigne la base, comme pour le serveur.`;
 
