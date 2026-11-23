@@ -39,7 +39,7 @@ async function warp(env: Env) {
   const res = await create(env, cl, "Warp", { part: "0" });
   assert.equal(res.status, 302);
   const a = armyByHost(env.db, "warp")!;
-  return { cl, key: cl.cookies.ssid!, id: a.id };
+  return { cl, key: cl.key!, id: a.id };
 }
 
 const get = (env: Env, cl: Client, path: string, init: { method?: string; form?: Record<string, string> } = {}): Promise<Response> => {
@@ -139,9 +139,9 @@ for (const mode of MODES) {
     const env = setup(mode);
     const { cl, id } = await warp(env);
     const foeId = foe(env, "foe", "Foe", [
-      { seed: 1234567, name: "Bob", choices: [0, 0] },
+      { seed: 1234567, name: "Bob" },
       { seed: 2345678, name: "Rob" },
-    ]);
+    ]); // power 10: within the opponent bound of a power-5 army (5 +- max(5, 10) * 50 %)
     const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
     const target = links.find((l) => l.ref === String(foeId))!;
     const before = credits(env, id);
@@ -221,7 +221,7 @@ for (const mode of MODES) {
     assert.ok(input.armies[1].troopers.length >= 1);
     assert.equal(rows[0]!.winner, simulateOutcome(input).winner);
     // the friend form replayed (same n) does not fight again either
-    const post = await get(env, cl, "/b/battle", { form: { chk: cl.cookies.ssid!, n: "0", friend: "Warp2" } });
+    const post = await get(env, cl, "/b/battle", { form: { chk: cl.key!, n: "0", friend: "Warp2" } });
     assert.equal(post.headers.get("location"), loc(mode, "/b/view/bat1"));
     assert.equal(battles(env, id).length, 1);
   });
@@ -406,7 +406,7 @@ for (const mode of MODES) {
     const r = await stranger.req(at.url, { host: at.host });
     assert.equal(r.status, 302);
     assert.equal(r.headers.get("location"), loc(mode, "/hq"));
-    const b = env.at("warp", `/b/battle?opp=1;n=0;chk=${stranger.cookies.ssid ?? "AAAAAA"}`);
+    const b = env.at("warp", `/b/battle?opp=1;n=0;chk=${stranger.key ?? "AAAAAA"}`);
     await stranger.req(b.url, { host: b.host });
     const v = env.at("warp", "/b/view/bat1");
     assert.equal((await stranger.req(v.url, { host: v.host })).status, 302);

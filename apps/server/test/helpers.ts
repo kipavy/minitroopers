@@ -25,6 +25,8 @@ export interface Env {
 export interface Client {
   req(path: string, init?: { method?: string; form?: Record<string, string>; host?: string }): Promise<Response>;
   cookies: Record<string, string>;
+  /** Session key (anti-CSRF token of action URLs) of the session held by the `ssid` cookie, if any. */
+  readonly key: string | undefined;
 }
 
 export function setup(mode: Mode = "path", extra: Record<string, string> = {}, over: Pick<Deps, "battleSeed"> = {}): Env {
@@ -43,6 +45,10 @@ export function setup(mode: Mode = "path", extra: Record<string, string> = {}, o
       const cookies: Record<string, string> = {};
       return {
         cookies,
+        get key() {
+          const r = cookies.ssid ? (db.prepare("SELECT key FROM sessions WHERE token = ?").get(cookies.ssid) as { key: string } | undefined) : undefined;
+          return r?.key;
+        },
         async req(path, init = {}) {
           const headers: Record<string, string> = { "cf-connecting-ip": ip };
           if (init.host) headers.host = init.host;

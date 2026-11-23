@@ -26,30 +26,50 @@ const cookies = (res: Response): Record<string, string> => {
   return out;
 };
 
-test("first visit sets ssid (6 chars) and persistent cid, HttpOnly SameSite=Lax", async () => {
+test("first visit sets ssid (random 128-bit token, not the key) and persistent cid, HttpOnly SameSite=Lax", async () => {
   const { app, db } = setup();
   const res = await app.request("/key");
   const set = res.headers.getSetCookie();
   const c = cookies(res);
-  assert.match(c.ssid!, /^[A-Za-z0-9]{6}$/);
+  assert.match(c.ssid!, /^[A-Za-z0-9_-]{22}$/);
   assert.ok(c.cid && c.cid.length >= 16);
   for (const s of set) {
     assert.match(s, /HttpOnly/i);
     assert.match(s, /SameSite=Lax/i);
     assert.doesNotMatch(s, /Secure/i);
   }
-  assert.equal(await res.text(), c.ssid);
-  const row = db.prepare("SELECT key, client_id FROM sessions").get() as { key: string; client_id: string };
-  assert.deepEqual({ ...row }, { key: c.ssid, client_id: c.cid });
+  const key = await res.text();
+  assert.match(key, /^[A-Za-z0-9]{6}$/);
+  assert.notEqual(c.ssid, key);
+  const row = db.prepare("SELECT key, token, client_id FROM sessions").get() as { key: string; token: string; client_id: string };
+  assert.deepEqual({ ...row }, { key, token: c.ssid, client_id: c.cid });
 });
 
 test("returning visit keeps the session and cid", async () => {
   const { app, db } = setup();
-  const c = cookies(await app.request("/key"));
+  const first = await app.request("/key");
+  const c = cookies(first);
+  const key = await first.text();
   const res = await app.request("/key", { headers: { cookie: `ssid=${c.ssid}; cid=${c.cid}` } });
-  assert.equal(await res.text(), c.ssid);
+  assert.equal(await res.text(), key);
   assert.equal(res.headers.getSetCookie().length, 0);
   assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 1);
+});
+
+test("the 6-char key of the action URLs is not a session cookie: ssid=<key> is a stranger", async () => {
+  const { app, db } = setup();
+  const first = await app.request("/key");
+  const c = cookies(first);
+  const key = await first.text();
+  db.prepare("INSERT INTO armies(host, name, created_at) VALUES ('nsun', 'nSun', 1)").run();
+  db.prepare("UPDATE sessions SET army_id = 1 WHERE key = ?").run(key);
+  const res = await app.request(`/act?chk=${key}`, { headers: { cookie: `ssid=${key}; cid=${c.cid}` } });
+  assert.equal(res.status, 403);
+  const stolen = cookies(res).ssid;
+  assert.ok(stolen && stolen !== c.ssid, "a fresh session was opened");
+  const row = db.prepare("SELECT key, army_id FROM sessions WHERE token = ?").get(stolen) as { key: string; army_id: number | null };
+  assert.notEqual(row.key, key);
+  assert.equal(row.army_id, null);
 });
 
 test("cookies are Secure when PUBLIC_URL is https", async () => {
@@ -60,14 +80,16 @@ test("cookies are Secure when PUBLIC_URL is https", async () => {
 
 test("action URL with a wrong or missing key -> 403, right key -> 200", async () => {
   const { app } = setup();
-  const c = cookies(await app.request("/key"));
+  const first = await app.request("/key");
+  const c = { ...cookies(first), key: await first.text() };
   const h = { headers: { cookie: `ssid=${c.ssid}; cid=${c.cid}` } };
   assert.equal((await app.request("/act?chk=WRONG1", h)).status, 403);
   assert.equal((await app.request("/act", h)).status, 403);
   assert.equal((await app.request("/act?chk=", h)).status, 403);
-  assert.equal((await app.request(`/act?opp=3;chk=${c.ssid}`, h)).status, 200); // original ';' separator
-  assert.equal((await app.request(`/act?chk=${c.ssid}`)).status, 403); // no cookie
-  const ok = await app.request(`/act?chk=${c.ssid}`, h);
+  assert.equal((await app.request(`/act?opp=3;chk=${c.key}`, h)).status, 200); // original ';' separator
+  assert.equal((await app.request(`/act?chk=${c.key}`)).status, 403); // no cookie
+  assert.equal((await app.request(`/act?chk=${c.ssid}`, h)).status, 403); // the cookie value is not the key
+  const ok = await app.request(`/act?chk=${c.key}`, h);
   assert.equal(ok.status, 200);
   assert.equal(await ok.text(), "done");
 });

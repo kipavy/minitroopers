@@ -6,7 +6,10 @@ import type { Env } from "./app.ts";
 import type { Config } from "./config.ts";
 
 export interface Session {
-  /** 6-char key, also the anti-CSRF token of every action URL (like the original `ssid`). */
+  /**
+   * 6-char key: the anti-CSRF token of every action URL (like the original `ssid`). It is shown in URLs, so the
+   * session cookie carries a separate random token (sessions.token), never this key.
+   */
   key: string;
   armyId: number | null;
   /**
@@ -17,7 +20,8 @@ export interface Session {
 }
 
 const KEY_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-const KEY_RE = /^[A-Za-z0-9]{6}$/;
+/** `ssid` cookie: random 128-bit token (base64url), never the key, which every action URL shows. */
+const TOKEN_RE = /^[A-Za-z0-9_-]{22}$/;
 const CID_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const DAY_MS = 86_400_000;
 
@@ -37,22 +41,23 @@ export function sessionMiddleware(cfg: Config, db: DatabaseSync, now: () => numb
     if (c.get("session")) return next(); // pages are mounted twice in path mode: a 404 falls through both chains
     const ssid = getCookie(c, "ssid");
     const cidCookie = getCookie(c, "cid");
-    let row = ssid && KEY_RE.test(ssid)
-      ? (db.prepare("SELECT key, army_id, client_id FROM sessions WHERE key = ?").get(ssid) as { key: string; army_id: number | null; client_id: string } | undefined)
+    let row = ssid && TOKEN_RE.test(ssid)
+      ? (db.prepare("SELECT key, army_id, client_id FROM sessions WHERE token = ?").get(ssid) as { key: string; army_id: number | null; client_id: string } | undefined)
       : undefined;
     if (!row) {
       const clientId = cidCookie && CID_RE.test(cidCookie) ? cidCookie : randomBytes(16).toString("base64url");
+      const token = randomBytes(16).toString("base64url");
       for (;;) {
         const key = newKey();
         try {
-          db.prepare("INSERT INTO sessions(key, army_id, client_id, created_at) VALUES (?, NULL, ?, ?)").run(key, clientId, now());
+          db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES (?, ?, NULL, ?, ?)").run(key, token, clientId, now());
           row = { key, army_id: null, client_id: clientId };
           break;
         } catch (e) {
           if (!/UNIQUE|constraint/i.test(String(e))) throw e;
         }
       }
-      setCookie(c, "ssid", row.key, { ...opts, maxAge: 30 * 86400 });
+      setCookie(c, "ssid", token, { ...opts, maxAge: 30 * 86400 });
     }
     if (cidCookie !== row.client_id) setCookie(c, "cid", row.client_id, { ...opts, maxAge: 400 * 86400 });
     c.set("session", { key: row.key, armyId: row.army_id, clientId: row.client_id });

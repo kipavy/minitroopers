@@ -15,7 +15,7 @@ async function army(env: Env, o: { seed?: number; choices?: number[]; credits?: 
   const a = armyByHost(env.db, "warp")!;
   env.db.prepare("UPDATE troopers SET seed = ?, choices = ? WHERE army_id = ?").run(o.seed ?? 1000, JSON.stringify(o.choices ?? []), a.id);
   env.db.prepare("UPDATE armies SET credits = ? WHERE id = ?").run(o.credits ?? 100, a.id);
-  return { cl, key: cl.cookies.ssid!, id: a.id };
+  return { cl, key: cl.key!, id: a.id };
 }
 const get = (env: Env, cl: Client, path: string, init: { method?: string; form?: Record<string, string> } = {}): Promise<Response> => {
   const at = env.at("warp", path);
