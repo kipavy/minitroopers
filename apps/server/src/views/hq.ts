@@ -34,6 +34,8 @@ export interface HqView {
   lockError?: string;
   /** The mission of the day (box title, unlock, tries) and the session key of its action links. */
   mission: { type: MissionType; unlocked: boolean; tries: DayBattle[]; key: string };
+  /** Today's raid: phase to fight (or last fought once over), living recruits, outcome of the last phase once over. */
+  raid: { phase: number; alive: number; over: boolean; lastWin: boolean; key: string };
 }
 
 const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;
@@ -82,11 +84,11 @@ ${tiles}
 }
 
 /** Countdown to the daily reset, as the original prints it in the mission box ("Nouvelle mission dans" + chrono). */
-function resetTimer(seconds: number): Html {
+function resetTimer(seconds: number, id = "miss_tip", label = "Nouvelle mission dans"): Html {
   const base = Date.UTC(2000, 0, 1);
   const fmt = (ms: number): string => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
   return html`<div class="hqtip"><img src="/img/info.png"/>
-<span id="miss_tip">Nouvelle mission dans
+<span id="${id}">${label}
 <img src="/img/anim_small_chrono.gif"/>
 <script type="text/javascript">
 	mt.js.Timer.TIMES="jhms";
@@ -95,12 +97,46 @@ function resetTimer(seconds: number): Html {
 `;
 }
 
-const soonBox = (title: string, bg: string, timer: Html | "" = ""): Html => html`<div class="box2"><div class="box2bg" ${raw(BG(bg))}><h1 class="hbox">${title}</h1>
-<div class="box2bottom"><div class="action bcount0">
-<div class="hqtip"><img src="/img/info.png"/>
-<span>Bientôt disponible !</span></div>
-${timer}</div></div></div></div>
+const RCOUNT_TIP = "Pour chaque armée que tu recrutes, son premier trooper sera disponible pour le Raid jusqu'à ce qu'il soit tué en combat ! ";
+
+/**
+ * The raid box, from $EX/html/fr/hq-levelup.html (`.rcount` with its "Recrues Disponibles" tooltip, `bgo` tile, hqtip)
+ * and com/hq.html ("Raid Phase 2" once phase 1 is won; protected: empty `bcount1` action).
+ */
+function raidBox(cfg: Config, v: HqView): Html {
+  const r = v.raid;
+  const title = r.phase > 1 ? `Raid Phase ${r.phase}` : "Raid";
+  const frame = (count: number, inner: Html): Html => html`<div class="box2"><div class="box2bg" ${raw(BG("wood"))}><h1 class="hbox">${title}</h1>
+<div class="box2bottom"><div class="action bcount${count}">${inner}</div></div></div></div>
 `;
+  if (v.locked) return frame(1, html``);
+  if (!r.over && r.alive === 0) {
+    // UNVERIFIED: the box of an army without recruits was never archived (text of our own).
+    return frame(0, html`
+<div class="hqtip"><img src="/img/info.png"/>
+<span id="raid_tip">Recrute tes amis pour lancer un raid !</span></div>
+`);
+  }
+  const rcount = html`<div class="rcount" ${tip("Recrues Disponibles", RCOUNT_TIP)}>${r.alive}
+<img src="/favicon.ico"/></div>
+
+`;
+  if (r.over) {
+    // UNVERIFIED: the box after the day's raid was never archived; built like the mission box ("Nouveau raid dans" + chrono).
+    const k = r.lastWin ? "bwin" : "bdefeat";
+    const text = r.lastWin ? "Tu as remporté le raid !" : "Ce combat s'est soldé par un échec !";
+    return frame(1, html`
+${rcount}
+<div class="b ${k}"><div class="b_right ${k}_right"><a href="${armyUrl(cfg, v.army.host, "/b/view/raid")}" class="b_bg ${k}_bg" onmouseover="_.showTip('raid_tip','${text}')" onmouseout="_.resetTip('raid_tip')"><img src="/img/${k}.gif"/></a></div></div>
+${resetTimer(v.resetIn, "raid_tip", "Nouveau raid dans")}`);
+  }
+  return frame(1, html`
+${rcount}
+<div class="b bgo"><div class="b_right bgo_right"><a href="${armyUrl(cfg, v.army.host, `/b/raid?phase=${r.phase};chk=${r.key}`)}" class="b_bg bgo_bg" onmouseover="_.showTip('raid_tip','Lancer un raid avec les ${r.alive} recrues encore vivantes !')" onmouseout="_.resetTip('raid_tip')"><img src="/img/bgo.gif"/></a></div></div>
+<div class="hqtip"><img src="/img/info.png"/>
+<span id="raid_tip">Encore ${r.alive} recrues disponibles pour le raid !</span></div>
+`);
+}
 
 function recruitBox(cfg: Config, v: HqView): Html {
   const link = absoluteArmyUrl(cfg, v.army.host, "/");
@@ -153,7 +189,7 @@ ${(v.pendingRecruits ?? 0) > 0 && !v.locked ? html`<ul class="history"><li class
 ${battleBox(cfg, v)}
 
 ${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}
-${soonBox("Raid", "wood")}
+${raidBox(cfg, v)}
 ${recruitBox(cfg, v)}
 
 <div class="clear"></div></td></tr></table></div>`;

@@ -61,7 +61,8 @@ for (const mode of MODES) {
     assert.ok(html.includes("Protége ton armée avec un mot de passe !"));
     assert.match(html, /<h1 class="hbox">Mission : (Infiltrer|Exterminer)<\/h1>/);
     assert.ok(html.includes("Débloquer pour 5") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
-    assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 1);
+    assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 0);
+    assert.ok(html.includes("Recrute tes amis pour lancer un raid !"));
     for (const [p, label] of [["/history", "Historique"], ["/choice", "Gérer mon armée"], ["/protect", "Protéger mon armée"], ["/ranks", "Hiérarchie"]]) {
       assert.ok(html.includes(`<a href="${base}${p}" class="but_bg`), p);
       assert.ok(html.includes(`>${label}</a>`), label);
@@ -235,7 +236,7 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   assert.equal(a, null);
   const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
   const mission = { type: "infiltrate" as const, unlocked: false, tries: [], key: "ABCDEF" };
-  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission };
+  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
   const html = String(hqPage(env.cfg, view));
   assert.ok(html.includes('<div id="notification"><div class="poptop">'));
   assert.ok(html.includes("Félicitations ! &lt;b&gt;x&lt;/b&gt;"));

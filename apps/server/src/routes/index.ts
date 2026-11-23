@@ -8,6 +8,7 @@ import { registerAdd } from "./add.ts";
 import { registerOpp } from "./opp.ts";
 import { registerBattle } from "./battle.ts";
 import { registerMission } from "./mission.ts";
+import { registerRaid } from "./raid.ts";
 import { registerHistory } from "./history.ts";
 import { registerProtect } from "./protect.ts";
 import { createPasswordLimits } from "../ratelimit.ts";
@@ -24,6 +25,7 @@ export function mountPages(deps: Deps): (pages: Hono<Env>) => void {
     registerOpp(pages, deps);
     registerBattle(pages, deps);
     registerMission(pages, deps);
+    registerRaid(pages, deps);
     registerHistory(pages, deps);
     registerProtect(pages, deps, limits);
   };

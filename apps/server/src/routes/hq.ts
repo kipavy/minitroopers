@@ -7,7 +7,10 @@ import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
 import { asMissionType, missionTypeOf } from "./mission.ts";
-import { armyByHost, armyById, battlesOfDay, freezeMissionType, missionDay, missionsOfDay, pendingRecruits, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
+import {
+  armyByHost, armyById, battlesOfDay, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
+  troopersOf, trooperInput, type ArmyRow,
+} from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
 import { hqPage, recruitFragment, type HqView } from "../views/hq.ts";
@@ -50,7 +53,20 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       notice: o.notice ?? null,
       locked: o.locked,
       mission: { type: asMissionType(type), unlocked: army.missionsUnlocked, tries: o.locked ? [] : missionsOfDay(db, army.id, day), key: o.key ?? "" },
+      raid: raidBox(army, day, o.key ?? ""),
       ...(o.lockError ? { lockError: o.lockError } : {}),
+    };
+  }
+
+  function raidBox(army: ArmyRow, day: string, key: string): HqView["raid"] {
+    const r = raidDay(db, army.id, day);
+    const last = r.over ? lastRaidOfDay(db, army.id, day) : null;
+    return {
+      phase: r.phase,
+      alive: raidAlive(db, army.id, day).length,
+      over: r.over,
+      lastWin: last !== null && last.winner !== null && last.winner === last.input.attackerSide,
+      key,
     };
   }
 

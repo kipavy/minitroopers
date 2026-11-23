@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { MISSION_ATTEMPTS } from "@mt/game";
+import { MISSION_ATTEMPTS, RAID_MAX_PHASE } from "@mt/game";
 import { Data, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
@@ -650,13 +650,24 @@ export function unlockMissions(db: DatabaseSync, armyId: number, cost: number): 
   return out;
 }
 
-/** A mission or raid battle to store: `mode` and, for raids, the phase and the recruits killed (trooper ids of the input). */
+/** A mission or raid battle to store: `mode` and, for raids, the recruits killed (army ids of the recruits). */
 export type NewModeBattle = NewBattle & { mode: ModeKind; phase?: number; dead?: number[] };
 
 export type ModeResult =
   | { ok: true; id: number; n: number }
   | { ok: false; reason: "stale" | "limit" | "locked" | "won"; used: number }
   | { ok: false; reason: "refused"; code: string };
+
+/** Writes a mission or raid battle and credits its reward (call inside the fight transaction). Returns the battle id. */
+function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; kind: "mission" | "raid"; phase?: number }, d: NewModeBattle): number {
+  const id = Number(
+    db
+      .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode, phase) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.kind, d.mode, p.phase ?? null).lastInsertRowid,
+  );
+  db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
+  return id;
+}
 
 /**
  * One try of the mission of the day, atomically (BEGIN IMMEDIATE), like `fight`: refused when the missions are not
@@ -677,12 +688,7 @@ export function fightMission(db: DatabaseSync, p: { armyId: number; day: string;
     const d = p.decide();
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const win = d.winner !== null && d.winner === d.input.attackerSide;
-    const id = Number(
-      db
-        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode) VALUES (?, ?, ?, ?, ?, ?, 'mission', ?)")
-        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, d.mode).lastInsertRowid,
-    );
-    db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
+    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, kind: "mission" }, d);
     if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = rats + 1 WHERE id = ?").run(p.armyId);
     if (win && d.mode === "epic") db.prepare("UPDATE armies SET epic_wins = epic_wins + 1 WHERE id = ?").run(p.armyId);
     db.prepare(
@@ -704,4 +710,84 @@ export function modeBattleOfDay(db: DatabaseSync, armyId: number, day: string, k
 export function missionsOfDay(db: DatabaseSync, armyId: number, day: string): DayBattle[] {
   const rows = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'mission' ORDER BY id").all(armyId, day) as { input: string; winner: number | null }[];
   return rows.map((r, i) => ({ n: i + 1, win: r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide }));
+}
+
+// ---- raids ------------------------------------------------------------------------------------------------------
+
+/** A raid fighter: the first trooper (slot 0) of a confirmed recruit, `pref` null. */
+export type RaidRecruit = { recruitArmyId: number; trooper: BattleTrooperInput };
+
+// UNVERIFIED: the original fighting order of the recruits is undocumented (weakest first, ties in recruitment order).
+/** The raid pool: first trooper of every confirmed recruit, lowest level first, then in recruitment order. */
+export function raidRecruits(db: DatabaseSync, armyId: number): RaidRecruit[] {
+  return recruitLeaders(db, armyId)
+    .map((t) => ({ recruitArmyId: t.armyId, trooper: { ...trooperInput(t), pref: null } }))
+    .sort((a, b) => a.trooper.choices.length - b.trooper.choices.length || a.recruitArmyId - b.recruitArmyId);
+}
+
+/** Today's raid state of an army (defaults when the day has no row yet). */
+export interface RaidDay {
+  /** Phase to fight next (the last one fought once the raid is over). */
+  phase: number;
+  /** Army ids of the recruits killed today. */
+  dead: number[];
+  over: boolean;
+}
+
+export function raidDay(db: DatabaseSync, armyId: number, day: string): RaidDay {
+  const r = db.prepare("SELECT raid_phase, raid_dead, raid_over FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as
+    | { raid_phase: number; raid_dead: string; raid_over: number }
+    | undefined;
+  let dead: number[] = [];
+  try {
+    const v = JSON.parse(r?.raid_dead ?? "[]") as unknown;
+    if (Array.isArray(v)) dead = v.filter((x): x is number => Number.isInteger(x));
+  } catch {
+    dead = [];
+  }
+  return { phase: Number(r?.raid_phase ?? 1), dead, over: r?.raid_over === 1 };
+}
+
+/** The recruits still alive in today's raid, in fighting order. */
+export function raidAlive(db: DatabaseSync, armyId: number, day: string): RaidRecruit[] {
+  const dead = new Set(raidDay(db, armyId, day).dead);
+  return raidRecruits(db, armyId).filter((r) => !dead.has(r.recruitArmyId));
+}
+
+/**
+ * One raid phase, atomically (BEGIN IMMEDIATE). `phase` (the phase the URL was issued for) must be today's phase
+ * ("stale" otherwise: replays fight nothing); refused once the raid is over ("limit") or without a living recruit
+ * ("refused", code "none"). `decide` (inside the transaction) gets the living recruits and builds and resolves the
+ * battle; its `dead` (recruit army ids) join `daily.raid_dead`. A win pays the reward and opens the next phase
+ * (the raid is over after RAID_MAX_PHASE won phases, the phase then stays at RAID_MAX_PHASE); a defeat ends the raid.
+ */
+export function fightRaid(db: DatabaseSync, p: { armyId: number; day: string; phase: number; decide: (alive: RaidRecruit[]) => NewModeBattle | string }): ModeResult {
+  let out: ModeResult = { ok: false, reason: "limit", used: 0 };
+  immediate(db, () => {
+    const r = raidDay(db, p.armyId, p.day);
+    if (r.over) return (out = { ok: false, reason: "limit", used: r.phase }), null;
+    if (r.phase !== p.phase) return (out = { ok: false, reason: "stale", used: r.phase }), null;
+    const dead = new Set(r.dead);
+    const alive = raidRecruits(db, p.armyId).filter((x) => !dead.has(x.recruitArmyId));
+    if (alive.length === 0) return (out = { ok: false, reason: "refused", code: "none" }), null;
+    const d = p.decide(alive);
+    if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
+    const win = d.winner !== null && d.winner === d.input.attackerSide;
+    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, kind: "raid", phase: r.phase }, d);
+    for (const x of d.dead ?? []) dead.add(x);
+    // UNVERIFIED: 20 phases a day (SWF constant presumed to be the raid cap; wiki "20 (21 ?)").
+    const last = !win || r.phase >= RAID_MAX_PHASE;
+    db.prepare(
+      "INSERT INTO daily(army_id, day, raid_phase, raid_dead, raid_over) VALUES (?, ?, ?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET raid_phase = excluded.raid_phase, raid_dead = excluded.raid_dead, raid_over = excluded.raid_over",
+    ).run(p.armyId, p.day, last ? r.phase : r.phase + 1, JSON.stringify([...dead]), last ? 1 : 0);
+    const n = Number((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'raid'").get(p.armyId, p.day) as { n: number }).n);
+    return (out = { ok: true, id, n });
+  });
+  return out;
+}
+
+/** The last raid battle of an army on `day`, or null. */
+export function lastRaidOfDay(db: DatabaseSync, armyId: number, day: string): BattleRow | null {
+  const r = db.prepare("SELECT * FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'raid' ORDER BY id DESC LIMIT 1").get(armyId, day);
+  return r ? battleOf(r) : null;
 }
