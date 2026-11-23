@@ -2,8 +2,9 @@
 // Ruffle web (same runner as the oracle) with the engine boundary's own flashvars builders.
 //
 // What a battle exposes: the untouched client never tells JS who won. Its only JS callback is
-// endBattle() (no argument), fired when the player clicks "continuer" on the end banner — and
-// that click does not reach the button under Ruffle web. The banner itself carries the result:
+// endBattle() (no argument), fired when the player clicks "continuer" on the end banner (under
+// Ruffle web the first click on a fresh page is swallowed, the second one reaches the button; the
+// default subset asserts endBattle fires). The banner itself carries the result:
 // title VICTOIRE when the winner is the attacker's side (viewer = attacker), DEFAITE otherwise
 // (decompile: end screen `new r`M8(winner, attackerSide)`, title = Data.XXX[winner == attackerSide ? 5 : 6]).
 // So the strongest check available is the banner title, rendered by the SWF from the battle it
@@ -45,7 +46,7 @@ test("client_fr_play.swf matches its committed .sha256 and differs from the orig
   assert.notEqual(committed, original);
 });
 
-/** 20 goldens: per tag (alphabetical), the shortest battle won by the attacker and the shortest lost. */
+/** Per tag (alphabetical), the shortest battle won by the attacker and the shortest lost. */
 const pick = (): { id: string; input: BattleInput }[] => {
   const out: { id: string; input: BattleInput; n: number; won: boolean }[] = [];
   for (const tag of goldenTags()) {
@@ -61,10 +62,12 @@ const pick = (): { id: string; input: BattleInput }[] => {
       if (best) out.push(best);
     }
   }
-  return out.slice(0, 20);
+  return out;
 };
 
 const BASE = 8; // body margin: the 720x440 embed sits at (8, 8) of the page
+const BUTTON = { x: BASE + 360, y: BASE + 267 }; // "continuer", embed 331-389 x 260-274
+const FULL = process.env.MT_PLAY_FULL === "1";
 const clip = { x: BASE + 300, y: BASE + 160, width: 120, height: 24 };
 
 const available = await chromiumAvailable();
@@ -73,36 +76,42 @@ after(() => runner.close());
 
 const hardErrors = (errors: string[]): string[] => errors.filter((e) => !e.startsWith("warn:"));
 
-test("20 goldens replay in client_fr_play.swf: the end banner shows the engine's winner", { timeout: 1_800_000 }, async (t) => {
+// Default: 2 short goldens (one won, one lost), ~30 s. MT_PLAY_FULL=1 (npm run test:play): 20 goldens.
+test(`${FULL ? "20 goldens" : "2 goldens"} replay in client_fr_play.swf: the end banner shows the engine's winner, endBattle fires`, { timeout: 1_800_000 }, async (t) => {
   if (!available) {
     t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
     return;
   }
-  const picked = pick();
-  assert.equal(picked.length, 20);
-  const wins = picked.filter((p) => simulateOutcome(p.input).winner === p.input.attackerSide).length;
-  assert.ok(wins >= 6 && picked.length - wins >= 6, `outcome mix ${wins}/${picked.length}`);
+  const all = pick();
+  const won = (p: { input: BattleInput }): boolean => simulateOutcome(p.input).winner === p.input.attackerSide;
+  const picked = FULL
+    ? all.slice(0, 20)
+    : [all.find((p) => p.id === "edge/00002.json.gz")!, all.find((p) => p.id === "edge/00003.json.gz")!];
+  assert.equal(picked.length, FULL ? 20 : 2);
+  const wins = picked.filter(won).length;
+  assert.ok(FULL ? wins >= 6 && picked.length - wins >= 6 : wins === 1, `outcome mix ${wins}/${picked.length}`);
   const results: string[] = [];
   let next = 0;
   const worker = async (): Promise<void> => {
     for (let i = next++; i < picked.length; i = next++) {
       const { id, input } = picked[i]!;
-      const expected = simulateOutcome(input).winner === input.attackerSide ? VICTORY : DEFEAT;
+      const expected = won(picked[i]!) ? VICTORY : DEFEAT;
       const run = await runner
         .runPlay((o) => clientParams(battleData(input, `${o}/swf/army.swf`)), {
           timeoutMs: 240_000,
-          battle: { clip, ready: (png) => png.equals(VICTORY) || png.equals(DEFEAT) },
+          battle: { clip, ready: (png) => png.equals(VICTORY) || png.equals(DEFEAT), continueAt: i < 2 || !FULL ? BUTTON : undefined },
         })
         .catch((e: unknown) => {
           throw new Error(`${id}: ${(e as Error).message}`);
         });
       assert.deepEqual(hardErrors(run.errors), [], id);
       assert.ok(run.shot.equals(expected), `${id}: banner is ${run.shot.equals(VICTORY) ? "VICTOIRE" : "DEFAITE"}, engine says ${expected === VICTORY ? "VICTOIRE" : "DEFAITE"}`);
+      if (!FULL || i < 2) assert.ok(run.ended, `${id}: endBattle() was not called after the banner`);
       results.push(id);
     }
   };
   await Promise.all([worker(), worker(), worker(), worker()]);
-  assert.equal(results.length, 20);
+  assert.equal(results.length, picked.length);
 });
 
 const original = JSON.parse(readFileSync(new URL("../../../packages/engine/test/boundary/fixtures/original-pages.json", import.meta.url), "utf8")) as {

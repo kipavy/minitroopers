@@ -173,20 +173,20 @@ $hash = Get-Sha256 $Out
 Write-Host "$OutName sha256=$hash"
 
 if ($Verify) {
-  $PcTrace = Join-Path $WorkDir "pcode-trace"
-  Invoke-FFDec @("-format", "script:pcode", "-export", "script", $PcTrace, $Out)
+  $PcNew = Join-Path $WorkDir "pcode-new"
+  Invoke-FFDec @("-format", "script:pcode", "-export", "script", $PcNew, $Out)
   $a = @(Get-ChildItem -Recurse -File $PcOrig | ForEach-Object { $_.FullName.Substring($PcOrig.Length) })
-  $b = @(Get-ChildItem -Recurse -File $PcTrace | ForEach-Object { $_.FullName.Substring($PcTrace.Length) })
-  Compare-Object $a $b | ForEach-Object { Write-Host "ONLY-IN-$(if ($_.SideIndicator -eq '<=') {'ORIG'} else {'TRACE'}) $($_.InputObject)" }
+  $b = @(Get-ChildItem -Recurse -File $PcNew | ForEach-Object { $_.FullName.Substring($PcNew.Length) })
+  Compare-Object $a $b | ForEach-Object { Write-Host "ONLY-IN-$(if ($_.SideIndicator -eq "<=") {"ORIGINAL"} else {"RESULT"}) $($_.InputObject)" }
   # method indices are renumbered when the helper class grows: ignore `newfunction <N>` operands
   $norm = { param($p) (Read-Text $p) -replace "newfunction \d+", "newfunction #" }
   $raw = 0; $real = 0
   foreach ($rel in $a) {
-    $fa = Join-Path $PcOrig $rel; $fb = Join-Path $PcTrace $rel
+    $fa = Join-Path $PcOrig $rel; $fb = Join-Path $PcNew $rel
     if (-not (Test-Path -LiteralPath $fb) -or (Get-Sha256 $fa) -eq (Get-Sha256 $fb)) { continue }
     $raw++
     if ((& $norm $fa) -ne (& $norm $fb)) { $real++; Write-Host "DIFF $rel" }
   }
   Write-Host "P-code files differing: $raw raw, $real after ignoring 'newfunction N' renumbering"
-  Write-Host "P-code of original: $PcOrig ; of result: $PcTrace (diff -r them for details)"
+  Write-Host "P-code of original: $PcOrig ; of result: $PcNew (diff -r them for details)"
 }

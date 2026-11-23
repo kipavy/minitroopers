@@ -12,6 +12,7 @@
   "scripts": {
     "test": "node --test \"packages/*/test/**/*.test.ts\" \"tools/*/test/**/*.test.ts\"",
     "typecheck": "tsc -b",
+    "test:play": "node tools/oracle/scripts/test-play.mjs",
     "oracle:capture": "node tools/oracle/src/capture.ts",
     "oracle:coverage": "node tools/oracle/src/coverage.ts",
     "oracle:diff": "node tools/oracle/src/diff.ts"

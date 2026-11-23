@@ -446,10 +446,12 @@ Affichage (Ruffle web, `OracleRunner.runPlay`, `test/play.test.ts`) :
   (404) l'écran reste vide avec le pictogramme de chargement. Le serveur du site doit donc servir `/img/bg/*.jpg` ;
   le test en sert une de substitution (`test/fixtures/bg.jpg`, 720×440 uni) ;
 - le client original **ne transmet pas le vainqueur au JS** : son seul rappel est `ExternalInterface.call("endBattle")`
-  (sans argument), déclenché par le bouton « continuer » de la bannière de fin ; ce clic n'atteint pas le bouton
-  sous Ruffle web (ni survol ni appui visibles, alors que le survol des grilles fonctionne) et `endBattle` n'est
-  donc pas testé. Le résultat affiché est lu sur la bannière de fin, titre VICTOIRE si le vainqueur est le côté
-  attaquant, DÉFAITE sinon, rendue par le SWF à partir du combat qu'il a lui-même rejoué ; le test compare
-  octet à octet un recadrage de 120×24 px à deux références (`test/fixtures/banner-victoire.png`, `banner-defaite.png`) ;
+  (sans argument), déclenché par le bouton « continuer » de la bannière de fin (un Sprite avec un écouteur CLICK).
+  Sous Ruffle web le **premier clic sur une page neuve est avalé** (prise de focus/activation), le second atteint le
+  bouton : le test clique donc deux fois (au plus trois) puis vérifie que `endBattle` a été appelé. Le résultat
+  affiché est lu sur la bannière de fin, titre VICTOIRE si le vainqueur est le côté attaquant, DÉFAITE sinon, rendue
+  par le SWF à partir du combat qu'il a lui-même rejoué ; le test compare octet à octet un recadrage de 120×24 px à
+  deux références (`test/fixtures/banner-victoire.png`, `banner-defaite.png`) ;
 - le combat est rejoué en temps réel (≈ 25 s pour 20 événements d'historique, ≈ 60 s pour 25) : le test
-  prend les goldens les plus courts.
+  prend les goldens les plus courts. `npm test` n'en rejoue que 2 (un gagné, un perdu, ≈ 30 s) ; `npm run test:play`
+  (`MT_PLAY_FULL=1`) en rejoue 20 (≈ 3,5 min).

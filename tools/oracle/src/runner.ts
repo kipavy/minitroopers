@@ -112,7 +112,7 @@ window.__mt = { lines: [], calls: [], done: false, ended: false, errors: [] };
   };
 })();
 // client_fr_edit.swf reports its result through ExternalInterface.call("battleResult", …).
-// the original battle page defines endBattle(); client_fr_play.swf calls it when "continuer" is clicked.
+// the original battle page defines endBattle(); client_fr_play.swf calls it when "continuer" is clicked (the first click on a fresh page is swallowed).
 window.endBattle = function () { window.__mt.ended = true; };
 window.battleResult = function () { window.__mt.calls.push(Array.from(arguments)); };
 window.RufflePlayer = window.RufflePlayer || {};
@@ -208,10 +208,14 @@ export interface PlayOptions {
     clip: { x: number; y: number; width: number; height: number };
     ready: (png: Buffer) => boolean;
     pollMs?: number;
+    /** The banner's "continuer" button (page px): clicked twice, the first click only activates the player. */
+    continueAt?: { x: number; y: number } | undefined;
   };
 }
 
 export interface PlayRun {
+  /** The SWF called endBattle() (only checked when `battle.continueAt` is set). */
+  ended: boolean;
   /** console.error/warn lines and uncaught page errors. */
   errors: string[];
   /** Battles: the screenshot of `battle.clip` accepted by `ready`. Other modes: the 720x440 embed. */
@@ -316,7 +320,7 @@ export class OracleRunner {
    * Loads the display SWF (client_fr_play.swf) with the flashvars built by `params(origin)` (a
    * `clientParams()` string; `origin` serves army.swf / mini.swf under /swf/ and a background
    * under /img/bg/). The untouched client never reports the winner to JS: for battles the
-   * end-of-battle banner (victory/defeat title) is screenshotted (see PlayOptions.battle).
+   * end-of-battle banner (victory/defeat title) is screenshotted and, on request, the button clicked (see PlayOptions.battle).
    */
   async runPlay(params: (origin: string) => string, opts: PlayOptions = {}): Promise<PlayRun> {
     await this.start();
@@ -333,7 +337,7 @@ export class OracleRunner {
       );
       let shot: Buffer;
       if (opts.battle !== undefined) {
-        const { clip, ready, pollMs = 1000 } = opts.battle;
+        const { clip, ready, pollMs = 1000, continueAt } = opts.battle;
         const deadline = Date.now() + timeoutMs;
         for (;;) {
           shot = await page.screenshot({ clip });
@@ -341,12 +345,21 @@ export class OracleRunner {
           if (Date.now() > deadline) throw new OracleTimeoutError(timeoutMs, []);
           await page.waitForTimeout(pollMs);
         }
+        if (continueAt !== undefined) {
+          // Ruffle swallows the first click (focus/activation); the second one reaches the button.
+          for (let i = 0; i < 3 && !(await page.evaluate(() => (globalThis as any).__mt.ended)); i++) {
+            await page.mouse.move(continueAt.x, continueAt.y);
+            await page.mouse.down();
+            await page.mouse.up();
+            await page.waitForTimeout(400);
+          }
+        }
       } else {
         await page.waitForTimeout(opts.settleMs ?? 5000);
         shot = await page.screenshot({ clip: { x: 8, y: 8, width: PLAY_EMBED.width, height: PLAY_EMBED.height } });
       }
-      const got = (await page.evaluate(() => (globalThis as any).__mt)) as { errors: string[] };
-      return { errors: [...got.errors, ...pageErrors], shot };
+      const got = (await page.evaluate(() => (globalThis as any).__mt)) as { errors: string[]; ended: boolean };
+      return { ended: got.ended, errors: [...got.errors, ...pageErrors], shot };
     } finally {
       await page.close().catch(() => {});
     }
