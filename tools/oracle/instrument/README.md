@@ -449,6 +449,30 @@ SHA-256 : avant (chk seul) `0b22159735b96b721516957851487db23a69c393831b59b1549c
 `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856b`. Copie servie : `apps/server/public/swf/client_fr_play.swf`
 (identique, vérifié avec les bitmaps par `apps/server/test/assets.test.ts`). L'oracle (`client_fr_trace.swf`) n'est pas
 concerné : il ne dessine pas ces icônes et garde son propre SWF.
+
+### Champs de texte (hauteur 14 → 20, Ruffle masque la première ligne)
+
+La plupart des TextField du client sortent d'une fabrique (classe décompilée `§l\x0b\x01§`, méthode statique
+`§\x13#\fB\x01§(couleur = 0xFFFFFF, taille = 8, alignement = -1, police = "nokia")`) : `tf.height = 14;
+tf.embedFonts = true;`, format, `selectable = false`. Certains appelants y mettent une police plus grande que le champ :
+les compteurs en bas à gauche du combat (troopers en réserve, place de déploiement ; « motorola » 16 px, classe
+`§f\x03\x02§`) et « PAUSE » (« upheaval » 20 px). La première ligne a sa ligne de base à gouttière 2 + ascendante
+(motorola, DefineFont3 id 18 : 19220/20480 × 16 = 15 px) = 17 px, sous le bas du champ (14 px). Flash Player affiche
+toujours la première ligne d'un champ même si elle déborde. Ruffle (a111ceec, et `master` en 2026-11) masque le texte
+à la hauteur du champ (`core/src/display_object/edit_text.rs`, `render_self` : masque = bornes réduites en x seulement) :
+le bas des chiffres était coupé (« 08 » lu « ΠR »).
+
+`patch-play-textfields.mjs` (Node, sans dépendance, appelé par `build.ps1 -Play` après `patch-play-bitmaps.mjs`)
+remplace l'opérande de ce seul `pushbyte 14` (P-code `getlocal 5 ; pushbyte 14 ; initproperty height ; getlocal 5 ;
+pushtrue ; initproperty embedFonts`) par 20 : un octet de la balise DoABC (72), même longueur, rien d'autre ne bouge
+(corps décompressé : seul l'octet 301443 diffère). Refuse d'écrire sans exactement une occurrence (14, ou 20 sur un SWF
+déjà corrigé : idempotent, même fichier). Les champs qui fixent ensuite leur hauteur ne changent pas ; les autres sont
+mono-ligne, sans bordure ni fond : les 6 px ajoutés sous le texte ne dessinent rien.
+`node tools/oracle/instrument/patch-play-textfields.mjs assets/swf/client_fr_play.swf <sortie>`.
+SHA-256 : avant `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856b`, après
+`7e6a9b1aef651aa0e76e4d1c7b10237d58b4ed5e807e60d0404567750ee2de5c` (vérifié par `apps/server/test/assets.test.ts`).
+`CLIENT_SWF` passe à `?v=3` pour que les navigateurs reprennent les deux correctifs.
+
 - Innocuité (`build-play.ps1 -Verify`) : un seul fichier P-code diffère sur 290,
   `§,7u\x1f§` (Main) ; hors renumérotation des labels de saut (`ofs0081` → `ofs0080`, `ofs00f0` → `ofs00ef`,
   conséquence du retrait d'une instruction d'un octet), le diff est exactement :

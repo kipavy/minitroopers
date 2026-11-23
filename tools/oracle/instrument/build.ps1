@@ -171,6 +171,10 @@ Invoke-FFDec @("-importScript", $Step1, $Out, $Import)
 if ($Play) {
   & node (Join-Path $PSScriptRoot "patch-play-bitmaps.mjs") $Out $Out
   if ($LASTEXITCODE -ne 0) { throw "patch-play-bitmaps.mjs failed" }
+  # 4c. the TextField factory's `pushbyte 14` (height) becomes 20: Ruffle masks a field's first line to its height,
+  #     Flash let it overflow (README "client_fr_play.swf", "Champs de texte"). One byte of the DoABC tag.
+  & node (Join-Path $PSScriptRoot "patch-play-textfields.mjs") $Out $Out
+  if ($LASTEXITCODE -ne 0) { throw "patch-play-textfields.mjs failed" }
 }
 
 # 5. hash

@@ -83,7 +83,7 @@ for (const mode of MODES) {
     const html = await (await hqOf(env, cl, "warp")).text();
     const m = /flashvars : ("(?:[^"\\]|\\.)*")/.exec(html)!;
     assert.equal(JSON.parse(m[1]!), want);
-    assert.match(html, /embedSWF\("\/swf\/client_fr_play\.swf\?v=2","swf_tr_view",214,72,/);
+    assert.match(html, /embedSWF\("\/swf\/client_fr_play\.swf\?v=3","swf_tr_view",214,72,/);
     assert.match(html, /var ttips = \[\n\t"Ajoute un nouveau trooper à ton armée !"\n\t,"Accède aux informations du trooper \\u003cstrong\\u003e/);
     // 12 troopers: no add tile, 4 rows
     for (let s = 1; s < 12; s++) env.db.prepare("INSERT INTO troopers(army_id, slot, seed, name) VALUES (?,?,?,?)").run(a.id, s, 500 + s, `T${s}`);

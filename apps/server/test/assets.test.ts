@@ -167,3 +167,32 @@ test("client_fr_play.swf: bitmaps 17 and 19 have no opaque-white pixel; the serv
     assert.ok(clear > b.width * b.height / 2, `bitmap ${id}: background transparent`);
   }
 });
+
+/**
+ * Operands h of `getlocal 5; pushbyte h; initproperty <height>; getlocal 5; pushtrue; initproperty <embedFonts>` in the
+ * uncompressed body of a CWS SWF: the `tf.height = 14` of the client's TextField factory (§l\x0b\x01§).
+ */
+function factoryHeights(swf: Buffer): number[] {
+  const body = inflateSync(swf.subarray(8));
+  const out: number[] = [];
+  for (let i = 0; i + 12 < body.length; i++) {
+    if (body[i] !== 0x62 || body[i + 1] !== 5 || body[i + 2] !== 0x24 || body[i + 4] !== 0x68) continue;
+    let j = i + 5;
+    while (body[j]! & 0x80) j++;
+    j++;
+    if (body[j] === 0x62 && body[j + 1] === 5 && body[j + 2] === 0x26 && body[j + 3] === 0x68) out.push(body[i + 3]!);
+  }
+  return out;
+}
+
+// Ruffle masks a text field's first line to the field's height (Flash let it overflow): the 14 px fields of the factory
+// cut the bottom of the 16 px battle counters (bottom left) and of "PAUSE". client_fr_play.swf makes them 20 px high
+// (tools/oracle/instrument/patch-play-textfields.mjs); the served URL carries a new ?v= so browsers reload it.
+test("client_fr_play.swf: the TextField factory's height is 20 (14 in client_fr.swf), the embed URL is ?v=3", async () => {
+  const play = readFileSync(join(PUBLIC, "swf/client_fr_play.swf"));
+  assert.ok(play.equals(readFileSync(resolve(import.meta.dirname, "../../../assets/swf/client_fr_play.swf"))));
+  assert.deepEqual(factoryHeights(play), [20]);
+  assert.deepEqual(factoryHeights(readFileSync(resolve(import.meta.dirname, "../../../assets/swf/client_fr.swf"))), [14]);
+  const { CLIENT_SWF } = await import("../src/views/swf.ts");
+  assert.equal(CLIENT_SWF, "/swf/client_fr_play.swf?v=3");
+});
