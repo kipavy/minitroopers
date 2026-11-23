@@ -32,10 +32,10 @@ export function bindArmy(db: DatabaseSync, key: string, armyId: number | null): 
 }
 
 export function sessionMiddleware(cfg: Config, db: DatabaseSync, now: () => number = Date.now): MiddlewareHandler<Env> {
-  // Subdomain mode: share the session between the root site and <host>.<BASE_DOMAIN> via Domain=<BASE_DOMAIN> (no port).
+  // Subdomain mode: share the session between the root site and <host>.<BASE_DOMAIN> via Domain=<BASE_DOMAIN> (loadConfig refuses a port).
   // Verified in Chromium (test/e2e.test.ts, "[e2e cookies]"): works for mt.localhost; Domain=localhost is never sent to
   // <host>.localhost, so loadConfig refuses a single-label BASE_DOMAIN in subdomain mode.
-  const domain = cfg.urlMode === "subdomain" ? { domain: cfg.baseDomain.replace(/:\d+$/, "") } : {};
+  const domain = cfg.urlMode === "subdomain" ? { domain: cfg.baseDomain } : {};
   const opts = { httpOnly: true, sameSite: "Lax" as const, path: "/", secure: cfg.secureCookies, ...domain };
   return async (c, next) => {
     if (c.get("session")) return next(); // pages are mounted twice in path mode: a 404 falls through both chains

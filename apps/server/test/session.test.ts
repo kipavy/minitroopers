@@ -81,15 +81,16 @@ test("cookies are Secure when PUBLIC_URL is https", async () => {
 test("action URL with a wrong or missing key -> 403, right key -> 200", async () => {
   const { app } = setup();
   const first = await app.request("/key");
-  const c = { ...cookies(first), key: await first.text() };
+  const c = cookies(first);
+  const key = await first.text();
   const h = { headers: { cookie: `ssid=${c.ssid}; cid=${c.cid}` } };
   assert.equal((await app.request("/act?chk=WRONG1", h)).status, 403);
   assert.equal((await app.request("/act", h)).status, 403);
   assert.equal((await app.request("/act?chk=", h)).status, 403);
-  assert.equal((await app.request(`/act?opp=3;chk=${c.key}`, h)).status, 200); // original ';' separator
-  assert.equal((await app.request(`/act?chk=${c.key}`)).status, 403); // no cookie
+  assert.equal((await app.request(`/act?opp=3;chk=${key}`, h)).status, 200); // original ';' separator
+  assert.equal((await app.request(`/act?chk=${key}`)).status, 403); // no cookie
   assert.equal((await app.request(`/act?chk=${c.ssid}`, h)).status, 403); // the cookie value is not the key
-  const ok = await app.request(`/act?chk=${c.key}`, h);
+  const ok = await app.request(`/act?chk=${key}`, h);
   assert.equal(ok.status, 200);
   assert.equal(await ok.text(), "done");
 });
@@ -119,7 +120,7 @@ test("a 404 under /a/<host>/ sets a single session cookie", async () => {
 });
 
 test("subdomain mode sets Domain=BASE_DOMAIN on both cookies, path mode sets none", async () => {
-  const sub = setup({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me:8080" });
+  const sub = setup({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me" });
   const set = (await sub.app.request("/key")).headers.getSetCookie();
   assert.equal(set.length, 2);
   for (const s of set) assert.match(s, /Domain=lvh\.me(;|$)/i);

@@ -29,6 +29,39 @@ test("subdomain mode needs a BASE_DOMAIN of two labels or more; PUBLIC_URL defau
   assert.equal(loadConfig({ URL_MODE: "path", PORT: "9000" }).publicUrl, "http://localhost:9000");
 });
 
+test("HOST: listening address, 127.0.0.1 by default", () => {
+  assert.equal(loadConfig({}).host, "127.0.0.1");
+  assert.equal(loadConfig({ HOST: "0.0.0.0" }).host, "0.0.0.0");
+  assert.equal(loadConfig({ HOST: "::1" }).host, "::1");
+});
+
+test("strict parsing: TRUST_PROXY, PUBLIC_URL, TZ_GAME, BASE_DOMAIN fail at startup with a clear message", () => {
+  assert.equal(loadConfig({ TRUST_PROXY: "0" }).trustProxy, false);
+  assert.equal(loadConfig({ TRUST_PROXY: "1" }).trustProxy, true);
+  assert.equal(loadConfig({ TRUST_PROXY: "true" }).trustProxy, true);
+  assert.equal(loadConfig({ TRUST_PROXY: "false" }).trustProxy, false);
+  for (const v of ["yes", "on", "2", "TRUE ", ""]) assert.throws(() => loadConfig({ TRUST_PROXY: v }), /TRUST_PROXY/, v);
+  for (const v of ["localhost:8080", "ftp://x.example", "not a url", "//x.example"]) assert.throws(() => loadConfig({ PUBLIC_URL: v }), /PUBLIC_URL/, v);
+  assert.equal(loadConfig({ PUBLIC_URL: "https://x.example/" }).publicUrl, "https://x.example");
+  assert.equal(loadConfig({ TZ_GAME: "America/New_York" }).tzGame, "America/New_York");
+  for (const v of ["Mars/Olympus", "", "Europe/Pariss"]) assert.throws(() => loadConfig({ TZ_GAME: v }), /TZ_GAME/, v);
+  // the port of the army URLs comes from PUBLIC_URL: a port in BASE_DOMAIN is refused (it would never match a Host header)
+  assert.throws(() => loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me:8080" }), /BASE_DOMAIN.*port/);
+  assert.throws(() => loadConfig({ URL_MODE: "path", BASE_DOMAIN: "lvh.me:8080" }), /BASE_DOMAIN.*port/);
+  assert.equal("adminToken" in loadConfig({ ADMIN_TOKEN: "x" }), false);
+});
+
+test("subdomain URL helpers agree with each other (BASE_DOMAIN without port, port from PUBLIC_URL)", () => {
+  const c = loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "mt.localhost", PUBLIC_URL: "http://mt.localhost:8080" });
+  const u = new URL(armyUrl(c, "nsun", "/hq"));
+  assert.equal(u.href, "http://nsun.mt.localhost:8080/hq");
+  assert.deepEqual(resolveArmyHost(c, u.host, u.pathname), { host: "nsun", path: "/hq" });
+  const d = loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "Mt.Example", PUBLIC_URL: "https://mt.example" });
+  const v = new URL(armyUrl(d, "nsun", "/"));
+  assert.equal(v.href, "https://nsun.mt.example/");
+  assert.deepEqual(resolveArmyHost(d, v.host, v.pathname), { host: "nsun", path: "/" });
+});
+
 test("resolveDataDir: relative to the repository root, absolute kept", () => {
   assert.equal(resolveDataDir("var"), join(fileURLToPath(new URL("../../../", import.meta.url)), "var"));
   const abs = resolve("/srv/mt");

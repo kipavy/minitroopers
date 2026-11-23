@@ -20,13 +20,22 @@ Les données (base SQLite `minitroopers.db`, WAL) vont dans `var/` (gitignoré).
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `PORT` | `8080` | port d'écoute (sur 127.0.0.1) |
+| `PORT` | `8080` | port d'écoute |
+| `HOST` | `127.0.0.1` | adresse d'écoute (`0.0.0.0` pour toutes les interfaces, par exemple dans un conteneur) |
 | `URL_MODE` | `path` | `path` : armées sous `/a/<hôte>/hq` ; `subdomain` : `<hôte>.<BASE_DOMAIN>/hq` |
-| `BASE_DOMAIN` | `localhost` | domaine des sous-domaines d'armées (mode `subdomain`, au moins deux labels) |
-| `PUBLIC_URL` | `http://localhost:<PORT>` (`http://<BASE_DOMAIN>:<PORT>` en mode `subdomain`) | origine publique ; `https://` ⇒ cookies `Secure` |
+| `BASE_DOMAIN` | `localhost` | domaine des sous-domaines d'armées (mode `subdomain`, au moins deux labels, **sans port** : le port des URL vient de `PUBLIC_URL`) |
+| `PUBLIC_URL` | `http://localhost:<PORT>` (`http://<BASE_DOMAIN>:<PORT>` en mode `subdomain`) | origine publique `http(s)://…` ; `https://` ⇒ cookies `Secure` |
 | `DATA_DIR` | `var` | dossier des données (relatif à la racine du dépôt) |
-| `TRUST_PROXY` | `0` | `1` : IP client lue dans `CF-Connecting-IP` (derrière Cloudflare Tunnel seulement) |
-| `TZ_GAME` | `Europe/Paris` | fuseau du jour de jeu |
+| `TRUST_PROXY` | `0` | `0`/`false` ou `1`/`true` : IP client lue dans `CF-Connecting-IP` (derrière Cloudflare Tunnel seulement, voir ci-dessous) |
+| `TZ_GAME` | `Europe/Paris` | fuseau IANA du jour de jeu |
+
+Toute valeur invalide (`TRUST_PROXY` autre que `0`/`1`/`true`/`false`, `PUBLIC_URL` qui n'est pas une URL http(s),
+`TZ_GAME` inconnu, `BASE_DOMAIN` avec un port) arrête le serveur au démarrage avec un message explicite.
+
+**`TRUST_PROXY=1` n'est sûr que si le port n'est joignable que par le proxy** (`cloudflared` ou le reverse proxy) :
+le serveur croit alors l'en-tête `CF-Connecting-IP`, que n'importe quel client direct pourrait forger pour
+contourner les limites par IP. Garder `HOST=127.0.0.1` (défaut) avec `cloudflared` sur la même machine, ou
+fermer le port au reste du réseau.
 
 ### Mode sous-domaines en local
 

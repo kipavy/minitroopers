@@ -136,7 +136,7 @@ type ArmyRef = { id: string; power: number; isFiller?: boolean }
 **Files:** Create `apps/server/**` (structure ci-dessus) sauf vues de pages ; `apps/server/public/` (copie de `$EX/css/style.css`, `$EX/js/app.js`, `$EX/img/**`, jQuery 1.5.1 et 11 images de `RECON\assets\wayback\`, `ruffle/` épinglé, `swf/{client_fr_play,mini,army}.swf`, `js/embed.js`) ; tests `apps/server/test/{session,urls,ip,layout,db}.test.ts` ; `.gitignore` (`var/`).
 
 **Interfaces — Produces:**
-- `loadConfig(env): Config` — `PORT` (défaut 8080), `URL_MODE` (défaut `path`), `PUBLIC_URL`, `BASE_DOMAIN`, `DATA_DIR` (défaut `var/`), `TRUST_PROXY`, `TZ_GAME` (`Europe/Paris`), `ADMIN_TOKEN`.
+- `loadConfig(env): Config` — `PORT` (défaut 8080), `URL_MODE` (défaut `path`), `PUBLIC_URL`, `BASE_DOMAIN`, `DATA_DIR` (défaut `var/`), `TRUST_PROXY`, `TZ_GAME` (`Europe/Paris`), `HOST` (`127.0.0.1`). (`ADMIN_TOKEN` abandonné : l'administration passe par la CLI locale.)
 - Schéma SQLite (`schema.sql`, migrations numérotées) : `armies(id, host UNIQUE, name, part, faction, credits, recruiter_id, created_at, created_ip, password_hash NULL, is_faction)`, `troopers(id, army_id, slot, seed, name, renamed, choices JSON, pending_levelup, pref JSON, left_over JSON)`, `battles(id, day, attacker_id, defender_id, input JSON, winner, kind)`, `daily(army_id, day, battles_used, opponents JSON)`, `sessions(key, army_id, client_id, created_at)`.
 - `session.ts` : cookie `ssid` (clé 6 car. comme l'original, anti-CSRF sur toute URL d'action) + `cid` (identifiant client persistant = « machine id » de remplacement, `// UNVERIFIED` : le `mid` Flash n'est pas vérifiable sans `chk`).
 - `urls.ts` : `armyUrl(cfg, host, path)` ; résolution de l'armée courante depuis l'hôte ou `/a/<host>/`.
