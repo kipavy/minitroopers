@@ -121,5 +121,11 @@ node --test apps/server/test/e2e.test.ts   # bout en bout seul
 Chromium headless (Playwright, navigateurs sous `tools/bin/ms-playwright`, ignoré s'ils sont absents) :
 création d'armée, crédits par la CLI, amélioration et choix de compétence, achat d'un trooper, combat ; la page
 de combat charge Ruffle et le SWF, dont la bannière de fin (VICTOIRE/DÉFAITE) doit montrer le vainqueur
-enregistré en base, puis « continuer » doit appeler `endBattle()` vers `/hq?money=<gain>`. Durée : quelques
-minutes (le combat est rejoué en temps réel).
+enregistré en base, puis « continuer » doit appeler `endBattle()` vers `/hq?money=<gain>`. Un second parcours
+(étape 3) : A crée son armée, B s'inscrit par le lien de recrutement de A, A ouvre `/history` (recrue confirmée,
++100), débloque et joue la mission du jour (quel que soit son type), lance un raid avec B, puis pose un mot de
+passe par `/protect` ; la mission et le raid sont rejoués par le SWF avec le vainqueur enregistré en base.
+Durée : plusieurs minutes (chaque combat est rejoué en temps réel ; `MT_E2E_BATTLE_MS` borne l'attente d'une
+bannière, 400 000 ms par défaut).
+
+En cas d'échec d'une bannière, les captures `var/e2e-<mode>-<combat>-{banner,player}.png` aident au diagnostic.

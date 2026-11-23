@@ -223,3 +223,22 @@ NPC-only: Semelles de Plomb (knockdown immunity, Bibi).
 Raid cap (20 vs 21+), no raid boss found; exact initiative/dodge/speed/deploy formulas; min
 levels for Fighter Jet, Black Hole, Martyr, Commander, Occupation; sewer mapping; FR/EN faction
 pairing; post-2016 changes; minitroopers.fr archive not reachable.
+
+## Vérifié depuis
+
+Recoupé à l'étape 3 (2026-11-23) sur les pages archivées et les flashvars décodées
+(`~/minitroopers-work/recon/stage3-recon.md`, RECON3) :
+
+- **Paliers de parrainage** : 100 / 50 ×3 / 10 ×10 / 5 ×20 / 0, comptés sur les recrues confirmées
+  (`$EX/html/fr/history.html` : 18 recrues, gains 5,5,5,5,10×6 du plus récent au plus ancien ; 2e historique Wayback :
+  1 recrue, « Gain : 100 »). Le tableau Economy ci-dessus est donc juste ($GL est décalé d'un). Confirmation à la
+  visite de `/history` (lien « Nouvelle recrue disponible ! » du QG archivé).
+- **Formes des armées de mode** (13 combats archivés décodés) : rats `name "rat"`, type 2, `choices []`, 2 compétences
+  `force` du jeu de rats, graines < 100 000, faction 0, mêmes rats pour les 3 essais du jour, nombre = 1 + victoires
+  d'extermination ; PNJ de raid/épique humains, graines < 100 000, `choices` aléatoires 0/1, `force null`, gardent tous
+  leurs objets ; recrues = 1er trooper de chaque armée recrutée, `pref null` (raid : niveau croissant ; épique : armée
+  propre puis recrues par niveau décroissant, 32 au total, 100 PNJ) ; ids défenseur d'abord (infiltration, raid),
+  attaquant d'abord (extermination, épique) ; `attackerSide` = 0.
+- **Raid phase 1 = puissance 11** : 3 raids archivés opposent 1 PNJ niveau 7 (puissance 11), ce que donne
+  `calculateRaidPower(1)` de $GL ; un 4e raid à 32 PNJ, puissance 325 ≈ phase 11 (326). Gain +4 par phase gagnée
+  (endMsg FR archivé). Aucun boss de raid dans les 4 raids archivés.
