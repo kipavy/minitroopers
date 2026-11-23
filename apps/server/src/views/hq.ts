@@ -4,7 +4,7 @@ import type { Config } from "../config.ts";
 import type { ArmyRow, DayBattle, DefenseRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
-import { esc, html, jsq, raw, type Html } from "./html.ts";
+import { BG, esc, html, jsq, raw, type Html } from "./html.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu, insertPass, menuOf } from "./panel.ts";
@@ -40,9 +40,6 @@ export interface HqView {
   /** Today's raid: phase to fight (or last fought once over), living recruits, outcome of the last phase once over. */
   raid: { phase: number; alive: number; over: boolean; lastWin: boolean; key: string };
 }
-
-/** Inline background of a box2 header (`/img/mode/<name>.jpg`), shared by the HQ and mission boxes. */
-export const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;
 
 function tile(cfg: Config, v: HqView, i: number): Html {
   const done = v.battles[i];
@@ -155,6 +152,8 @@ Ta prochaine recrue te rapportera ${v.nextBounty}
 function historyList(cfg: Config, v: HqView): Html | "" {
   const host = v.army.host;
   const child = (v.pendingRecruits ?? 0) > 0 && !v.locked;
+  // UNVERIFIED: the last defence is also shown to a visitor without the password (public `/b/fview/<id>` link);
+  // fr/hq.html (protected view) shows it, but it is the only protected HQ archived.
   const d = v.lastDefense ?? null;
   if (!child && d === null) return "";
   return html`<ul class="history">${child ? html`<li class="newchild"><a href="${armyUrl(cfg, host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>` : ""}${
@@ -173,9 +172,14 @@ export function hqPage(cfg: Config, v: HqView): Html {
   const title = armyTitle(a.name, a.part);
   const shownMoney = v.moneyDelta > 0 ? Math.max(0, a.credits - v.moneyDelta) : a.credits;
   const notice = v.locked ? (v.lockError ? notification(v.lockError, true) : "") : v.notice ? notification(v.notice) : "";
+  // fr/hq.html (protected): the troopers grid, then the password form in place of the menu.
   const left = v.locked
-    ? html`${insertPass(cfg, v.army.host)}
-</div>`
+    ? html`${armyGrid(cfg, v.army, v.troopers)}</div>
+<div class="clear"></div>
+
+
+
+${insertPass(cfg, v.army.host)}`
     : html`${armyGrid(cfg, v.army, v.troopers)}</div>
 <div class="clear"></div>
 ${armyMenu(cfg, v.army, menuOf(v.army, v.troopers, v.power))}`;

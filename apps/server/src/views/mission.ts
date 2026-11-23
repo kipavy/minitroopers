@@ -2,8 +2,7 @@ import type { MissionType } from "@mt/game";
 import type { Config } from "../config.ts";
 import type { DayBattle } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
-import { html, jsq, raw, type Html } from "./html.ts";
-import { BG } from "./hq.ts";
+import { BG, html, jsq, raw, type Html } from "./html.ts";
 
 /** Box title ("Mission : Infiltrer", sitemap) and background (/img/mode/<bg>.jpg) of each mission type (RECON3 §4). */
 export const MISSION_BOX: Record<MissionType, { title: string; bg: string }> = {
@@ -27,7 +26,6 @@ export interface MissionBoxView {
   /** "Nouvelle mission dans" + chrono. */
   timer: Html;
 }
-
 
 /**
  * The mission box of the HQ, from $EX/html/fr/hq-levelup.html (one `bwin` tile after a won first try, "Nouvelle mission

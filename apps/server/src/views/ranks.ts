@@ -3,7 +3,7 @@ import type { Config } from "../config.ts";
 import type { RankRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "./army.ts";
-import { html, type Html } from "./html.ts";
+import { html, raw, type Html } from "./html.ts";
 import { tipH2 } from "./layout.ts";
 import { shellPage, type ShellView } from "./panel.ts";
 
@@ -23,7 +23,9 @@ function line(cfg: Config, r: RankRow, top: boolean): Html {
   const href = armyUrl(cfg, r.host, "/hq");
   const link = top ? html`<img src="/img/top.png"/>
 <a href="${href}">${armyTitle(r.name, r.part)}</a>` : html`<a href="${href}" target="_blank">${armyTitle(r.name, r.part)}</a>`;
-  return html`<tr${top ? html` class="top"` : ""}><td><div class="faction faction${r.faction}" ${tipH2(factionLabel(r.faction))}></div></td>
+  // fr/ranks.html: a line break between the top row's `<tr>` and its first `<td>`.
+  const open = top ? raw(`<tr class="top">\n<td>`) : raw("<tr><td>");
+  return html`${open}<div class="faction faction${r.faction}" ${tipH2(factionLabel(r.faction))}></div></td>
 <td>${link}</td>
 <td>${r.size}</td>
 <td>${r.power}</td></tr>`;

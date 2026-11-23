@@ -64,7 +64,7 @@ export function menuFlags(p: { power: number; troopers: number; recruits: number
 export const menuOf = (army: ArmyRow, troopers: readonly BattleTrooperInput[], power: number): MenuFlags =>
   menuFlags({ power, troopers: troopers.length, recruits: army.recruits, protected: army.passwordHash !== null });
 
-/** Password form shown instead of the troopers panel to a visitor of a protected army. */
+/** Password form shown under the troopers panel, instead of the menu, to a visitor of a protected army. */
 export function insertPass(cfg: Config, host: string): Html {
   return html`<div class="insertpass"><form method="POST" action="${armyUrl(cfg, host, "/login")}"><input type="hidden" name="login" value="${host}"/>
 Mot
@@ -100,8 +100,8 @@ export interface ShellView {
   /** Popup (already built by `notification`). */
   notice?: Html;
   /**
-   * Who looks: the owner (troopers panel and menu, default), a visitor of a protected army (password form, no menu) or
-   * of an open one (troopers panel without menu).
+   * Who looks: the owner (troopers panel and menu, default), a visitor of a protected army (troopers panel then the
+   * password form, no menu: fr/ranks.html) or of an open one (troopers panel without menu).
    */
   visitor?: "owner" | "locked" | "stranger";
 }
@@ -117,8 +117,12 @@ export function shellPage(cfg: Config, v: ShellView): Html {
 ${armyMenu(cfg, v.army, menuOf(v.army, v.troopers, v.power), true)}
 </div>`
       : visitor === "locked"
-        ? html`${insertPass(cfg, v.army.host)}
-</div>
+        ? html`${armyGrid(cfg, v.army, v.troopers)}</div>
+<div class="clear"></div>
+
+
+
+${insertPass(cfg, v.army.host)}
 </div>`
         : html`${armyGrid(cfg, v.army, v.troopers)}</div>
 <div class="clear"></div>

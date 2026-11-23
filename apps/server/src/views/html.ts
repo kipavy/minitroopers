@@ -39,3 +39,6 @@ export function html(strings: TemplateStringsArray, ...values: Value[]): Html {
   for (let i = 0; i < values.length; i++) out += render(values[i]!) + strings[i + 1]!;
   return new Html(out);
 }
+
+/** Inline background of a box2 header (`/img/mode/<name>.jpg`), shared by the HQ and mission boxes. */
+export const BG = (name: string): string => `style="background-image : url('/img/mode/${name}.jpg')"`;

@@ -57,7 +57,7 @@ test("one form body limit, one definition of each shared text, one power SQL", (
   assert.deepEqual(occurrences("INSERT INTO notices", join(SERVER_SRC, "routes")), {});
   assert.deepEqual(occurrences("SELECT credits FROM", join(SERVER_SRC, "routes")), {});
   assert.deepEqual(occurrences("battlesPerDay(", SERVER_SRC), {});
-  assert.deepEqual(occurrences(/(const|function) BG\b/, join(SERVER_SRC, "views")), { "apps/server/src/views/hq.ts": 1 });
+  assert.deepEqual(occurrences(/(const|function) BG\b/, join(SERVER_SRC, "views")), { "apps/server/src/views/html.ts": 1 });
   assert.deepEqual(occurrences("leftOver: []", GAME_SRC), { "packages/game/src/rats.ts": 1 });
   assert.deepEqual(occurrences(".has(x.recruitArmyId)", SERVER_SRC), {});
   assert.deepEqual(occurrences(/!dead\.has\(/, SERVER_SRC), { "apps/server/src/repo.ts": 1 });

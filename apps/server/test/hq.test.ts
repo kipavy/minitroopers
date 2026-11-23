@@ -159,7 +159,10 @@ for (const mode of MODES) {
     assert.ok(html.includes('type="password"'));
     assert.ok(html.includes("Cette armée est protégée. Identifie-toi sur la gauche."));
     assert.deepEqual(tilesOf(html), []);
-    assert.ok(!html.includes("swf_tr_view") && !html.includes("startRecruit"));
+    // fr/hq.html: the troopers grid and its script, the clear, then the password form; no menu
+    assert.ok(html.includes("swf_tr_view") && html.indexOf("swf_tr_view") < html.indexOf("insertpass"));
+    assert.match(html, /<\/script><\/div>\n<div class="clear"><\/div>\n\n\n\n<div class="insertpass">/);
+    assert.ok(!html.includes("but b1") && !html.includes("startRecruit"));
     assert.ok(html.includes('class="box10"')); // the original locked view keeps the recruit link
     assert.ok(html.includes("Modifier mon pass")); // footer of every page
     assert.equal((await stranger.req("/recruit")).status, 403);
@@ -173,7 +176,8 @@ for (const mode of MODES) {
     const at = env.at("warp", "/login");
     const ok = await stranger.req(at.url, { host: at.host, form: { login: "warp", pass: "pw" } });
     assert.equal(ok.status, 303);
-    assert.ok((await (await hqOf(env, stranger, "warp")).text()).includes("swf_tr_view"));
+    const in_ = await (await hqOf(env, stranger, "warp")).text();
+    assert.ok(in_.includes("but b1") && !in_.includes("insertpass"));
   });
 
   test(`[${mode}] an open army seen by a stranger redirects to its recruit page, never to its HQ`, async () => {

@@ -31,7 +31,7 @@ const get = (env: Env, cl: Client, host: string, p: string): Promise<Response> =
 };
 /** (power, host) of each table line after the header. */
 const lines = (html: string): { top: boolean; host: string; power: number }[] =>
-  [...html.matchAll(/<tr( class="top")?><td><div class="faction[^]*?<a href="([^"]*\/hq)"[^]*?<td>\d+<\/td>\s*<td>(\d+)<\/td>/g)].map((m) => ({ top: m[1] !== undefined, host: /\/a\/([a-z0-9-]+)\/hq$|\/\/([a-z0-9-]+)\.lvh\.me/.exec(m[2]!)!.slice(1).find(Boolean)!, power: Number(m[3]) }));
+  [...html.matchAll(/<tr( class="top")?>\n?<td><div class="faction[^]*?<a href="([^"]*\/hq)"[^]*?<td>\d+<\/td>\s*<td>(\d+)<\/td>/g)].map((m) => ({ top: m[1] !== undefined, host: /\/a\/([a-z0-9-]+)\/hq$|\/\/([a-z0-9-]+)\.lvh\.me/.exec(m[2]!)!.slice(1).find(Boolean)!, power: Number(m[3]) }));
 
 test("menuFlags: the original's conditions", () => {
   const base = { power: 20, troopers: 5, recruits: 1, protected: false };
@@ -59,7 +59,7 @@ for (const mode of MODES) {
     const page = await res.text();
     assert.match(page, /class="company">Hiérarchie<\/a>/);
     assert.match(page, /Le\nclassement\nrassemble\nles\ndifférentes\narmées\nrecrutées\npar\n<a href="[^"]*boss[^"]*\/hq" target="_blank">L&#39;armée boss<\/a> en fonction de leur puissance\./);
-    assert.ok(page.includes('<tr class="top">') && page.includes('<img src="/img/top.png"/>'));
+    assert.ok(page.includes('<tr class="top">\n<td>') && page.includes('<img src="/img/top.png"/>'));
     const l = lines(page);
     assert.deepEqual(l.map((x) => x.host), ["boss", ...[11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map((i) => `r${i}`), "vee"]);
     assert.deepEqual(l.map((x) => x.power), [60, 140, 130, 120, 110, 100, 90, 80, 70, 60, 50, 20]);
@@ -105,6 +105,19 @@ for (const mode of MODES) {
     assert.equal(f.self, null);
   });
 
+  test(`[${mode}] ranks: a deleted recruiter sends its recruits to their faction pool (ON DELETE SET NULL)`, async () => {
+    const env = setup(mode);
+    mk(env, "boss", 60, { faction: 4 });
+    mk(env, "kid", 40, { recruiter: "boss", faction: 4 });
+    mk(env, "other", 30, { faction: 4 });
+    env.db.prepare("DELETE FROM armies WHERE host = 'boss'").run();
+    const kid = armyByHost(env.db, "kid")!;
+    assert.equal(kid.recruiterId, null);
+    const r = ranking(env.db, kid.id);
+    assert.equal(r.recruiter.host, "fol-ecume");
+    assert.deepEqual(r.rows.map((x) => x.host), ["kid", "other"]);
+  });
+
   test(`[${mode}] ranks: a faction that is not seeded is described by its roster`, async () => {
     const env = setup(mode);
     const cl = env.client("1.1.1.1");
@@ -124,6 +137,26 @@ for (const mode of MODES) {
     assert.ok(page.includes('class="insertpass"') && page.includes('name="login" value="boss"'));
     assert.ok(!page.includes('class="but b1"') && !page.includes("Quartier Général"));
     assert.ok(page.includes('<div class="ranks">'));
+    // fr/ranks.html: the troopers grid and its script, the clear, then the password form
+    assert.ok(page.includes("swf_tr_view") && page.indexOf("swf_tr_view") < page.indexOf("insertpass"));
+    assert.match(page, /<\/script><\/div>\n<div class="clear"><\/div>\n\n\n\n<div class="insertpass">/);
+  });
+
+  test(`[${mode}] ranks: the owner gets the menu with « Quartier Général »`, async () => {
+    const env = setup(mode);
+    const cl = env.client("1.1.1.1");
+    assert.equal((await create(env, cl, "Warp")).status, 302);
+    const page = await (await get(env, cl, "warp", "/ranks")).text();
+    assert.ok(page.includes("swf_tr_view") && page.includes('class="but b1"') && page.includes(">Quartier Général</a>"));
+    assert.ok(!page.includes("insertpass"));
+  });
+
+  test(`[${mode}] ranks: a stranger on an open army gets the troopers grid and no menu`, async () => {
+    const env = setup(mode);
+    mk(env, "boss", 60);
+    const page = await (await get(env, env.client("3.3.3.3"), "boss", "/ranks")).text();
+    assert.ok(page.includes("swf_tr_view") && page.includes('<div class="ranks">'));
+    assert.ok(!page.includes('class="but b1"') && !page.includes("Quartier Général") && !page.includes("insertpass"));
   });
 
   test(`[${mode}] ranks: unknown army is a 404; /global-ranks redirects to /ranks`, async () => {
