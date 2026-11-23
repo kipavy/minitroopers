@@ -143,6 +143,33 @@ export function recruitsOf(db: DatabaseSync, recruiterId: number, limit: number)
     .map((r) => ({ armyId: r.id as number, host: r.host as string, name: r.name as string, part: r.part as number, bounty: (r.recruit_bounty as number | null) ?? null, confirmedAt: (r.recruit_confirmed_at as number | null) ?? null }));
 }
 
+/** Stored deployment order of an army (`armies.deploy_order`, JSON array of slots), null when unset or unreadable. */
+export function storedDeployOrder(db: DatabaseSync, armyId: number): number[] | null {
+  const r = db.prepare("SELECT deploy_order FROM armies WHERE id = ?").get(armyId) as { deploy_order: string | null } | undefined;
+  if (!r?.deploy_order) return null;
+  try {
+    const v = JSON.parse(r.deploy_order) as unknown;
+    return Array.isArray(v) && v.every((x) => Number.isInteger(x)) ? (v as number[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stores a deployment order when `valid(slots of the army)` accepts it, atomically against a concurrent purchase
+ * (BEGIN IMMEDIATE). False when refused.
+ */
+export function saveDeployOrder(db: DatabaseSync, armyId: number, order: readonly number[], valid: (slots: number[]) => boolean): boolean {
+  return (
+    immediate(db, () => {
+      const slots = (db.prepare("SELECT slot FROM troopers WHERE army_id = ? ORDER BY slot").all(armyId) as { slot: number }[]).map((r) => Number(r.slot));
+      if (!valid(slots)) return null;
+      db.prepare("UPDATE armies SET deploy_order = ? WHERE id = ?").run(JSON.stringify(order), armyId);
+      return true;
+    }) !== null
+  );
+}
+
 /** A trooper as the engine and the client SWF see it. `leftOver` (when stored) is merged into the pref. */
 export function trooperInput(t: TrooperRow): BattleTrooperInput {
   let pref: TrooperPref | null = t.pref;

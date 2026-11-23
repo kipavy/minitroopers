@@ -25,7 +25,6 @@ const ERR_PASS = "Mot de passe incorrect.";
 
 /** Menu entries that stages 3-4 implement; until then they answer with a "bientôt" page. */
 const SOON: Record<string, string> = {
-  "/choice": "Gérer mon armée",
   "/ranks": "Hiérarchie",
   "/global-ranks": "Hiérarchie",
 };

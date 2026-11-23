@@ -5,6 +5,7 @@ import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@
 import { battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
+import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeByName, foeOf, type Foe } from "../foes.ts";
 import { armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
@@ -37,7 +38,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
   /** Builds and resolves the battle against `foe`, reading the attacker as stored (inside the fight transaction). */
   function resolve(army: ArmyRow, foe: Foe): NewBattle | string {
     if (foe.defenderId === army.id) return "self";
-    const mine = troopersOf(db, army.id).map(trooperInput);
+    const mine = battleTroopers(db, army.id); // deployment order (RECON4 §3)
     if (mine.length === 0 || foe.army.troopers.length === 0) return "invalid"; // the engine only rejects 0 vs 0
     const input = buildBattleInput(battleSeed(), { faction: army.faction, troopers: mine }, foe.army);
     let winner: number | null;

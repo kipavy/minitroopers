@@ -103,3 +103,11 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | Message de défaite d'un raid | « Ce combat s'est soldé par un échec ! » (→ `/hq`) ; rediffusion d'une victoire : « Tu as remporté ce combat ! » + « Retour » ; `/b/view/raid` = dernier raid du jour | seul le message de victoire (1re vue) est archivé | `apps/server/src/routes/raid.ts` |
 | Plafond des rats d'extermination | `RATS_MAX` = 100 : `armies.rats` ne dépasse jamais 100 (victoire d'extermination : `MIN(rats + 1, 100)` ; `--rats` de la CLI limité à 1-100) | aucun plafond connu de l'original ; 100 = échelle moteur de `RAID_PER_BATTLE` et `EPIC_NPC_MAX` | `packages/game/src/economy.ts`, `apps/server/src/repo.ts` `fightMission` |
 | Rats de la première extermination du frère | `create-bro-army --rats 35` (défaut) : `armies.rats` = 35 | « environ 30 à 40 » (observation de la progression d'une vraie armée) | `apps/server/src/admin/cli.ts` |
+
+## Ordre de déploiement (`apps/server`, étape 4)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Recrue glissée dans l'armée sur `/choice` | à l'enregistrement (`/save?c=…`), les ids > 0 (recrues, id = id de leur armée) sont ignorés ; seuls les ids ≤ 0 (troopers, slot = −id) forment l'ordre, qui doit être une permutation exacte des slots (sinon rien n'est enregistré, retour à `/choice`) | effet d'origine inconnu (sitemap : « dispositif paraît bloqué ou buggé ») | `apps/server/src/routes/choice.ts` |
+| Trooper acheté après un enregistrement | ajouté à la fin de l'ordre de déploiement (ordre des slots) tant que l'ordre n'est pas réenregistré | comportement d'origine non archivé | `apps/server/src/deploy.ts` |
+| Paramètres invalides de `/load` | `pos`/`count` absents ou non entiers, `count` > 16 : 400 (le SWF retourne alors au QG) | seul `pos=0;count=16` est archivé | `apps/server/src/routes/choice.ts` |

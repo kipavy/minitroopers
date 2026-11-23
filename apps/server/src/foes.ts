@@ -1,7 +1,8 @@
 import type { DatabaseSync } from "node:sqlite";
 import { armyPower, type BattleArmyInput, type BattleTrooperInput } from "@mt/engine";
 import { FACTIONS, factionBattleArmy, fillerArmy, fillerBattleArmy, host as hostOf, parseFillerId } from "@mt/game";
-import { armyByHost, armyById, troopersOf, trooperInput } from "./repo.ts";
+import { battleTroopers } from "./deploy.ts";
+import { armyByHost, armyById } from "./repo.ts";
 import { isValidHost } from "./urls.ts";
 import { armyTitle } from "./views/army.ts";
 
@@ -22,7 +23,8 @@ export interface Foe {
 const stored = (db: DatabaseSync, id: number): Foe | null => {
   const a = armyById(db, id);
   if (!a) return null;
-  const troopers: BattleTrooperInput[] = troopersOf(db, a.id).map(trooperInput);
+  // Deployment order (RECON4 §3): listed and spawned in that order as a defender too.
+  const troopers: BattleTrooperInput[] = battleTroopers(db, a.id);
   if (troopers.length === 0) return null;
   return {
     defenderId: a.id,

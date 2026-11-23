@@ -189,7 +189,7 @@ for (const mode of MODES) {
   test(`[${mode}] menu entries of later stages answer "bientôt"; /recruit fragment for the owner`, async () => {
     const env = setup(mode);
     const { cl } = await army(env);
-    for (const p of ["/choice", "/ranks", "/global-ranks"]) {
+    for (const p of ["/ranks", "/global-ranks"]) {
       const at = env.at("warp", p);
       const res = await cl.req(at.url, { host: at.host });
       assert.equal(res.status, 200, p);

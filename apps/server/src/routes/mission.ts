@@ -8,10 +8,11 @@ import {
 } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildModeInput } from "../battleInput.ts";
+import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeOf, type Foe } from "../foes.ts";
 import {
   addNotice, armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
-  recruitLeaders, setMissionTarget, troopersOf, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
+  recruitLeaders, setMissionTarget, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
 } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
@@ -75,7 +76,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     const army = armyById(db, armyId);
     if (!army) return "gone";
     const mode = asMissionType(missionDay(db, army.id, day).type);
-    const mine: BattleTrooperInput[] = troopersOf(db, army.id).map(trooperInput);
+    const mine: BattleTrooperInput[] = battleTroopers(db, army.id); // deployment order (RECON4 §3)
     if (mine.length === 0) return "invalid";
     let troopers = mine;
     let foe: BattleArmyInput;

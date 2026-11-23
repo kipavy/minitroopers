@@ -24,6 +24,11 @@ const KEYS: Record<string, string> = {
   "`1\x1f*\x02": "troopers",
   "OPz\x16\x03": "faction",
   "K)\x16\n\x02": "__UP2",
+  ";\x1f\x0fJ": "army",
+  "C0\b*\x02": "recruits",
+  "T3D\n": "load",
+  "c\x12sN\x01": "loaded",
+  "wW\x01T\x03": "save",
 };
 
 interface En {
@@ -161,3 +166,34 @@ export function decodeBattleFlashvars(fv: string, { nullForce = false } = {}): {
   };
   return { input, gfx: root.gfx, vars };
 }
+
+/** Flashvars of the /choice embed (ClientMode 1) → its army (BattleArmyInput shape), recruits count and URLs. */
+export function decodeChoiceFlashvars(fv: string): {
+  army: { faction: number; spawnOrder: number[]; troopers: BattleTrooperInput[] };
+  recruits: number;
+  load: string;
+  loaded: unknown[];
+  save: string;
+  gfx: string;
+} {
+  const data = /(?:^|&)data=([^&]*)/.exec(fv)![1]!;
+  const root = unserialize(decodeURIComponent(data)) as { mode: En; gfx: string };
+  if (idx(root.mode, "ClientMode") !== 1) throw new Error("not a choice");
+  const o = root.mode.args[0] as { army: Record<string, unknown>; recruits: number; load: string; loaded: unknown[]; save: string };
+  return {
+    army: {
+      faction: o.army.faction as number,
+      spawnOrder: o.army.__UP2 as number[],
+      troopers: (o.army.troopers as Record<string, unknown>[]).map((t) => trooper(t, false)),
+    },
+    recruits: o.recruits,
+    load: o.load,
+    loaded: o.loaded,
+    save: o.save,
+    gfx: root.gfx,
+  };
+}
+
+/** Body of /load (a Haxe array of troopers) → the troopers. */
+export const decodeTroopersList = (body: string): BattleTrooperInput[] =>
+  (unserialize(body) as Record<string, unknown>[]).map((t) => trooper(t, false));
