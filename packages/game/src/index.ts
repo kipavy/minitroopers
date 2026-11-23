@@ -12,7 +12,7 @@ export { pickOpponents, OPPONENT_COUNT } from "./opponents.ts";
 export type { ArmyRef } from "./opponents.ts";
 export {
   MISSION_UNLOCK_COST, MISSION_ATTEMPTS, missionReward, RAID_REWARD, RAID_MAX_PHASE, RAID_PER_BATTLE,
-  EPIC_MIN_RECRUITS, EPIC_SIDE_MAX, EPIC_NPC_MAX, NPC_SEED_MAX,
+  EPIC_MIN_RECRUITS, EPIC_SIDE_MAX, EPIC_NPC_MAX, RATS_MAX, NPC_SEED_MAX,
 } from "./economy.ts";
 export { armyComposition, npcArmy } from "./npc.ts";
 export { RAT_SKILLS, dayRats, ratArmy } from "./rats.ts";

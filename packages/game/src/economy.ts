@@ -38,4 +38,9 @@ export const RAID_PER_BATTLE = 100;
 export const EPIC_MIN_RECRUITS = 10;
 export const EPIC_SIDE_MAX = 32;
 export const EPIC_NPC_MAX = 100;
+/**
+ * Most rats an extermination can oppose (`armies.rats` stops growing there).
+ * UNVERIFIED: no cap is known from the original; 100 matches the engine scale of RAID_PER_BATTLE and EPIC_NPC_MAX.
+ */
+export const RATS_MAX = 100;
 export const NPC_SEED_MAX = 100_000;

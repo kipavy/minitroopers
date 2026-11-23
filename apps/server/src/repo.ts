@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { MISSION_ATTEMPTS, RAID_MAX_PHASE } from "@mt/game";
+import { MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX } from "@mt/game";
 import { Data, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
@@ -696,7 +696,8 @@ export function fightMission(db: DatabaseSync, p: { armyId: number; day: string;
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const win = d.winner !== null && d.winner === d.input.attackerSide;
     const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, kind: "mission" }, d);
-    if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = rats + 1 WHERE id = ?").run(p.armyId);
+    // UNVERIFIED: cap RATS_MAX (100), see @mt/game economy.ts.
+    if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = MIN(rats + 1, ?) WHERE id = ?").run(RATS_MAX, p.armyId);
     if (win && d.mode === "epic") db.prepare("UPDATE armies SET epic_wins = epic_wins + 1 WHERE id = ?").run(p.armyId);
     db.prepare(
       "INSERT INTO daily(army_id, day, missions_used, mission_won) VALUES (?, ?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET missions_used = excluded.missions_used, mission_won = excluded.mission_won",

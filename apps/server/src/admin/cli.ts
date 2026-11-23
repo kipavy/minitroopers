@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { Rand, SKILLS } from "@mt/engine";
-import { FACTIONS, host as hostOf, seedsOffering, trooperName } from "@mt/game";
+import { FACTIONS, RATS_MAX, host as hostOf, seedsOffering, trooperName } from "@mt/game";
 import { loadConfig, resolveDataDir } from "../config.ts";
 import { openDb } from "../db.ts";
 import { hashPassword } from "../password.ts";
@@ -23,7 +23,7 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
       l'historique) ; jamais vide. troopers : [{ "seed": 123, "name": "Nom", "skills": ["SMART", 12] }, ...]
       ("skills" : compétence choisie à chaque montée de niveau, parmi celles que le jeu propose ;
        ou "choices" : indices bruts des options). Voir apps/server/README.md.
-      --rats N : rats de la prochaine extermination (défaut 1) ; --force : remplace l'armée de même hôte (sauf faction).
+      --rats N : rats de la prochaine extermination (1-100, défaut 1) ; --force : remplace l'armée de même hôte (sauf faction).
   create-bro-army --name <nom> [--part 0-5] [--faction 0-5] [--count 12] [--rats 35] [--credits N] [--force]
       Armée « du frère » : count troopers (1-12) niveau 2 avec Malin, extermination avancée (rats), missions débloquées.
       Mot de passe : uniquement la variable MT_ARMY_PASSWORD (obligatoire, jamais vide).
@@ -126,7 +126,7 @@ function run(argv: string[]): string {
     const faction = int(values.faction, "faction", 0, 1_000, 0);
     if (!FACTIONS.some((f) => f.id === faction)) throw new UsageError(`--faction : une des factions ${FACTIONS.map((f) => f.id).join(", ")}`);
     // UNVERIFIED: 35 rats = "about 30 to 40" for the extermination reached by the brother's army (docs/game/unverified.md).
-    const rats = int(values.rats, "rats", 1, 1000, bro ? 35 : 1);
+    const rats = int(values.rats, "rats", 1, RATS_MAX, bro ? 35 : 1);
     let json: string;
     if (bro) {
       const count = int(values.count, "count", 1, 12, 12);

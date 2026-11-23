@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
-import { dayKey } from "@mt/game";
+import { RATS_MAX, dayKey } from "@mt/game";
 import type { BattleInput } from "@mt/engine";
 import { buildModeInput, type ModeKind } from "../src/battleInput.ts";
-import { armyByHost, createArmy } from "../src/repo.ts";
+import { armyByHost, createArmy, fightMission, type NewModeBattle } from "../src/repo.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
 
@@ -105,6 +105,22 @@ function battleFlashvars(html: string): string {
 /** Mission links of the HQ: [n, key]. */
 const missionLinks = (html: string): { n: number; key: string; href: string }[] =>
   [...html.matchAll(/href="([^"]*\/b\/mission\?n=(\d+);chk=([A-Za-z0-9]{6}))"/g)].map((m) => ({ href: m[1]!, n: Number(m[2]), key: m[3]! }));
+
+test("exterminate: a won try adds one rat, capped at RATS_MAX (100)", async () => {
+  assert.equal(RATS_MAX, 100);
+  const env = setup();
+  const { id } = await warp(env);
+  const win = (): NewModeBattle => {
+    const input = { seed: 1, background: { gfx: "bg/attic.jpg", id: 1 }, armies: [], attackerSide: 0 } as unknown as BattleInput;
+    return { mode: "exterminate", defenderId: null, defenderRef: null, input, winner: 0, reward: 4 };
+  };
+  const rats = (): number => (env.db.prepare("SELECT rats FROM armies WHERE id = ?").get(id) as { rats: number }).rats;
+  env.db.prepare("UPDATE armies SET missions_unlocked = 1, rats = ? WHERE id = ?").run(RATS_MAX - 1, id);
+  for (const day of ["2026-11-23", "2026-11-24", "2026-11-25"]) {
+    assert.equal(fightMission(env.db, { armyId: id, day, used: 0, decide: win }).ok, true, day);
+  }
+  assert.equal(rats(), RATS_MAX);
+});
 
 for (const mode of MODES) {
   test(`[${mode}] unlock: 5 credits once, a reloaded URL debits nothing, 4 credits are not enough; locked missions fight nothing`, async () => {

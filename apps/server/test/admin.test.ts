@@ -230,6 +230,10 @@ test("admin CLI create-bro-army: SMART troopers, 35 rats, password from env only
     assert.equal(armyById(db, rec)!.recruiterId, null);
     db.close();
 
+    // --rats is capped at RATS_MAX (100, UNVERIFIED)
+    const tooMany = cli(dir, "create-army", "--name", "Trop De Rats", "--rats", "101", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(tooMany.status, 1);
+    assert.match(tooMany.stderr, /--rats : un entier entre 1 et 100/);
     // create-army gains --rats and --force; a faction army is never replaced
     const ca = cli(dir, "create-army", "--name", "Les Frangins", "--rats", "9", "--force", "--troopers", '[{"seed":5,"name":"X"}]');
     assert.equal(ca.status, 0, ca.stderr);
