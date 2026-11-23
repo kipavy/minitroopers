@@ -31,6 +31,11 @@ const OBFU_DICTIONARY: Record<string, string> = {
   "`1\x1f*\x02": "troopers",
   "OPz\x16\x03": "faction",
   "K)\x16\n\x02": "__UP2",
+  // ClientMode 1 (choice.html): RECON4 §3.
+  "C0\b*\x02": "recruits",
+  "T3D\n": "load",
+  "c\x12sN\x01": "loaded",
+  "wW\x01T\x03": "save",
 };
 
 const OBFU_REVERSE = new Map(Object.entries(OBFU_DICTIONARY).map(([k, v]) => [v, k]));

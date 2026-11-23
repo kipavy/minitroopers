@@ -6,12 +6,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   battleData,
+  choiceData,
   clientParams,
   gridData,
   midData,
+  recruitsData,
   trooperData,
+  troopersList,
+  type BattleArmyInput,
   type BattleInput,
   type BattleTrooperInput,
+  type ClientChoice,
   type ClientGrid,
 } from "../../src/index.ts";
 
@@ -21,6 +26,9 @@ interface Fixtures {
   mid: { data: string; s: string; gfx: string };
   grid: { data: string; grid: ClientGrid; gfx: string };
   battle: { data: string; input: BattleInput; gfx: string; endMsg: string; flashvars: string };
+  choice: { data: string; c: ClientChoice; gfx: string };
+  recruits: { data: string; army: BattleArmyInput; n: number; bg: BattleInput["background"]; gfx: string };
+  load: { body: string; troopers: BattleTrooperInput[] };
 }
 
 const fx = JSON.parse(readFileSync(new URL("./fixtures/original-pages.json", import.meta.url), "utf8")) as Fixtures;
@@ -65,4 +73,23 @@ test("gridData: null cells and action null", () => {
 
 test("clientParams: plain data, url-encoded", () => {
   assert.equal(clientParams("a:b%"), "data=a%3Ab%25&chk=play&imageurl=/img/");
+});
+
+test("choiceData (ClientMode 1) re-emits choice-2.html's data= byte for byte", () => {
+  assert.equal(fx.choice.c.recruits, 18);
+  assert.equal(encodeURIComponent(choiceData(fx.choice.c, fx.choice.gfx)), fx.choice.data);
+});
+
+test("recruitsData (ClientMode 5) re-emits history.html's swf_recuits data= byte for byte", () => {
+  assert.equal(fx.recruits.n, 18);
+  assert.equal(fx.recruits.army.troopers.length, 19);
+  assert.equal(fx.recruits.army.troopers[0]!.id, 18);
+  assert.match(fx.recruits.gfx, /army\.swf/);
+  assert.equal(encodeURIComponent(recruitsData(fx.recruits.army, fx.recruits.n, fx.recruits.bg, fx.recruits.gfx)), fx.recruits.data);
+});
+
+test("troopersList re-emits load_pos_0_count_16.html's body byte for byte", () => {
+  assert.equal(fx.load.troopers.length, 16);
+  assert.equal(`${fx.load.troopers[0]!.id}:${fx.load.troopers[0]!.name}`, "588344:Jazemiller");
+  assert.equal(troopersList(fx.load.troopers), fx.load.body);
 });

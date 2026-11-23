@@ -30,5 +30,14 @@ export {
 } from "./boundary/trooper.ts";
 export type { LevelUpOptions, TrooperSheet } from "./boundary/trooper.ts";
 export { armyPower, recruitCost, trooperLevel, upgradeCost } from "./boundary/economy.ts";
-export { battleData, clientParams, gridData, midData, trooperData } from "./boundary/client.ts";
-export type { ClientGrid } from "./boundary/client.ts";
+export {
+  battleData,
+  choiceData,
+  clientParams,
+  gridData,
+  midData,
+  recruitsData,
+  trooperData,
+  troopersList,
+} from "./boundary/client.ts";
+export type { ClientChoice, ClientGrid } from "./boundary/client.ts";

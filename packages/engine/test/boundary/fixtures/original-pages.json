@@ -543,5 +543,987 @@
   },
   "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2",
   "endMsg": "Tu as remporté cette bataille ! Ton armée gagne +2 [T]"
+ },
+ "choice": {
+  "page": "html/fr/choice-2.html#2",
+  "data": "oy10%3A%253B%2501%250CZjy10%3AClientMode%3A1%3A1oy10%3A%253B%251F%250FJoy13%3A%25601%251F%252A%2502aoy8%3A%25032%251A4y10%3AMcBombewisy8%3AV%251BE%257Cny6%3A%250CA2ci6652102y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avai1i1i1i1zzi1hy5%3A7X%2501i-5y13%3A%257D%2526%2516Y%2501ahgoR4y8%3AMeleiberR6oy9%3A%251DlQK%2503jy10%3AMoveSystem%3A0%3A0y13%3A%2511%2521%250Ea%2501jy12%3AReloadSystem%3A2%3A0y11%3A%25290%2519i%2503ajy5%3ASkill%3A103%3A0jR19%3A94%3A0hy15%3A%251A%2529%2513%253D%2501jy7%3ABodyLoc%3A3%3A0y13%3A%250BR%2510%251B%2502ny13%3A%2515S%2517%253F%2503jy10%3ATargetType%3A0%3A0y6%3A%253BuXEjy12%3ATargetSystem%3A0%3A0gR7i14006280R8jR9%3A0%3A0R10azzi1zzzi1i1hR11i-1R12ahgoR4y5%3ABruwsR6oR14jR15%3A2%3A0R16jR17%3A2%3A0R18ajR19%3A133%3A0hR20nR22nR23jR24%3A1%3A1jR19%3A1%3A0R25jR26%3A1%3A0gR7i10071527R8jR9%3A0%3A0R10azzi1i1zi1zhR11i-6R12ahgoR4y8%3ASmitholdR6oR14jR15%3A2%3A0R16jR17%3A2%3A0R18ajR19%3A101%3A0jR19%3A77%3A0hR20jR21%3A0%3A0R22jy6%3AWeapon%3A25%3A0R23jR24%3A1%3A1jR19%3A1%3A0R25jR26%3A3%3A0gR7i13470926R8jR9%3A0%3A0R10ai1i1zzzi1i1zhR11i-2R12ahgoR4y7%3AKrawneyR6oR14jR15%3A0%3A0R16jR17%3A2%3A0R18ahR20nR22jR29%3A14%3A0R23jR24%3A1%3A1jR19%3A3%3A0R25jR26%3A0%3A0gR7i16695356R8jR9%3A0%3A0R10ai1zzi1i1zi1hR11i-7R12ahgoR4y8%3AEdonnellR6oR14jR15%3A2%3A0R16jR17%3A2%3A0R18ahR20jR21%3A1%3A0R22jR29%3A20%3A0R23jR24%3A1%3A1jR19%3A6%3A0R25jR26%3A3%3A0gR7i8551096R8jR9%3A0%3A0R10ai1zi1i1zzi1hR11zR12ahgoR4y9%3AMaxu%2520YuR6oR14jR15%3A0%3A0R16jR17%3A2%3A0R18ahR20jR21%3A0%3A0R22jR29%3A23%3A0R23jR24%3A0%3A0R25jR26%3A1%3A0gR7i16369599R8jR9%3A0%3A0R10ai1i1i1zi1zi1hR11i-3R12ahgoR4y7%3AJononesR6oR14jR15%3A0%3A0R16jR17%3A2%3A0R18ahR20jR21%3A2%3A0R22jR29%3A11%3A0R23jR24%3A0%3A0R25jR26%3A0%3A0gR7i14583547R8jR9%3A0%3A0R10azzi1zzzzhR11i-4R12ahghy13%3AK%2529%2516%250A%2502ai-5i-1i-6i-2i-7zi-3i-4hy9%3AOPz%2516%2503i2gy11%3AC0%2508%252A%2502i18y6%3AT3D%250Ay10%3A%252Fload%253Fy9%3Ac%2512sN%2501ahy9%3AwW%2501T%2503y14%3A%252Fsave%253Fc%253Dgy8%3A%2524PS%2501y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Fmini.swf%253Fv%253D2g",
+  "c": {
+   "army": {
+    "faction": 2,
+    "spawnOrder": [
+     -5,
+     -1,
+     -6,
+     -2,
+     -7,
+     0,
+     -3,
+     -4
+    ],
+    "troopers": [
+     {
+      "id": -5,
+      "name": "McBombewis",
+      "seed": 6652102,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": -1,
+      "name": "Meleiber",
+      "seed": 14006280,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 3,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "reloadSystem": 2,
+       "leftOver": [
+        103,
+        94
+       ]
+      }
+     },
+     {
+      "id": -6,
+      "name": "Bruws",
+      "seed": 10071527,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 1,
+       "targetType": 1,
+       "targetClass": 1,
+       "moveSystem": 2,
+       "reloadSystem": 2,
+       "leftOver": [
+        133
+       ]
+      }
+     },
+     {
+      "id": -2,
+      "name": "Smithold",
+      "seed": 13470926,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 25,
+       "CBody": 0,
+       "targetSystem": 3,
+       "targetType": 1,
+       "targetClass": 1,
+       "moveSystem": 2,
+       "reloadSystem": 2,
+       "leftOver": [
+        101,
+        77
+       ]
+      }
+     },
+     {
+      "id": -7,
+      "name": "Krawney",
+      "seed": 16695356,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 14,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 1,
+       "targetClass": 3,
+       "moveSystem": 0,
+       "reloadSystem": 2,
+       "leftOver": []
+      }
+     },
+     {
+      "id": 0,
+      "name": "Edonnell",
+      "seed": 8551096,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 20,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 1,
+       "targetClass": 6,
+       "moveSystem": 2,
+       "reloadSystem": 2,
+       "leftOver": []
+      }
+     },
+     {
+      "id": -3,
+      "name": "Maxu Yu",
+      "seed": 16369599,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 23,
+       "CBody": 0,
+       "targetSystem": 1,
+       "targetType": 0,
+       "moveSystem": 0,
+       "reloadSystem": 2,
+       "leftOver": []
+      }
+     },
+     {
+      "id": -4,
+      "name": "Jonones",
+      "seed": 14583547,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 11,
+       "CBody": 2,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "reloadSystem": 2,
+       "leftOver": []
+      }
+     }
+    ]
+   },
+   "recruits": 18,
+   "load": "/load?",
+   "loaded": [],
+   "save": "/save?c="
+  },
+  "gfx": "http://data.minitroopers.fr/swf/mini.swf?v=2"
+ },
+ "recruits": {
+  "page": "html/fr/history.html#2",
+  "data": "oy10%3A%253B%2501%250CZjy10%3AClientMode%3A5%3A3oy13%3A%25601%251F%252A%2502aoy8%3A%25032%251A4y8%3AEdonnelly8%3AV%251BE%257Coy9%3A%251DlQK%2503jy10%3AMoveSystem%3A2%3A0y13%3A%2511%2521%250Ea%2501jy12%3AReloadSystem%3A2%3A0y11%3A%25290%2519i%2503ahy15%3A%251A%2529%2513%253D%2501jy7%3ABodyLoc%3A1%3A0y13%3A%250BR%2510%251B%2502jy6%3AWeapon%3A20%3A0y13%3A%2515S%2517%253F%2503jy10%3ATargetType%3A1%3A1jy5%3ASkill%3A6%3A0y6%3A%253BuXEjy12%3ATargetSystem%3A3%3A0gy6%3A%250CA2ci8551096y6%3AAn%25256jy11%3ATrooperType%3A0%3A0y8%3A%250Az%250Avai1zi1i1zzi1hy5%3A7X%2501i18y13%3A%257D%2526%2516Y%2501ahgoR3y10%3AJazemillerR5oR6jR7%3A0%3A0R8jR9%3A2%3A0R10ahR11jR12%3A1%3A0R13jR14%3A13%3A0R15jR16%3A0%3A0R18jR19%3A1%3A0gR20i13052929R21jR22%3A0%3A0R23ai1i1i1i1zi1zzzhR24zR25ahgoR3y12%3AHJKDBurtieldR5oR6jR7%3A2%3A0R8jR9%3A2%3A0R10ahR11jR12%3A1%3A0R13jR14%3A28%3A0R15jR16%3A1%3A1jR17%3A1%3A0R18jR19%3A0%3A0gR20i4714200R21jR22%3A0%3A0R23azi1i1zzi1i1zi1hR24i1R25ahgoR3y8%3AGeorgoffR5oR6jR7%3A0%3A0R8jR9%3A2%3A0R10ahR11jR12%3A1%3A0R13jR14%3A26%3A0R15jR16%3A0%3A0R18jR19%3A2%3A0gR20i13418408R21jR22%3A0%3A0R23ai1i1i1i1i1i1zzhR24i2R25ahgoR3y9%3AHulkeiberR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ahR11nR13jR14%3A12%3A0R15jR16%3A0%3A0R18jR19%3A0%3A0gR20i9845832R21jR22%3A0%3A0R23ai1i1i1i1zzzi1hR24i3R25ahgoR3y8%3AMichaleyR5oR6jR7%3A2%3A0R8jR9%3A2%3A0R10ahR11nR13jR14%3A19%3A0R15jR16%3A0%3A0R18jR19%3A0%3A0gR20i15045129R21jR22%3A0%3A0R23azzi1i1i1i1zi1hR24i4R25ahgoR3y8%3ARickahamR5oR6jR7%3A2%3A0R8jR9%3A2%3A0R10ahR11nR13jR14%3A24%3A0R15jR16%3A0%3A0R18jR19%3A2%3A0gR20i6330862R21jR22%3A0%3A0R23azzi1i1i1i1i1hR24i5R25ahgoR3y7%3AMelewisR5nR20i9388246R21jR22%3A0%3A0R23azi1zi1i1zi1hR24i6R25ahgoR3y12%3ALuku%2520CrakaR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ajR17%3A82%3A0hR11nR13nR15jR16%3A0%3A0R18jR19%3A0%3A0gR20i8512735R21jR22%3A0%3A0R23ai1zzi1zzi1hR24i7R25ahgoR3y7%3AHarrustR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ahR11jR12%3A1%3A0R13jR14%3A18%3A0R15jR16%3A1%3A1jR17%3A0%3A0R18jR19%3A1%3A0gR20i12336016R21jR22%3A0%3A0R23azzi1i1zi1zhR24i8R25ahgoR3y6%3ARogitoR5nR20i8106156R21jR22%3A0%3A0R23azzi1zzzhR24i9R25ahgoR3y8%3ACrakieldR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ahR11jR12%3A0%3A0R13jR14%3A4%3A0R15jR16%3A0%3A0R18jR19%3A0%3A0gR20i11851462R21jR22%3A0%3A0R23ai1zi1i1zzhR24i10R25ahgoR3y9%3AJackenserR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ahR11jR12%3A0%3A0R13jR14%3A29%3A0R15jR16%3A0%3A0R18jR19%3A3%3A0gR20i9266189R21jR22%3A0%3A0R23azi1i1hR24i11R25ahgoR3y9%3AJazinnettR5nR20i4991183R21jR22%3A0%3A0R23azhR24i12R25ahgoR3y13%3AChris%2520BrownR5nR20i11578328R21jR22%3A0%3A0R23azhR24i13R25ahgoR3y3%3ATimR5oR6jR7%3A1%3A0R8jR9%3A2%3A0R10ahR11jR12%3A3%3A0R13nR15jR16%3A0%3A0R18jR19%3A0%3A0gR20i13793109R21jR22%3A0%3A0R23ai1hR24i14R25ahgoR3y7%3AEdenserR5nR20i15749613R21jR22%3A0%3A0R23ai1hR24i15R25ahgoR3y8%3AHulkauerR5nR20i2431071R21jR22%3A0%3A0R23azhR24i16R25ahgoR3y7%3ARogaterR5nR20i14530263R21jR22%3A0%3A0R23ahR24i17R25ahghy13%3AK%2529%2516%250A%2502ahy9%3AOPz%2516%2503i2gi18oR24jy14%3ABackgroundType%3A0%3A0y8%3A%2524PS%2501y15%3Abg%252Fgarden.jpggR47y58%3Ahttp%253A%252F%252Fdata.minitroopers.fr%252Fswf%252Farmy.swf%253Fv%253D2g",
+  "army": {
+   "faction": 2,
+   "spawnOrder": [],
+   "troopers": [
+    {
+     "id": 18,
+     "name": "Edonnell",
+     "seed": 8551096,
+     "type": 0,
+     "choices": [
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 20,
+      "CBody": 1,
+      "targetSystem": 3,
+      "targetType": 1,
+      "targetClass": 6,
+      "moveSystem": 2,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 0,
+     "name": "Jazemiller",
+     "seed": 13052929,
+     "type": 0,
+     "choices": [
+      1,
+      1,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 13,
+      "CBody": 1,
+      "targetSystem": 1,
+      "targetType": 0,
+      "moveSystem": 0,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 1,
+     "name": "HJKDBurtield",
+     "seed": 4714200,
+     "type": 0,
+     "choices": [
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 28,
+      "CBody": 1,
+      "targetSystem": 0,
+      "targetType": 1,
+      "targetClass": 1,
+      "moveSystem": 2,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 2,
+     "name": "Georgoff",
+     "seed": 13418408,
+     "type": 0,
+     "choices": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 26,
+      "CBody": 1,
+      "targetSystem": 2,
+      "targetType": 0,
+      "moveSystem": 0,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 3,
+     "name": "Hulkeiber",
+     "seed": 9845832,
+     "type": 0,
+     "choices": [
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 12,
+      "CBody": null,
+      "targetSystem": 0,
+      "targetType": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 4,
+     "name": "Michaley",
+     "seed": 15045129,
+     "type": 0,
+     "choices": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 19,
+      "CBody": null,
+      "targetSystem": 0,
+      "targetType": 0,
+      "moveSystem": 2,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 5,
+     "name": "Rickaham",
+     "seed": 6330862,
+     "type": 0,
+     "choices": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 24,
+      "CBody": null,
+      "targetSystem": 2,
+      "targetType": 0,
+      "moveSystem": 2,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 6,
+     "name": "Melewis",
+     "seed": 9388246,
+     "type": 0,
+     "choices": [
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 7,
+     "name": "Luku Craka",
+     "seed": 8512735,
+     "type": 0,
+     "choices": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": null,
+      "CBody": null,
+      "targetSystem": 0,
+      "targetType": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": [
+       82
+      ]
+     }
+    },
+    {
+     "id": 8,
+     "name": "Harrust",
+     "seed": 12336016,
+     "type": 0,
+     "choices": [
+      0,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 18,
+      "CBody": 1,
+      "targetSystem": 1,
+      "targetType": 1,
+      "targetClass": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 9,
+     "name": "Rogito",
+     "seed": 8106156,
+     "type": 0,
+     "choices": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 10,
+     "name": "Crakield",
+     "seed": 11851462,
+     "type": 0,
+     "choices": [
+      1,
+      0,
+      1,
+      1,
+      0,
+      0
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 4,
+      "CBody": 0,
+      "targetSystem": 0,
+      "targetType": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 11,
+     "name": "Jackenser",
+     "seed": 9266189,
+     "type": 0,
+     "choices": [
+      0,
+      1,
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": 29,
+      "CBody": 0,
+      "targetSystem": 3,
+      "targetType": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 12,
+     "name": "Jazinnett",
+     "seed": 4991183,
+     "type": 0,
+     "choices": [
+      0
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 13,
+     "name": "Chris Brown",
+     "seed": 11578328,
+     "type": 0,
+     "choices": [
+      0
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 14,
+     "name": "Tim",
+     "seed": 13793109,
+     "type": 0,
+     "choices": [
+      1
+     ],
+     "force": [],
+     "pref": {
+      "CWeapon": null,
+      "CBody": 3,
+      "targetSystem": 0,
+      "targetType": 0,
+      "moveSystem": 1,
+      "reloadSystem": 2,
+      "leftOver": []
+     }
+    },
+    {
+     "id": 15,
+     "name": "Edenser",
+     "seed": 15749613,
+     "type": 0,
+     "choices": [
+      1
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 16,
+     "name": "Hulkauer",
+     "seed": 2431071,
+     "type": 0,
+     "choices": [
+      0
+     ],
+     "force": [],
+     "pref": null
+    },
+    {
+     "id": 17,
+     "name": "Rogater",
+     "seed": 14530263,
+     "type": 0,
+     "choices": [],
+     "force": [],
+     "pref": null
+    }
+   ]
+  },
+  "n": 18,
+  "bg": {
+   "id": 0,
+   "gfx": "bg/garden.jpg"
+  },
+  "gfx": "http://data.minitroopers.fr/swf/army.swf?v=2"
+ },
+ "load": {
+  "page": "html/fr/load_pos_0_count_16.html",
+  "body": "aoy8:%032%1A4y10:Jazemillery8:V%1BE%7Coy9:%1DlQK%03jy10:MoveSystem:0:0y13:%11%21%0Ea%01jy12:ReloadSystem:2:0y11:%290%19i%03ahy15:%1A%29%13%3D%01jy7:BodyLoc:1:0y13:%0BR%10%1B%02jy6:Weapon:13:0y13:%15S%17%3F%03jy10:TargetType:0:0y6:%3BuXEjy12:TargetSystem:1:0gy6:%0CA2ci13052929y6:An%256jy11:TrooperType:0:0y8:%0Az%0Avai1i1i1i1zi1zzzhy5:7X%01i588344y13:%7D%26%16Y%01ahgoR0y12:HJKDBurtieldR2oR3jR4:2:0R5jR6:2:0R7ahR8jR9:1:0R10jR11:28:0R12jR13:1:1jy5:Skill:1:0R14jR15:0:0gR16i4714200R17jR18:0:0R19azi1i1zzi1i1zi1hR20i60761R21ahgoR0y8:GeorgoffR2oR3jR4:0:0R5jR6:2:0R7ahR8jR9:1:0R10jR11:26:0R12jR13:0:0R14jR15:2:0gR16i13418408R17jR18:0:0R19ai1i1i1i1i1i1zzhR20i2498590R21ahgoR0y9:HulkeiberR2oR3jR4:1:0R5jR6:2:0R7ahR8nR10jR11:12:0R12jR13:0:0R14jR15:0:0gR16i9845832R17jR18:0:0R19ai1i1i1i1zzzi1hR20i732378R21ahgoR0y8:MichaleyR2oR3jR4:2:0R5jR6:2:0R7ahR8nR10jR11:19:0R12jR13:0:0R14jR15:0:0gR16i15045129R17jR18:0:0R19azzi1i1i1i1zi1hR20i416129R21ahgoR0y8:RickahamR2oR3jR4:2:0R5jR6:2:0R7ahR8nR10jR11:24:0R12jR13:0:0R14jR15:2:0gR16i6330862R17jR18:0:0R19azzi1i1i1i1i1hR20i2607660R21ahgoR0y7:MelewisR2nR16i9388246R17jR18:0:0R19azi1zi1i1zi1hR20i2603929R21ahgoR0y12:Luku%20CrakaR2oR3jR4:1:0R5jR6:2:0R7ajR23:82:0hR8nR10nR12jR13:0:0R14jR15:0:0gR16i8512735R17jR18:0:0R19ai1zzi1zzi1hR20i2566872R21ahgoR0y7:HarrustR2oR3jR4:1:0R5jR6:2:0R7ahR8jR9:1:0R10jR11:18:0R12jR13:1:1jR23:0:0R14jR15:1:0gR16i12336016R17jR18:0:0R19azzi1i1zi1zhR20i2511096R21ahgoR0y6:RogitoR2nR16i8106156R17jR18:0:0R19azzi1zzzhR20i2661370R21ahgoR0y8:CrakieldR2oR3jR4:1:0R5jR6:2:0R7ahR8jR9:0:0R10jR11:4:0R12jR13:0:0R14jR15:0:0gR16i11851462R17jR18:0:0R19ai1zi1i1zzhR20i2654874R21ahgoR0y9:JackenserR2oR3jR4:1:0R5jR6:2:0R7ahR8jR9:0:0R10jR11:29:0R12jR13:0:0R14jR15:3:0gR16i9266189R17jR18:0:0R19azi1i1hR20i28573R21ahgoR0y9:JazinnettR2nR16i4991183R17jR18:0:0R19azhR20i4018570R21ahgoR0y13:Chris%20BrownR2nR16i11578328R17jR18:0:0R19azhR20i4018569R21ahgoR0y3:TimR2oR3jR4:1:0R5jR6:2:0R7ahR8jR9:3:0R10nR12jR13:0:0R14jR15:0:0gR16i13793109R17jR18:0:0R19ai1hR20i4018268R21ahgoR0y7:EdenserR2nR16i15749613R17jR18:0:0R19ai1hR20i3458538R21ahgh",
+  "troopers": [
+   {
+    "id": 588344,
+    "name": "Jazemiller",
+    "seed": 13052929,
+    "type": 0,
+    "choices": [
+     1,
+     1,
+     1,
+     1,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 13,
+     "CBody": 1,
+     "targetSystem": 1,
+     "targetType": 0,
+     "moveSystem": 0,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 60761,
+    "name": "HJKDBurtield",
+    "seed": 4714200,
+    "type": 0,
+    "choices": [
+     0,
+     1,
+     1,
+     0,
+     0,
+     1,
+     1,
+     0,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 28,
+     "CBody": 1,
+     "targetSystem": 0,
+     "targetType": 1,
+     "targetClass": 1,
+     "moveSystem": 2,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 2498590,
+    "name": "Georgoff",
+    "seed": 13418408,
+    "type": 0,
+    "choices": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     0,
+     0
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 26,
+     "CBody": 1,
+     "targetSystem": 2,
+     "targetType": 0,
+     "moveSystem": 0,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 732378,
+    "name": "Hulkeiber",
+    "seed": 9845832,
+    "type": 0,
+    "choices": [
+     1,
+     1,
+     1,
+     1,
+     0,
+     0,
+     0,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 12,
+     "CBody": null,
+     "targetSystem": 0,
+     "targetType": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 416129,
+    "name": "Michaley",
+    "seed": 15045129,
+    "type": 0,
+    "choices": [
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     0,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 19,
+     "CBody": null,
+     "targetSystem": 0,
+     "targetType": 0,
+     "moveSystem": 2,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 2607660,
+    "name": "Rickaham",
+    "seed": 6330862,
+    "type": 0,
+    "choices": [
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 24,
+     "CBody": null,
+     "targetSystem": 2,
+     "targetType": 0,
+     "moveSystem": 2,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 2603929,
+    "name": "Melewis",
+    "seed": 9388246,
+    "type": 0,
+    "choices": [
+     0,
+     1,
+     0,
+     1,
+     1,
+     0,
+     1
+    ],
+    "force": [],
+    "pref": null
+   },
+   {
+    "id": 2566872,
+    "name": "Luku Craka",
+    "seed": 8512735,
+    "type": 0,
+    "choices": [
+     1,
+     0,
+     0,
+     1,
+     0,
+     0,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": null,
+     "CBody": null,
+     "targetSystem": 0,
+     "targetType": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": [
+      82
+     ]
+    }
+   },
+   {
+    "id": 2511096,
+    "name": "Harrust",
+    "seed": 12336016,
+    "type": 0,
+    "choices": [
+     0,
+     0,
+     1,
+     1,
+     0,
+     1,
+     0
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 18,
+     "CBody": 1,
+     "targetSystem": 1,
+     "targetType": 1,
+     "targetClass": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 2661370,
+    "name": "Rogito",
+    "seed": 8106156,
+    "type": 0,
+    "choices": [
+     0,
+     0,
+     1,
+     0,
+     0,
+     0
+    ],
+    "force": [],
+    "pref": null
+   },
+   {
+    "id": 2654874,
+    "name": "Crakield",
+    "seed": 11851462,
+    "type": 0,
+    "choices": [
+     1,
+     0,
+     1,
+     1,
+     0,
+     0
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 4,
+     "CBody": 0,
+     "targetSystem": 0,
+     "targetType": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 28573,
+    "name": "Jackenser",
+    "seed": 9266189,
+    "type": 0,
+    "choices": [
+     0,
+     1,
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": 29,
+     "CBody": 0,
+     "targetSystem": 3,
+     "targetType": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 4018570,
+    "name": "Jazinnett",
+    "seed": 4991183,
+    "type": 0,
+    "choices": [
+     0
+    ],
+    "force": [],
+    "pref": null
+   },
+   {
+    "id": 4018569,
+    "name": "Chris Brown",
+    "seed": 11578328,
+    "type": 0,
+    "choices": [
+     0
+    ],
+    "force": [],
+    "pref": null
+   },
+   {
+    "id": 4018268,
+    "name": "Tim",
+    "seed": 13793109,
+    "type": 0,
+    "choices": [
+     1
+    ],
+    "force": [],
+    "pref": {
+     "CWeapon": null,
+     "CBody": 3,
+     "targetSystem": 0,
+     "targetType": 0,
+     "moveSystem": 1,
+     "reloadSystem": 2,
+     "leftOver": []
+    }
+   },
+   {
+    "id": 3458538,
+    "name": "Edenser",
+    "seed": 15749613,
+    "type": 0,
+    "choices": [
+     1
+    ],
+    "force": [],
+    "pref": null
+   }
+  ]
  }
 }

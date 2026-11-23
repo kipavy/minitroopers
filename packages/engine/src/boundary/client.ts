@@ -1,6 +1,7 @@
 // swf: ClientMode (§OP`\t\x01§) — the `data=` flashvars of every client_fr.swf embed of the original
 // pages (dispatcher §,7u\x1f§ §\x074\x10\r§), rebuilt byte for byte: key order, string cache and
-// string escaping of the original server. Ctor indexes: 0 battle, 2 trooper, 3 machine id, 4 grid.
+// string escaping of the original server. Ctor indexes: 0 battle, 1 choice, 2 trooper, 3 machine id,
+// 4 grid, 5 recruits.
 import { HaxeEnum, originalUrlEncode, serializeHaxe } from "../input/haxeSerializer.ts";
 import { objectObfuscator } from "../input/flashvars.ts";
 import type { BattleArmyInput, BattleInput, BattleTrooperInput, TrooperPref } from "../input/types.ts";
@@ -17,6 +18,20 @@ export interface ClientGrid {
   space: number;
   /** JS callback prefix (`<action>Over/Out/Click(id)`), null for none. */
   action: string | null;
+}
+
+/** ClientMode 1 argument: the army reorganisation page (choice.html, RECON4 §3). */
+export interface ClientChoice {
+  /** Troopers in deployment order, id = -slot; `spawnOrder` = those ids. */
+  army: BattleArmyInput;
+  /** Number of recruits (the SWF pages them through `load`). */
+  recruits: number;
+  /** `/load?` URL prefix (the SWF appends `pos=<n>;count=16`). */
+  load: string;
+  /** `[]` on every original page. */
+  loaded: BattleTrooperInput[];
+  /** `/save?c=` URL prefix (the SWF appends the ids joined by `:`). */
+  save: string;
 }
 
 const en = (name: string, index: number, args: readonly unknown[] = []): HaxeEnum => new HaxeEnum(name, index, args);
@@ -94,6 +109,23 @@ export const gridData = (g: ClientGrid, gfx: string): string =>
     ]),
     gfx,
   );
+
+/** ClientMode 1 (choice): the army reorganisation page; `gfx` = mini.swf. */
+export const choiceData = (c: ClientChoice, gfx: string): string =>
+  clientData(
+    en("ClientMode", 1, [
+      { army: army(c.army), recruits: c.recruits, load: c.load, loaded: c.loaded.map(trooper), save: c.save },
+    ]),
+    gfx,
+  );
+
+/** ClientMode 5 (army, n, bg): the recruits animation of /history; `gfx` = army.swf. */
+export const recruitsData = (a: BattleArmyInput, n: number, bg: BattleInput["background"], gfx: string): string =>
+  clientData(en("ClientMode", 5, [army(a), n, { id: en("BackgroundType", bg.id), gfx: bg.gfx }]), gfx);
+
+/** Body of `/load` (choice.html's SWF pages the recruits through it): a Haxe array of troopers. */
+export const troopersList = (troopers: readonly BattleTrooperInput[]): string =>
+  serializeHaxe(objectObfuscator(troopers.map(trooper)), originalUrlEncode);
 
 /** ClientMode 3 (string): the 1×1 machine-id SWF of the creation form (the pages pass mini.swf as gfx). */
 export const midData = (s: string, gfx?: string): string => clientData(en("ClientMode", 3, [s]), gfx);
