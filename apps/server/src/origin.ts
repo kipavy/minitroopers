@@ -32,7 +32,9 @@ export function sameOrigin(cfg: Config): MiddlewareHandler<Env> {
       const site = c.req.header("sec-fetch-site");
       return site === undefined || SAME_SITE.has(site);
     })();
-    if (!ok) return c.text("Requête refusée", 403);
+    // Plain text, and the request's Origin is never echoed. The usual cause on a self-hosted server is a PUBLIC_URL
+    // that differs from the address in the browser (another host, scheme or port): every POST is then refused.
+    if (!ok) return c.text(`Requête refusée\nSi tu héberges toi-même le serveur, PUBLIC_URL doit correspondre à l'adresse affichée dans ton navigateur (PUBLIC_URL actuel : ${cfg.publicUrl}).`, 403);
     await next();
   };
 }

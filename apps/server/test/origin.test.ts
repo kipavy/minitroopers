@@ -18,7 +18,15 @@ test("POST /login: foreign Origin 403 and nothing changes; cross-site Sec-Fetch-
   const sessions = count(env, "SELECT COUNT(*) AS n FROM sessions");
   const evil = await post(env, "/login", { login: "Warp" }, { origin: "https://evil.example" });
   assert.equal(evil.status, 403);
-  assert.equal(await evil.text(), "Requête refusée");
+  const body = await evil.text();
+  assert.ok(body.startsWith("Requête refusée\n"));
+  // a hint for self-hosters (a PUBLIC_URL that is not the browser's address refuses every POST); the Origin is not echoed
+  assert.ok(body.includes("Si tu héberges toi-même le serveur, PUBLIC_URL doit correspondre à l'adresse affichée dans ton navigateur"));
+  assert.ok(!body.includes("evil.example"));
+  assert.match(evil.headers.get("content-type") ?? "", /^text\/plain/);
+  const tricky = await post(env, "/login", { login: "Warp" }, { origin: "https://<script>alert(1)</script>.example" });
+  assert.equal(tricky.status, 403);
+  assert.ok(!(await tricky.text()).includes("<script>"));
   const cross = await post(env, "/login", { login: "Warp" }, { "sec-fetch-site": "cross-site" });
   assert.equal(cross.status, 403);
   assert.equal(count(env, "SELECT COUNT(*) AS n FROM sessions"), sessions);
