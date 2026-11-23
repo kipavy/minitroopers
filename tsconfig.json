@@ -3,6 +3,8 @@
   "references": [
     { "path": "packages/engine" },
     { "path": "packages/engine/tsconfig.test.json" },
+    { "path": "packages/game" },
+    { "path": "packages/game/tsconfig.test.json" },
     { "path": "tools/oracle" }
   ]
 }

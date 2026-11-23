@@ -16,3 +16,14 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 ## Vérifié depuis
 
 - Options de montée de niveau affichées = les `choiceCount - 1` premières de `drawOptions()` : html/fr/levelup_0.html (le moteur tire [137, 86, 39], la page propose 137 puis 86).
+
+## Jeu hors combat (`@mt/game`)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Crédits de départ | `STARTING_CREDITS = 0` | aucune trace d'un cadeau initial (infobulle originale « Crédits : tu les gagnes en combat ») ; $GL met 100 | `packages/game/src/economy.ts` |
+| Offres quotidiennes | graine = FNV-1a 32 bits de `jour\|clientId\|recruteur\|sel\|slot` ramenée dans [273018, 16491340] (collisions décalées), couleur 3..5 | formule serveur originale inconnue ; entrées connues = jour, ordinateur, lien de recrutement | `packages/game/src/offers.ts` |
+| Générateur de noms | `[préfixe] base+suffixe [postfixe]`, tables dérivées du corpus extrait des pages originales (`packages/game/data/names-corpus.json`, `scripts/extract-names.mjs`), ≤ 12 car., probabilités 1/6 (préfixe) et 1/5 (postfixe) | tables originales inconnues (côté serveur) | `packages/game/src/names.ts` |
+| Liste de sous-domaines réservés | liste du serveur de test (`www, local, data, admin, …`) + `a` | `Common.hostValid` original : seulement `≥ 3` car., `www`, `local`, `data` connus | `packages/game/src/host.ts` |
+| Classe de caractères de `host` | `[^a-z0-9-]` (sans `.`) | l'`app.js` original garde `.` ; le port du serveur de test et RECON §2.3 l'enlèvent (un sous-domaine à un seul label) | `packages/game/src/host.ts` |
+| Intervalle des couleurs d'offre | 3..5 | seules les valeurs 3..5 observées sur l'accueil (cosmétique) | `packages/game/src/offers.ts` |
