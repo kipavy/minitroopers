@@ -22,7 +22,10 @@
 param(
   # outside the repo: decompiled Motion-Twin code must never be committed
   [string]$WorkDir = (Join-Path $PSScriptRoot "..\..\..\..\minitroopers-work\oracle-build"),
-  [switch]$Verify
+  [switch]$Verify,
+  # build assets/swf/client_fr_play.swf instead (see build-play.ps1): the chk check removed,
+  # no trace helpers
+  [switch]$Play
 )
 $ErrorActionPreference = "Stop"
 $WorkDir = [IO.Path]::GetFullPath($WorkDir)
@@ -33,7 +36,8 @@ $FFDec = Join-Path $Root "tools\bin\ffdec\ffdec-cli.jar"
 $FFHome = Join-Path $Root "tools\bin\ffdec-home"
 $Src = Join-Path $Root "assets\swf\client_fr.swf"
 $OutDir = Join-Path $Root "assets\oracle"
-$Out = Join-Path $OutDir "client_fr_trace.swf"
+if ($Play) { $OutDir = Join-Path $Root "assets\swf"; $OutName = "client_fr_play.swf" } else { $OutName = "client_fr_trace.swf" }
+$Out = Join-Path $OutDir $OutName
 $Patch = Join-Path $PSScriptRoot "patch-msg.as"
 $Utf8 = New-Object System.Text.UTF8Encoding($false)
 $S = [string][char]0xA7          # the § quoting obfuscated identifiers
@@ -115,6 +119,11 @@ $pcodeEdits = @(
      sig = "      public static function _rsq() : void"
      trait = 'trait method QName(PackageNamespace(""),"_rsq")' }
 )
+if ($Play) {
+  # only the chk branch of Main._rsq, with its own FIND/REPLACE sections
+  $pcodeEdits = @($pcodeEdits | Where-Object { $_.name -eq "PC_MAIN" })
+  $pcodeEdits[0].name = "PC_PLAY_MAIN"
+}
 $argLines = New-Object System.Collections.Generic.List[string]
 foreach ($e in $pcodeEdits) {
   $as = Read-Text (Join-Path $Decomp "$($e.rel).as")
@@ -137,9 +146,12 @@ foreach ($e in $pcodeEdits) {
 }
 $argsFile = Join-Path $WorkDir "replace-args.txt"
 [IO.File]::WriteAllText($argsFile, (($argLines -join "`n") + "`n"), $Utf8)
-Invoke-FFDec @("-replace", $Src, $Step1, $argsFile)
+New-Item -ItemType Directory -Force $OutDir | Out-Null
+Invoke-FFDec @("-replace", $Src, $(if ($Play) { $Out } else { $Step1 }), $argsFile)
 
 # 4. helpers: static methods added to the empty class §(m]a\x02§, recompiled from AS3
+#    (not for -Play: the -replace output above is already the final SWF)
+if (-not $Play) {
 $hRel = "scripts\${S}(m]a%5Cx02${S}.as"
 $h = Read-Text (Join-Path $Decomp $hRel)
 $pkg = "package`n{`n"
@@ -153,11 +165,12 @@ New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
 [IO.File]::WriteAllText($dst, $h, $Utf8)
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 Invoke-FFDec @("-importScript", $Step1, $Out, $Import)
+}
 
 # 5. hash
 $hash = Get-Sha256 $Out
-[IO.File]::WriteAllText("$Out.sha256", "$hash  client_fr_trace.swf`n", $Utf8)
-Write-Host "client_fr_trace.swf sha256=$hash"
+[IO.File]::WriteAllText("$Out.sha256", "$hash  $OutName`n", $Utf8)
+Write-Host "$OutName sha256=$hash"
 
 if ($Verify) {
   $PcTrace = Join-Path $WorkDir "pcode-trace"

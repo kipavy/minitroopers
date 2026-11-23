@@ -411,3 +411,45 @@ puis ont réussi à la seconde ; sa moyenne (26 s) n'est pas représentative. Au
 
 === §(m]a\x02§ : la classe vide reçoit les 4 méthodes statiques mtEsc/mtStr/mtTrp/mtDump
 ```
+
+## `client_fr_play.swf` (affichage navigateur, `assets/swf/client_fr_play.swf`)
+
+SWF servi aux navigateurs pour tous les éléments Flash du site (combats, fiches de trooper, grilles) :
+`client_fr.swf` (même source vérifiée par SHA-256) dont **une seule branche** est modifiée, celle du
+contrôle d'intégrité `chk` de `Main._rsq` (`if (hash(data) != chk) return;`, voir `PC_MAIN` ci-dessus).
+Le hash est un algorithme maison exécuté par un interpréteur embarqué que le serveur ne peut pas
+calculer : l'original n'affiche rien sans un `chk` valide. Aucun helper de trace, aucune autre
+modification.
+
+- Construction : `build-play.ps1` (appelle `build.ps1 -Play`, mêmes outils, même `-replace` P-code ;
+  `-WorkDir` par défaut `..\minitroopers-work\oracle-build-play`, `-Verify` liste les différences P-code).
+- Patch : section `PC_PLAY_MAIN_*` de `patch-msg.as`. Différence avec `PC_MAIN` : celui-ci devient
+  `chk != null && …` (l'oracle tourne sans `chk`) ; ici le `returnvoid` est **supprimé** : le test
+  `ifeq` saute vers l'instruction suivante dans les deux cas, donc **tout `chk` (ou aucun) est accepté**
+  (le serveur envoie `chk=play`, cf. `clientParams` du moteur).
+- Résultat : `client_fr_play.swf` + `.sha256`, reproductible (deux builds donnent le même SHA-256).
+- Innocuité (`build-play.ps1 -Verify`) : un seul fichier P-code diffère sur 290,
+  `§,7u\x1f§` (Main) ; hors renumérotation des labels de saut (`ofs0081` → `ofs0080`, `ofs00f0` → `ofs00ef`,
+  conséquence du retrait d'une instruction d'un octet), le diff est exactement :
+
+```
+                     getlocal 6
+                     ifeq ofs0081
+-                    returnvoid
+                  ofs0081:
+```
+
+Affichage (Ruffle web, `OracleRunner.runPlay`, `test/play.test.ts`) :
+- embed comme les pages originales : 720×440, `scale: noscale`, fond `#F2DDB8`, `data` = `battleData(...)`/
+  `trooperData(...)`/`gridData(...)` + `chk=play&imageurl=/img/` ;
+- l'original **attend son image de fond** (`imageurl` + `bg/<x>.jpg`) avant de lancer le combat : sans elle
+  (404) l'écran reste vide avec le pictogramme de chargement. Le serveur du site doit donc servir `/img/bg/*.jpg` ;
+  le test en sert une de substitution (`test/fixtures/bg.jpg`, 720×440 uni) ;
+- le client original **ne transmet pas le vainqueur au JS** : son seul rappel est `ExternalInterface.call("endBattle")`
+  (sans argument), déclenché par le bouton « continuer » de la bannière de fin ; ce clic n'atteint pas le bouton
+  sous Ruffle web (ni survol ni appui visibles, alors que le survol des grilles fonctionne) et `endBattle` n'est
+  donc pas testé. Le résultat affiché est lu sur la bannière de fin, titre VICTOIRE si le vainqueur est le côté
+  attaquant, DÉFAITE sinon, rendue par le SWF à partir du combat qu'il a lui-même rejoué ; le test compare
+  octet à octet un recadrage de 120×24 px à deux références (`test/fixtures/banner-victoire.png`, `banner-defaite.png`) ;
+- le combat est rejoué en temps réel (≈ 25 s pour 20 événements d'historique, ≈ 60 s pour 25) : le test
+  prend les goldens les plus courts.

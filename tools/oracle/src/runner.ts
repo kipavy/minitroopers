@@ -22,8 +22,12 @@ export interface OracleTrace {
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 export const TRACE_SWF = join(REPO_ROOT, "assets/oracle/client_fr_trace.swf");
+export const PLAY_SWF = join(REPO_ROOT, "assets/swf/client_fr_play.swf");
 export const EDIT_SWF = join(REPO_ROOT, "assets/swf/client_fr_edit.swf");
 const ARMY_SWF = join(REPO_ROOT, "assets/swf/army.swf");
+const MINI_SWF = join(REPO_ROOT, "assets/swf/mini.swf");
+/** Stand-in for the site's /img/bg/*.jpg: the display SWF does not start a battle without its background. */
+const BG_JPG = join(REPO_ROOT, "tools/oracle/test/fixtures/bg.jpg");
 /** Playwright browsers live in the gitignored tools/bin, never in the user profile. */
 export const BROWSERS_PATH = join(REPO_ROOT, "tools/bin/ms-playwright");
 process.env.PLAYWRIGHT_BROWSERS_PATH = BROWSERS_PATH;
@@ -88,13 +92,17 @@ export const traceSwfSha256 = (): string =>
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"></head><body>
 <div id="c" style="width:800px;height:600px"></div>
 <script>
-window.__mt = { lines: [], calls: [], done: false };
+window.__mt = { lines: [], calls: [], done: false, ended: false, errors: [] };
 // Ruffle web routes AVM trace() to log::info! in web/src/log_adapter.rs, which prints
 // console.log("%cINFO%c web/src/log_adapter.rs:<n>%c <line>", css…) when logLevel >= info.
 // Capture those in-page (no CDP console traffic) and pass everything else through.
 (function () {
   const orig = console.log.bind(console);
   const prefix = "%cINFO%c web/src/log_adapter.rs:";
+  for (const k of ["error", "warn"]) {
+    const o = console[k].bind(console);
+    console[k] = function () { window.__mt.errors.push(k + ": " + Array.from(arguments).join(" ").slice(0, 300)); return o.apply(null, arguments); };
+  }
   console.log = function (first) {
     const at = typeof first === "string" && first.startsWith(prefix) ? first.indexOf("%c ", prefix.length) : -1;
     if (at < 0) return orig.apply(null, arguments);
@@ -104,6 +112,8 @@ window.__mt = { lines: [], calls: [], done: false };
   };
 })();
 // client_fr_edit.swf reports its result through ExternalInterface.call("battleResult", …).
+// the original battle page defines endBattle(); client_fr_play.swf calls it when "continuer" is clicked.
+window.endBattle = function () { window.__mt.ended = true; };
 window.battleResult = function () { window.__mt.calls.push(Array.from(arguments)); };
 window.RufflePlayer = window.RufflePlayer || {};
 window.RufflePlayer.config = {
@@ -122,11 +132,11 @@ window.RufflePlayer.config = {
 </script>
 <script src="/ruffle/ruffle.js"></script>
 <script>
-window.__mtLoad = function (swf, parameters) {
+window.__mtLoad = function (swf, parameters, extra) {
   const player = window.RufflePlayer.newest().createPlayer();
   document.getElementById("c").appendChild(player);
-  player.style.width = "800px"; player.style.height = "600px";
-  return player.ruffle().load({ url: swf, parameters, allowScriptAccess: true });
+  player.style.width = ((extra && extra.width) || 800) + "px"; player.style.height = ((extra && extra.height) || 600) + "px";
+  return player.ruffle().load({ url: swf, parameters, allowScriptAccess: true, ...(extra || {}) });
 };
 </script></body></html>`;
 
@@ -137,13 +147,16 @@ const CONTENT_TYPES: Record<string, string> = {
   ".wasm": "application/wasm",
   ".swf": "application/x-shockwave-flash",
   ".map": "application/json",
+  ".jpg": "image/jpeg",
 };
 
 const startServer = async (): Promise<Server> => {
   const files: Record<string, string> = {
     "/swf/trace.swf": TRACE_SWF,
     "/swf/edit.swf": EDIT_SWF,
+    "/swf/play.swf": PLAY_SWF,
     "/swf/army.swf": ARMY_SWF,
+    "/swf/mini.swf": MINI_SWF,
   };
   const server = createServer((req, res) => {
     const url = (req.url ?? "/").split("?")[0] ?? "/";
@@ -152,6 +165,7 @@ const startServer = async (): Promise<Server> => {
       return;
     }
     let file = files[url];
+    if (file === undefined && /^\/img\/bg\/[\w-]+\.jpg$/.test(url)) file = BG_JPG;
     if (file === undefined && url.startsWith("/ruffle/") && /^[\w.-]+$/.test(url.slice(8))) {
       file = join(RUFFLE_DIR, url.slice(8));
     }
@@ -177,6 +191,31 @@ export interface RunOptions {
   /** `trace` (default) = instrumented oracle; `edit` = Eternaltwin's client_fr_edit.swf. */
   swf?: "trace" | "edit";
   timeoutMs?: number;
+}
+
+/** The original pages embed client_fr.swf at 720x440 with scale=noscale, bgcolor #F2DDB8. */
+const PLAY_EMBED = { scale: "noscale", backgroundColor: "#F2DDB8", width: 720, height: 440 };
+
+export interface PlayOptions {
+  timeoutMs?: number;
+  /** Non-battle modes: wait this long after the load (default 5000), then screenshot and report. */
+  settleMs?: number;
+  /**
+   * Battles: poll a screenshot of `clip` (page CSS px) every `pollMs` (default 1000) until
+   * `ready(png)` accepts it (the end-of-battle banner is up).
+   */
+  battle?: {
+    clip: { x: number; y: number; width: number; height: number };
+    ready: (png: Buffer) => boolean;
+    pollMs?: number;
+  };
+}
+
+export interface PlayRun {
+  /** console.error/warn lines and uncaught page errors. */
+  errors: string[];
+  /** Battles: the screenshot of `battle.clip` accepted by `ready`. Other modes: the 720x440 embed. */
+  shot: Buffer;
 }
 
 export interface RawRun {
@@ -268,6 +307,46 @@ export class OracleRunner {
       const lines = filterTraceLines(got.lines);
       if (timedOut) throw new OracleTimeoutError(timeoutMs, lines);
       return { lines, calls: got.calls };
+    } finally {
+      await page.close().catch(() => {});
+    }
+  }
+
+  /**
+   * Loads the display SWF (client_fr_play.swf) with the flashvars built by `params(origin)` (a
+   * `clientParams()` string; `origin` serves army.swf / mini.swf under /swf/ and a background
+   * under /img/bg/). The untouched client never reports the winner to JS: for battles the
+   * end-of-battle banner (victory/defeat title) is screenshotted (see PlayOptions.battle).
+   */
+  async runPlay(params: (origin: string) => string, opts: PlayOptions = {}): Promise<PlayRun> {
+    await this.start();
+    const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const page = await this.context!.newPage();
+    const pageErrors: string[] = [];
+    page.on("pageerror", (e) => pageErrors.push(String(e)));
+    try {
+      await page.goto(this.origin + "/");
+      const parameters = Object.fromEntries(new URLSearchParams(params(this.origin)));
+      await page.evaluate(
+        ([u, p, x]) => (globalThis as any).__mtLoad(u, p, x),
+        [`${this.origin}/swf/play.swf`, parameters, PLAY_EMBED] as [string, Record<string, string>, typeof PLAY_EMBED],
+      );
+      let shot: Buffer;
+      if (opts.battle !== undefined) {
+        const { clip, ready, pollMs = 1000 } = opts.battle;
+        const deadline = Date.now() + timeoutMs;
+        for (;;) {
+          shot = await page.screenshot({ clip });
+          if (ready(shot)) break;
+          if (Date.now() > deadline) throw new OracleTimeoutError(timeoutMs, []);
+          await page.waitForTimeout(pollMs);
+        }
+      } else {
+        await page.waitForTimeout(opts.settleMs ?? 5000);
+        shot = await page.screenshot({ clip: { x: 8, y: 8, width: PLAY_EMBED.width, height: PLAY_EMBED.height } });
+      }
+      const got = (await page.evaluate(() => (globalThis as any).__mt)) as { errors: string[] };
+      return { errors: [...got.errors, ...pageErrors], shot };
     } finally {
       await page.close().catch(() => {});
     }

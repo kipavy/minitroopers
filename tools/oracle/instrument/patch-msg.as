@@ -223,4 +223,13 @@ pushnull
 ifeq ofs0081
 returnvoid
 ofs0081:
+//@@ PC_PLAY_MAIN_FIND  (client_fr_play.swf, build.ps1 -Play: Main._rsq `if(hash(data) != chk) return;`)
+getlocal 6
+ifeq ofs0081
+returnvoid
+ofs0081:
+//@@ PC_PLAY_MAIN_REPLACE  (=> the `return` is removed: the hash is still computed, but any chk, or none, is accepted; the branch jumps to the next instruction either way)
+getlocal 6
+ifeq ofs0081
+ofs0081:
 //@@ END
