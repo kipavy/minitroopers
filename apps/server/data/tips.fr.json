@@ -3,13 +3,61 @@
   "title": "Soldat",
   "body": "Pour chaque niveau, <i>{name}</i> obtient un point de vie supplémentaire. <em>Si tu ne cherche pas les responsabilités mais plutot la survie, Ce job est fait pour toi !</em>"
  },
+ "1": {
+  "title": "Medecin",
+  "body": "Soigne 5 PV sur un coéquipier +1 PV supplémentaire pour chaque niveau. Immunisé au poison et à la paralysie. <em>Le plus dur pour les médecin c'est d'apprendre a reconnaitre les morts, des vivants... Ca fait écononomiser un temps fou !</em>"
+ },
+ "2": {
+  "title": "Pilote",
+  "body": "Pour chaque niveau : augmente de 25% les chances d'obtenir un véhicule. <em>Parcequ'avec ton niveau actuel, une machine fera surement un meilleur boulot quoi toi troufion !</em>"
+ },
+ "3": {
+  "title": "Artificier",
+  "body": "Pour chaque niveau : recharge les munitions d'un coéquipier à chaque renfort. Double la fréquence d'utilisation des grenades. <em>\"La bombe humaine, tu la tiens dans ta main ! Tu as l'détonateur juste à côté du coeur ! \"</em>"
+ },
+ "4": {
+  "title": "Scout",
+  "body": "+1 en déploiement <text:span text:style-name=\"T1\">(</text:span>20 au maximum<text:span text:style-name=\"T1\">)</text:span>. <em>La connaissance du terrain c'est la clé de la victoire !</em>"
+ },
+ "5": {
+  "title": "Espion",
+  "body": "<i>{name}</i> apparaît dans le camp ennemi. +50 en initiative (+10 supplémentaireq pour chaque niveau ). <em>L'art de se faufiler dans l'armée ennemie et provoquer un carnage avant même que le bataille ne soit commencée...</em>"
+ },
+ "6": {
+  "title": "Officier COM",
+  "body": "Pour chaque niveau : +1 en communication. <em>Les agents coms assurent la transmissions des directives de bataille. Se blinder d'agents com c'est avoir l'assurance de recevoir plein d'ordres rigolos, pour massacrer encore plus d'ennemis !</em>"
+ },
+ "7": {
+  "title": "Saboteur",
+  "body": "Pour chaque niveau : +1 en sabotage. <em>C'est quand même plus facile quand les mecs en face n'ont que des pistolets à eau.</em>"
+ },
  "8": {
   "title": "Pistolet",
   "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 7</li><li><b>Critiques</b> : x5</li><li><b>Visée</b> : 90%</li><li><b>Récupération</b> : 100</li></ul>"
  },
+ "9": {
+  "title": "Revolver",
+  "body": "<ul><li><b>Dégâts</b> : 4-6</li><li><b>Portée</b> : 9</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 75%</li><li><b>Récupération</b> : 120</li><li><b>Habilités</b> : Projette l'ennemi, Toujours chargée en début de match</li></ul>"
+ },
+ "10": {
+  "title": "Desert Eagle",
+  "body": "<ul><li><b>Dégâts</b> : 4</li><li><b>Portée</b> : 10</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 100%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Ignore l'armure</li></ul>"
+ },
+ "11": {
+  "title": "Beretta",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 8</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 90%</li><li><b>Récupération</b> : 50</li></ul>"
+ },
+ "12": {
+  "title": "Double pistolet",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 8</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Tire deux fois par rafale</li></ul>"
+ },
  "13": {
   "title": "Fusil",
   "body": "<ul><li><b>Dégâts</b> : 5-8</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Projette l'ennemi, Dégats de zone</li></ul>"
+ },
+ "14": {
+  "title": "Fusil semi-auto",
+  "body": "<ul><li><b>Dégâts</b> : 5-10</li><li><b>Portée</b> : 4</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 70</li><li><b>Habilités</b> : Projette l'ennemi, Dégats de zone</li></ul>"
  },
  "15": {
   "title": "Fusil double",
@@ -31,33 +79,297 @@
   "title": "M16",
   "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 2-6</li><li><b>Critiques</b> : x10</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 80</li></ul>"
  },
+ "20": {
+  "title": "AK47",
+  "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 2-7</li><li><b>Critiques</b> : x10</li><li><b>Rafales</b> : 4</li><li><b>Visée</b> : 100%</li><li><b>Récupération</b> : 100</li></ul>"
+ },
+ "21": {
+  "title": "FAMAS",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 5</li><li><b>Critiques</b> : x10</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 90%</li><li><b>Récupération</b> : 50</li></ul>"
+ },
+ "22": {
+  "title": "Thompson",
+  "body": "<ul><li><b>Dégâts</b> : 3-7</li><li><b>Portée</b> : 2-6</li><li><b>Critiques</b> : x10</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 80</li><li><b>Habilités</b> : Ignore l'armure</li></ul>"
+ },
+ "23": {
+  "title": "UMP",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 2-6</li><li><b>Critiques</b> : x20</li><li><b>Rafales</b> : 3</li><li><b>Visée</b> : 100%</li><li><b>Récupération</b> : 80</li></ul>"
+ },
+ "24": {
+  "title": "Bazooka M1",
+  "body": "<ul><li><b>Dégâts</b> : 8-15</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 100%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Arme lourde, Zone de sécurité requise pour tirer</li></ul>"
+ },
  "25": {
   "title": "Lance-roquettes",
   "body": "<ul><li><b>Dégâts</b> : 8-15</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 120</li><li><b>Habilités</b> : Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "26": {
+  "title": "Bazooka M25",
+  "body": "<ul><li><b>Dégâts</b> : 6-12</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 80%</li><li><b>Récupération</b> : 120</li><li><b>Habilités</b> : Arme lourde, Zone de sécurité requise pour tirer</li></ul>"
  },
  "27": {
   "title": "Tube Infernal",
   "body": "<ul><li><b>Dégâts</b> : 14-28</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x1</li><li><b>Visée</b> : 95%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Arme lourde, Zone de sécurité requise pour tirer</li></ul>"
  },
+ "28": {
+  "title": "Comanche auto",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 6</li><li><b>Critiques</b> : x5</li><li><b>Rafales</b> : 6</li><li><b>Visée</b> : 90%</li><li><b>Récupération</b> : 60</li><li><b>Habilités</b> : Arme lourde</li></ul>"
+ },
+ "29": {
+  "title": "Mitrailleuse lourde",
+  "body": "<ul><li><b>Dégâts</b> : 3-4</li><li><b>Portée</b> : 6</li><li><b>Critiques</b> : x5</li><li><b>Rafales</b> : 8</li><li><b>Visée</b> : 70%</li><li><b>Récupération</b> : 150</li><li><b>Habilités</b> : Arme lourde, Toujours chargée en début de match</li></ul>"
+ },
+ "30": {
+  "title": "Sulfateuse",
+  "body": "<ul><li><b>Dégâts</b> : 3-6</li><li><b>Portée</b> : 7</li><li><b>Critiques</b> : x5</li><li><b>Rafales</b> : 5</li><li><b>Visée</b> : 70%</li><li><b>Récupération</b> : 110</li><li><b>Habilités</b> : Arme lourde</li></ul>"
+ },
+ "31": {
+  "title": "Minigun",
+  "body": "<ul><li><b>Dégâts</b> : 2-3</li><li><b>Portée</b> : 6</li><li><b>Critiques</b> : x5</li><li><b>Rafales</b> : 6</li><li><b>Visée</b> : 100%</li><li><b>Récupération</b> : 80</li><li><b>Habilités</b> : Arme lourde</li></ul>"
+ },
  "32": {
   "title": "Sniper",
   "body": "<ul><li><b>Dégâts</b> : 4</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x15</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "33": {
+  "title": "MOS-TECK",
+  "body": "<ul><li><b>Dégâts</b> : 6-7</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x25</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 120</li><li><b>Habilités</b> : Arme lourde, Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "34": {
+  "title": "Lizaro Jungle",
+  "body": "<ul><li><b>Dégâts</b> : 5</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x20</li><li><b>Visée</b> : 120%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Arme lourde, Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "35": {
+  "title": "Epervier",
+  "body": "<ul><li><b>Dégâts</b> : 3</li><li><b>Portée</b> : 3-max</li><li><b>Critiques</b> : x50</li><li><b>Visée</b> : 300%</li><li><b>Récupération</b> : 100</li><li><b>Habilités</b> : Arme lourde, Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "36": {
+  "title": "CK-Magellan",
+  "body": "<ul><li><b>Dégâts</b> : 3</li><li><b>Portée</b> : 2-max</li><li><b>Critiques</b> : x25</li><li><b>Visée</b> : 150%</li><li><b>Récupération</b> : 65</li><li><b>Habilités</b> : Arme lourde, Touche plus souvent la localisation favorite, Zone de sécurité requise pour tirer</li></ul>"
+ },
+ "37": {
+  "title": "Couteau",
+  "body": "<ul><li><b>Dégâts</b> : 2-4</li><li><b>Portée</b> : 1</li><li><b>Critiques</b> : x10</li><li><b>Visée</b> : 120%</li><li><b>Récupération</b> : 40</li></ul>"
+ },
+ "38": {
+  "title": "Tank léger",
+  "body": "Le tank est équipé d'un canon léger et d'une mitrailleuse. <em>\"Une structure en balsa montée sur un vélo... Mais ça suffit pour faire flipper l'adversaire ! \"</em>"
+ },
+ "39": {
+  "title": "Moto",
+  "body": "La moto approche jusqu'à la première cible à portée. <em>\"Ca ne vous fait pas peur de toujours foncer vers l'ennemi en première ligne ? <br/>- Oh non. Ce qui me dérange c'est d'avaler ces saletés de moustiques sur le chemin.\"</em>"
+ },
+ "40": {
+  "title": "Avion de chasse",
+  "body": "Le jet bombarde le champ de bataille tant qu'il a du carburant. <em>\"Un petit looping et je suis à vous, commandant.\"</em>"
+ },
+ "41": {
+  "title": "Hélicoptère",
+  "body": "L'hélicoptère est équipé d'une double mitrailleuse. <em>\"Je me sens bien plus fort, avec mon gros rotor ! \"</em>"
+ },
+ "42": {
+  "title": "Tank lourd",
+  "body": "Le tank lourd est équipé d'un canon et d'une mitrailleuse. <em>\"Redoutable sur le champ de bataille, mais la clim' est en option. \"</em>"
+ },
+ "43": {
+  "title": "Adrénaline",
+  "body": "Chaque tir qui manque <i>{name}</i> le fait agir plus vite. <em>\"Comment je motive mes troupes ?... Hé hé, chacun ses petits secrets ! \"</em>"
+ },
+ "44": {
+  "title": "Piqpure d'amphet",
+  "body": "+100% en rapidité pendant 500 tours. <em>\"Avant j'étais coureur cycliste. J'ai l'habitude...\"</em>"
+ },
+ "45": {
+  "title": "Anatomie",
+  "body": "Multiplie par 2 les chances d'effectuer une blessure fatale. Augmente les chances de toucher la localisation corporelle favorite de <i>{name}</i>. <em>\"Yes! mon 27ème orteil en 24h !\"</em>"
+ },
+ "46": {
+  "title": "Sac à dos",
+  "body": "Lors du premier déploiement toutes les munitions de <i>{name}</i> sont rechargées. <em>\"Tiens, ton goûter.\"</em>"
+ },
+ "47": {
+  "title": "Appât",
+  "body": "+8 points de vie, <i>{name}</i> est pris pour cible en priorité et il est plus facile à toucher. <em>\"Les gars, pourquoi je suis le seul avec un uniforme qui clignote ? \"</em>"
+ },
+ "48": {
+  "title": "Extension de canon",
+  "body": "+1 en portée et +10% en visée sur toutes les armes. <em>\"L'important ce n'est pas la façon de s'en servir. C'est la taille.\"</em>"
+ },
+ "49": {
+  "title": "Gros mollets",
+  "body": "+3 points de vie et +25% en vitesse de déplacement. <em>\"L'armée, c'est pas pour les mous du genou !\"</em>"
+ },
+ "50": {
+  "title": "Jumelles",
+  "body": "L'ennemi deploie un nouveau trooper avec 400 points d'initiative de pénalité.. <em>\"Roooh, leur commandant se cure le nez pendant le briefing.\"</em>"
+ },
+ "51": {
+  "title": "Bipied",
+  "body": "Aucun malus sur les cibles en mouvement. <em>\"Bon pied bon oeil, c'est ma devise !\"</em>"
+ },
+ "52": {
+  "title": "Tir aveugle",
+  "body": "<i>{name}</i> ne subit aucun malus de ligne de vue, et ne subit pas non plus de malus pour le statut aveugle. <em>\"ils se lavent pas souvent, je les repère à l'odeur.\"</em>"
+ },
+ "53": {
+  "title": "Vif",
+  "body": "<i>{name}</i> joue avant les autres (+200 en initiative). <em>\" A moi, à moi ! C'est moi qui commence ! \"</em>"
+ },
+ "54": {
+  "title": "Débardeur Bruce",
+  "body": "+30% en rapidité et +30% en esquive. <em>\"En marcel, je me sens plus libre.\"</em>"
+ },
+ "55": {
+  "title": "Armoire-à-glace",
+  "body": "+3 points de vie et gêne la prise pour cible de coéquipiers derrière <i>{name}</i>. <em>\"Les éclaireurs parlent d'un type seul... Ca va être du gâteau.\"</em>"
  },
  "56": {
   "title": "Balle explosive",
   "body": "<i>{name}</i> tire jusqu'à 6 balles explosives doublant leurs dégâts. <em>Boum, quand mon p'tit coeur fait boum !</em>"
  },
+ "57": {
+  "title": "Balle hydroshock",
+  "body": "Les balles de <i>{name}</i> multiplient par 4 les chances de blessure fatale. <em>Et là ça fait des millions de petits morceaux qui partent dans tous les sens ! Génial, non ?</em>"
+ },
+ "58": {
+  "title": "Balle paralysante",
+  "body": "Les balles de <i>{name}</i> paralysent l'ennemi. <em>\"C'est super ! Tu tires et le mec est tout raide ! <br/>- Ouais... Comme des balles normales quoi.\"</em>"
+ },
+ "59": {
+  "title": "Balle perçante",
+  "body": "Les balles de <i>{name}</i> ignorent l'armure de l'ennemi. <em>\"Quel gilet pare-balle ? \"</em>"
+ },
+ "60": {
+  "title": "Balle toxique",
+  "body": "<i>{name}</i> tire jusqu'à 3 balles toxiques qui empoisonnent l'ennemi. <em>\"T'as l'air un peu patraque Roger. Tu vas pas nous lâcher pour une petite balle dans le buffet ? \"</em>"
+ },
+ "61": {
+  "title": "Camouflage",
+  "body": "20% d'échec des tirs ciblant <i>{name}</i> et diminue ses chances d'être pris pour cible. <em>\"Chef ! Le carton là-bas, il a bougé ! <br/>- Mais oui Jack, mais oui...\"</em>"
+ },
+ "62": {
+  "title": "Chargeur",
+  "body": "L'arme de <i>{name}</i> est automatiquement rechargée. <em>\"Ma règle numéro un : toujours un chargeur de rab dans son caleçon.\"</em>"
+ },
+ "63": {
+  "title": "Charge",
+  "body": "<i>{name}</i> charge un ennemi à proximité. <em>\"Frrreeeeee Huuuuuggsss ! ! ! \"</em>"
+ },
+ "64": {
+  "title": "Malin",
+  "body": "<i>{name}</i> obtient un choix supplémentaire lors de la montée en niveau. Contre les effets de Appât, Grenade rose et Propagande. Divise par 2 les chances de sabotage par l'ennemi. <em>\"On me la fait pas, à moi. Avant de choisir, je regarde.\"</em>"
+ },
+ "65": {
+  "title": "Grosse-Beigne",
+  "body": "+1 dégat aux poings. Lorsque <i>{name}</i> frappe un adversaire il a une chance sur deux de perdre son arme. <em>\"Rocky, prends au moins un pistolet... <br/>- Non merci chef, pas besoin ! \"</em>"
+ },
+ "66": {
+  "title": "Thermos de café",
+  "body": "+25% en rapidité. <em>\"Pour moi la guerre, c'est toujours sans sucre.\"</em>"
+ },
+ "67": {
+  "title": "Sang froid",
+  "body": "<i>{name}</i> vise deux fois plus rapidement. <em>\"On va pas perdre du temps en sensiblerie...\"</em>"
+ },
+ "68": {
+  "title": "Aimant de combat",
+  "body": "Récupère l'arme d'un adversaire. <em>\"Trop marrant, j'ai aussi récupéré ses plombages.\"</em>"
+ },
+ "69": {
+  "title": "Commandement",
+  "body": "+1 bataille par jour ( +2 max ). <em>\"Mon boulot, c'est meneur d'hommes. <br/>Je leur dit où aller. <br/>Moi, j'y vais pas.\"</em>"
+ },
+ "70": {
+  "title": "Commando",
+  "body": "+5 points de vie. <em>\"Regardez. Si on enlève le cerveau ça laisse plus de place pour les points de vie.\"</em>"
+ },
+ "71": {
+  "title": "Compensateur de recul",
+  "body": "Divise par deux les malus de visée pour les tirs successifs. Réduit également de 30% le temps d'attente après un tir. <em>\"Avec le matériel Parkin & son, finie la tremblotte ! \"</em>"
+ },
  "72": {
   "title": "A couvert !",
   "body": "Lorsque <i>{name}</i> recharge son arme, il a une chance sur deux d'éviter les tirs. <em>\"On vous avait bien dit de baisser la tête.\"</em>"
+ },
+ "73": {
+  "title": "Tir de couverture",
+  "body": "Lorsque <i>{name}</i> est en position de tir, il réplique immédiatement. <em>\"Mais c'est fini de me viser, oui ? ! \"</em>"
+ },
+ "74": {
+  "title": "Increvable",
+  "body": "<i>{name}</i> ne peut pas être tué par blessure fatale. <em>\"Argl... Ma tête ! Ma tê... Ah non tiens, ça va.\"</em>"
+ },
+ "75": {
+  "title": "Méfiant",
+  "body": "+200 en initiative par espion adverse présent dans le déploiement. Insensible au sabotage. Ne peut être blessé par ses coéquipiers. <em>\"Dis donc John, t'avais pas de moustache ce matin...\"</em>"
+ },
+ "76": {
+  "title": "Esquive",
+  "body": "Le premier tir subi est automatiquement esquivé. <em>\"Et hop ! Sous vos applaudissements ! \"</em>"
+ },
+ "77": {
+  "title": "Premiers-soins",
+  "body": "<i>{name}</i> regagne jusqu'à 50% de vie à la fin du premier round. <em>\"Ouf, il me reste un sparadrap.\"</em>"
+ },
+ "78": {
+  "title": "Débordement",
+  "body": "Si <i>{name}</i> n'est pas à bord d'un véhicule, il pourra apparaître hors de la zone de déploiement. <em>\"Hi hi hi, je vais faire le tour ils seront bien attrapés.\"</em>"
+ },
+ "79": {
+  "title": "Frénésie",
+  "body": "Lorsque <i>{name}</i> abât un ennemi, il gagne 200 points d'initiative. <em>\"Au suivaaaaant ! \"</em>"
+ },
+ "80": {
+  "title": "Tir ami",
+  "body": "Les grenades et les tirs de <i>{name}</i> ne touchent jamais ses coéquipiers. <em>\"Grâce à notre technologie révolutionnaire, impossible de tirer dans les fesses ! \"</em>"
+ },
+ "81": {
+  "title": "Armure complete",
+  "body": "Diminue de 1 les dommages subis et diminue de 20% la vitesse. <em>\"Ah ah ! C'est qui cette boîte de conserve ? <br/>- Chut, c'est le commandant ! <br/>- Ah... Oups.\"</em>"
+ },
+ "82": {
+  "title": "Grenade",
+  "body": "Explose sur une zone de 2x2 en faisant entre 6 et 12 dégâts. <em>\"Simple et efficace : lancez, c'est nettoyé.\"</em>"
+ },
+ "83": {
+  "title": "Grenade flash",
+  "body": "Tous les troopers touchés gagnent le statut aveugle. <em>\"Sous les sunlights des tropiiiiqueuhs ! \"</em>"
  },
  "84": {
   "title": "Grenade gaz",
   "body": "Empoisonne tous les troopers touchés. <em>\"Très efficace ! Enfin... Sauf en cas de rhume chez l'ennemi.\"</em>"
  },
+ "85": {
+  "title": "Grenade clown",
+  "body": "Fait apparaître un clown sur une case libre. <em>\"J'ai p-p-peuuur des clowns, chef... <br/>- Moi aussi ! Feu ! \"</em>"
+ },
  "86": {
   "title": "Grenade fragment",
   "body": "Se fragmente et fait entre 1 et 5 dégâts. <em>\"Aïe ! Aïe ! Aïe !... Mais ! Aïeuuuh ! \"</em>"
+ },
+ "87": {
+  "title": "Grenade secousse",
+  "body": "Tous les troopers touchés lâchent leur arme. <em>\"L'avantage, c'est que ça raffermit les fesses.\"</em>"
+ },
+ "88": {
+  "title": "Grenade gluante",
+  "body": "Tous les troopers touchés perdent 200 points d'initiative. <em>\"Et ça part avec quoi, cette foutue colle ? <br/>- Avec rien. Cherche pas.\"</em>"
+ },
+ "89": {
+  "title": "Grenade bénie",
+  "body": "Explosion sur 3x3 cases en faisant entre 12 et 24 dégâts. <em>\"Je... J'ai vu la lumière, les gars... \" BAOUM !</em>"
+ },
+ "90": {
+  "title": "Grenade de soin",
+  "body": "Guéri les troopers touchés sur 3x3 cases. <em>\"Ca picote au début, et puis ça va mieux.\"</em>"
+ },
+ "91": {
+  "title": "Grenade trou-noir",
+  "body": "Elimine les ennemis sur 2x2 cases. <em>\"C'est notre dernière invention ! Un volontaire pour le premier test ?... <br/>Non ? Personne? \"</em>"
+ },
+ "92": {
+  "title": "Dur-à-cuire",
+  "body": "<i>{name}</i> ne subit pas de dégâts supplémentaires en cas de blessure aggravée. <em>\"Pfff, même pas mal. \"</em>"
  },
  "93": {
   "title": "Bourreau des coeurs",
@@ -67,24 +379,188 @@
   "title": "Détecteur de chaleur",
   "body": "+20% en visée. Les balles de <i>{name}</i> ne peuvent pas être esquivées. <em>\"- Ici ? <br/>- Ah non là, c'est froid... <br/>- Et là ? <br/>- Ah, tu chauffes ! <br/>- Ici alors ? <br/>- Bravo, tu brûles. \" <br/>PAN !</em>"
  },
+ "95": {
+  "title": "Poids lourd",
+  "body": "+10 points de vie et -20% en rapidité. <em>\"Un sacré morceau.\"</em>"
+ },
+ "96": {
+  "title": "Pressé",
+  "body": "+10% en rapidité et double la fréquence d'utilisation des pouvoirs et équipements. <em>\"Grouillez-vous, ce soir y'a Rambo à la télé !\"</em>"
+ },
+ "97": {
+  "title": "Hyperactif",
+  "body": "+50% en rapidité et effectue des mouvements parasites. <em>\"Bataille gagnée, chef ! Votre uniforme est repassé ! La vaisselle faite ! Le champ de bataille bêché ! \"</em>"
+ },
+ "98": {
+  "title": "Interception",
+  "body": "<i>{name}</i> intercepte et renvoie une grenade si elle tombe près de lui. <em>\"Ca s'en va, et ça revient ! \"</em>"
+ },
+ "99": {
+  "title": "Jongleur",
+  "body": "<i>{name}</i> change d'arme de façon instantanée. <em>\"Jusqu'au bazooka pas de problème. Mais alors les tanks...\"</em>"
+ },
+ "100": {
+  "title": "Gilet pare-balles",
+  "body": "+1 en armure et divise par deux les chances de blessure fatale sur le torse. <em>\"Plus de 20 coloris différents ! Sable, forêt, paillettes disco...\"</em>"
+ },
+ "101": {
+  "title": "Visée laser",
+  "body": "+80% en visée. <em>\"La méga-frime sur le champ de bataille.\"</em>"
+ },
+ "102": {
+  "title": "Dernier Mohican",
+  "body": "Lorsque <i>{name}</i> est le dernier survivant, il vide automatiquement ses chargeurs à chaque tir et les dégats sont doublés. <em>\"Bon Il est tout seul maintenant, il va peut-être arrêter son cinémaarrrg...\"</em>"
+ },
  "103": {
   "title": "Porte bonheur",
   "body": "Un coup fatal laisse <i>{name}</i> avec 1 seul point de vie au lieu de mourir. <em>\"Quelle chance, l'obus s'est écrasé sur ma patte de lapin ! \"</em>"
+ },
+ "104": {
+  "title": "Mitrailleur",
+  "body": "<i>{name}</i> effectue 2 tirs supplémentaires à chaque rafale d'arme automatique. <em>\"C'est la taquetaquetique de la gatling.\"</em>"
+ },
+ "105": {
+  "title": "Doigts-agiles",
+  "body": "<i>{name}</i> manipule son arme deux foix plus vite et recharge les munitions deux par deux. <em>\"Il m'énerve, Jackson, à frimer avec ses 60 phalanges...\"</em>"
+ },
+ "106": {
+  "title": "Nerveux",
+  "body": "<i>{name}</i> tire occasionellement tout le chargeur de son arme. <em>\"Vide ? Déjà ? \"</em>"
+ },
+ "107": {
+  "title": "Occupation",
+  "body": "+1$ par jour de connexion. <em>\"J'y suis j'y reste ! \"</em>"
+ },
+ "108": {
+  "title": "Roi de la pétanque",
+  "body": "Les grenades de <i>{name}</i> ne ratent jamais leur cible. <em>\"Lui là-bas, il a une bonne tête de cochonnet.\"</em>"
+ },
+ "109": {
+  "title": "Radio",
+  "body": "+1 en communication. <em>\"Vous écoutez radio Troopers sur 7.62, ne quittez pas la station ! \"</em>"
+ },
+ "110": {
+  "title": "Attaque à revers",
+  "body": "La zone de déploiement ennemie est diminuée de deux cases. <em>\"Comment ça, c'est l'heure de la pause ? \"</em>"
+ },
+ "111": {
+  "title": "Sauveteur",
+  "body": "<i>{name}</i> amène un soldat mort dans la réserve et le soigne. <em>\"Je voyais un tunnel avec une grande lumière au bout, et... <br/>- Oui bon, t'es sauvé. Maintenant t'y retournes ! \"</em>"
+ },
+ "112": {
+  "title": "Ressort",
+  "body": "Lorsqu'on envoie <i>{name}</i> au tapis, il ne prend aucun dégât, se relève aussitôt et gagne +100 d'initiative. <em>\"C'est le nouveau caleçon développé par nos services secrets. <br/>Avec ça, la guerre est déjà gagnée.\"</em>"
+ },
+ "113": {
+  "title": "Sans repos",
+  "body": "Lors d'un déploiement allié ou ennemi <i>{name}</i> gagne 200 points d'initiative. <em>\"Super, en voilà d'autres ! \"</em>"
+ },
+ "114": {
+  "title": "Ruée",
+  "body": "A la fin d'un déplacement, <i>{name}</i> peut directement tirer s'il en a la possibilité. <em>\"Franchement... C'est idiot d'attendre. \"</em>"
  },
  "115": {
   "title": "Oeil de lynx",
   "body": "+50% en visée avec les armes à feu. <em>\"10$ que je lui fait sauter la molaire gauche à 500m. En plus elle est cariée, on dirait.\"</em>"
  },
+ "116": {
+  "title": "Rancunier",
+  "body": "<i>{name}</i> effectue toujours ses dégâts maximum contre un ennemi qui l'a déjà touché. <em>\"J'ai mon petit carnet. Je note les noms ! \"</em>"
+ },
+ "117": {
+  "title": "Sprinteur",
+  "body": "+100% en vitesse de déplacement. <em>\"Ca peut être utile dans les deux sens.\"</em>"
+ },
+ "118": {
+  "title": "Cagoule amidonnée",
+  "body": "Les dégats reçus à la tête ne sont pas doublés. +1 en armure et divise par deux les chances de blessure fatale sur cette zone. <em>\"Quand j'étais petit j'aimais pas trop ça... Maintenant j'en suis très content.\"</em>"
+ },
+ "119": {
+  "title": "Forte poigne",
+  "body": "<i>{name}</i> ne peut pas perdre son arme en cas de blessure. Lors de plusieurs tirs consécutifs, <i>{name}</i> ne perds pas sa cible. +1 dégât avec les poings. <em>\"Enfin utile, cette arthrite.\"</em>"
+ },
+ "120": {
+  "title": "Cascadeur",
+  "body": "Si le véhicule de <i>{name}</i> est détruit, les dégâts subis sont divisés par 2. <em>\"Comment ça ma doublure s'est fait descendre hier ? \"</em>"
+ },
+ "121": {
+  "title": "Robuste",
+  "body": "+3 points de vie. <i>{name}</i> ne subit pas les malus de déplacement pour les armes lourdes. <em>\"J'ai commencé les haltères à 3 ans, vous savez.\"</em>"
+ },
+ "122": {
+  "title": "Coup-de-tatane",
+  "body": "Lorsqu'un adversaire est au corps a corps, <i>{name}</i> lui envoie son pied dans la tronche. <em>\"Elu ballon d'or du régiment.\"</em>"
+ },
+ "123": {
+  "title": "Survivant",
+  "body": "Lorsque que les renforts arrivent, <i>{name}</i> se relève avec 1 point de vie. <em>\"Salut les copains ! \"</em>"
+ },
+ "124": {
+  "title": "Instinct de survie",
+  "body": "+50% en rapidité lorsque <i>{name}</i> tombe à moins de la moitié de ses points de vie. <em>\"Je sais pas pour vous, mais moi j'ai pas prévu de m'éterniser ici.\"</em>"
+ },
+ "125": {
+  "title": "Talky-walky",
+  "body": "<i>{name}</i> appelle un coéquipier en renfort immédiatement. <em>\"Devine d'où je t'appelle ? ! \"</em>"
+ },
+ "126": {
+  "title": "Piétinement",
+  "body": "<i>{name}</i> piétine ses ennemis deux fois plus rapidement. <em>\"J'ai un paillasson dans ma tente pour m'entraîner le soir.\"</em>"
+ },
+ "127": {
+  "title": "Gachette facile",
+  "body": "+1 tir supplémentaire par rafale pour toutes les armes. <em>\"Ouh, c'est sensible ce petit machin.\"</em>"
+ },
  "128": {
   "title": "Roulé-boulé",
   "body": "<i>{name}</i> roule à terre pour esquiver certains tirs. <em>\"L'important, c'est d'éviter les flaques d'eau et la boue. Les mines, aussi.\"</em>"
+ },
+ "129": {
+  "title": "Twinoïde",
+  "body": "<i>{name}</i> gagne +500 en initiative et devient empoisonné. <em>\"Si ça fait mal, c'est que ça fait du bien.\"</em>"
  },
  "130": {
   "title": "Inébranlable",
   "body": "Lorsque <i>{name}</i> subit des dégâts, son action n'est pas interrompue. <em>\"Je me plains quand la bataille est finie. Pas avant.\"</em>"
  },
+ "131": {
+  "title": "Vendetta",
+  "body": "Lorsqu'un coéquipier meurt, <i>{name}</i> gagne 50 points d'initiative. <em>\"Oh non, ils ont eu Jimmy ! Mon meilleur pote !<br/>- Ben c'est pas moi ton meilleur pote ?<br/>- Maintenant, oui.\"</em>"
+ },
+ "132": {
+  "title": "Vicieux",
+  "body": "<i>{name}</i> tire de façon prioritaire sur les parties du corps déjà blessées de la cible. <em>\"Rien de personnel, j'aime quand un boulot commencé est terminé.\"</em>"
+ },
+ "133": {
+  "title": "Bâton vaudou",
+  "body": "Tous les adversaires gagnent le statut \"maudit\". <em>\"J'vous jure que ça marche, chef ! C'est ma mamie qui m'a appris ! \"</em>"
+ },
+ "134": {
+  "title": "Bien organisé",
+  "body": "Toutes les armes de <i>{name}</i> sont chargées à fond avant le combat. <em>\"Et surtout, je remonte bien mes chaussettes et je mets mon portefeuille dans une poche fermée ! \"</em>"
+ },
+ "135": {
+  "title": "Geignard",
+  "body": "Les renforts sont appelés même si vous êtes encore en vie. <em>\"Appelez les renforts ! Je.. je me suis cogné le petit orteil ! \"</em>"
+ },
+ "136": {
+  "title": "Lutte",
+  "body": "<i>{name}</i> projette ses ennemis lorsqu'ils sont au corps-à-corps. <em>\"Déformation professionnelle, je suis catcheur masqué dans le civil.\"</em>"
+ },
  "137": {
   "title": "Coureur en zigzag",
   "body": "Lorsque <i>{name}</i> se déplace, il esquive la moitié des tirs qui le ciblent. <em>\"C'est plus long, mais moi j'arrive au bout.\"</em>"
+ },
+ "138": {
+  "title": "Enthousiaste",
+  "body": "+25% en rapidité tant que <i>{name}</i> n'est pas blessé. <em>\"Chouette, encore une belle journée qui commence ! On va bien s'amuser ! \"</em>"
+ },
+ "139": {
+  "title": "Martyre",
+  "body": "Lorsque <i>{name}</i> meurt, jusqu'a 5 renforts le rejoignent et tout le monde gagne 150 points d'initiative (une fois par combat). <em>\"Marthy s'est fait descendre ! Vengeance ! \"</em>"
+ },
+ "140": {
+  "title": "Semelles de plomb",
+  "body": "<i>{name}</i> ne peut être ni projeté, ni renversé, ni déplacé. <em>\"Avec mes grolles, même un obus ne me fait pas décoller.\"</em>"
  }
 }
