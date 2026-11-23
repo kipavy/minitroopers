@@ -484,6 +484,19 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     err(cli(dir, "set-rats", "--army", "rats-morts", "--rats", "101"), /--rats : un entier entre 1 et 100/);
     err(cli(dir, "set-rats", "--army", fac, "--rats", "5"), /faction/);
 
+    // set-faction: the uniform colour, by number or colour name
+    assert.match(cli(dir, "set-faction", "--army", "rats-morts", "--faction", "vert").stdout, /rats-morts : faction 3 \(vert\)/);
+    assert.match(cli(dir, "show", "--army", "rats-morts").stdout, /Faction : 3 \(vert\)/);
+    assert.match(cli(dir, "set-faction", "--army", "rats-morts", "--faction", "5").stdout, /rats-morts : faction 5 \(violet\)/);
+    err(cli(dir, "set-faction", "--army", "rats-morts", "--faction", "6"), /--faction : 0 à 5 ou rouge, orange, jaune, vert, bleu, violet/);
+    err(cli(dir, "set-faction", "--army", "rats-morts", "--faction", "rose"), /--faction : 0 à 5/);
+    err(cli(dir, "set-faction", "--army", "rats-morts"), /--faction/);
+    err(cli(dir, "set-faction", "--army", fac, "--faction", "1"), /faction/);
+    const d0 = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(d0, "rats-morts")!.faction, 5);
+    assert.equal(armyByHost(d0, fac)!.faction, FACTIONS[0]!.id); // a faction army keeps its own
+    d0.close();
+
     assert.match(cli(dir, "unlock-missions", "--army", "rats-morts").stdout, /missions débloquées/);
     let db = openDb(join(dir, "minitroopers.db"));
     const a = armyByHost(db, "rats-morts")!;
