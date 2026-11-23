@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { loadConfig } from "../src/config.ts";
 import { openDb } from "../src/db.ts";
 import { createApp } from "../src/app.ts";
 import { html, raw, esc } from "../src/views/html.ts";
 import { layout, tip } from "../src/views/layout.ts";
 
-const EX = "/home/dev/minitroopers-work/recon/assets/extra/site-elements";
+// sha256 of the original stylesheet (recon/assets/extra/site-elements/css/style.css of the work tree, not in the repository).
+const ORIGINAL_STYLE_SHA256 = "3ca21ce00d609ec2b18ca52ac9a289124151965fea9c7b79b9446d9165a697ac";
 const cfg = loadConfig({});
 
 test("html escapes interpolations by default, raw opts out", () => {
@@ -59,7 +60,7 @@ test("GET /css/style.css serves the exact original bytes", async () => {
   const res = await app.request("/css/style.css");
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type")!, /text\/css/);
-  assert.ok(Buffer.from(await res.arrayBuffer()).equals(readFileSync(`${EX}/css/style.css`)));
+  assert.equal(createHash("sha256").update(Buffer.from(await res.arrayBuffer())).digest("hex"), ORIGINAL_STYLE_SHA256);
 });
 
 test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () => {
