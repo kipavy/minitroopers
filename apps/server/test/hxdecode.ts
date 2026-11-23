@@ -126,18 +126,19 @@ function pref(p: Record<string, unknown> | null): TrooperPref | null {
   return out;
 }
 
-const trooper = (t: Record<string, unknown>): BattleTrooperInput => ({
+const trooper = (t: Record<string, unknown>, nullForce: boolean): BattleTrooperInput => ({
   id: t.id as number,
   name: t.name as string,
   seed: t.seed as number,
   type: idx(t.type, "TrooperType"),
   choices: t.choices as number[],
-  force: (t.force as unknown[]).map((s) => idx(s, "Skill")),
+  force: (t.force === null && nullForce ? [] : (t.force as unknown[])).map((s) => idx(s, "Skill")),
   pref: pref(t.pref as Record<string, unknown> | null),
 });
 
-/** Flashvars string of a battle embed → its BattleInput, gfx and the other variables. */
-export function decodeBattleFlashvars(fv: string): { input: BattleInput; gfx: string; vars: Record<string, string> } {
+/** Flashvars string of a battle embed → its BattleInput, gfx and the other variables.
+ *  `nullForce`: read an archived `force: null` (2011 raid/epic NPCs) as `[]`; off for our own pages. */
+export function decodeBattleFlashvars(fv: string, { nullForce = false } = {}): { input: BattleInput; gfx: string; vars: Record<string, string> } {
   const vars: Record<string, string> = {};
   for (const part of fv.split("&")) {
     const i = part.indexOf("=");
@@ -150,7 +151,7 @@ export function decodeBattleFlashvars(fv: string): { input: BattleInput; gfx: st
   const armies = (b.armies as Record<string, unknown>[]).map((a) => ({
     faction: a.faction as number,
     spawnOrder: a.__UP2 as number[],
-    troopers: (a.troopers as Record<string, unknown>[]).map(trooper),
+    troopers: (a.troopers as Record<string, unknown>[]).map((t) => trooper(t, nullForce)),
   }));
   const input: BattleInput = {
     seed: b.id as number,

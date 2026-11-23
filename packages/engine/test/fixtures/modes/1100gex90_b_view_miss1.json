@@ -1,0 +1,413 @@
+{
+ "source": "stage3/wayback/1100gex90_b_view_miss1.html",
+ "endMsg": "Tu as remporté ce combat !",
+ "winner": 0,
+ "notes": [],
+ "input": {
+  "seed": 19823937,
+  "background": {
+   "gfx": "bg/sewer.jpg",
+   "id": 2
+  },
+  "armies": [
+   {
+    "faction": 0,
+    "spawnOrder": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12
+    ],
+    "troopers": [
+     {
+      "id": 1,
+      "name": "Babouche",
+      "seed": 2295073,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 28,
+       "CBody": 0,
+       "targetSystem": 3,
+       "targetType": 1,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 7
+      }
+     },
+     {
+      "id": 2,
+      "name": "Diabolo",
+      "seed": 1182576,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 17,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 3,
+      "name": "Titi",
+      "seed": 14980989,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 19,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 4,
+      "name": "Starsky",
+      "seed": 7436325,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 26,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 1,
+       "moveSystem": 1,
+       "leftOver": [
+        77,
+        54
+       ],
+       "reloadSystem": 2,
+       "targetClass": 4
+      }
+     },
+     {
+      "id": 5,
+      "name": "Rouky",
+      "seed": 9470730,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 20,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [
+        56
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 6,
+      "name": "Gros minet",
+      "seed": 5584408,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 22,
+       "CBody": 1,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [
+        118
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 7,
+      "name": "Rox",
+      "seed": 3390702,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 9,
+       "CBody": 1,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [
+        57,
+        66
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 8,
+      "name": "Dora",
+      "seed": 2574299,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 25,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 1,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 3
+      }
+     },
+     {
+      "id": 9,
+      "name": "Eckle",
+      "seed": 2174256,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 15,
+       "CBody": 1,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 10,
+      "name": "Satanas",
+      "seed": 10380986,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 18,
+       "CBody": 1,
+       "targetSystem": 1,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 11,
+      "name": "Hutch",
+      "seed": 4790598,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 7,
+       "CBody": 1,
+       "targetSystem": 1,
+       "targetType": 1,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 1
+      }
+     },
+     {
+      "id": 12,
+      "name": "Jeckle",
+      "seed": 13745442,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 7,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [
+        83
+       ],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   },
+   {
+    "faction": 1,
+    "spawnOrder": [
+     0
+    ],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "groslooser",
+      "seed": 248722,
+      "type": 0,
+      "choices": [],
+      "force": [],
+      "pref": {
+       "CWeapon": 1,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

@@ -1,0 +1,925 @@
+{
+ "source": "stage3/wayback/1100gex90_b_view_raid.html",
+ "endMsg": "Ce combat s'est soldé par un échec !",
+ "winner": 1,
+ "notes": [
+  "armies[1]: 32 trooper(s) with force: null, normalized to force: []"
+ ],
+ "input": {
+  "seed": 17837966,
+  "background": {
+   "gfx": "bg/wood.jpg",
+   "id": 4
+  },
+  "armies": [
+   {
+    "faction": 0,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 32,
+      "name": "Keves",
+      "seed": 6152825,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 33,
+      "name": "attentionjar",
+      "seed": 9920913,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 19,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 34,
+      "name": "spe 1",
+      "seed": 14847542,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 25,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [
+        103
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 35,
+      "name": "spe 2",
+      "seed": 16405299,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       0,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [
+        88,
+        129
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 36,
+      "name": "spe3",
+      "seed": 10745018,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 27,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 37,
+      "name": "11r90",
+      "seed": 10903322,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 23,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   },
+   {
+    "faction": 3,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "Chritt",
+      "seed": 45002,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 1,
+      "name": "Karlumes",
+      "seed": 68787,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 2,
+      "name": "Jonenser",
+      "seed": 87957,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       0,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 3,
+      "name": "Van Jonield",
+      "seed": 28725,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 4,
+      "name": "Don Jackison",
+      "seed": 5308,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 5,
+      "name": "Rogield",
+      "seed": 57016,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       0,
+       1,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 6,
+      "name": "Harriley",
+      "seed": 39594,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 7,
+      "name": "Jonones",
+      "seed": 98909,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 8,
+      "name": "Harrinnett",
+      "seed": 97469,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       0,
+       0,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 9,
+      "name": "Van Bru",
+      "seed": 31135,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       1,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 10,
+      "name": "Kramack",
+      "seed": 95613,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 11,
+      "name": "Solid Jos",
+      "seed": 59629,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 12,
+      "name": "Yunoff",
+      "seed": 96670,
+      "type": 0,
+      "choices": [
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 13,
+      "name": "Keveley Dick",
+      "seed": 42719,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 14,
+      "name": "Lukater Kong",
+      "seed": 58974,
+      "type": 0,
+      "choices": [
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 15,
+      "name": "MaxRickolker",
+      "seed": 85056,
+      "type": 0,
+      "choices": [
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 16,
+      "name": "Jeffips Chan",
+      "seed": 34240,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 17,
+      "name": "Kevonnell",
+      "seed": 26857,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 18,
+      "name": "Jeffando",
+      "seed": 51211,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 19,
+      "name": "McHarrersen",
+      "seed": 63027,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 20,
+      "name": "Harrill",
+      "seed": 82446,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 21,
+      "name": "Huffebender",
+      "seed": 47081,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 22,
+      "name": "Don Kranson",
+      "seed": 89685,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 23,
+      "name": "Smitholds",
+      "seed": 89455,
+      "type": 0,
+      "choices": [
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 24,
+      "name": "Jackersen",
+      "seed": 73158,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 25,
+      "name": "Crakotor",
+      "seed": 57792,
+      "type": 0,
+      "choices": [
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 26,
+      "name": "Burteves",
+      "seed": 74618,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 27,
+      "name": "Jazersen",
+      "seed": 17618,
+      "type": 0,
+      "choices": [
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 28,
+      "name": "McGeorgando",
+      "seed": 30394,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 29,
+      "name": "Anderch",
+      "seed": 37809,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 30,
+      "name": "Rogokins",
+      "seed": 16057,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 31,
+      "name": "Chriwen",
+      "seed": 47253,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

@@ -1,0 +1,415 @@
+{
+ "source": "assets/extra/site-elements/html/fr/b_view_raid.html",
+ "endMsg": "Félicitations, tu as remporté le raid ! Ton armée gagne +4 [T] et tu peut tenter le raid suivant.",
+ "winner": 0,
+ "notes": [
+  "armies[1]: 1 trooper(s) with force: null, normalized to force: []"
+ ],
+ "input": {
+  "seed": 22148239,
+  "background": {
+   "gfx": "bg/wood.jpg",
+   "id": 4
+  },
+  "armies": [
+   {
+    "faction": 2,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 1,
+      "name": "Rogater",
+      "seed": 14530263,
+      "type": 0,
+      "choices": [],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 2,
+      "name": "Hulkauer",
+      "seed": 2431071,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 3,
+      "name": "Edenser",
+      "seed": 15749613,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 4,
+      "name": "Tim",
+      "seed": 13793109,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 3,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 5,
+      "name": "Chris Brown",
+      "seed": 11578328,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 6,
+      "name": "Jazinnett",
+      "seed": 4991183,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 7,
+      "name": "Jackenser",
+      "seed": 9266189,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 29,
+       "CBody": 0,
+       "targetSystem": 3,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 8,
+      "name": "Crakield",
+      "seed": 11851462,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 4,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 9,
+      "name": "Rogito",
+      "seed": 8106156,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 10,
+      "name": "Harrust",
+      "seed": 12336016,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 18,
+       "CBody": 1,
+       "targetSystem": 1,
+       "targetType": 1,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 0
+      }
+     },
+     {
+      "id": 11,
+      "name": "Luku Craka",
+      "seed": 8512735,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [
+        82
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 12,
+      "name": "Melewis",
+      "seed": 9388246,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 13,
+      "name": "Rickaham",
+      "seed": 6330862,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 24,
+       "CBody": null,
+       "targetSystem": 2,
+       "targetType": 0,
+       "moveSystem": 2,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 14,
+      "name": "Michaley",
+      "seed": 15045129,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 19,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 2,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 15,
+      "name": "Hulkeiber",
+      "seed": 9845832,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 12,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 16,
+      "name": "Georgoff",
+      "seed": 13418408,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       1,
+       1,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 26,
+       "CBody": 1,
+       "targetSystem": 2,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 17,
+      "name": "HJKDBurtield",
+      "seed": 4714200,
+      "type": 0,
+      "choices": [
+       0,
+       1,
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 28,
+       "CBody": 1,
+       "targetSystem": 0,
+       "targetType": 1,
+       "moveSystem": 2,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 1
+      }
+     },
+     {
+      "id": 18,
+      "name": "Jazemiller",
+      "seed": 13052929,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 13,
+       "CBody": 1,
+       "targetSystem": 1,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   },
+   {
+    "faction": 5,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "Burtunoff Yu",
+      "seed": 35313,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       0,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

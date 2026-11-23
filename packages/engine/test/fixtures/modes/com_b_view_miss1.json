@@ -1,0 +1,138 @@
+{
+ "source": "assets/extra/site-elements/html/com/b_view_miss1.html",
+ "endMsg": "You have won the battle!",
+ "winner": 0,
+ "notes": [
+  "armies[1] carries extra obfuscated fields \"c)4p\\u0003\": 0, \"U,*~\\u0001\": null (ignored by the engine, dropped)"
+ ],
+ "input": {
+  "seed": 16039121,
+  "background": {
+   "gfx": "bg/attic.jpg",
+   "id": 1
+  },
+  "armies": [
+   {
+    "faction": 2,
+    "spawnOrder": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "TITU",
+      "seed": 16161491,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 1,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 1,
+      "name": "gaspi",
+      "seed": 13591639,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 17,
+       "CBody": 3,
+       "targetSystem": 1,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 2,
+      "name": "Strelok",
+      "seed": 15534854,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 3,
+      "name": "ASISINATO",
+      "seed": 11965936,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": null
+     }
+    ]
+   },
+   {
+    "faction": 0,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 4,
+      "name": "rat",
+      "seed": 34888,
+      "type": 2,
+      "choices": [],
+      "force": [
+       131,
+       70
+      ],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

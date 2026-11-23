@@ -1,0 +1,136 @@
+{
+ "source": "stage3/wayback/03602485362_b_view_miss1.html",
+ "endMsg": "Ce combat s'est soldé par un échec !",
+ "winner": 1,
+ "notes": [
+  "armies[1] carries extra obfuscated fields \"c)4p\\u0003\": 0, \"U,*~\\u0001\": null (ignored by the engine, dropped)"
+ ],
+ "input": {
+  "seed": 22534290,
+  "background": {
+   "gfx": "bg/attic.jpg",
+   "id": 1
+  },
+  "armies": [
+   {
+    "faction": 0,
+    "spawnOrder": [
+     0
+    ],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "Bombakins",
+      "seed": 9620036,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 25,
+       "CBody": 0,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   },
+   {
+    "faction": 0,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 1,
+      "name": "rat",
+      "seed": 65793,
+      "type": 2,
+      "choices": [],
+      "force": [
+       53,
+       76
+      ],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 2,
+      "name": "rat",
+      "seed": 80487,
+      "type": 2,
+      "choices": [],
+      "force": [
+       116,
+       70
+      ],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 3,
+      "name": "rat",
+      "seed": 71499,
+      "type": 2,
+      "choices": [],
+      "force": [
+       117,
+       123
+      ],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 4,
+      "name": "rat",
+      "seed": 38341,
+      "type": 2,
+      "choices": [],
+      "force": [
+       112,
+       74
+      ],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

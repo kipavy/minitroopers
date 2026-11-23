@@ -1,0 +1,66 @@
+{
+ "source": "stage3/wayback/03602485362_b_view_raid.html",
+ "endMsg": "Ce combat s'est soldé par un échec !",
+ "winner": 1,
+ "notes": [
+  "armies[1]: 1 trooper(s) with force: null, normalized to force: []"
+ ],
+ "input": {
+  "seed": 3980263,
+  "background": {
+   "gfx": "bg/wood.jpg",
+   "id": 4
+  },
+  "armies": [
+   {
+    "faction": 0,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 1,
+      "name": "Van Melolone",
+      "seed": 13835746,
+      "type": 0,
+      "choices": [
+       0,
+       0
+      ],
+      "force": [],
+      "pref": null
+     }
+    ]
+   },
+   {
+    "faction": 4,
+    "spawnOrder": [],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "Harrinnett",
+      "seed": 84189,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 1,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}

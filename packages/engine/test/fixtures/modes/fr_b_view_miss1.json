@@ -1,0 +1,292 @@
+{
+ "source": "assets/extra/site-elements/html/fr/b_view_miss1.html",
+ "endMsg": "Tu as remporté ce combat !",
+ "winner": 0,
+ "notes": [],
+ "input": {
+  "seed": 16724061,
+  "background": {
+   "gfx": "bg/sewer.jpg",
+   "id": 2
+  },
+  "armies": [
+   {
+    "faction": 2,
+    "spawnOrder": [
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11
+    ],
+    "troopers": [
+     {
+      "id": 4,
+      "name": "McBombewis",
+      "seed": 6652102,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 5,
+      "name": "Meleiber",
+      "seed": 14006280,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": 3,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [
+        103,
+        94
+       ],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 6,
+      "name": "Bruws",
+      "seed": 10071527,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       1,
+       0,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": null,
+       "CBody": null,
+       "targetSystem": 1,
+       "targetType": 1,
+       "moveSystem": 2,
+       "leftOver": [
+        133
+       ],
+       "reloadSystem": 2,
+       "targetClass": 1
+      }
+     },
+     {
+      "id": 7,
+      "name": "Smithold",
+      "seed": 13470926,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       0,
+       0,
+       0,
+       1,
+       1,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 25,
+       "CBody": 0,
+       "targetSystem": 3,
+       "targetType": 1,
+       "moveSystem": 2,
+       "leftOver": [
+        101,
+        77
+       ],
+       "reloadSystem": 2,
+       "targetClass": 1
+      }
+     },
+     {
+      "id": 8,
+      "name": "Krawney",
+      "seed": 16695356,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       0,
+       1,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 14,
+       "CBody": null,
+       "targetSystem": 0,
+       "targetType": 1,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 3
+      }
+     },
+     {
+      "id": 9,
+      "name": "Edonnell",
+      "seed": 8551096,
+      "type": 0,
+      "choices": [
+       1,
+       0,
+       1,
+       1,
+       0,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 20,
+       "CBody": 1,
+       "targetSystem": 3,
+       "targetType": 1,
+       "moveSystem": 2,
+       "leftOver": [],
+       "reloadSystem": 2,
+       "targetClass": 6
+      }
+     },
+     {
+      "id": 10,
+      "name": "Maxu Yu",
+      "seed": 16369599,
+      "type": 0,
+      "choices": [
+       1,
+       1,
+       1,
+       0,
+       1,
+       0,
+       1
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 23,
+       "CBody": 0,
+       "targetSystem": 1,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     },
+     {
+      "id": 11,
+      "name": "Jonones",
+      "seed": 14583547,
+      "type": 0,
+      "choices": [
+       0,
+       0,
+       1,
+       0,
+       0,
+       0,
+       0
+      ],
+      "force": [],
+      "pref": {
+       "CWeapon": 11,
+       "CBody": 2,
+       "targetSystem": 0,
+       "targetType": 0,
+       "moveSystem": 0,
+       "leftOver": [],
+       "reloadSystem": 2
+      }
+     }
+    ]
+   },
+   {
+    "faction": 4,
+    "spawnOrder": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "troopers": [
+     {
+      "id": 0,
+      "name": "Jeffones",
+      "seed": 14592119,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 1,
+      "name": "Orlason",
+      "seed": 5028597,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 2,
+      "name": "Liubender",
+      "seed": 5578473,
+      "type": 0,
+      "choices": [
+       0
+      ],
+      "force": [],
+      "pref": null
+     },
+     {
+      "id": 3,
+      "name": "Huffoll",
+      "seed": 1895232,
+      "type": 0,
+      "choices": [
+       1
+      ],
+      "force": [],
+      "pref": null
+     }
+    ]
+   }
+  ],
+  "attackerSide": 0
+ }
+}
