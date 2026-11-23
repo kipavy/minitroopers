@@ -10,8 +10,8 @@ import type { PasswordLimits } from "../ratelimit.ts";
 import { asMissionType, missionTypeOf } from "./mission.ts";
 import { battleAllowance } from "./opp.ts";
 import {
-  armyByHost, armyById, battlesOfDay, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
-  troopersOf, trooperInput, type ArmyRow,
+  armyByHost, armyById, battlesOfDay, defensesOf, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
+  troopersOf, trooperInput, type ArmyRow, type DefenseRow,
 } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
@@ -48,6 +48,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       battleTotal: battleAllowance(troopers),
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
       pendingRecruits: pendingRecruits(db, army.id),
+      lastDefense: lastDefense(army.id, t),
       nextBounty: referralBounty(recruitCount(db, army.id) + 1),
       moneyDelta: o.moneyDelta ?? 0,
       notice: o.notice ?? null,
@@ -56,6 +57,11 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       raid: raidBox(army, day, o.key ?? ""),
       ...(o.lockError ? { lockError: o.lockError } : {}),
     };
+  }
+
+  function lastDefense(armyId: number, t: number): { row: DefenseRow; now: number } | null {
+    const row = defensesOf(db, armyId, 1)[0];
+    return row ? { row, now: t } : null;
   }
 
   function raidBox(army: ArmyRow, day: string, key: string): HqView["raid"] {

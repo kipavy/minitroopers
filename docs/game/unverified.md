@@ -111,3 +111,13 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | Recrue glissée dans l'armée sur `/choice` | à l'enregistrement (`/save?c=…`), les ids > 0 (recrues, id = id de leur armée) sont ignorés ; seuls les ids ≤ 0 (troopers, slot = −id) forment l'ordre, qui doit être une permutation exacte des slots (sinon rien n'est enregistré, retour à `/choice`) | effet d'origine inconnu (sitemap : « dispositif paraît bloqué ou buggé ») | `apps/server/src/routes/choice.ts` |
 | Trooper acheté après un enregistrement | ajouté à la fin de l'ordre de déploiement (ordre des slots) tant que l'ordre n'est pas réenregistré | comportement d'origine non archivé | `apps/server/src/deploy.ts` |
 | Paramètres invalides de `/load` | `pos`/`count` absents ou non entiers, `count` > 16 : 400 (le SWF retourne alors au QG) | seul `pos=0;count=16` est archivé | `apps/server/src/routes/choice.ts` |
+
+## Historique (`apps/server`, étape 4)
+
+| Règle | Valeur choisie | Raison | Code |
+|---|---|---|---|
+| Date d'un combat du jour | « Aujourd'hui à HH:MM » (jours calendaires de `TZ_GAME`) | seuls « Hier à 12:25 », « Samedi à 14:14 » et « Le 27 juillet » sont archivés ; mot repris de $GL | `apps/server/src/dates.ts` |
+| Date du 1er du mois, autre année | « Le 1er <mois> » ; jamais d'année | aucun cas archivé | `apps/server/src/dates.ts` |
+| Date d'un combat sans `created_at` | « Le <j> <mois> » de sa colonne `day` (combats antérieurs à la migration 006) | heure inconnue | `apps/server/src/views/history.ts` |
+| Plafond de l'animation des recrues | 50 recrues au plus (`n` = min(recrues, 50)) | wiki « up to 50 best recruits » ; aucun cas > 18 archivé | `apps/server/src/routes/history.ts` |
+| Combat défensif au QG d'une armée protégée | affiché aussi sans mot de passe (lien public `/b/fview/<id>`) | fr/hq.html (vue protégée) le montre ; seule cette page est archivée | `apps/server/src/views/hq.ts` |

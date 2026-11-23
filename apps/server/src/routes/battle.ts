@@ -114,7 +114,8 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const fresh = sessionArmy === b.attackerId && !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
     const reward = battleReward(won);
-    const viewerWon = sessionArmy !== null && sessionArmy === b.defenderId ? b.winner !== null && !won : won;
+    const viewerDefends = sessionArmy !== null && sessionArmy === b.defenderId;
+    const viewerWon = viewerDefends ? b.winner !== null && !won : won;
     // UNVERIFIED: the defeat variant of the "just fought" message was never captured; built like the victory one.
     const endMsg = fresh
       ? `${won ? "Tu as remporté cette bataille !" : "Tu as perdu cette bataille !"} Ton armée gagne +${reward} [T]`
@@ -126,7 +127,9 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       host,
       attacker: attacker ? armyTitle(attacker.name, attacker.part) : "L'armée inconnue",
       defender: defenderTitle(db, b),
-      flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
+      // The replay takes the viewer's side (RECON4 §1.2: b_fview_262579954 seen by its defender has attackerSide 1);
+      // the stored input is unchanged and the engine does not read attackerSide.
+      flashvars: clientParams(battleData(viewerDefends ? { ...b.input, attackerSide: 1 - b.input.attackerSide } : b.input, ARMY_SWF), { endMsg }),
       endUrl: fresh && attacker ? armyUrl(cfg, attacker.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId,

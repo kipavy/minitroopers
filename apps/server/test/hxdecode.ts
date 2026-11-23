@@ -197,3 +197,22 @@ export function decodeChoiceFlashvars(fv: string): {
 /** Body of /load (a Haxe array of troopers) → the troopers. */
 export const decodeTroopersList = (body: string): BattleTrooperInput[] =>
   (unserialize(body) as Record<string, unknown>[]).map((t) => trooper(t, false));
+
+/** Flashvars of the /history recruits animation (ClientMode 5) → its army, n, background and gfx. */
+export function decodeRecruitsFlashvars(fv: string): {
+  army: { faction: number; spawnOrder: number[]; troopers: BattleTrooperInput[] };
+  n: number;
+  bg: { id: number; gfx: string };
+  gfx: string;
+} {
+  const data = /(?:^|&)data=([^&]*)/.exec(fv)![1]!;
+  const root = unserialize(decodeURIComponent(data)) as { mode: En; gfx: string };
+  if (idx(root.mode, "ClientMode") !== 5) throw new Error("not a recruits animation");
+  const [a, n, bg] = root.mode.args as [Record<string, unknown>, number, { id: En; gfx: string }];
+  return {
+    army: { faction: a.faction as number, spawnOrder: a.__UP2 as number[], troopers: (a.troopers as Record<string, unknown>[]).map((t) => trooper(t, false)) },
+    n,
+    bg: { id: idx(bg.id, "BackgroundType"), gfx: bg.gfx },
+    gfx: root.gfx,
+  };
+}

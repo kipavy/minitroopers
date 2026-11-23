@@ -1,7 +1,7 @@
 import type { BattleTrooperInput } from "@mt/engine";
 import { MISSION_ATTEMPTS, MISSION_UNLOCK_COST, type MissionType } from "@mt/game";
 import type { Config } from "../config.ts";
-import type { ArmyRow, DayBattle } from "../repo.ts";
+import type { ArmyRow, DayBattle, DefenseRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
 import { esc, html, jsq, raw, type Html } from "./html.ts";
@@ -9,6 +9,7 @@ import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu } from "./panel.ts";
 import { missionBox } from "./mission.ts";
+import { defenseItem } from "./history.ts";
 
 export interface HqView {
   army: ArmyRow;
@@ -22,6 +23,8 @@ export interface HqView {
   resetIn: number;
   /** Recruits waiting for their confirmation on /history. */
   pendingRecruits?: number;
+  /** The last battle the army defended by infiltration (fr/hq-levelup.html: one item only), and the time it is seen at. */
+  lastDefense?: { row: DefenseRow; now: number } | null;
   /** What the next recruit through this army's link pays. */
   nextBounty: number;
   /** `?money=N`: the counter animates from credits-N up to credits (`_.deltaMoney`). */
@@ -150,6 +153,25 @@ Ta prochaine recrue te rapportera ${v.nextBounty}
 <ul class="social"><li><input onclick="$(this).select()" readonly="readonly" value="${link}" class="field"/></li></ul></div>`;
 }
 
+/**
+ * `ul.history` under the troopers panel: the "Nouvelle recrue disponible !" item, then the last defence only
+ * (fr/hq.html, protected: both; fr/hq-levelup.html: the defence alone). Absent when both are.
+ */
+function historyList(cfg: Config, v: HqView): Html | "" {
+  const host = v.army.host;
+  const child = (v.pendingRecruits ?? 0) > 0 && !v.locked;
+  const d = v.lastDefense ?? null;
+  if (!child && d === null) return "";
+  return html`<ul class="history">${child ? html`<li class="newchild"><a href="${armyUrl(cfg, host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li>` : ""}${
+    d === null ? "" : html`
+
+
+${defenseItem(cfg, host, d.row, d.now)}
+
+`
+  }</ul>`;
+}
+
 /** The HQ page, from $EX/html/fr/hq-levelup.html (logged in) and hq.html (protected). Ads, promos and social widgets left out. */
 export function hqPage(cfg: Config, v: HqView): Html {
   const a = v.army;
@@ -183,7 +205,7 @@ ${left}
 <div class="tipbox"><div class="hqtip" style="display:none"><img src="/img/info.png"/>
 <span class="label">INFO :</span>
 <span id="menuTip"></span></div></div></div></div>
-${(v.pendingRecruits ?? 0) > 0 && !v.locked ? html`<ul class="history"><li class="newchild"><a href="${armyUrl(cfg, a.host, "/history")}"><p><img src="/img/newrecruit.gif"/> Nouvelle recrue disponible !</p></a></li></ul>` : ""}
+${historyList(cfg, v)}
 </td>
 <td class="right">
 

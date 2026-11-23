@@ -838,3 +838,28 @@ export function lastRaidOfDay(db: DatabaseSync, armyId: number, day: string): Ba
   const r = db.prepare("SELECT * FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'raid' ORDER BY id DESC LIMIT 1").get(armyId, day);
   return r ? battleOf(r) : null;
 }
+
+// ---- history ---------------------------------------------------------------------------------------------------------
+
+export type DefenseRow = { id: number; attacker: { host: string; name: string; part: number } | null; won: boolean; createdAt: number | null; day: string };
+
+/**
+ * Battles an army defended against an attack by name (the infiltration of the Battle mode, `opp` = "friend:<host>"),
+ * newest first (RECON4 §1.1). `won` is the defender's side: a winner other than the attacker's side. A missing attacker
+ * (never the case while battles cascade with their attacker) is null.
+ */
+export function defensesOf(db: DatabaseSync, armyId: number, limit: number): DefenseRow[] {
+  return db
+    .prepare(
+      "SELECT b.id, b.day, b.created_at, b.winner, json_extract(b.input, '$.attackerSide') AS side, a.host, a.name, a.part FROM battles b LEFT JOIN armies a ON a.id = b.attacker_id " +
+        "WHERE b.defender_id = ? AND b.kind = 'battle' AND b.opp LIKE 'friend:%' ORDER BY b.id DESC LIMIT ?",
+    )
+    .all(armyId, limit)
+    .map((r) => ({
+      id: r.id as number,
+      attacker: r.host === null ? null : { host: r.host as string, name: r.name as string, part: r.part as number },
+      won: r.winner !== null && r.winner !== r.side,
+      createdAt: (r.created_at as number | null) ?? null,
+      day: r.day as string,
+    }));
+}
