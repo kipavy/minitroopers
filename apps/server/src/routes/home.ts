@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Context, Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { formBody } from "../form.ts";
+import { ERR_OFFER } from "../texts.ts";
 import { describeTrooper } from "@mt/engine";
 import { dailyOffers, dayKey, FACTIONS, STARTING_CREDITS, type Faction } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
@@ -18,7 +19,6 @@ export const MAX_ARMIES_PER_IP_PER_DAY = 2;
 
 /** A repeated creation POST within this delay of the army's creation is a double submission, not a name clash. */
 const DOUBLE_SUBMIT_MS = 10_000;
-const ERR_OFFER = "Cette action nécessite que tu sois enregistré sur le site."; // the only error text of the archived pages
 const ERR_TAKEN = "Ce nom est déjà pris.";
 const ERR_LIMIT = "Trop d'armées ont déjà été créées depuis cette adresse aujourd'hui. Reviens demain !";
 
@@ -106,7 +106,7 @@ export function registerHome(pages: Hono<Env>, deps: Deps): HomeError {
     return c.text(free ? "free" : "used");
   });
 
-  pages.post("/", bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post("/", formBody(), async (c) => {
     const ctx = context(c);
     if (!ctx) return c.html(String(missingPage(cfg, "Armée introuvable")), 404);
     const form = await c.req.parseBody();

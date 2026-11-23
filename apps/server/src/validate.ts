@@ -1,20 +1,10 @@
-import { validateArmyName, FACTIONS } from "@mt/game";
+import { haxeTrim, validateArmyName, FACTIONS } from "@mt/game";
 
 // Names are shown in pages, tooltips and (for troopers) flashvars: refuse anything that is not plain text.
 // \p{Cc} control, \p{Cf} format (zero-width, bidi overrides), \p{Cs} surrogates (lone ones under /u), \p{Co} private use,
 // \p{Cn} unassigned, \p{Zl}/\p{Zp} line/paragraph separators.
 // U+FFFD is what a form decoder turns an invalid sequence / lone surrogate into.
 const UNSAFE = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}\uFFFD]/u;
-
-/** Haxe StringTools.trim (9..13, 32), as used by the original name handling. */
-const isSpace = (c: number): boolean => (c > 8 && c < 14) || c === 32;
-function haxeTrim(s: string): string {
-  let a = 0;
-  let z = s.length;
-  while (z > a && isSpace(s.charCodeAt(z - 1))) z--;
-  while (a < z && isSpace(s.charCodeAt(a))) a++;
-  return s.slice(a, z);
-}
 
 export type NameCheck = { ok: true; name: string; host: string; part: number } | { ok: false; error: string };
 

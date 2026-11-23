@@ -1,5 +1,5 @@
 export { dayKey, nextResetAt, prevDay } from "./day.ts";
-export { host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
+export { haxeTrim, host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
 export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";
 export { trooperName } from "./names.ts";
@@ -15,7 +15,7 @@ export {
   EPIC_MIN_RECRUITS, EPIC_SIDE_MAX, EPIC_NPC_MAX, RATS_MAX, NPC_SEED_MAX,
 } from "./economy.ts";
 export { armyComposition, npcArmy } from "./npc.ts";
-export { RAT_SKILLS, dayRats, ratArmy } from "./rats.ts";
+export { RAT_SKILLS, dayRats, ratArmy, ratPref } from "./rats.ts";
 export type { RatSpec } from "./rats.ts";
 export { raidPower, raidTrooperRange, epicPower } from "./raid.ts";
 export { missionOfDay, pickInfiltrationTarget } from "./missions.ts";

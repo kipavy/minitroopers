@@ -117,7 +117,7 @@ test("exterminate: a won try adds one rat, capped at RATS_MAX (100)", async () =
   const rats = (): number => (env.db.prepare("SELECT rats FROM armies WHERE id = ?").get(id) as { rats: number }).rats;
   env.db.prepare("UPDATE armies SET missions_unlocked = 1, rats = ? WHERE id = ?").run(RATS_MAX - 1, id);
   for (const day of ["2026-11-23", "2026-11-24", "2026-11-25"]) {
-    assert.equal(fightMission(env.db, { armyId: id, day, used: 0, decide: win }).ok, true, day);
+    assert.equal(fightMission(env.db, { armyId: id, day, now: env.clock.t, used: 0, decide: win }).ok, true, day);
   }
   assert.equal(rats(), RATS_MAX);
 });
@@ -182,6 +182,7 @@ for (const mode of MODES) {
     const first = await page.text();
     const row = missions(env, id)[0]!;
     assert.deepEqual(decodeBattleFlashvars(battleFlashvars(first)).input, JSON.parse(row.input));
+    assert.equal((env.db.prepare("SELECT created_at FROM battles WHERE id = ?").get(row.id) as { created_at: number }).created_at, Date.parse("2026-11-23T22:59:59Z"));
     assert.ok(!first.includes("Retour</a>"), "first view: no button");
     const replay = await (await get(env, cl, path)).text();
     assert.ok(replay.includes("Retour</a>"), "single-shot first view");

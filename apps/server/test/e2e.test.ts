@@ -219,7 +219,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
 
       // 5. fight the first opponent of the day
       await page.goto(at("bidasses", "/b/opp"));
-      await Promise.all([page.waitForURL(at("bidasses", "/b/view/bat1")), page.click('a.button5[href*="/b/battle?"] >> nth=0')]);
+      await Promise.all([page.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/bat1?d="))), page.click('a.button5[href*="/b/battle?"] >> nth=0')]);
       const b = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ?").get(army.id) as { input: string; winner: number | null };
       const won = b.winner !== null && b.winner === (JSON.parse(b.input) as BattleInput).attackerSide;
 

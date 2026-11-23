@@ -24,7 +24,7 @@ export const BATTLE_ERRORS: Record<string, string> = {
 };
 
 /** Battles a day for these troopers (3, +1 per COMMANDEMENT trooper, max 5). */
-export const allowanceOf = (troopers: readonly BattleTrooperInput[]): number =>
+export const battleAllowance = (troopers: readonly BattleTrooperInput[]): number =>
   battlesPerDay(troopers.map((t) => ({ skills: describeTrooper(t).skills })));
 
 export function registerOpp(pages: Hono<Env>, deps: Deps): void {
@@ -36,7 +36,7 @@ export function registerOpp(pages: Hono<Env>, deps: Deps): void {
     if (o instanceof Response) return o;
     const day = dayKey(new Date(now()), cfg.tzGame);
     const used = battlesUsed(db, o.army.id, day);
-    if (used >= allowanceOf(o.troopers)) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
+    if (used >= battleAllowance(o.troopers)) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
     // Drawn on the first visit of the day and frozen: reloading cannot fish for weaker opponents.
     const refs = freezeOpponents<ArmyRef>(db, o.army.id, day, () =>
       pickOpponents({

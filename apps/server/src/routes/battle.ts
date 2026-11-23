@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { formBody } from "../form.ts";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
 import { battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
@@ -13,8 +13,8 @@ import { armyTitle } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { missingPage } from "../views/soon.ts";
 import { ARMY_SWF } from "../views/swf.ts";
-import { allowanceOf } from "./opp.ts";
-import { ownedArmy } from "./owner.ts";
+import { battleAllowance } from "./opp.ts";
+import { ownedArmy, viewDay } from "./owner.ts";
 
 // UNVERIFIED: the original battle seed range is unknown; archived seeds are all below 2^25. Any int32 replays the same.
 const SEED_MAX = 0x40000000;
@@ -31,7 +31,8 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
   const battleSeed = deps.battleSeed ?? (() => randomInt(1, SEED_MAX));
-  const today = (): string => dayKey(new Date(now()), cfg.tzGame);
+  const dayOf = (t: number): string => dayKey(new Date(t), cfg.tzGame);
+  const today = (): string => dayOf(now());
 
   /** Builds and resolves the battle against `foe`, reading the attacker as stored (inside the fight transaction). */
   function resolve(army: ArmyRow, foe: Foe): NewBattle | string {
@@ -60,16 +61,18 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const to = (path: string): Response => c.redirect(armyUrl(cfg, o.army.host, path), status);
     if (!isSessionKey(c, a.chk)) return to("/b/opp");
     const used = typeof a.n === "string" && /^[0-9]{1,2}$/.test(a.n) ? Number(a.n) : -1;
-    const day = today();
+    const t = now();
+    const day = dayOf(t);
     const byName = a.friend !== undefined;
     // What this URL targets: replayed after a battle, it may only show the battle it made, never another one's.
     const oppKey = byName ? (typeof a.friend === "string" ? `friend:${hostOf(a.friend.slice(0, 100))}` : null) : (a.opp ?? null);
     const r = fight(db, {
       armyId: o.army.id,
       day,
+      now: t,
       used,
       opp: oppKey,
-      allowance: () => allowanceOf(troopersOf(db, o.army.id).map(trooperInput)),
+      allowance: () => battleAllowance(troopersOf(db, o.army.id).map(trooperInput)),
       decide: () => {
         if (byName) {
           const foe = foeByName(db, a.friend);
@@ -81,19 +84,19 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
         return resolve(o.army, foe);
       },
     });
-    if (r.ok) return to(byName ? `/b/fview/${r.id}` : `/b/view/bat${r.n}`);
+    if (r.ok) return to(byName ? `/b/fview/${r.id}` : `/b/view/bat${r.n}?d=${day}`);
     if (r.reason === "limit") return to("/hq");
     if (r.reason === "refused") return to(`/b/opp?err=${r.code}`);
     // stale: the battle this URL made, if it is the same target; any other old link is no longer valid
     if (used < 0 || used >= r.used) return to("/b/opp"); // malformed or future count: no battle was made by this URL
-    return to(oppKey !== null && battleOppOfDay(db, o.army.id, day, used + 1) === oppKey ? `/b/view/bat${used + 1}` : "/b/opp?err=stale");
+    return to(oppKey !== null && battleOppOfDay(db, o.army.id, day, used + 1) === oppKey ? `/b/view/bat${used + 1}?d=${day}` : "/b/opp?err=stale");
   }
 
   pages.get("/b/battle", (c) =>
     attack(c, { chk: queryParam(c, "chk"), n: queryParam(c, "n"), opp: queryParam(c, "opp"), friend: queryParam(c, "friend") }, 302),
   );
 
-  pages.post("/b/battle", bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post("/b/battle", formBody(), async (c) => {
     const form = await c.req.parseBody();
     const opp = typeof form.opp === "string" ? form.opp : undefined;
     return attack(c, { chk: form.chk, n: form.n, opp, friend: opp === undefined ? (form.friend ?? "") : undefined }, 303);
@@ -130,12 +133,12 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     return c.html(String(battlePage(cfg, view)));
   }
 
-  // The owner's battles of the day, numbered like the HQ tiles.
+  // The owner's battles of the day (`?d=`: today or yesterday, see viewDay), numbered like the HQ tiles.
   pages.get("/b/view/:b{bat[0-9]{1,2}}", (c) => {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     const n = Number(c.req.param("b").slice(3));
-    const b = battleOfDay(db, o.army.id, today(), n);
+    const b = battleOfDay(db, o.army.id, viewDay(c, today()), n);
     if (!b) return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
     return show(c, b, o.army.host, `${o.army.id}@${b.id}`);
   });

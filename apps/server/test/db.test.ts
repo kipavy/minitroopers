@@ -22,7 +22,7 @@ test("migrations create the schema and are idempotent", () => {
 test("armies.host is unique and columns match the spec", () => {
   const db = openDb(":memory:");
   const cols = (db.prepare("PRAGMA table_info(armies)").all() as { name: string }[]).map((c) => c.name);
-  assert.deepEqual(cols, ["id", "host", "name", "part", "faction", "credits", "recruiter_id", "created_at", "created_ip", "password_hash", "is_faction", "created_cid", "missions_unlocked", "rats", "epic_wins", "recruit_confirmed_at", "recruit_bounty"]);
+  assert.deepEqual(cols, ["id", "host", "name", "part", "faction", "credits", "recruiter_id", "created_at", "created_ip", "password_hash", "is_faction", "created_cid", "missions_unlocked", "rats", "epic_wins", "recruit_confirmed_at", "recruit_bounty", "deploy_order"]);
   const ins = db.prepare("INSERT INTO armies(host,name,created_at) VALUES (?,?,?)");
   ins.run("nsun", "nSun", 1);
   assert.throws(() => ins.run("nsun", "Other", 2), /UNIQUE/);
@@ -91,12 +91,12 @@ function stage2Db(): DatabaseSync {
 
 test("migration 005 keeps armies, battles (filler included), recruits and sessions; foreign keys stay consistent", () => {
   const db = stage2Db();
-  assert.deepEqual(migrate(db), ["005_modes.sql"]);
+  assert.deepEqual(migrate(db), ["005_modes.sql", "006_history_order.sql"]);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal((db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys, 1);
   assert.equal(count(db, "SELECT COUNT(*) AS n FROM armies"), 3);
   const recruit = db.prepare("SELECT * FROM armies WHERE host = 'recruit'").get() as Record<string, unknown>;
-  assert.deepEqual({ ...recruit }, { id: 2, host: "recruit", name: "Recruit", part: 2, faction: 2, credits: 7, recruiter_id: 1, created_at: 2, created_ip: null, password_hash: null, is_faction: 0, created_cid: null, missions_unlocked: 0, rats: 1, epic_wins: 0, recruit_confirmed_at: null, recruit_bounty: null });
+  assert.deepEqual({ ...recruit }, { id: 2, host: "recruit", name: "Recruit", part: 2, faction: 2, credits: 7, recruiter_id: 1, created_at: 2, created_ip: null, password_hash: null, is_faction: 0, created_cid: null, missions_unlocked: 0, rats: 1, epic_wins: 0, recruit_confirmed_at: null, recruit_bounty: null, deploy_order: null });
   assert.equal(count(db, "SELECT COUNT(*) AS n FROM battles"), 3);
   const filler = db.prepare("SELECT * FROM battles WHERE id = 2").get() as Record<string, unknown>;
   assert.equal(filler.defender_id, null);
@@ -130,6 +130,45 @@ function assertIndexes(db: DatabaseSync): void {
   assert.deepEqual(cols("armies_recruiter"), ["recruiter_id"]);
   assert.deepEqual(cols("battles_defender"), ["defender_id"]);
 }
+
+/** A database as stage 3 left it (migrations 001-005): stage2Db's rows, then 005 applied the way migrate() does. */
+function stage3Db(): DatabaseSync {
+  const db = stage2Db();
+  db.exec("PRAGMA foreign_keys = OFF");
+  db.exec(readFileSync(new URL("../migrations/005_modes.sql", import.meta.url), "utf8"));
+  db.exec("PRAGMA foreign_keys = ON");
+  db.prepare("INSERT INTO schema_migrations VALUES ('005_modes.sql', 1)").run();
+  db.prepare("UPDATE armies SET rats = 150 WHERE id = 1").run();
+  db.prepare("UPDATE armies SET rats = 35 WHERE id = 2").run();
+  db.prepare("UPDATE daily SET missions_used = 2, mission_type = 'epic', raid_phase = 3").run();
+  db.prepare("INSERT INTO battles(day, attacker_id, defender_id, input, winner, kind, mode, phase) VALUES ('2026-11-22', 1, NULL, '{}', 0, 'raid', 'raid', 1)").run(); // 4
+  return db;
+}
+
+test("migration 006 keeps the data, drops daily.battles_used, adds battles.created_at and armies.deploy_order, caps rats", () => {
+  const db = stage3Db();
+  const before = db.prepare("SELECT * FROM battles ORDER BY id").all();
+  assert.deepEqual(migrate(db), ["006_history_order.sql"]);
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  assert.equal((db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys, 1);
+  assert.ok(!cols(db, "daily").includes("battles_used"));
+  assert.deepEqual(cols(db, "daily"), ["army_id", "day", "opponents", "missions_used", "mission_won", "mission_type", "mission_target", "raid_phase", "raid_dead", "raid_over"]);
+  const d = db.prepare("SELECT * FROM daily").get() as Record<string, unknown>;
+  assert.deepEqual({ ...d }, { army_id: 1, day: "2026-11-22", opponents: "[]", missions_used: 2, mission_won: 0, mission_type: "epic", mission_target: null, raid_phase: 3, raid_dead: "[]", raid_over: 0 });
+  // battles: same rows, created_at NULL for the old ones
+  const after = db.prepare("SELECT * FROM battles ORDER BY id").all() as Record<string, unknown>[];
+  assert.deepEqual(after.map(({ created_at, ...r }) => (assert.equal(created_at, null), r)), before.map((r) => ({ ...r })));
+  // armies: deploy_order NULL (slot order), rats capped at RATS_MAX
+  assert.deepEqual(db.prepare("SELECT id, rats, deploy_order FROM armies ORDER BY id").all().map((r) => ({ ...r })), [
+    { id: 1, rats: 100, deploy_order: null },
+    { id: 2, rats: 35, deploy_order: null },
+    { id: 3, rats: 1, deploy_order: null },
+  ]);
+  assert.equal(count(db, "SELECT COUNT(*) AS n FROM troopers"), 1);
+  assert.equal(count(db, "SELECT COUNT(*) AS n FROM sessions"), 3);
+  assertIndexes(db);
+  assert.deepEqual(migrate(db), []);
+});
 
 test("a fresh database has the stage-3 indexes", () => {
   assertIndexes(openDb(":memory:"));

@@ -10,7 +10,7 @@ import type { Deps, Env } from "../app.ts";
 import { buildModeInput } from "../battleInput.ts";
 import { defenderTitle, foeOf, type Foe } from "../foes.ts";
 import {
-  armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
+  addNotice, armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
   recruitLeaders, setMissionTarget, troopersOf, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
 } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
@@ -39,7 +39,8 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
   const battleSeed = deps.battleSeed ?? (() => randomInt(1, SEED_MAX));
-  const today = (): string => dayKey(new Date(now()), cfg.tzGame);
+  const dayOf = (t: number): string => dayKey(new Date(t), cfg.tzGame);
+  const today = (): string => dayOf(now());
 
   /** Infiltration target, frozen for the day in `daily.mission_target` (redrawn only if it vanished). */
   function infiltrationFoe(army: ArmyRow, day: string, power: number): Foe | null {
@@ -113,7 +114,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     if (isSessionKey(c, queryParam(c, "chk")) && unlockMissions(db, o.army.id, MISSION_UNLOCK_COST) === "poor") {
-      db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(o.army.id, JSON.stringify({ text: POOR }));
+      addNotice(db, o.army.id, { text: POOR });
     }
     return c.redirect(armyUrl(cfg, o.army.host, "/hq"));
   });
@@ -129,9 +130,10 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     if (!isSessionKey(c, queryParam(c, "chk"))) return to("/hq");
     const n = queryParam(c, "n");
     const used = n !== undefined && /^[0-9]{1,2}$/.test(n) ? Number(n) : -1;
-    const day = today();
+    const t = now();
+    const day = dayOf(t);
     freezeMissionType(db, o.army.id, day, () => missionTypeOf(db, o.army.id, day));
-    const r = fightMission(db, { armyId: o.army.id, day, used, decide: () => decide(o.army.id, day) });
+    const r = fightMission(db, { armyId: o.army.id, day, now: t, used, decide: () => decide(o.army.id, day) });
     if (r.ok) return to(`/b/view/miss${r.n}?d=${day}`);
     if (r.reason === "stale" && used >= 0 && used < r.used) return to(`/b/view/miss${used + 1}?d=${day}`);
     return to("/hq");

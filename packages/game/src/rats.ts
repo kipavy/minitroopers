@@ -1,5 +1,5 @@
 import { Data, Rand } from "@mt/engine";
-import type { BattleArmyInput } from "@mt/engine";
+import type { BattleArmyInput, TrooperPref } from "@mt/engine";
 import { NPC_SEED_MAX } from "./economy.ts";
 import { fnv1a } from "./hash.ts";
 
@@ -22,11 +22,14 @@ export function dayRats(p: { day: string; armyId: number; count: number; salt: s
   return out;
 }
 
+/** Default pref with an empty leftOver (every item kept): the pref of rats and generated NPC troopers. */
+export const ratPref = (): TrooperPref => ({ ...Data.defaultPref(), leftOver: [] });
+
 /** Rat army (RECON3 §2): faction 0, spawnOrder [], troopers "rat" of TrooperType 2, no choices, default pref. */
 export function ratArmy(rats: readonly RatSpec[], firstId: number): BattleArmyInput {
   return {
     faction: 0,
     spawnOrder: [],
-    troopers: rats.map((r, i) => ({ id: firstId + i, name: "rat", seed: r.seed, type: 2, choices: [], force: [...r.force], pref: { ...Data.defaultPref(), leftOver: [] } })),
+    troopers: rats.map((r, i) => ({ id: firstId + i, name: "rat", seed: r.seed, type: 2, choices: [], force: [...r.force], pref: ratPref() })),
   };
 }

@@ -1,5 +1,6 @@
 import type { Context, Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { formBody } from "../form.ts";
+import { ERR_OFFER } from "../texts.ts";
 import { recruitCost } from "@mt/engine";
 import { dayKey } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
@@ -10,7 +11,6 @@ import { MAX_TROOPERS } from "../views/panel.ts";
 import { offersFor } from "./home.ts";
 import { ownedArmy, withTroopers, type Owned } from "./owner.ts";
 
-const ERR_OFFER = "Cette action nécessite que tu sois enregistré sur le site."; // as on the home page
 const ERR_POOR = "Tu n'as pas assez de crédits pour ajouter ce trooper."; // UNVERIFIED: original text not archived
 
 export function registerAdd(pages: Hono<Env>, deps: Deps): void {
@@ -40,7 +40,7 @@ export function registerAdd(pages: Hono<Env>, deps: Deps): void {
     return o.rows.length >= MAX_TROOPERS ? toHq(c, o) : render(c, o);
   });
 
-  pages.post("/add", bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post("/add", formBody(), async (c) => {
     const form = await c.req.parseBody();
     const o = ownedArmy(deps, c); // after the await: the state the purchase is judged on
     if (o instanceof Response) return o;

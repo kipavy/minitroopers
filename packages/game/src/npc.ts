@@ -1,7 +1,8 @@
-import { Data, Rand } from "@mt/engine";
+import { Rand } from "@mt/engine";
 import type { BattleArmyInput } from "@mt/engine";
 import { NPC_SEED_MAX } from "./economy.ts";
 import { trooperName } from "./names.ts";
+import { ratPref } from "./rats.ts";
 
 /**
  * Levels of a generated army: port of $GL generateRandomArmyComposition (levels start at 1, power = Σ(4 + level),
@@ -38,7 +39,7 @@ export function npcArmy(p: { power: number; min: number; max: number; seed: numb
     const seed = rand.random(NPC_SEED_MAX);
     const choices: number[] = [];
     for (let c = 1; c < level; c++) choices.push(rand.random(2));
-    return { id: p.firstId + i, name: trooperName(rand), seed, type: 0, choices, force: [] as number[], pref: { ...Data.defaultPref(), leftOver: [] } };
+    return { id: p.firstId + i, name: trooperName(rand), seed, type: 0, choices, force: [] as number[], pref: ratPref() };
   });
   return { faction: rand.random(6), spawnOrder: [], troopers };
 }

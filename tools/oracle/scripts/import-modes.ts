@@ -2,7 +2,7 @@
 // packages/engine/test/fixtures/modes/<name>.json = { source, input, winner, notes }.
 //   node tools/oracle/scripts/import-modes.ts [<recon dir>]   (default ~/minitroopers-work/recon)
 // The flashvars are decoded with the server's test decoder; `winner` comes from the archived endMsg
-// ("remporté"/"won"/"successfuly" → attackerSide, otherwise the other side). Normalizations are listed in `notes`.
+// ("remporté"/"won"/"successfuly" → attackerSide, "échec"/"fail"/"lost" → the other side, anything else throws). Normalizations are listed in `notes`.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -41,6 +41,7 @@ for (const [name, path] of Object.entries(SOURCES)) {
   const { input, vars } = decodeBattleFlashvars(m[1]!, { nullForce: true });
   const endMsg = vars.endMsg ?? "";
   const won = /remport|won|successful/i.test(endMsg);
+  if (!won && !/échec|fail|lost/i.test(endMsg)) throw new Error(`${path}: unrecognized endMsg ${JSON.stringify(endMsg)}`);
   const winner = (won ? input.attackerSide : 1 - input.attackerSide) as 0 | 1;
 
   const notes: string[] = [];

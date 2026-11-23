@@ -89,6 +89,11 @@ export function troopersOf(db: DatabaseSync, armyId: number): TrooperRow[] {
   return db.prepare("SELECT * FROM troopers WHERE army_id = ? ORDER BY slot").all(armyId).map(trooperOf);
 }
 
+/** Current credits of an army (0 for no such army). */
+export function creditsOf(db: DatabaseSync, armyId: number): number {
+  return Number((db.prepare("SELECT credits FROM armies WHERE id = ?").get(armyId) as { credits: number } | undefined)?.credits ?? 0);
+}
+
 /** Number of armies recruited through this army's link. */
 export function recruitCount(db: DatabaseSync, armyId: number): number {
   return Number((db.prepare("SELECT COUNT(*) AS n FROM armies WHERE recruiter_id = ?").get(armyId) as { n: number }).n);
@@ -293,10 +298,15 @@ export function finishLevelUp(db: DatabaseSync, armyId: number, slot: number, de
       d.leftOver === null ? null : JSON.stringify(d.leftOver),
       t.id,
     );
-    db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify(d.notice));
+    addNotice(db, armyId, d.notice);
     return (out = "done");
   });
   return out;
+}
+
+/** Queues a popup for the army's next HQ visit. */
+export function addNotice(db: DatabaseSync, armyId: number, notice: unknown): void {
+  db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify(notice));
 }
 
 /** Pending popups of an army, oldest first, removed as they are read. */
@@ -366,11 +376,14 @@ export function reequipTrooper(db: DatabaseSync, armyId: number, slot: number, d
   );
 }
 
-/** Power of every army that has at least one trooper: Σ (5 + choices), like `armyPower`. */
+/** Power of a group of `troopers` rows, in SQL: Σ (5 + choices), like `armyPower`. */
+const POWER_SQL = "SUM(5 + json_array_length(choices))";
+
+/** Power of every army that has at least one trooper. */
 export function armyPowers(db: DatabaseSync): { id: number; power: number }[] {
   return (
     db
-      .prepare("SELECT army_id AS id, SUM(5 + json_array_length(choices)) AS power FROM troopers GROUP BY army_id ORDER BY army_id")
+      .prepare(`SELECT army_id AS id, ${POWER_SQL} AS power FROM troopers GROUP BY army_id ORDER BY army_id`)
       .all() as { id: number; power: number }[]
   ).map((r) => ({ id: Number(r.id), power: Number(r.power) }));
 }
@@ -487,12 +500,12 @@ export type FightResult =
  * Fights one daily battle atomically (BEGIN IMMEDIATE). `used` is the number of battles of the day the action URL was
  * issued for: a replay (reload, double click, concurrent request) finds a different count and fights nothing ("stale").
  * Then the day's allowance is checked and `decide` (run inside the transaction, so it reads the armies as stored)
- * builds and resolves the battle, or returns an error code. The battle row, the reward and the daily counter are
- * written together.
+ * builds and resolves the battle, or returns an error code. The battle row (the day's count) and the reward are
+ * written together; `now` is stored as its `created_at`.
  */
 export function fight(
   db: DatabaseSync,
-  p: { armyId: number; day: string; used: number; opp: string | null; allowance: () => number; decide: () => NewBattle | string },
+  p: { armyId: number; day: string; now: number; used: number; opp: string | null; allowance: () => number; decide: () => NewBattle | string },
 ): FightResult {
   let out: FightResult = { ok: false, reason: "limit" };
   immediate(db, () => {
@@ -503,13 +516,10 @@ export function fight(
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const id = Number(
       db
-        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, opp) VALUES (?, ?, ?, ?, ?, ?, 'battle', ?)")
-        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.opp).lastInsertRowid,
+        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, opp, created_at) VALUES (?, ?, ?, ?, ?, ?, 'battle', ?, ?)")
+        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.opp, p.now).lastInsertRowid,
     );
     db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
-    db.prepare(
-      "INSERT INTO daily(army_id, day, battles_used) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET battles_used = excluded.battles_used",
-    ).run(p.armyId, p.day, used + 1);
     return (out = { ok: true, id, n: used + 1 });
   });
   return out;
@@ -571,7 +581,7 @@ export interface ArmySummary {
 export function armySummaries(db: DatabaseSync): ArmySummary[] {
   const rows = db
     .prepare(
-      "SELECT a.*, COUNT(t.id) AS n_troopers, COALESCE(SUM(5 + json_array_length(t.choices)), 0) AS power FROM armies a LEFT JOIN troopers t ON t.army_id = a.id GROUP BY a.id ORDER BY a.id",
+      `SELECT a.*, COUNT(t.id) AS n_troopers, COALESCE(${POWER_SQL}, 0) AS power FROM armies a LEFT JOIN troopers t ON t.army_id = a.id GROUP BY a.id ORDER BY a.id`,
     )
     .all();
   return rows.map((r) => ({ army: armyOf(r), troopers: Number(r.n_troopers), power: Number(r.power) }));
@@ -582,7 +592,7 @@ export function setPassword(db: DatabaseSync, armyId: number, hash: string, keep
   immediate(db, () => {
     db.prepare("UPDATE armies SET password_hash = ? WHERE id = ?").run(hash, armyId);
     db.prepare("UPDATE sessions SET army_id = NULL WHERE army_id = ? AND key IS NOT ?").run(armyId, keepKey);
-    db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify({ text: "Ton mot de passe a été enregistré." }));
+    addNotice(db, armyId, { text: "Ton mot de passe a été enregistré." });
     return true;
   });
 }
@@ -658,7 +668,7 @@ export function unlockMissions(db: DatabaseSync, armyId: number, cost: number): 
 }
 
 /** A mission or raid battle to store: `mode` and, for raids, the recruits killed (army ids of the recruits). */
-export type NewModeBattle = NewBattle & { mode: ModeKind; phase?: number; dead?: number[] };
+export type NewModeBattle = NewBattle & { mode: ModeKind; dead?: number[] };
 
 export type ModeResult =
   | { ok: true; id: number; n: number }
@@ -666,11 +676,11 @@ export type ModeResult =
   | { ok: false; reason: "refused"; code: string };
 
 /** Writes a mission or raid battle and credits its reward (call inside the fight transaction). Returns the battle id. */
-function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; kind: "mission" | "raid"; phase?: number }, d: NewModeBattle): number {
+function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; now: number; kind: "mission" | "raid"; phase?: number }, d: NewModeBattle): number {
   const id = Number(
     db
-      .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode, phase) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-      .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.kind, d.mode, p.phase ?? null).lastInsertRowid,
+      .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode, phase, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.kind, d.mode, p.phase ?? null, p.now).lastInsertRowid,
   );
   db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
   return id;
@@ -683,7 +693,7 @@ function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; ki
  * battle. The battle (kind 'mission'), the reward, the daily counters and the win effects (exterminate: one more
  * rat; epic: one more epic win) are written together.
  */
-export function fightMission(db: DatabaseSync, p: { armyId: number; day: string; used: number; decide: () => NewModeBattle | string }): ModeResult {
+export function fightMission(db: DatabaseSync, p: { armyId: number; day: string; now: number; used: number; decide: () => NewModeBattle | string }): ModeResult {
   let out: ModeResult = { ok: false, reason: "locked", used: 0 };
   immediate(db, () => {
     const a = armyById(db, p.armyId);
@@ -695,7 +705,7 @@ export function fightMission(db: DatabaseSync, p: { armyId: number; day: string;
     const d = p.decide();
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const win = d.winner !== null && d.winner === d.input.attackerSide;
-    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, kind: "mission" }, d);
+    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, now: p.now, kind: "mission" }, d);
     // UNVERIFIED: cap RATS_MAX (100), see @mt/game economy.ts.
     if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = MIN(rats + 1, ?) WHERE id = ?").run(RATS_MAX, p.armyId);
     if (win && d.mode === "epic") db.prepare("UPDATE armies SET epic_wins = epic_wins + 1 WHERE id = ?").run(p.armyId);
@@ -756,10 +766,12 @@ export function raidDay(db: DatabaseSync, armyId: number, day: string): RaidDay 
   return { phase: Number(r?.raid_phase ?? 1), dead, over: r?.raid_over === 1 };
 }
 
+/** The raid pool without the recruits in `dead` (army ids), in fighting order. */
+const aliveOf = (db: DatabaseSync, armyId: number, dead: ReadonlySet<number>): RaidRecruit[] => raidRecruits(db, armyId).filter((r) => !dead.has(r.recruitArmyId));
+
 /** The recruits still alive in today's raid, in fighting order. */
 export function raidAlive(db: DatabaseSync, armyId: number, day: string): RaidRecruit[] {
-  const dead = new Set(raidDay(db, armyId, day).dead);
-  return raidRecruits(db, armyId).filter((r) => !dead.has(r.recruitArmyId));
+  return aliveOf(db, armyId, new Set(raidDay(db, armyId, day).dead));
 }
 
 /**
@@ -769,19 +781,19 @@ export function raidAlive(db: DatabaseSync, armyId: number, day: string): RaidRe
  * battle; its `dead` (recruit army ids) join `daily.raid_dead`. A win pays the reward and opens the next phase
  * (the raid is over after RAID_MAX_PHASE won phases, the phase then stays at RAID_MAX_PHASE); a defeat ends the raid.
  */
-export function fightRaid(db: DatabaseSync, p: { armyId: number; day: string; phase: number; decide: (alive: RaidRecruit[]) => NewModeBattle | string }): ModeResult {
+export function fightRaid(db: DatabaseSync, p: { armyId: number; day: string; now: number; phase: number; decide: (alive: RaidRecruit[]) => NewModeBattle | string }): ModeResult {
   let out: ModeResult = { ok: false, reason: "limit", used: 0 };
   immediate(db, () => {
     const r = raidDay(db, p.armyId, p.day);
     if (r.over) return (out = { ok: false, reason: "limit", used: r.phase }), null;
     if (r.phase !== p.phase) return (out = { ok: false, reason: "stale", used: r.phase }), null;
     const dead = new Set(r.dead);
-    const alive = raidRecruits(db, p.armyId).filter((x) => !dead.has(x.recruitArmyId));
+    const alive = aliveOf(db, p.armyId, dead);
     if (alive.length === 0) return (out = { ok: false, reason: "refused", code: "none" }), null;
     const d = p.decide(alive);
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const win = d.winner !== null && d.winner === d.input.attackerSide;
-    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, kind: "raid", phase: r.phase }, d);
+    const id = insertModeBattle(db, { armyId: p.armyId, day: p.day, now: p.now, kind: "raid", phase: r.phase }, d);
     for (const x of d.dead ?? []) dead.add(x);
     // UNVERIFIED: 20 phases a day (SWF constant presumed to be the raid cap; wiki "20 (21 ?)").
     const last = !win || r.phase >= RAID_MAX_PHASE;

@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { formBody } from "../form.ts";
+import { rateLimited } from "../texts.ts";
 import type { Deps, Env } from "../app.ts";
 import { hashPassword, verifyPassword } from "../password.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
@@ -7,7 +8,6 @@ import { setPassword } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { protectPage } from "../views/protect.ts";
-import { missingPage } from "../views/soon.ts";
 import { ownedArmy, type Owned } from "./owner.ts";
 
 const MAX_LEN = 100;
@@ -16,7 +16,6 @@ const ERR_DIFF = "Les deux mots de passe sont différents.";
 const ERR_OLD = "Ancien mot de passe incorrect.";
 const ERR_EMPTY = "Mot de passe vide.";
 const ERR_LONG = `Mot de passe trop long (${MAX_LEN} caractères au maximum).`;
-const ERR_RATE = "Trop de tentatives. Réessaie dans quelques minutes.";
 
 export function registerProtect(pages: Hono<Env>, deps: Deps, limits: PasswordLimits): void {
   const { cfg, db } = deps;
@@ -36,7 +35,7 @@ export function registerProtect(pages: Hono<Env>, deps: Deps, limits: PasswordLi
     return o instanceof Response ? o : render(c, o, 200);
   });
 
-  pages.post("/protect", bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post("/protect", formBody(), async (c) => {
     if (queryParam(c, "submit") !== "1") return c.text("Forbidden", 403);
     const form = await c.req.parseBody();
     if (!isSessionKey(c, form.chk)) return c.text("Forbidden", 403);
@@ -51,7 +50,7 @@ export function registerProtect(pages: Hono<Env>, deps: Deps, limits: PasswordLi
     if (next.length > MAX_LEN) return render(c, o, 400, ERR_LONG);
     if (next !== str(form.passconf)) return render(c, o, 400, ERR_DIFF);
     if (army.passwordHash !== null) {
-      if (!limits.allow(c.get("ip"), army.id)) return c.html(String(missingPage(cfg, ERR_RATE)), 429);
+      if (!limits.allow(c.get("ip"), army.id)) return rateLimited(c, cfg);
       if (!verifyPassword(str(form.pass).slice(0, 200), army.passwordHash)) return render(c, o, 403, ERR_OLD);
     }
     setPassword(db, army.id, hashPassword(next), c.get("session").key);

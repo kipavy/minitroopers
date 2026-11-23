@@ -101,12 +101,12 @@ test("fightRaid: 20 won phases close the raid; the 21st phase is never fought; s
   const env = setup();
   const { id } = await warp(env);
   const day = today(env);
-  assert.deepEqual(fightRaid(env.db, { armyId: id, day, phase: 1, decide: stub(true) }), { ok: false, reason: "refused", code: "none" });
+  assert.deepEqual(fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: 1, decide: stub(true) }), { ok: false, reason: "refused", code: "none" });
   recruit(env, id, "rone", 5, 10);
   const r2 = recruit(env, id, "rtwo", 5, 20);
   let calls = 0;
   for (let p = 1; p <= RAID_MAX_PHASE; p++) {
-    const r = fightRaid(env.db, { armyId: id, day, phase: p, decide: (alive) => (calls++, stub(true, p === 1 ? [r2] : [])(alive)) });
+    const r = fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: p, decide: (alive) => (calls++, stub(true, p === 1 ? [r2] : [])(alive)) });
     assert.equal(r.ok, true, `phase ${p}`);
   }
   assert.equal(calls, RAID_MAX_PHASE);
@@ -120,7 +120,7 @@ test("fightRaid: 20 won phases close the raid; the 21st phase is never fought; s
   assert.ok(rows.every((r) => r.mode === "raid"));
   // the 21st phase and any replay: nothing
   for (const p of [RAID_MAX_PHASE + 1, RAID_MAX_PHASE, 3]) {
-    const r = fightRaid(env.db, { armyId: id, day, phase: p, decide: (alive) => (calls++, stub(true)(alive)) });
+    const r = fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: p, decide: (alive) => (calls++, stub(true)(alive)) });
     assert.equal(r.ok, false);
   }
   assert.equal(calls, RAID_MAX_PHASE);
@@ -133,15 +133,15 @@ test("fightRaid: the dead recruits are left out of the next phase; a defeat clos
   const day = today(env);
   const r1 = recruit(env, id, "rone", 5, 10);
   const r2 = recruit(env, id, "rtwo", 6, 20);
-  assert.equal(fightRaid(env.db, { armyId: id, day, phase: 1, decide: stub(true, [r1]) }).ok, true);
+  assert.equal(fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: 1, decide: stub(true, [r1]) }).ok, true);
   let seen: number[] = [];
-  const r = fightRaid(env.db, { armyId: id, day, phase: 2, decide: (alive) => ((seen = alive.map((x) => x.recruitArmyId)), stub(false, [r2])(alive)) });
+  const r = fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: 2, decide: (alive) => ((seen = alive.map((x) => x.recruitArmyId)), stub(false, [r2])(alive)) });
   assert.equal(r.ok, true);
   assert.deepEqual(seen, [r2]);
   const d = daily(env, id)!;
   assert.deepEqual({ phase: d.raid_phase, over: d.raid_over, dead: JSON.parse(d.raid_dead) }, { phase: 2, over: 1, dead: [r1, r2] });
   assert.equal(credits(env, id), 104);
-  assert.equal(fightRaid(env.db, { armyId: id, day, phase: 2, decide: stub(true) }).ok, false);
+  assert.equal(fightRaid(env.db, { armyId: id, day, now: env.clock.t, phase: 2, decide: stub(true) }).ok, false);
 });
 
 // ---- routes ----------------------------------------------------------------------------------------------------
@@ -180,6 +180,7 @@ for (const mode of MODES) {
     assert.equal(page.status, 200);
     const first = await page.text();
     assert.deepEqual(decodeBattleFlashvars(battleFlashvars(first)).input, JSON.parse(raids(env, id)[0]!.input));
+    assert.equal((env.db.prepare("SELECT created_at FROM battles WHERE id = ?").get(raids(env, id)[0]!.id) as { created_at: number }).created_at, Date.parse("2026-11-23T22:59:59Z"));
     assert.ok(!first.includes("Retour</a>"), "first view: no button");
     assert.ok((await (await get(env, cl, "/b/view/raid?d=2026-11-23")).text()).includes("Retour</a>"), "single-shot first view");
     for (const q of ["", "?d=2026-11-22", "?d=2026-11-25", "?d=junk"]) {

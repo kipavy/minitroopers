@@ -1,12 +1,14 @@
 import type { Context, Hono } from "hono";
 import type { Html } from "../views/html.ts";
-import { bodyLimit } from "hono/body-limit";
-import { armyPower, describeTrooper } from "@mt/engine";
-import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
+import { formBody } from "../form.ts";
+import { rateLimited } from "../texts.ts";
+import { armyPower } from "@mt/engine";
+import { dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
 import { asMissionType, missionTypeOf } from "./mission.ts";
+import { battleAllowance } from "./opp.ts";
 import {
   armyByHost, armyById, battlesOfDay, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
   troopersOf, trooperInput, type ArmyRow,
@@ -20,7 +22,6 @@ import type { HomeError } from "./home.ts";
 
 const ERR_LOGIN = "Aucune armée de ce nom.";
 const ERR_PASS = "Mot de passe incorrect.";
-const ERR_RATE = "Trop de tentatives. Réessaie dans quelques minutes.";
 
 /** Menu entries that stages 3-4 implement; until then they answer with a "bientôt" page. */
 const SOON: Record<string, string> = {
@@ -45,7 +46,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       troopers,
       power: armyPower(troopers),
       battles: o.locked ? [] : battlesOfDay(db, army.id, day),
-      battleTotal: battlesPerDay(troopers.map((tr) => ({ skills: describeTrooper(tr).skills }))),
+      battleTotal: battleAllowance(troopers),
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
       pendingRecruits: pendingRecruits(db, army.id),
       nextBounty: referralBounty(recruitCount(db, army.id) + 1),
@@ -108,14 +109,14 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
     return a ? c.redirect(armyUrl(cfg, a.host, "/hq")) : homeError(c, ERR_LOGIN, 404);
   });
 
-  pages.post("/login", bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post("/login", formBody(), async (c) => {
     const form = await c.req.parseBody();
     const a = findLogin(form.login);
     if (!a) return homeError(c, ERR_LOGIN, 404);
     // UNVERIFIED: a faction army (no owner, no password) is never opened by name; its recruit page instead.
     if (a.isFaction) return c.redirect(armyUrl(cfg, a.host, "/"));
     if (a.passwordHash !== null) {
-      if (!limits.allow(c.get("ip"), a.id)) return c.html(String(missingPage(cfg, ERR_RATE)), 429);
+      if (!limits.allow(c.get("ip"), a.id)) return rateLimited(c, cfg);
       const pass = typeof form.pass === "string" ? form.pass.slice(0, 200) : "";
       if (!verifyPassword(pass, a.passwordHash)) return c.html(String(hqPage(cfg, hqView(a, { locked: true, lockError: ERR_PASS }))), 403);
     }

@@ -30,7 +30,8 @@ function removeAccentsUTF8(s: string): string {
 /** Haxe StringTools.isSpace: 9..13 or 32 (narrower than JS String.trim). */
 const isSpace = (c: number): boolean => (c > 8 && c < 14) || c === 32;
 
-function haxeTrim(s: string): string {
+/** Haxe StringTools.trim: strips isSpace characters only (narrower than JS String.trim). */
+export function haxeTrim(s: string): string {
   let a = 0;
   let z = s.length;
   while (z > a && isSpace(s.charCodeAt(z - 1))) z--;

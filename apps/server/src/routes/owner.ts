@@ -30,7 +30,7 @@ export function ownedArmy(deps: Deps, c: Context<Env>): Owned | Response {
 }
 
 /**
- * Day of the battle a view route shows: `?d=YYYY-MM-DD` when it is today or yesterday, else today. A try or raid fought
+ * Day of the battle a view route shows: `?d=YYYY-MM-DD` when it is today or yesterday, else today. A battle, try or raid fought
  * at 23:59:59 redirects with its day, so its first view still works after midnight. Callers look the battle up among
  * the session army's own battles only, and the first-view reward message stays single-shot (`markSeen`).
  */

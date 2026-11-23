@@ -29,7 +29,8 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
   const battleSeed = deps.battleSeed ?? (() => randomInt(1, SEED_MAX));
-  const today = (): string => dayKey(new Date(now()), cfg.tzGame);
+  const dayOf = (t: number): string => dayKey(new Date(t), cfg.tzGame);
+  const today = (): string => dayOf(now());
 
   /** One phase: up to RAID_PER_BATTLE living recruits (the weakest first) against the phase's NPC army. */
   function decide(armyId: number, day: string, phase: number, alive: RaidRecruit[]): NewModeBattle | string {
@@ -64,8 +65,9 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     if (!isSessionKey(c, queryParam(c, "chk"))) return to("/hq");
     const q = queryParam(c, "phase");
     const phase = q !== undefined && /^[0-9]{1,3}$/.test(q) ? Number(q) : -1;
-    const day = today();
-    const r = fightRaid(db, { armyId: o.army.id, day, phase, decide: (alive) => decide(o.army.id, day, phase, alive) });
+    const t = now();
+    const day = dayOf(t);
+    const r = fightRaid(db, { armyId: o.army.id, day, now: t, phase, decide: (alive) => decide(o.army.id, day, phase, alive) });
     if (r.ok) return to(`/b/view/raid?d=${day}`);
     if ((r.reason === "stale" || r.reason === "limit") && phase >= 1 && phase <= r.used && lastRaidOfDay(db, o.army.id, day)) return to(`/b/view/raid?d=${day}`);
     return to("/hq");

@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import { bodyLimit } from "hono/body-limit";
+import { formBody } from "../form.ts";
 import { Rand, describeTrooper, levelUpOptions, reequip, upgradeCost } from "@mt/engine";
 import type { Deps, Env } from "../app.ts";
 import { hasKey, queryParam } from "../session.ts";
@@ -91,7 +91,7 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
     return sheet(c, o, row, key, flash, flash ? 400 : 200);
   });
 
-  pages.post(SLOT, bodyLimit({ maxSize: 4096, onError: (c) => c.text("Requête trop grande", 413) }), async (c) => {
+  pages.post(SLOT, formBody(), async (c) => {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     if (!hasKey(c, "config")) return c.text("Forbidden", 403);

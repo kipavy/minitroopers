@@ -148,7 +148,7 @@ for (const mode of MODES) {
     const before = credits(env, id);
     const res = await get(env, cl, pathOf(mode, target.href));
     assert.equal(res.status, 302);
-    assert.equal(res.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(res.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     const rows = battles(env, id);
     assert.equal(rows.length, 1);
     const row = rows[0]!;
@@ -165,7 +165,7 @@ for (const mode of MODES) {
     assert.equal(row.winner, simulateOutcome(input).winner);
     const reward = battleReward(won(row));
     assert.equal(credits(env, id), before + reward);
-    assert.equal((env.db.prepare("SELECT battles_used FROM daily WHERE army_id = ? AND day = ?").get(id, today(env)) as { battles_used: number }).battles_used, 1);
+    assert.equal((env.db.prepare("SELECT created_at FROM battles WHERE id = ?").get(row.id) as { created_at: number }).created_at, env.clock.t);
 
     // first view: the "+N" message and the counter animation
     const page = await (await get(env, cl, "/b/view/bat1")).text();
@@ -197,6 +197,37 @@ for (const mode of MODES) {
     assert.equal(none.headers.get("location"), loc(mode, "/hq"));
   });
 
+  test(`[${mode}] a battle at 23:59:59 is still shown (first view, once) after midnight; ?d= only today/yesterday`, async () => {
+    const env = setup(mode);
+    env.clock.t = Date.parse("2026-11-23T22:59:59Z"); // 23:59:59 in Paris (UTC+1)
+    const { cl, id } = await warp(env);
+    const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
+    const url = pathOf(mode, links[0]!.href);
+    const r = await get(env, cl, url);
+    assert.equal(r.headers.get("location"), loc(mode, "/b/view/bat1?d=2026-11-23"));
+    assert.equal((await get(env, cl, url)).headers.get("location"), loc(mode, "/b/view/bat1?d=2026-11-23"), "double click: same battle, same day");
+    const row = battles(env, id)[0]!;
+    assert.equal((env.db.prepare("SELECT created_at FROM battles WHERE id = ?").get(row.id) as { created_at: number }).created_at, Date.parse("2026-11-23T22:59:59Z"));
+    env.clock.t += 2000; // 00:00:01, the next day
+    assert.equal(today(env), "2026-11-24");
+    const path = "/b/view/bat1?d=2026-11-23";
+    const page = await get(env, cl, path);
+    assert.equal(page.status, 200);
+    const first = decodeBattleFlashvars(battleFlashvars(await page.text()));
+    assert.deepEqual(first.input, JSON.parse(row.input));
+    assert.match(first.vars.endMsg!, /Ton armée gagne \+[12] \[T\]$/);
+    const again = decodeBattleFlashvars(battleFlashvars(await (await get(env, cl, path)).text()));
+    assert.ok(!again.vars.endMsg!.includes("[T]"), "single-shot first view");
+    for (const q of ["", "?d=2026-11-22", "?d=2026-11-25", "?d=junk", "?d=2026-11-23T00"]) {
+      assert.equal((await get(env, cl, `/b/view/bat1${q}`)).headers.get("location"), loc(mode, "/hq"), q);
+    }
+    // another army cannot see it with ?d= either (its own battles only)
+    const other = env.client("7.7.7.7");
+    await create(env, other, "Autre");
+    const o = env.at("autre", path);
+    assert.equal((await other.req(o.url, { host: o.host })).headers.get("location"), mode === "path" ? "/a/autre/hq" : "http://autre.lvh.me:8080/hq");
+  });
+
   test(`[${mode}] replayed or concurrent attack URL: exactly one battle, one increment, one reward`, async () => {
     const env = setup(mode);
     const { cl, id } = await warp(env);
@@ -206,10 +237,10 @@ for (const mode of MODES) {
     const all = await Promise.all(Array.from({ length: 6 }, () => get(env, cl, url)));
     for (const r of all) {
       assert.equal(r.status, 302);
-      assert.equal(r.headers.get("location"), loc(mode, "/b/view/bat1"));
+      assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     }
     const again = await get(env, cl, url); // reload later
-    assert.equal(again.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(again.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     const rows = battles(env, id);
     assert.equal(rows.length, 1);
     assert.equal(credits(env, id), before + battleReward(won(rows[0]!)));
@@ -244,12 +275,12 @@ for (const mode of MODES) {
     const { cl, key, id } = await warp(env);
     const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
     const first = await get(env, cl, pathOf(mode, links[0]!.href));
-    assert.equal(first.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(first.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     assert.equal((env.db.prepare("SELECT opp FROM battles WHERE attacker_id = ?").get(id) as { opp: string }).opp, links[0]!.ref);
     const other = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[1]!.ref)};n=0;chk=${key}`);
     assert.equal(other.headers.get("location"), loc(mode, "/b/opp?err=stale"));
     const same = await get(env, cl, pathOf(mode, links[0]!.href));
-    assert.equal(same.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(same.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     assert.equal(battles(env, id).length, 1);
     const page = await (await get(env, cl, "/b/opp?err=stale")).text();
     assert.ok(page.includes("Cette attaque n&#39;est plus valable.") || page.includes("Cette attaque n'est plus valable."));
@@ -278,7 +309,7 @@ for (const mode of MODES) {
     void other;
     for (let n = 0; n < 3; n++) {
       const r = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[n]!.ref)};n=${n};chk=${key}`);
-      assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat${n + 1}`));
+      assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat${n + 1}?d=${today(env)}`));
     }
     const c3 = credits(env, id);
     const fourth = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[3]!.ref)};n=3;chk=${key}`);
@@ -400,7 +431,7 @@ for (const mode of MODES) {
     assert.ok(next.every((l) => l.n === 0));
     assert.notDeepEqual(next.map((l) => l.ref), links.map((l) => l.ref));
     const r = await get(env, cl, pathOf(mode, next[0]!.href));
-    assert.equal(r.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     assert.equal(battles(env, id).filter((b) => b.day === "2026-11-24").length, 1);
     assert.ok((await (await get(env, cl, "/hq")).text()).includes("Il te reste 2 batailles aujourd&#39;hui !"));
   });
@@ -417,7 +448,7 @@ for (const mode of MODES) {
     assert.ok(!html.includes("</script>'"));
     assert.ok(!/<img src=x/.test(html));
     const res = await get(env, cl, `/b/battle?opp=${foeId};n=0;chk=${key}`);
-    assert.equal(res.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(res.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     const page = await (await get(env, cl, "/b/view/bat1")).text();
     assert.ok(!page.includes(evil));
     assert.ok(!page.includes("</script>'"));
