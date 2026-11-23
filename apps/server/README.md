@@ -59,9 +59,18 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | Commande | Effet |
 |---|---|
 | `seed-factions` | crée les armées de faction absentes (sans effet si elles existent déjà) |
-| `create-army --name <nom> --troopers <json \| @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P]` | crée une armée complète |
+| `create-army --name <nom> --troopers <json \| @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P]` | crée une armée complète (mot de passe : `--password` ou `MT_ARMY_PASSWORD`, jamais vide) |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
+
+Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
+l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :
+
+```sh
+read -rs MT_ARMY_PASSWORD && export MT_ARMY_PASSWORD
+npm run admin -- create-army --name "Rats Morts" --troopers @armee.json
+unset MT_ARMY_PASSWORD
+```
 
 `--part` est l'article du formulaire de création (0 de, 1 d', 2 du, 3 de la, 4 des, 5 aucun) ; une armée de
 faction (`is_faction`) ne peut pas être ouverte par son nom.

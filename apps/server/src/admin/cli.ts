@@ -18,7 +18,8 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
   seed-factions
       Crée les armées de faction absentes de la base (sans effet si elles y sont déjà).
   create-army --name <nom> --troopers <json | @fichier.json> [--part 0-5] [--faction 0-5] [--credits N] [--password P]
-      Crée une armée complète. troopers : [{ "seed": 123, "name": "Nom", "skills": ["SMART", 12] }, ...]
+      Crée une armée complète. Mot de passe : --password P, ou la variable MT_ARMY_PASSWORD (absente de ps et de
+      l'historique) ; jamais vide. troopers : [{ "seed": 123, "name": "Nom", "skills": ["SMART", 12] }, ...]
       ("skills" : compétence choisie à chaque montée de niveau, parmi celles que le jeu propose ;
        ou "choices" : indices bruts des options). Voir apps/server/README.md.
   give-credits --army <nom ou hôte> --amount <N>
@@ -100,6 +101,11 @@ function run(argv: string[]): string {
     if (!FACTIONS.some((f) => f.id === faction)) throw new UsageError(`--faction : une des factions ${FACTIONS.map((f) => f.id).join(", ")}`);
     const json = values.troopers.startsWith("@") ? readFileSync(values.troopers.slice(1), "utf8") : values.troopers;
     const troopers = buildTroopers(json);
+    const envPass = process.env.MT_ARMY_PASSWORD;
+    if (values.password !== undefined && envPass !== undefined) throw new UsageError("--password et MT_ARMY_PASSWORD : un seul des deux");
+    if (values.password === "") throw new UsageError("--password : le mot de passe ne peut pas être vide");
+    if (envPass === "") throw new UsageError("MT_ARMY_PASSWORD : le mot de passe ne peut pas être vide");
+    const password = values.password ?? envPass;
     const army = insertArmy(db, {
       host: v.host,
       name: v.name,
@@ -107,7 +113,7 @@ function run(argv: string[]): string {
       faction,
       credits: int(values.credits, "credits", 0, 1_000_000, 0),
       isFaction: false,
-      passwordHash: values.password !== undefined ? hashPassword(values.password) : null,
+      passwordHash: password !== undefined ? hashPassword(password) : null,
       now: Date.now(),
       troopers,
     });

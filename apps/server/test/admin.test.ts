@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { SKILLS, defaultLeftOver, levelUpOptions, type BattleTrooperInput } from "@mt/engine";
 import { FACTIONS, factionBattleArmy } from "@mt/game";
 import { openDb } from "../src/db.ts";
+import { verifyPassword } from "../src/password.ts";
 import { SpecError, buildTroopers } from "../src/admin/army.ts";
 import { seedFactions } from "../src/admin/factions.ts";
 import { addCredits, armyByHost, armySummaries, troopersOf, trooperInput } from "../src/repo.ts";
@@ -99,7 +100,12 @@ test("a faction army is never opened by name: login goes to its recruit page", a
 });
 
 function cli(dataDir: string, ...args: string[]) {
-  return spawnSync(process.execPath, [CLI, ...args], { env: { ...process.env, DATA_DIR: dataDir }, encoding: "utf8" });
+  return cliEnv(dataDir, {}, ...args);
+}
+function cliEnv(dataDir: string, env: Record<string, string>, ...args: string[]) {
+  const base = { ...process.env };
+  delete base.MT_ARMY_PASSWORD;
+  return spawnSync(process.execPath, [CLI, ...args], { env: { ...base, DATA_DIR: dataDir, ...env }, encoding: "utf8" });
 }
 
 test("admin CLI: seed-factions, create-army, give-credits, list, errors", () => {
@@ -139,6 +145,24 @@ test("admin CLI: seed-factions, create-army, give-credits, list, errors", () => 
     const a = armyByHost(db, "rats-morts")!;
     assert.deepEqual(troopersOf(db, a.id).map((t) => [t.slot, t.seed, t.choices]), [[0, 2222222, p.choices], [1, 3333333, []]]);
     db.close();
+
+    // password: never empty; MT_ARMY_PASSWORD keeps it out of `ps` and the shell history
+    const empty = cli(dir, "create-army", "--name", "Vide", "--password", "", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(empty.status, 1);
+    assert.match(empty.stderr, /mot de passe.*vide/i);
+    const emptyEnv = cliEnv(dir, { MT_ARMY_PASSWORD: "" }, "create-army", "--name", "Vide", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(emptyEnv.status, 1);
+    assert.match(emptyEnv.stderr, /MT_ARMY_PASSWORD.*vide/i);
+    const envPass = cliEnv(dir, { MT_ARMY_PASSWORD: "from-env" }, "create-army", "--name", "Secrete", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(envPass.status, 0, envPass.stderr);
+    const both = cliEnv(dir, { MT_ARMY_PASSWORD: "from-env" }, "create-army", "--name", "Double", "--password", "x", "--troopers", '[{"seed":5,"name":"X"}]');
+    assert.equal(both.status, 1);
+    assert.match(both.stderr, /MT_ARMY_PASSWORD/);
+    const pdb = openDb(join(dir, "minitroopers.db"));
+    assert.equal(armyByHost(pdb, "vide"), null);
+    assert.equal(armyByHost(pdb, "double"), null);
+    assert.ok(verifyPassword("from-env", armyByHost(pdb, "secrete")!.passwordHash!));
+    pdb.close();
 
     assert.equal(cli(dir, "frobnicate").status, 1);
     assert.match(cli(dir).stdout, /Usage/);
