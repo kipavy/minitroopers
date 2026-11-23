@@ -18,7 +18,7 @@ test("loadConfig defaults", () => {
 });
 
 test("subdomain mode needs a BASE_DOMAIN of two labels or more; PUBLIC_URL defaults to it", () => {
-  // Chromium keeps a Domain=localhost cookie away from <army>.localhost (verified in the e2e probe): the session
+  // Chromium keeps a Domain=localhost cookie away from <army>.localhost (verified by the "[e2e cookies]" test of e2e.test.ts): the session
   // could never reach the army subdomains.
   assert.throws(() => loadConfig({ URL_MODE: "subdomain" }), /BASE_DOMAIN/);
   assert.throws(() => loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "localhost:8080" }), /BASE_DOMAIN/);

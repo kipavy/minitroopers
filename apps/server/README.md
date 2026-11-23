@@ -35,7 +35,7 @@ URL_MODE=subdomain BASE_DOMAIN=mt.localhost npm run dev   # http://mt.localhost:
 ```
 
 La session est partagée entre le site racine et les armées par un cookie `Domain=<BASE_DOMAIN>`.
-Vérifié dans Chromium (test e2e) : un cookie `Domain=localhost` est accepté mais **jamais envoyé** à
+Vérifié dans Chromium (test « [e2e cookies] » de `test/e2e.test.ts`) : un cookie `Domain=localhost` est accepté mais **jamais envoyé** à
 `<armée>.localhost` ; avec `Domain=mt.localhost` il l'est bien à `<armée>.mt.localhost`. Le serveur refuse
 donc de démarrer en mode `subdomain` avec un `BASE_DOMAIN` à un seul label. Les navigateurs résolvent tout
 `*.localhost` vers la machine sans DNS ; `lvh.me` marche aussi mais passe par un DNS public.

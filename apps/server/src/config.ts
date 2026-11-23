@@ -22,7 +22,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   const mode = env.URL_MODE ?? "path";
   if (mode !== "path" && mode !== "subdomain") throw new Error(`invalid URL_MODE: ${mode} (path|subdomain)`);
   const baseDomain = env.BASE_DOMAIN ?? "localhost";
-  // Subdomain mode shares the session cookie with every army via Domain=<BASE_DOMAIN>. Verified in Chromium (e2e):
+  // Subdomain mode shares the session cookie with every army via Domain=<BASE_DOMAIN>. Verified in Chromium (test/e2e.test.ts, "[e2e cookies]"):
   // a Domain=localhost cookie is stored but never sent to <army>.localhost, so a single-label domain cannot work.
   // Locally, use a name under localhost such as mt.localhost (browsers resolve *.localhost without DNS).
   if (mode === "subdomain" && !baseDomain.replace(/:\d+$/, "").includes(".")) {

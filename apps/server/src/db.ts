@@ -25,9 +25,12 @@ export function migrate(db: DatabaseSync): string[] {
   return applied;
 }
 
+/** How long a statement waits for another connection's lock (the admin CLI next to the server) before SQLITE_BUSY. */
+export const BUSY_TIMEOUT_MS = 5000;
+
 /** Open (or create) the database at `path` (":memory:" for tests) and migrate it. */
 export function openDb(path: string): DatabaseSync {
-  const db = new DatabaseSync(path);
+  const db = new DatabaseSync(path, { timeout: BUSY_TIMEOUT_MS });
   db.exec("PRAGMA foreign_keys = ON");
   if (path !== ":memory:") db.exec("PRAGMA journal_mode = WAL");
   migrate(db);

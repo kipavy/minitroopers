@@ -5,7 +5,7 @@
 // stored in the database, and whose `endBattle()` must lead to `/hq?money=<reward>`.
 //
 // Subdomain mode uses BASE_DOMAIN=mt.localhost: Chromium resolves every *.localhost name to the loopback without DNS,
-// and (verified, see README) shares a `Domain=mt.localhost` cookie with `<army>.mt.localhost`, which it does not do
+// and (verified by the "[e2e cookies]" test below) shares a `Domain=mt.localhost` cookie with `<army>.mt.localhost`, which it does not do
 // for `Domain=localhost`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -96,6 +96,37 @@ async function launch() {
     }
   }
 }
+
+// Why subdomain mode refuses a single-label BASE_DOMAIN (config.ts): what Chromium does with Domain= cookies on *.localhost.
+test("[e2e cookies] Chromium never sends a Domain=localhost cookie to <army>.localhost, but sends Domain=mt.localhost to <army>.mt.localhost", { timeout: 60_000 }, async (t) => {
+  if (!browsersInstalled()) return t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
+  const { createServer: httpServer } = await import("node:http");
+  const srv = httpServer((req, res) => {
+    const d = new URL(req.url ?? "/", "http://x").searchParams.get("d");
+    if (d) res.writeHead(200, { "set-cookie": `c=${d.replace(/\W/g, "_")}; Path=/; HttpOnly; SameSite=Lax; Domain=${d}` }).end("set");
+    else res.writeHead(200).end(req.headers.cookie ?? "");
+  });
+  await new Promise<void>((ok) => srv.listen(0, "127.0.0.1", ok));
+  const port = (srv.address() as { port: number }).port;
+  const browser = await launch();
+  try {
+    const seen = async (base: string): Promise<{ root: string; sub: string }> => {
+      const page = await (await browser.newContext()).newPage();
+      await page.goto(`http://${base}:${port}/?d=${base}`);
+      await page.goto(`http://army.${base}:${port}/`);
+      const sub = (await page.textContent("body")) ?? "";
+      await page.goto(`http://${base}:${port}/`);
+      const root = (await page.textContent("body")) ?? "";
+      await page.context().close();
+      return { root, sub };
+    };
+    assert.deepEqual(await seen("localhost"), { root: "c=localhost", sub: "" });
+    assert.deepEqual(await seen(BASE_DOMAIN), { root: "c=mt_localhost", sub: "c=mt_localhost" });
+  } finally {
+    await browser.close();
+    await new Promise((ok) => srv.close(ok));
+  }
+});
 
 for (const mode of ["path", "subdomain"] as Mode[]) {
   test(`[e2e ${mode}] create, upgrade, skill, buy, battle replayed by the SWF with the stored winner`, { timeout: 600_000 }, async (t) => {
