@@ -66,9 +66,8 @@ ${o.title}</title>`}
 ${o.content}
 </div></div></div>
 <div class="dbottom"><div class="pbottomleft"></div>
-<div class="mt"><a href="http://motion-twin.fr/" target="_blank"><img src="/img/pixel.gif"/></a></div>
 <div class="art_mouse"></div>
 </div>
-<div class="copy">${protect} (c)2011 Motion-Twin · Tous droits réservés</div></div></div>
+<div class="copy">${protect} (c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a></div></div></div>
 </body></html>`;
 }

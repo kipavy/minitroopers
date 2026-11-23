@@ -112,7 +112,7 @@ for (const mode of MODES) {
       const cls = classesOf(page);
       for (const c of UNUSED_CLASSES) assert.ok(!cls.has(c), `${host}${path}: class ${c}`);
       const refs = staticRefs(page);
-      assert.ok(refs.includes("/css/style.css") && refs.includes("/img/pixel.gif"), `${host}${path}: refs found`);
+      assert.ok(refs.includes("/css/style.css") && refs.includes("/js/jquery.min.js"), `${host}${path}: refs found`);
       for (const ref of refs) assert.ok(existsSync(join(PUBLIC, decodeURIComponent(ref))), `${host}${path}: ${ref} missing under public/`);
       // .box2bg (style.css: art_1.jpg, absent) always carries its own background image
       for (const m of page.matchAll(/class="box2bg"([^>]*)>/g)) assert.match(m[1]!, /style="background-image : url\('\/img\/mode\/\w+\.jpg'\)"/, `${host}${path}: box2bg`);

@@ -38,6 +38,8 @@ test("layout keeps the original frame and wires local assets", () => {
   assert.ok(out.includes('href="/a/nsun/protect"'));
   assert.ok(!out.includes("data.minitroopers.fr"));
   assert.ok(!out.includes("google-analytics"));
+  assert.ok(out.includes('(c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a>'));
+  assert.ok(!/motion-twin/i.test(out), "no Motion-Twin credit or logo link in the frame");
 });
 
 test("tip() produces the original Tip.show markup, escaped", () => {
