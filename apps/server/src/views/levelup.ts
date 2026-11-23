@@ -68,7 +68,8 @@ export const levelUpNoticeText = (n: LevelUpNotice): Html =>
 /** The popup body for the stored notices (JSON written by the level-up route), or null when there is none. Malformed rows are skipped. */
 export function notices(rows: readonly unknown[]): Html | null {
   const items = rows.flatMap((r) => {
-    const n = r as Partial<LevelUpNotice> | null;
+    const n = r as (Partial<LevelUpNotice> & { text?: unknown }) | null;
+    if (n && typeof n.text === "string") return [html`${n.text}`]; // plain-text notice (password saved)
     return n && typeof n.trooper === "string" && Number.isInteger(n.level) && Number.isInteger(n.skill) && Data.SKILL[n.skill as number]
       ? [levelUpNoticeText(n as LevelUpNotice)]
       : [];

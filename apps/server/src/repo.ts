@@ -549,3 +549,13 @@ export function armySummaries(db: DatabaseSync): ArmySummary[] {
     .all();
   return rows.map((r) => ({ army: armyOf(r), troopers: Number(r.n_troopers), power: Number(r.power) }));
 }
+
+/** Stores the army password hash and signs the army out of every session but `keepKey`'s (null: of all of them). */
+export function setPassword(db: DatabaseSync, armyId: number, hash: string, keepKey: string | null = null): void {
+  immediate(db, () => {
+    db.prepare("UPDATE armies SET password_hash = ? WHERE id = ?").run(hash, armyId);
+    db.prepare("UPDATE sessions SET army_id = NULL WHERE army_id = ? AND key IS NOT ?").run(armyId, keepKey);
+    db.prepare("INSERT INTO notices(army_id, data) VALUES (?, ?)").run(armyId, JSON.stringify({ text: "Ton mot de passe a été enregistré." }));
+    return true;
+  });
+}

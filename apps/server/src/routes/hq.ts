@@ -5,7 +5,7 @@ import { armyPower, describeTrooper } from "@mt/engine";
 import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
-import { createRateLimiter } from "../ratelimit.ts";
+import type { PasswordLimits } from "../ratelimit.ts";
 import { armyByHost, armyById, battlesOfDay, pendingRecruits, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
 import { verifyPassword } from "../password.ts";
@@ -21,16 +21,13 @@ const ERR_RATE = "Trop de tentatives. Réessaie dans quelques minutes.";
 /** Menu entries that stages 3-4 implement; until then they answer with a "bientôt" page. */
 const SOON: Record<string, string> = {
   "/choice": "Gérer mon armée",
-  "/protect": "Protéger mon armée",
   "/ranks": "Hiérarchie",
   "/global-ranks": "Hiérarchie",
 };
 
-export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): void {
+export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, limits: PasswordLimits): void {
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
-  const loginLimiter = createRateLimiter({ limit: 10, windowMs: 600_000, now });
-  const loginIpLimiter = createRateLimiter({ limit: 40, windowMs: 600_000, now });
 
   function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number; notice?: Html | null }): HqView {
     const rows = troopersOf(db, army.id);
@@ -98,8 +95,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
     // UNVERIFIED: a faction army (no owner, no password) is never opened by name; its recruit page instead.
     if (a.isFaction) return c.redirect(armyUrl(cfg, a.host, "/"));
     if (a.passwordHash !== null) {
-      // UNVERIFIED: attempt limits (10 per 10 min per IP+army, 40 per IP) are ours; the original's are unknown.
-      if (!loginLimiter.hit(`${c.get("ip")}|${a.id}`) || !loginIpLimiter.hit(c.get("ip"))) return c.html(String(missingPage(cfg, ERR_RATE)), 429);
+      if (!limits.allow(c.get("ip"), a.id)) return c.html(String(missingPage(cfg, ERR_RATE)), 429);
       const pass = typeof form.pass === "string" ? form.pass.slice(0, 200) : "";
       if (!verifyPassword(pass, a.passwordHash)) return c.html(String(hqPage(cfg, hqView(a, { locked: true, lockError: ERR_PASS }))), 403);
     }
