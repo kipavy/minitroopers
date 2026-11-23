@@ -1,0 +1,14 @@
+# Build context of the Dockerfile (also read by deploy/dryrun.mjs: one pattern per line, * and ** only, no !).
+# Nothing here is needed to run the server; var/ holds local data, never ship it.
+**/node_modules
+var
+.git
+.github
+.superpowers
+tools/bin
+tools/oracle/golden*
+assets
+docs
+**/test
+**/dist
+**/*.tsbuildinfo

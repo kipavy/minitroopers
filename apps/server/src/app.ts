@@ -50,6 +50,11 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
   const { cfg, db } = deps;
   const app = new Hono<Env>();
   app.use("*", serveStatic(PUBLIC_DIR));
+  // Liveness probe (Docker HEALTHCHECK): the database answers. Outside the page sub-app: no session, no cookie.
+  app.get("/healthz", (c) => {
+    db.prepare("SELECT 1").get();
+    return c.text("ok", 200, { "cache-control": "no-store" });
+  });
 
   const pages = new Hono<Env>();
   pages.use("*", securityHeaders);

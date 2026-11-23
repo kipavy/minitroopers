@@ -1,6 +1,6 @@
 // Administration CLI: `npm run admin -- <command> [options]` (same DATA_DIR as the server; safe while it runs).
-import { mkdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { Rand, SKILLS } from "@mt/engine";
 import { FACTIONS, RATS_MAX, host as hostOf, seedsOffering, trooperName } from "@mt/game";
@@ -34,6 +34,8 @@ const USAGE = `Usage : npm run admin -- <commande> [options]
       Ajoute N crédits (N négatif : en retire, jamais sous 0).
   list
       Liste les armées.
+  backup --out <fichier>
+      Copie cohérente de la base (VACUUM INTO), possible pendant que le serveur tourne. Refuse un fichier existant.
 
 DATA_DIR (défaut var/) désigne la base, comme pour le serveur.`;
 
@@ -64,18 +66,34 @@ function run(argv: string[]): string {
       force: { type: "boolean" },
       army: { type: "string" },
       amount: { type: "string" },
+      out: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
   const cmd = positionals[0];
   if (values.help || cmd === undefined || cmd === "help") return USAGE;
-  if (!["seed-factions", "create-army", "create-bro-army", "set-password", "give-credits", "list"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
+  if (!["seed-factions", "create-army", "create-bro-army", "set-password", "give-credits", "list", "backup"].includes(cmd) || positionals.length > 1) throw new UsageError(`commande inconnue : ${positionals.join(" ")}`);
 
   const cfg = loadConfig(process.env);
   const dataDir = resolveDataDir(cfg.dataDir);
+  const dbFile = join(dataDir, "minitroopers.db");
+  let backupFile = "";
+  if (cmd === "backup") {
+    if (values.out === undefined || values.out === "") throw new UsageError("--out est obligatoire");
+    // npm run changes the directory to the repository root; INIT_CWD is where the command was typed.
+    backupFile = resolve(process.env.INIT_CWD ?? process.cwd(), values.out);
+    if (existsSync(backupFile)) throw new UsageError(`${backupFile} existe déjà`);
+    if (!existsSync(dbFile)) throw new UsageError(`aucune base : ${dbFile}`);
+  }
   mkdirSync(dataDir, { recursive: true });
-  const db = openDb(join(dataDir, "minitroopers.db"));
+  const db = openDb(dbFile);
   try {
+    if (cmd === "backup") {
+      // One read transaction: consistent even while the server writes (WAL); the copy is a compact standalone file.
+      db.prepare("VACUUM INTO ?").run(backupFile);
+      return `Sauvegarde écrite : ${backupFile}`;
+    }
+
     if (cmd === "seed-factions") {
       const r = seedFactions(db, Date.now());
       return `Factions créées : ${r.created.join(", ") || "aucune"}\nDéjà présentes : ${r.existing.join(", ") || "aucune"}`;

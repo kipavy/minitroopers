@@ -50,6 +50,15 @@ donc de démarrer en mode `subdomain` avec un `BASE_DOMAIN` à un seul label. Le
 `*.localhost` vers la machine sans DNS ; `lvh.me` marche aussi mais passe par un DNS public.
 Non vérifié dans Firefox et Safari.
 
+## Exploitation
+
+- `GET /healthz` répond `200 ok` après un `SELECT 1` sur la base, sans session ni cookie (sonde de santé).
+- `SIGTERM` / `SIGINT` (`docker stop`, Ctrl+C) : le serveur ferme le port et les connexions inactives (les
+  autres au plus tard après 3 s), arrête la tâche horaire puis ferme la base (WAL vidé) et sort avec le code 0.
+- Image Docker, Docker Compose derrière Cloudflare Tunnel, sauvegarde et mise à jour :
+  [deploy/README.md](../../deploy/README.md). `node deploy/dryrun.mjs` vérifie l'image sans Docker (contexte
+  filtré par `.dockerignore`, installation sans dépendances de développement, démarrage, routes, arrêt).
+
 ## Administration
 
 ```sh
@@ -64,6 +73,7 @@ npm run admin -- <commande> [options]      # même DATA_DIR que le serveur, util
 | `set-password --name <hôte>` | pose ou remplace le mot de passe d'une armée, **uniquement** par `MT_ARMY_PASSWORD` (obligatoire, jamais vide) ; déconnecte ses sessions. Seule voie pour une armée dont l'ordinateur de création est inconnu (`created_cid` NULL), que `/protect` refuse |
 | `give-credits --army <nom ou hôte> --amount <N>` | ajoute N crédits (N négatif : en retire, jamais sous 0) |
 | `list` | liste les armées (id, hôte, titre, faction, crédits, troopers, puissance) |
+| `backup --out <fichier>` | copie cohérente de la base (`VACUUM INTO`), possible pendant que le serveur tourne ; refuse un fichier existant |
 
 Le mot de passe d'une armée protégée ne peut pas être vide. Pour qu'il n'apparaisse ni dans `ps` ni dans
 l'historique du shell, le passer par la variable `MT_ARMY_PASSWORD` à la place de `--password` (pas les deux) :

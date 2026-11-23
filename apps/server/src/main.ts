@@ -26,8 +26,38 @@ if (fresh) {
   const { created } = seedFactions(db, Date.now());
   console.log(`New database: ${created.length} faction armies seeded`);
 }
-startDailyJob(db);
+const stopJob = startDailyJob(db);
 const app = createApp({ cfg, db }, mountPages({ cfg, db }));
-serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.listenHost }, (i) => {
+const server = serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.listenHost }, (i) => {
   console.log(`MiniTroopers server on ${cfg.listenHost}:${i.port} (${cfg.urlMode} mode, ${cfg.publicUrl}, data in ${dataDir})`);
 });
+
+// Clean stop (docker stop, Ctrl+C): no new connection, idle keep-alive sockets closed, job stopped, then db.close()
+// checkpoints and removes the WAL. Connections still busy after 3 s are cut so that the stop stays under docker's 10 s.
+let stopping = false;
+const stop = (signal: string): void => {
+  if (stopping) return;
+  stopping = true;
+  console.log(`${signal}: stopping`);
+  const finish = (): void => {
+    stopJob();
+    try {
+      db.close();
+    } catch (e) {
+      console.error("database close failed:", e instanceof Error ? e.message : e);
+      process.exit(1);
+    }
+    process.exit(0);
+  };
+  const force = setTimeout(() => {
+    (server as { closeAllConnections?: () => void }).closeAllConnections?.();
+  }, 3000);
+  force.unref();
+  server.close(() => {
+    clearTimeout(force);
+    finish();
+  });
+  (server as { closeIdleConnections?: () => void }).closeIdleConnections?.();
+};
+process.on("SIGTERM", () => stop("SIGTERM"));
+process.on("SIGINT", () => stop("SIGINT"));
