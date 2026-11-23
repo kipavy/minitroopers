@@ -4,7 +4,7 @@ import { bodyLimit } from "hono/body-limit";
 import { describeTrooper } from "@mt/engine";
 import { dailyOffers, dayKey, FACTIONS, STARTING_CREDITS, type Faction } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
-import { bindArmy } from "../session.ts";
+import { bindArmy, persistSession } from "../session.ts";
 import { createRateLimiter } from "../ratelimit.ts";
 import { armyByHost, armyById, createArmy } from "../repo.ts";
 import { checkArmyName } from "../validate.ts";
@@ -118,9 +118,14 @@ export function registerHome(pages: Hono<Env>, deps: Deps): HomeError {
     if (!v.ok) return render(c, ctx, { ...shown, error: v.error }, 400);
     const session = c.get("session");
     // Fresh binding: a double submission may have bound this session while we were parsing the body.
-    const bound = (db.prepare("SELECT army_id FROM sessions WHERE key = ?").get(session.key) as { army_id: number | null } | undefined)?.army_id ?? null;
+    const bound = session.persisted ? ((db.prepare("SELECT army_id FROM sessions WHERE key = ?").get(session.key) as { army_id: number | null } | undefined)?.army_id ?? null) : null;
     const existing = armyByHost(db, v.host);
     if (existing && bound === existing.id) return c.redirect(armyUrl(cfg, existing.host, "/hq"));
+    // Double submission before the first response (no session yet): the browser that just created this army gets in.
+    if (existing && !existing.isFaction && existing.passwordHash === null && existing.createdCid === session.clientId) {
+      bindArmy(db, persistSession(c, db).key, existing.id);
+      return c.redirect(armyUrl(cfg, existing.host, "/hq"));
+    }
     const res = createArmy(db, {
       host: v.host,
       name: v.name,
@@ -129,13 +134,14 @@ export function registerHome(pages: Hono<Env>, deps: Deps): HomeError {
       credits: STARTING_CREDITS,
       recruiterId: ctx.recruiter.armyId,
       createdIp: c.get("ip"),
+      createdCid: session.clientId,
       now: now(),
       trooper: { seed: offer.seed, name: offer.name },
       maxPerIp: MAX_ARMIES_PER_IP_PER_DAY,
       dayOf: day,
     });
     if (!res.ok) return render(c, ctx, { ...shown, error: res.reason === "taken" ? ERR_TAKEN : ERR_LIMIT }, res.reason === "taken" ? 409 : 429);
-    bindArmy(db, session.key, res.army.id);
+    bindArmy(db, persistSession(c, db).key, res.army.id);
     return c.redirect(armyUrl(cfg, res.army.host, "/hq"));
   });
 

@@ -4,7 +4,7 @@ import { bodyLimit } from "hono/body-limit";
 import { armyPower, describeTrooper } from "@mt/engine";
 import { battlesPerDay, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
-import { bindArmy, queryParam } from "../session.ts";
+import { bindArmy, persistSession, queryParam } from "../session.ts";
 import { createRateLimiter } from "../ratelimit.ts";
 import { armyByHost, armyById, battlesOfDay, recruitCount, takeNotices, troopersOf, trooperInput, type ArmyRow } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
@@ -104,7 +104,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError): 
       if (!verifyPassword(pass, a.passwordHash)) return c.html(String(hqPage(cfg, hqView(a, { locked: true, lockError: ERR_PASS }))), 403);
     }
     // UNVERIFIED: an army without password is opened by anyone who types its name (the original had no other check).
-    bindArmy(db, c.get("session").key, a.id);
+    bindArmy(db, persistSession(c, db).key, a.id);
     return c.redirect(armyUrl(cfg, a.host, "/hq"));
   });
 

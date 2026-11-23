@@ -4,8 +4,10 @@ export type UrlMode = "path" | "subdomain";
 
 export interface Config {
   port: number;
-  /** Listening address (HOST), 127.0.0.1 by default. */
-  host: string;
+  /** Listening address (LISTEN_HOST), 127.0.0.1 by default. */
+  listenHost: string;
+  /** Non-fatal configuration notes, printed at startup (e.g. an ignored HOST). */
+  warnings: string[];
   urlMode: UrlMode;
   /** Public origin without trailing slash, e.g. "http://localhost:8080". The port of army URLs comes from here. */
   publicUrl: string;
@@ -53,9 +55,13 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   } catch {
     throw new Error(`invalid TZ_GAME: ${JSON.stringify(tzGame)} (an IANA time zone, e.g. Europe/Paris)`);
   }
+  // HOST is deliberately not read: tcsh and others export it as the machine name, which is not an address to bind.
+  const warnings: string[] = [];
+  if (env.HOST) warnings.push(`HOST=${env.HOST} is ignored (often the machine name); set LISTEN_HOST to choose the listening address`);
   return {
     port,
-    host: env.HOST || "127.0.0.1",
+    listenHost: env.LISTEN_HOST || "127.0.0.1",
+    warnings,
     urlMode: mode,
     publicUrl,
     baseDomain,

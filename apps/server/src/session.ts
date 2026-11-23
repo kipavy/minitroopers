@@ -17,6 +17,11 @@ export interface Session {
    * UNVERIFIED: the original `mid` is computed by a 1x1 SWF in ClientMode#3 and cannot be reproduced without `chk`.
    */
   clientId: string;
+  /**
+   * False for a visitor without a session cookie: nothing is stored and no `ssid` is set until `persistSession`
+   * (army creation, login). `key` is then a throwaway value that no stored session matches.
+   */
+  persisted: boolean;
 }
 
 const KEY_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -31,38 +36,52 @@ export function bindArmy(db: DatabaseSync, key: string, armyId: number | null): 
   db.prepare("UPDATE sessions SET army_id = ? WHERE key = ?").run(armyId, key);
 }
 
-export function sessionMiddleware(cfg: Config, db: DatabaseSync, now: () => number = Date.now): MiddlewareHandler<Env> {
-  // Subdomain mode: share the session between the root site and <host>.<BASE_DOMAIN> via Domain=<BASE_DOMAIN> (loadConfig refuses a port).
+/** Cookie options of the site (Domain=<BASE_DOMAIN> in subdomain mode, to share the session with every army). */
+function cookieOpts(cfg: Config) {
   // Verified in Chromium (test/e2e.test.ts, "[e2e cookies]"): works for mt.localhost; Domain=localhost is never sent to
   // <host>.localhost, so loadConfig refuses a single-label BASE_DOMAIN in subdomain mode.
   const domain = cfg.urlMode === "subdomain" ? { domain: cfg.baseDomain } : {};
-  const opts = { httpOnly: true, sameSite: "Lax" as const, path: "/", secure: cfg.secureCookies, ...domain };
+  return { httpOnly: true, sameSite: "Lax" as const, path: "/", secure: cfg.secureCookies, ...domain };
+}
+
+/**
+ * Lazy sessions: a visitor without a valid `ssid` cookie gets no row and no `ssid` (only the `cid` client id), so
+ * crawlers and drive-by GETs store nothing. `persistSession` creates the row when the visitor becomes someone.
+ */
+export function sessionMiddleware(cfg: Config, db: DatabaseSync): MiddlewareHandler<Env> {
+  const opts = cookieOpts(cfg);
   return async (c, next) => {
     if (c.get("session")) return next(); // pages are mounted twice in path mode: a 404 falls through both chains
     const ssid = getCookie(c, "ssid");
     const cidCookie = getCookie(c, "cid");
-    let row = ssid && TOKEN_RE.test(ssid)
+    const row = ssid && TOKEN_RE.test(ssid)
       ? (db.prepare("SELECT key, army_id, client_id FROM sessions WHERE token = ?").get(ssid) as { key: string; army_id: number | null; client_id: string } | undefined)
       : undefined;
-    if (!row) {
-      const clientId = cidCookie && CID_RE.test(cidCookie) ? cidCookie : randomBytes(16).toString("base64url");
-      const token = randomBytes(16).toString("base64url");
-      for (;;) {
-        const key = newKey();
-        try {
-          db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES (?, ?, NULL, ?, ?)").run(key, token, clientId, now());
-          row = { key, army_id: null, client_id: clientId };
-          break;
-        } catch (e) {
-          if (!/UNIQUE|constraint/i.test(String(e))) throw e;
-        }
-      }
-      setCookie(c, "ssid", token, { ...opts, maxAge: 30 * 86400 });
-    }
-    if (cidCookie !== row.client_id) setCookie(c, "cid", row.client_id, { ...opts, maxAge: 400 * 86400 });
-    c.set("session", { key: row.key, armyId: row.army_id, clientId: row.client_id });
+    const clientId = row ? row.client_id : cidCookie && CID_RE.test(cidCookie) ? cidCookie : randomBytes(16).toString("base64url");
+    if (cidCookie !== clientId) setCookie(c, "cid", clientId, { ...opts, maxAge: 400 * 86400 });
+    c.set("session", row ? { key: row.key, armyId: row.army_id, clientId, persisted: true } : { key: newKey(), armyId: null, clientId, persisted: false });
     await next();
   };
+}
+
+/** Makes the request's session a stored one (row + `ssid` cookie). Idempotent; call before `bindArmy`. */
+export function persistSession(c: Context<Env>, db: DatabaseSync): Session {
+  const s = c.get("session");
+  if (s.persisted) return s;
+  const token = randomBytes(16).toString("base64url");
+  const created = c.get("now")();
+  for (;;) {
+    try {
+      db.prepare("INSERT INTO sessions(key, token, army_id, client_id, created_at) VALUES (?, ?, NULL, ?, ?)").run(s.key, token, s.clientId, created);
+      break;
+    } catch (e) {
+      if (!/UNIQUE|constraint/i.test(String(e))) throw e;
+      s.key = newKey(); // the throwaway key collided with a stored one
+    }
+  }
+  s.persisted = true;
+  setCookie(c, "ssid", token, { ...cookieOpts(c.get("cfg")), maxAge: 30 * 86400 });
+  return s;
 }
 
 /** Query parameter parser accepting both '&' and the original ';' separators (`?opp=12;chk=KEY`). */

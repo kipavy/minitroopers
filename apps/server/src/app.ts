@@ -4,6 +4,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Config } from "./config.ts";
 import { clientIp } from "./ip.ts";
+import { sameOrigin } from "./origin.ts";
 import { sessionMiddleware, type Session } from "./session.ts";
 import { serveStatic } from "./static.ts";
 import { isValidHost, resolveArmyHost } from "./urls.ts";
@@ -13,6 +14,8 @@ export type Env = {
     cfg: Config;
     db: DatabaseSync;
     ip: string;
+    /** The clock of the app (tests drive it). */
+    now: () => number;
     session: Session;
     /** Army host of the current request (subdomain or "/a/<host>/"), null on the site root. */
     armyHost: string | null;
@@ -50,9 +53,11 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
 
   const pages = new Hono<Env>();
   pages.use("*", securityHeaders);
+  pages.use("*", sameOrigin(cfg));
   pages.use("*", async (c, next) => {
     c.set("cfg", cfg);
     c.set("db", db);
+    c.set("now", deps.now ?? Date.now);
     let remote: string | undefined;
     try {
       remote = getConnInfo(c).remote.address;
@@ -73,7 +78,7 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
     c.set("armyHost", host);
     await next();
   });
-  pages.use("*", sessionMiddleware(cfg, db, deps.now));
+  pages.use("*", sessionMiddleware(cfg, db));
   mount?.(pages);
 
   if (cfg.urlMode === "path") {

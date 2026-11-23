@@ -19,6 +19,8 @@ export const BATTLE_ERRORS: Record<string, string> = {
   self: "Tu ne peux pas attaquer ta propre armée.",
   opp: "Cet adversaire ne fait pas partie de ta liste du jour.",
   invalid: "Ce combat est impossible.",
+  // UNVERIFIED: text of ours (an old attack link, replayed after another battle).
+  stale: "Cette attaque n'est plus valable.",
 };
 
 /** Battles a day for these troopers (3, +1 per COMMANDEMENT trooper, max 5). */

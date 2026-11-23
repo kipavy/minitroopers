@@ -94,8 +94,7 @@ test("a faction army is never opened by name: login goes to its recruit page", a
     const res = await cl.req("/login", { form: { login: "Sang-surs" } });
     assert.equal(res.status, 302);
     assert.equal(res.headers.get("location"), mode === "path" ? "/a/sang-surs/" : "http://sang-surs.lvh.me:8080/");
-    const token = cl.cookies.ssid!;
-    assert.equal((env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(token) as { army_id: number | null }).army_id, null);
+    assert.equal(cl.cookies.ssid, undefined); // not logged in: no session at all
   }
 });
 

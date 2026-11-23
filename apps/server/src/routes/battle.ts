@@ -2,11 +2,11 @@ import type { Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { battleReward, dayKey, type ArmyRef } from "@mt/game";
+import { battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { defenderTitle, foeByName, foeOf, type Foe } from "../foes.ts";
-import { armyById, battleById, battleOfDay, dayOpponents, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
+import { armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
@@ -62,10 +62,13 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const used = typeof a.n === "string" && /^[0-9]{1,2}$/.test(a.n) ? Number(a.n) : -1;
     const day = today();
     const byName = a.friend !== undefined;
+    // What this URL targets: replayed after a battle, it may only show the battle it made, never another one's.
+    const oppKey = byName ? (typeof a.friend === "string" ? `friend:${hostOf(a.friend.slice(0, 100))}` : null) : (a.opp ?? null);
     const r = fight(db, {
       armyId: o.army.id,
       day,
       used,
+      opp: oppKey,
       allowance: () => allowanceOf(troopersOf(db, o.army.id).map(trooperInput)),
       decide: () => {
         if (byName) {
@@ -81,7 +84,8 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     if (r.ok) return to(byName ? `/b/fview/${r.id}` : `/b/view/bat${r.n}`);
     if (r.reason === "limit") return to("/hq");
     if (r.reason === "refused") return to(`/b/opp?err=${r.code}`);
-    return to(used >= 0 && used < r.used ? `/b/view/bat${used + 1}` : "/b/opp"); // stale: the battle this URL made
+    // stale: the battle this URL made, if it is the same target; any other old link is no longer valid
+    return to(used >= 0 && used < r.used && oppKey !== null && battleOppOfDay(db, o.army.id, day, used + 1) === oppKey ? `/b/view/bat${used + 1}` : "/b/opp?err=stale");
   }
 
   pages.get("/b/battle", (c) =>

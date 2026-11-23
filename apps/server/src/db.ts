@@ -11,14 +11,23 @@ export function migrate(db: DatabaseSync): string[] {
   const files = readdirSync(MIGRATIONS).filter((f) => /^\d{3}_.+\.sql$/.test(f)).sort();
   for (const f of files) {
     if (done.has(f)) continue;
-    db.exec("BEGIN");
+    // Table rebuilds (create new, copy, drop, rename) need foreign keys OFF, a pragma that is a no-op inside a transaction.
+    const fk = (db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys;
+    if (fk) db.exec("PRAGMA foreign_keys = OFF");
     try {
-      db.exec(readFileSync(new URL(f, MIGRATIONS), "utf8"));
-      db.prepare("INSERT INTO schema_migrations(name, applied_at) VALUES (?, ?)").run(f, Date.now());
-      db.exec("COMMIT");
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
+      db.exec("BEGIN");
+      try {
+        db.exec(readFileSync(new URL(f, MIGRATIONS), "utf8"));
+        const bad = db.prepare("PRAGMA foreign_key_check").all();
+        if (bad.length > 0) throw new Error(`migration ${f} breaks foreign keys: ${JSON.stringify(bad[0])}`);
+        db.prepare("INSERT INTO schema_migrations(name, applied_at) VALUES (?, ?)").run(f, Date.now());
+        db.exec("COMMIT");
+      } catch (e) {
+        db.exec("ROLLBACK");
+        throw e;
+      }
+    } finally {
+      if (fk) db.exec("PRAGMA foreign_keys = ON");
     }
     applied.push(f);
   }

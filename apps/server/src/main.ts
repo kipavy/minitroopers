@@ -15,6 +15,7 @@ try {
   console.error(`Configuration error: ${(e as Error).message}`);
   process.exit(1);
 }
+for (const w of cfg.warnings) console.warn(`Warning: ${w}`);
 const dataDir = resolveDataDir(cfg.dataDir);
 mkdirSync(dataDir, { recursive: true });
 const dbFile = join(dataDir, "minitroopers.db");
@@ -27,6 +28,6 @@ if (fresh) {
 }
 startDailyJob(db);
 const app = createApp({ cfg, db }, mountPages({ cfg, db }));
-serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.host }, (i) => {
-  console.log(`MiniTroopers server on ${cfg.host}:${i.port} (${cfg.urlMode} mode, ${cfg.publicUrl}, data in ${dataDir})`);
+serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.listenHost }, (i) => {
+  console.log(`MiniTroopers server on ${cfg.listenHost}:${i.port} (${cfg.urlMode} mode, ${cfg.publicUrl}, data in ${dataDir})`);
 });

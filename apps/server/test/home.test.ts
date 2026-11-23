@@ -21,7 +21,8 @@ for (const mode of MODES) {
     assert.equal(offerSeeds(html).length, 5);
     assert.match(html, /<form action="\/" method="POST" class="create">/);
     assert.match(html, /<form action="\/login" method="POST">/);
-    assert.ok(cl.cookies.ssid);
+    assert.ok(cl.cookies.cid);
+    assert.equal(cl.cookies.ssid, undefined); // lazy: nothing stored until the visitor becomes someone
     // same client, same day: the same 5 offers
     assert.deepEqual(offerSeeds(await (await cl.req("/")).text()), offerSeeds(html));
     // another client: other offers
@@ -202,7 +203,7 @@ for (const mode of MODES) {
     assert.equal(g.status, 302);
     const expected = mode === "path" ? "/a/warp/hq" : "http://warp.lvh.me:8080/hq";
     assert.equal(g.headers.get("location"), expected);
-    assert.equal(env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(cl.cookies.ssid!)!.army_id, null);
+    assert.equal(cl.cookies.ssid, undefined); // no session for a visitor who is nobody
     const p = await cl.req("/login", { form: { login: "WARP" } });
     assert.equal(p.status, 302);
     assert.equal(p.headers.get("location"), expected);
@@ -226,7 +227,7 @@ for (const mode of MODES) {
     const bad = await cl.req("/login", { form: { login: "warp", pass: "nope" } });
     assert.equal(bad.status, 403);
     assert.match(await bad.text(), /Mot de passe incorrect\./);
-    assert.equal(env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(cl.cookies.ssid!)!.army_id, null);
+    assert.equal(cl.cookies.ssid, undefined); // no session for a visitor who is nobody
     const ok = await cl.req("/login", { form: { login: "warp", pass: "s3cret" } });
     assert.equal(ok.status, 302);
     assert.equal(env.db.prepare("SELECT army_id FROM sessions WHERE token = ?").get(cl.cookies.ssid!)!.army_id, id);

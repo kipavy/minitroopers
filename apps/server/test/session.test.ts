@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { loadConfig } from "../src/config.ts";
 import { openDb } from "../src/db.ts";
 import { createApp, type Env } from "../src/app.ts";
-import { actionKey } from "../src/session.ts";
+import { actionKey, persistSession } from "../src/session.ts";
 
 function setup(env: Record<string, string> = {}) {
   const db = openDb(":memory:");
@@ -12,6 +12,9 @@ function setup(env: Record<string, string> = {}) {
   const app = createApp({ cfg, db }, (pages: Hono<Env>) => {
     pages.get("/key", (c) => c.text(c.get("session").key));
     pages.get("/act", actionKey("chk"), (c) => c.text("done"));
+    pages.get("/persist", (c) => c.text(persistSession(c, c.get("db")).key));
+    pages.get("/persist2", (c) => c.text(persistSession(c, c.get("db")).key === persistSession(c, c.get("db")).key ? "same" : "diff"));
+    pages.get("/persisted", (c) => c.text(String(c.get("session").persisted)));
   });
   return { app, db, cfg };
 }
@@ -26,9 +29,40 @@ const cookies = (res: Response): Record<string, string> => {
   return out;
 };
 
-test("first visit sets ssid (random 128-bit token, not the key) and persistent cid, HttpOnly SameSite=Lax", async () => {
+test("lazy: anonymous visits store nothing and set no ssid, only cid; persistSession creates the row once", async () => {
   const { app, db } = setup();
-  const res = await app.request("/key");
+  let cid: string | undefined;
+  for (let i = 0; i < 50; i++) {
+    const res = await app.request("/persisted", { headers: cid ? { cookie: `cid=${cid}` } : {} });
+    assert.equal(await res.text(), "false");
+    const c = cookies(res);
+    assert.equal(c.ssid, undefined);
+    cid ??= c.cid;
+  }
+  assert.ok(cid);
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 0);
+  const res = await app.request("/persist", { headers: { cookie: `cid=${cid}` } });
+  const key = await res.text();
+  const c = cookies(res);
+  assert.match(c.ssid!, /^[A-Za-z0-9_-]{22}$/);
+  assert.equal(c.cid, undefined); // already held
+  assert.deepEqual({ ...(db.prepare("SELECT key, token, client_id FROM sessions").get() as object) }, { key, token: c.ssid, client_id: cid });
+  const again = await app.request("/persisted", { headers: { cookie: `ssid=${c.ssid}; cid=${cid}` } });
+  assert.equal(await again.text(), "true");
+  assert.equal(again.headers.getSetCookie().length, 0);
+});
+
+test("persistSession is idempotent within a request", async () => {
+  const { app, db } = setup();
+  const res = await app.request("/persist2");
+  assert.equal(await res.text(), "same");
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 1);
+  assert.equal(res.headers.getSetCookie().filter((x) => x.startsWith("ssid=")).length, 1);
+});
+
+test("first persisted visit has ssid (random 128-bit token, not the key) and persistent cid, HttpOnly SameSite=Lax", async () => {
+  const { app, db } = setup();
+  const res = await app.request("/persist");
   const set = res.headers.getSetCookie();
   const c = cookies(res);
   assert.match(c.ssid!, /^[A-Za-z0-9_-]{22}$/);
@@ -47,7 +81,7 @@ test("first visit sets ssid (random 128-bit token, not the key) and persistent c
 
 test("returning visit keeps the session and cid", async () => {
   const { app, db } = setup();
-  const first = await app.request("/key");
+  const first = await app.request("/persist");
   const c = cookies(first);
   const key = await first.text();
   const res = await app.request("/key", { headers: { cookie: `ssid=${c.ssid}; cid=${c.cid}` } });
@@ -58,18 +92,17 @@ test("returning visit keeps the session and cid", async () => {
 
 test("the 6-char key of the action URLs is not a session cookie: ssid=<key> is a stranger", async () => {
   const { app, db } = setup();
-  const first = await app.request("/key");
+  const first = await app.request("/persist");
   const c = cookies(first);
   const key = await first.text();
   db.prepare("INSERT INTO armies(host, name, created_at) VALUES ('nsun', 'nSun', 1)").run();
   db.prepare("UPDATE sessions SET army_id = 1 WHERE key = ?").run(key);
   const res = await app.request(`/act?chk=${key}`, { headers: { cookie: `ssid=${key}; cid=${c.cid}` } });
   assert.equal(res.status, 403);
-  const stolen = cookies(res).ssid;
-  assert.ok(stolen && stolen !== c.ssid, "a fresh session was opened");
-  const row = db.prepare("SELECT key, army_id FROM sessions WHERE token = ?").get(stolen) as { key: string; army_id: number | null };
-  assert.notEqual(row.key, key);
-  assert.equal(row.army_id, null);
+  assert.equal(cookies(res).ssid, undefined, "an anonymous visitor: no session opened");
+  const rows = db.prepare("SELECT key, army_id FROM sessions").all() as { key: string; army_id: number | null }[];
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]!.army_id, 1);
 });
 
 test("cookies are Secure when PUBLIC_URL is https", async () => {
@@ -80,7 +113,7 @@ test("cookies are Secure when PUBLIC_URL is https", async () => {
 
 test("action URL with a wrong or missing key -> 403, right key -> 200", async () => {
   const { app } = setup();
-  const first = await app.request("/key");
+  const first = await app.request("/persist");
   const c = cookies(first);
   const key = await first.text();
   const h = { headers: { cookie: `ssid=${c.ssid}; cid=${c.cid}` } };
@@ -95,12 +128,15 @@ test("action URL with a wrong or missing key -> 403, right key -> 200", async ()
   assert.equal(await ok.text(), "done");
 });
 
-test("an unknown ssid cookie is replaced by a fresh session", async () => {
-  const { app } = setup();
-  const res = await app.request("/key", { headers: { cookie: "ssid=zzzzzz; cid=abcdefghijklmnop" } });
-  const c = cookies(res);
-  assert.notEqual(c.ssid, "zzzzzz");
-  assert.equal(c.cid, undefined); // cid kept
+test("an unknown ssid cookie is an anonymous visitor, replaced by a fresh session when it persists", async () => {
+  const { app, db } = setup();
+  const h = { headers: { cookie: "ssid=zzzzzz; cid=abcdefghijklmnop" } };
+  const anon = cookies(await app.request("/key", h));
+  assert.equal(anon.ssid, undefined);
+  assert.equal(anon.cid, undefined); // cid kept
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 0);
+  const c = cookies(await app.request("/persist", h));
+  assert.match(c.ssid!, /^[A-Za-z0-9_-]{22}$/);
 });
 
 test("path mode exposes the army host param; both mounts work", async () => {
@@ -112,17 +148,19 @@ test("path mode exposes the army host param; both mounts work", async () => {
   assert.equal((await app.request("/a/Bad_Host/who")).status, 404);
 });
 
-test("a 404 under /a/<host>/ sets a single session cookie", async () => {
-  const { app } = setup();
+test("a 404 under /a/<host>/ sets a single cid cookie and no session", async () => {
+  const { app, db } = setup();
   const res = await app.request("/a/nsun/nothing");
   assert.equal(res.status, 404);
-  assert.equal(res.headers.getSetCookie().filter((s) => s.startsWith("ssid=")).length, 1);
+  assert.equal(res.headers.getSetCookie().filter((s) => s.startsWith("cid=")).length, 1);
+  assert.equal(res.headers.getSetCookie().filter((s) => s.startsWith("ssid=")).length, 0);
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM sessions").get() as { n: number }).n, 0);
 });
 
 test("subdomain mode sets Domain=BASE_DOMAIN on both cookies, path mode sets none", async () => {
   const sub = setup({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me" });
-  const set = (await sub.app.request("/key")).headers.getSetCookie();
+  const set = (await sub.app.request("/persist")).headers.getSetCookie();
   assert.equal(set.length, 2);
   for (const s of set) assert.match(s, /Domain=lvh\.me(;|$)/i);
-  for (const s of (await setup().app.request("/key")).headers.getSetCookie()) assert.doesNotMatch(s, /Domain=/i);
+  for (const s of (await setup().app.request("/persist")).headers.getSetCookie()) assert.doesNotMatch(s, /Domain=/i);
 });

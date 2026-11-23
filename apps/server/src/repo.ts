@@ -15,6 +15,8 @@ export interface ArmyRow {
   createdIp: string | null;
   passwordHash: string | null;
   isFaction: boolean;
+  /** Client id (`cid` cookie) of the browser that created the army. */
+  createdCid: string | null;
 }
 
 export interface TrooperRow {
@@ -46,6 +48,7 @@ const armyOf = (r: Raw): ArmyRow => ({
   createdIp: (r.created_ip as string | null) ?? null,
   passwordHash: (r.password_hash as string | null) ?? null,
   isFaction: r.is_faction === 1,
+  createdCid: (r.created_cid as string | null) ?? null,
 });
 
 const trooperOf = (r: Raw): TrooperRow => ({
@@ -98,6 +101,7 @@ export interface NewArmy {
   credits: number;
   recruiterId: number | null;
   createdIp: string;
+  createdCid: string | null;
   now: number;
   /** First trooper (the chosen daily offer). */
   trooper: { seed: number; name: string };
@@ -131,8 +135,8 @@ export function createArmy(db: DatabaseSync, p: NewArmy): CreateResult {
     }
     const id = Number(
       db
-        .prepare("INSERT INTO armies(host, name, part, faction, credits, recruiter_id, created_at, created_ip) VALUES (?,?,?,?,?,?,?,?)")
-        .run(p.host, p.name, p.part, p.faction, p.credits, p.recruiterId, p.now, p.createdIp).lastInsertRowid,
+        .prepare("INSERT INTO armies(host, name, part, faction, credits, recruiter_id, created_at, created_ip, created_cid) VALUES (?,?,?,?,?,?,?,?,?)")
+        .run(p.host, p.name, p.part, p.faction, p.credits, p.recruiterId, p.now, p.createdIp, p.createdCid).lastInsertRowid,
     );
     db.prepare("INSERT INTO troopers(army_id, slot, seed, name) VALUES (?, 0, ?, ?)").run(id, p.trooper.seed, p.trooper.name);
     db.exec("COMMIT");
@@ -376,6 +380,30 @@ export function markSeen(db: DatabaseSync, id: number): boolean {
   return Number(db.prepare("UPDATE battles SET seen = 1 WHERE id = ? AND seen = 0").run(id).changes) === 1;
 }
 
+/** The `opp` an attack was made for, as stored on its battle (null for other kinds). */
+export function battleOppOfDay(db: DatabaseSync, armyId: number, day: string, n: number): string | null {
+  if (!Number.isInteger(n) || n < 1) return null;
+  const r = db.prepare("SELECT opp FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'battle' ORDER BY id LIMIT 1 OFFSET ?").get(armyId, day, n - 1) as { opp: string | null } | undefined;
+  return r?.opp ?? null;
+}
+
+/**
+ * Deletes an army (admin, abuse). Its own battles, troopers, daily rows, sessions and notices go with it (cascades);
+ * battles it defended stay for their attackers with `defender_ref = 'gone:<name>'`; armies it recruited lose their recruiter.
+ * A faction army is never deleted (false), nor an unknown id.
+ */
+export function deleteArmy(db: DatabaseSync, armyId: number): boolean {
+  return (
+    immediate(db, () => {
+      const a = db.prepare("SELECT name, is_faction FROM armies WHERE id = ?").get(armyId) as { name: string; is_faction: number } | undefined;
+      if (!a || a.is_faction === 1) return null;
+      db.prepare("UPDATE battles SET defender_ref = ? WHERE defender_id = ?").run(`gone:${a.name}`, armyId);
+      db.prepare("DELETE FROM armies WHERE id = ?").run(armyId);
+      return true;
+    }) === true
+  );
+}
+
 export interface NewBattle {
   defenderId: number | null;
   defenderRef: string | null;
@@ -399,7 +427,7 @@ export type FightResult =
  */
 export function fight(
   db: DatabaseSync,
-  p: { armyId: number; day: string; used: number; allowance: () => number; decide: () => NewBattle | string },
+  p: { armyId: number; day: string; used: number; opp: string | null; allowance: () => number; decide: () => NewBattle | string },
 ): FightResult {
   let out: FightResult = { ok: false, reason: "limit" };
   immediate(db, () => {
@@ -410,8 +438,8 @@ export function fight(
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const id = Number(
       db
-        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind) VALUES (?, ?, ?, ?, ?, ?, 'battle')")
-        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner).lastInsertRowid,
+        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, opp) VALUES (?, ?, ?, ?, ?, ?, 'battle', ?)")
+        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.opp).lastInsertRowid,
     );
     db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
     db.prepare(

@@ -29,10 +29,15 @@ test("subdomain mode needs a BASE_DOMAIN of two labels or more; PUBLIC_URL defau
   assert.equal(loadConfig({ URL_MODE: "path", PORT: "9000" }).publicUrl, "http://localhost:9000");
 });
 
-test("HOST: listening address, 127.0.0.1 by default", () => {
-  assert.equal(loadConfig({}).host, "127.0.0.1");
-  assert.equal(loadConfig({ HOST: "0.0.0.0" }).host, "0.0.0.0");
-  assert.equal(loadConfig({ HOST: "::1" }).host, "::1");
+test("LISTEN_HOST: listening address, 127.0.0.1 by default; HOST is ignored with a warning", () => {
+  assert.equal(loadConfig({}).listenHost, "127.0.0.1");
+  assert.deepEqual(loadConfig({}).warnings, []);
+  assert.equal(loadConfig({ LISTEN_HOST: "0.0.0.0" }).listenHost, "0.0.0.0");
+  assert.equal(loadConfig({ LISTEN_HOST: "::1" }).listenHost, "::1");
+  const c = loadConfig({ HOST: "pc-killian" });
+  assert.equal(c.listenHost, "127.0.0.1");
+  assert.equal(c.warnings.length, 1);
+  assert.equal(loadConfig({ HOST: "pc-killian", LISTEN_HOST: "0.0.0.0" }).listenHost, "0.0.0.0");
 });
 
 test("strict parsing: TRUST_PROXY, PUBLIC_URL, TZ_GAME, BASE_DOMAIN fail at startup with a clear message", () => {

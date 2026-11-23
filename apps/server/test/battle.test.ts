@@ -20,6 +20,7 @@ function foe(env: Env, host: string, name: string, troopers: { seed: number; nam
     credits: 0,
     recruiterId: null,
     createdIp: "9.9.9.9",
+    createdCid: null,
     now: env.clock.t,
     trooper: troopers[0]!,
     maxPerIp: 999,
@@ -220,10 +221,26 @@ for (const mode of MODES) {
     const input = JSON.parse(rows[0]!.input) as BattleInput;
     assert.ok(input.armies[1].troopers.length >= 1);
     assert.equal(rows[0]!.winner, simulateOutcome(input).winner);
-    // the friend form replayed (same n) does not fight again either
+    // another target replayed with the same n does not fight again either, and is not shown the first battle
     const post = await get(env, cl, "/b/battle", { form: { chk: cl.key!, n: "0", friend: "Warp2" } });
-    assert.equal(post.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(post.headers.get("location"), loc(mode, "/b/opp?err=stale"));
     assert.equal(battles(env, id).length, 1);
+  });
+
+  test(`[${mode}] stale attack link: a link for another opponent after a battle is refused, the same one shows its battle`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
+    const first = await get(env, cl, pathOf(mode, links[0]!.href));
+    assert.equal(first.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal((env.db.prepare("SELECT opp FROM battles WHERE attacker_id = ?").get(id) as { opp: string }).opp, links[0]!.ref);
+    const other = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[1]!.ref)};n=0;chk=${key}`);
+    assert.equal(other.headers.get("location"), loc(mode, "/b/opp?err=stale"));
+    const same = await get(env, cl, pathOf(mode, links[0]!.href));
+    assert.equal(same.headers.get("location"), loc(mode, "/b/view/bat1"));
+    assert.equal(battles(env, id).length, 1);
+    const page = await (await get(env, cl, "/b/opp?err=stale")).text();
+    assert.ok(page.includes("Cette attaque n&#39;est plus valable.") || page.includes("Cette attaque n'est plus valable."));
   });
 
   test(`[${mode}] 3 battles a day: the 4th is refused; wrong key and opponents off the list are refused`, async () => {

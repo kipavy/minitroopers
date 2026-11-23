@@ -83,3 +83,4 @@ porte un commentaire `// UNVERIFIED: <raison>` dans le code et une entrée ici.
 | Graines et choix des PNJ | graines `random(100000)`, choix 0/1 équiprobables, ordre des tirages de notre cru | formes archivées seulement (graines < 100 000, choix 0/1) | `packages/game/src/npc.ts` |
 | Rats du jour | tirés d'un hachage `jour\|armée\|rats\|sel` (mêmes pour les 3 essais) | dérivation serveur inconnue | `packages/game/src/rats.ts` |
 | Constantes `Data` (5, 3, 4, 4, 20, 100) | déblocage 5, 3 essais, mission 4, raid 4, 20 phases, 100 par combat | constantes SWF non nommées | `packages/game/src/economy.ts` |
+| Lien d'attaque périmé | « Cette attaque n'est plus valable. » (`/b/opp?err=stale`) quand une URL d'attaque rejouée visait un autre adversaire que le combat déjà livré | texte jamais capturé | `apps/server/src/routes/opp.ts` |

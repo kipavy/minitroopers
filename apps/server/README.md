@@ -21,7 +21,7 @@ Les données (base SQLite `minitroopers.db`, WAL) vont dans `var/` (gitignoré).
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `PORT` | `8080` | port d'écoute |
-| `HOST` | `127.0.0.1` | adresse d'écoute (`0.0.0.0` pour toutes les interfaces, par exemple dans un conteneur) |
+| `LISTEN_HOST` | `127.0.0.1` | adresse d'écoute (`0.0.0.0` pour toutes les interfaces, par exemple dans un conteneur). `HOST` est ignoré (avertissement au démarrage) : tcsh l'exporte avec le nom de la machine |
 | `URL_MODE` | `path` | `path` : armées sous `/a/<hôte>/hq` ; `subdomain` : `<hôte>.<BASE_DOMAIN>/hq` |
 | `BASE_DOMAIN` | `localhost` | domaine des sous-domaines d'armées (mode `subdomain`, au moins deux labels, **sans port** : le port des URL vient de `PUBLIC_URL`) |
 | `PUBLIC_URL` | `http://localhost:<PORT>` (`http://<BASE_DOMAIN>:<PORT>` en mode `subdomain`) | origine publique `http(s)://…` ; `https://` ⇒ cookies `Secure` |
@@ -34,7 +34,7 @@ Toute valeur invalide (`TRUST_PROXY` autre que `0`/`1`/`true`/`false`, `PUBLIC_U
 
 **`TRUST_PROXY=1` n'est sûr que si le port n'est joignable que par le proxy** (`cloudflared` ou le reverse proxy) :
 le serveur croit alors l'en-tête `CF-Connecting-IP`, que n'importe quel client direct pourrait forger pour
-contourner les limites par IP. Garder `HOST=127.0.0.1` (défaut) avec `cloudflared` sur la même machine, ou
+contourner les limites par IP. Garder `LISTEN_HOST=127.0.0.1` (défaut) avec `cloudflared` sur la même machine, ou
 fermer le port au reste du réseau.
 
 ### Mode sous-domaines en local

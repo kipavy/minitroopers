@@ -231,7 +231,7 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   const env = setup("path");
   const a = armyByHost(env.db, "x");
   assert.equal(a, null);
-  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false };
+  const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null };
   const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false };
   const html = String(hqPage(env.cfg, view));
   assert.ok(html.includes('<div id="notification"><div class="poptop">'));
