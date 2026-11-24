@@ -484,7 +484,7 @@ for (const mode of MODES) {
     const input = JSON.parse(row.input) as BattleInput;
     const total = simulateBattle(input).events.length;
     const page = await (await get(env, cl, "/b/view/bat1")).text();
-    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=2"></script>'));
+    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=3"></script>'));
     assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
     assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=2"/>'));
     const { log, at } = playerVars(page);
@@ -588,7 +588,10 @@ for (const mode of MODES) {
     // 1st view of /b/view/bat1 = the just-fought page ("+N [T]", markSeen), 2nd view = the replay: same tags on both
     const fresh = metaTags(await (await get(env, cl, "/b/view/bat1")).text());
     assert.deepEqual(fresh, expected);
-    assert.deepEqual(metaTags(await (await get(env, cl, "/b/view/bat1")).text()), expected);
+    const replay = await (await get(env, cl, "/b/view/bat1")).text();
+    assert.deepEqual(metaTags(replay), expected);
+    // "Partager" on the attacker's own /b/view/batN copies the public page, the only one others (and crawlers) can open
+    assert.ok(replay.includes(`var mtShare = ${JSON.stringify(url)};`));
     // the public page seen by a stranger (the one crawlers read)
     const stranger = env.client("3.3.3.3");
     const pub = await stranger.req(`/b/fview/${row.id}`, mode === "path" ? {} : { host: "lvh.me:8080" });
