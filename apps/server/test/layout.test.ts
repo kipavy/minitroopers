@@ -125,7 +125,7 @@ test("event banner on Saturday, on the home page and on an army HQ", async () =>
   const p = await pages(SATURDAY);
   for (const page of [p.home, p.hq]) {
     assert.ok(page.includes(BANNER));
-    assert.ok(page.includes("×3 crédits dans tous les combats"));
+    assert.match(page, /×3 <img src="\/img\/token\.png"[^>]*\/> dans tous les combats/);
   }
 });
 
@@ -143,4 +143,22 @@ test("no event banner when WEEKEND_MULTIPLIER=1", async () => {
 test("event banner follows TZ_GAME: Saturday 00:30 in Paris is still Friday in UTC", async () => {
   const p = await pages(Date.parse("2026-11-27T23:30:00Z"));
   assert.ok(p.home.includes(BANNER));
+});
+
+test("event banner placement: top of the right column (HQ, trooper sheet), above the boxes on the home page, coin icon", async () => {
+  const env = setup("path");
+  env.clock.t = SATURDAY;
+  const cl = env.client();
+  const home = await (await cl.req("/", { host: "localhost" })).text();
+  assert.ok(home.indexOf(BANNER) > home.indexOf('<div class="subscribe">'));
+  assert.ok(home.indexOf(BANNER) < home.indexOf('class="create"'));
+  await create(env, cl, "Warp");
+  for (const path of ["/hq", "/t/0"]) {
+    const at = env.at("warp", path);
+    const page = await (await cl.req(at.url, { host: at.host })).text();
+    const right = page.indexOf('<td class="right">');
+    assert.ok(right > 0 && page.indexOf(BANNER) > right, `${path}: banner inside the right column`);
+    assert.equal(page.split(BANNER).length, 2, `${path}: one banner`);
+    assert.match(page, /×3 <img src="\/img\/token\.png"[^>]*\/> dans tous les combats/);
+  }
 });

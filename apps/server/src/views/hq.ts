@@ -5,6 +5,7 @@ import type { ArmyRow, DayBattle, DefenseRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { absoluteArmyUrl, armyTitle, notification } from "./army.ts";
 import { BG, esc, html, jsq, raw, type Html } from "./html.ts";
+import { eventBanner } from "./event.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu, insertPass, menuOf, newChildItem } from "./panel.ts";
@@ -218,7 +219,7 @@ ${left}
 ${historyList(cfg, v)}
 </td>
 <td class="right">
-
+${eventBanner(cfg)}
 ${battleBox(cfg, v)}
 
 ${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}
