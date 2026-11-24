@@ -265,6 +265,7 @@ ofs0081:
       public static var mtStuckOn:Object = null;
       // wall-clock time (ms) of mtInit
       public static var mtInitAt:Number = 0;
+      public static var mtCalls:int = 0;
 
       // --- SWF -> page
       public static function mtOut(param1:String, param2:Array) : void
@@ -301,11 +302,17 @@ ofs0081:
          }
          mtSpd = param1 < 0.125 ? 0.125 : (param1 > 32 ? 32 : param1);
          mtFast = mtSpd >= 8 || mtSeekTo >= 0;
+         mtRate();
+      }
+
+      // stage.frameRate: 40 x speed below x1, except during a seek; 40 otherwise
+      public static function mtRate() : void
+      {
          try
          {
             if(mtGame != null && mtGame.§\x011wD§.stage != null)
             {
-               mtGame.§\x011wD§.stage.frameRate = mtSpd < 1 ? 40 * mtSpd : 40;
+               mtGame.§\x011wD§.stage.frameRate = mtSpd < 1 && mtSeekTo < 0 ? 40 * mtSpd : 40;
             }
          }
          catch(_loc_e_:*)
@@ -313,6 +320,7 @@ ofs0081:
          }
       }
 
+      // calls: frame() calls made for playback (not for seeks); hidden: the Game clip is hidden (seek running)
       public static function mtState() : Object
       {
          return {
@@ -321,12 +329,16 @@ ofs0081:
             "total":mtTotal,
             "speed":mtSpd,
             "paused":mtPaused,
-            "ended":mtEnded
+            "ended":mtEnded,
+            "seeking":mtSeekTo >= 0,
+            "hidden":(mtGame != null && !mtGame.§\x011wD§.visible),
+            "calls":mtCalls
          };
       }
 
       // Forward only (n <= the applied index: nothing; the page reloads the player to go back). The Game clip is
-      // hidden until the applied index reaches n (mtSeekStep); mtProgress is sent then. Ignored while the native
+      // hidden until the applied index reaches n and a jump's scene rebuild is done (mtSeekStep); mtProgress is sent
+      // then. Ignored while the native
       // pause screen is open.
       public static function mtSeek(param1:int) : void
       {
@@ -346,6 +358,7 @@ ofs0081:
          mtSeekJump = true;
          mtFast = true;
          mtGame.§\x011wD§.visible = false;
+         mtRate();
       }
 
       // the stage's pixels, ARGB 720x440, in base64 (Ruffle's WebGL canvas cannot be read reliably by the page)
@@ -432,6 +445,7 @@ ofs0081:
          mtSeekTo = -1;
          mtSeekJump = false;
          mtStuckOn = null;
+         mtCalls = 0;
          while(_loc3_ < _loc2_.length)
          {
             _loc4_ = int(_loc2_[_loc3_]["An%6"][")-Z\x19\x01"]);
@@ -478,6 +492,7 @@ ofs0081:
       public static function mtWaitCheck(param1:§Q\btf§) : void
       {
          var _loc2_:Number = new Date().time - mtInitAt;
+         // mtLast >= 0: mtFrame has run, i.e. the Game reached state 2
          if(param1 != mtGame || mtLast >= 0)
          {
             return;
@@ -526,6 +541,7 @@ ofs0081:
             {
                param1.§k\n/$\x03§();
                _loc3_++;
+               mtCalls++;
                if(getTimer() - _loc4_ >= _loc5_)
                {
                   break;
@@ -544,7 +560,8 @@ ofs0081:
       }
 
       // one player frame of a seek: the checkpoint jump, then frame() calls (fast flag on, Game clip hidden) until
-      // the applied index reaches the target, within the frame's time budget (param2: start, param3: budget)
+      // the target is reached (mtSeekDone), within the frame's time budget (param2: start, param3: budget); the stage
+      // runs at 40 fps meanwhile, whatever the speed
       public static function mtSeekStep(param1:§Q\btf§, param2:int, param3:int) : void
       {
          if(param1.§w\x0b\x01o\x02§ != null)
@@ -557,7 +574,7 @@ ofs0081:
             mtSeekJump = false;
             mtJump(param1,mtSeekTo);
          }
-         while(mtApplied(param1) < mtSeekTo && !mtBlocked(param1))
+         while(!mtSeekDone(param1) && !mtBlocked(param1))
          {
             param1.§k\n/$\x03§();
             if(getTimer() - param2 >= param3)
@@ -565,10 +582,17 @@ ofs0081:
                break;
             }
          }
-         if(mtApplied(param1) >= mtSeekTo || mtBlocked(param1))
+         if(mtSeekDone(param1) || mtBlocked(param1))
          {
             mtSeekEnd(param1);
          }
+      }
+
+      // target reached and no scene rebuild pending (§'A~X§ is set by the jump and cleared when its CheckPoint is
+      // applied): a seek landing on a CheckPoint index ends one entry later rather than show the previous scene
+      public static function mtSeekDone(param1:§Q\btf§) : Boolean
+      {
+         return mtApplied(param1) >= mtSeekTo && !param1.§'A~X§;
       }
 
       public static function mtSeekEnd(param1:§Q\btf§) : void
@@ -578,6 +602,7 @@ ofs0081:
          mtFast = mtSpd >= 8;
          mtAcc = 0;
          param1.§\x011wD§.visible = true;
+         mtRate();
       }
 
       // The Game's checkpoint skip (Space, §KV\t\x16\x03§) generalised to a target index: the queue restarts at the

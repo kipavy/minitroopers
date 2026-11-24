@@ -449,7 +449,9 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   elle n'est pas toujours la dernière ; son application vide la file, donc `idx = total`) ; `mtStuck(idx)` une fois par
   blocage (ci-dessous).
 - Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
-  `mtState()` = `{idx, wave, total, speed, paused, ended}`, `mtSeek(n)`, `mtShot()`.
+  `mtState()` = `{idx, wave, total, speed, paused, ended, seeking, hidden, calls}` (`seeking` : saut en cours,
+  `hidden` : clip du Game masqué, `calls` : appels à `frame()` de lecture, hors sauts — la vitesse effective), `mtSeek(n)`,
+  `mtShot()`.
 - `mtFrame` : en pause aucun appel ; sinon `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
   à-coups compris, consommés par appel), 1 seul si l'écran PAUSE natif est ouvert ; sous ×1, `stage.frameRate = 40 × speed`
   (au-delà, 40). Budget de temps : 10 ms, ou la moitié de l'intervalle entre les deux dernières images si elles sont plus
@@ -463,9 +465,13 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   encore dans la file (`mtJump` : le saut natif Espace `§KV\t\x16\x03§` généralisé à une cible — file tronquée à ce 38,
   étape courante détruite, drapeau de reconstruction `§'A~X§`, horloge = temps du 38 − 1, file d'à-coups `§~Y\x12(\x01§`
   vidée, `ylcZ()` sur chaque animation ; rien si ce 38 est déjà en tête), puis appels à `frame()` répartis sur les images
-  avec le même budget, jusqu'à `idx ≥ n` (au plus une entrée appliquée par tick : on s'arrête exactement sur `n`, sauf
-  `Winner` qui saute à `total`). Alors le clip réapparaît, le drapeau rapide reprend sa valeur (vitesse ≥ 8) et un seul
-  `mtProgress(n, wave)` est envoyé ; aucun `mtProgress` pendant le saut. La lecture reprend à la vitesse et à l'état de
+  avec le même budget, jusqu'à `idx ≥ n` **et** `§'A~X§` retombé (`mtSeekDone` : le 38 du saut a été appliqué et la
+  scène reconstruite). Au plus une entrée est appliquée par tick : on s'arrête exactement sur `n`, sauf `Winner` qui
+  saute à `total`, et sauf un `n` qui est l'index d'un `CheckPoint` : on s'arrête alors à `n + 1`, après la
+  reconstruction, plutôt que de montrer quelques ticks la scène de l'ancienne vague. Alors le clip réapparaît, le
+  drapeau rapide reprend sa valeur (vitesse ≥ 8) et un seul `mtProgress(idx, wave)` est envoyé ; aucun `mtProgress`
+  pendant le saut. Pendant le saut la scène tourne à 40 images/s quelle que soit la vitesse (sinon un saut à ×0,125
+  serait 8 fois plus lent) ; `40 × speed` est rétabli ensuite sous ×1. La lecture reprend à la vitesse et à l'état de
   pause courants. Un blocage pendant le saut l'interrompt.
 - Blocage : `mtStuck(idx)` quand l'étape courante attend depuis plus de ses 500 ticks (compteur hérité
   `§/\x12#\x1c\x02§ ≤ 0`, le délai de débogage du Game lui-même), une fois par étape ; ou quand aucune image de l'état 2
@@ -523,9 +529,9 @@ SHA-256 : avant `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856
 `CLIENT_SWF` passe à `?v=3` pour que les navigateurs reprennent les deux correctifs.
 
 Avec l'API de lecture (tâche « lecteur amélioré ») : pause/vitesse/progression `9049b212…` (`?v=4`) ; avec saut,
-blocage et capture, SHA-256 `1114a61120ab4894ec383eade491443a55307b1c7e464b60f0c7678c687f380b` (deux builds dans
+blocage et capture, SHA-256 `1e54abf53911950cae99bcc819721b4eb7f5842b7c186cdbc9130ff6a50a5b4a` (deux builds dans
 deux dossiers de travail : même SHA-256), `CLIENT_SWF` en `?v=5`. Le `pushbyte 14` du correctif ci-dessus est alors
-à l'octet 302800 du corps décompressé (la classe des helpers a grandi). Les insertions P-code dans le Game sont
+à l'octet 302920 du corps décompressé (la classe des helpers a grandi). Les insertions P-code dans le Game sont
 inchangées (ci-dessous) : tout le nouveau code est dans les helpers.
 
 - Innocuité (`build-play.ps1 -Verify`) : 29 fichiers P-code diffèrent octet à octet sur 290, 4 hors renumérotation

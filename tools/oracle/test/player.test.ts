@@ -109,43 +109,51 @@ for (const id of ["basic/00028.json.gz", "rats/00047.json.gz"]) {
   });
 }
 
-// 87 history entries, one wave (45-170 s at x1 on the emulated Chromium): mtProgress idx strictly increase to total, its wave counts the
-// NewWave entries applied, mtEnd fires once; then the same battle at x32 ends at least 4 times sooner (mtReady -> mtEnd).
+// 87 history entries, one wave. One page: the number of frame() calls (game ticks) made over the same wall-clock window
+// at x1, then at x32, must grow at least 4 times; then x32 plays to the end: mtProgress idx strictly increase to total,
+// its wave counts the NewWave entries applied, mtEnd fires once.
 // Ratio 4, not 32: under the emulated x64 Chromium one frame() costs 3-15 ms and the call budget is time-bound
-// (patch-msg.as mtFrame); a shorter battle is dominated by its first, slow frames.
+// (patch-msg.as mtFrame). Calls, not whole-battle durations, so that page load and the first slow frames do not count.
 const BATTLE = "basic/00028.json.gz";
-test(`x1 then x32 on ${BATTLE}: progress reaches total, mtEnd fires, x32 is at least 4 times faster`, { timeout: 900_000 }, async (t) => {
+const WINDOW_MS = 6000;
+test(`x1 then x32 on ${BATTLE}: x32 makes at least 4 times more frame() calls; progress reaches total, mtEnd fires`, { timeout: 600_000 }, async (t) => {
   if (skip(t)) return;
-  const run = async (speed: number): Promise<{ ms: number; c: Calls; total: number }> => {
-    const p = await open(BATTLE);
-    try {
-      await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
-      if (speed !== 1) await p.call("mtSpeed", speed);
-      const c = await p.waitFor((c) => c.end.length > 0, 400_000, "mtEnd");
-      await p.page.waitForTimeout(300);
-      const after = await p.calls();
-      assert.equal(after.end.length, 1, "mtEnd once");
-      const state = await p.call("mtState");
-      assert.deepEqual(
-        { idx: state.idx, total: state.total, ended: state.ended, paused: state.paused, speed: state.speed },
-        { idx: p.t.record.events.length, total: p.t.record.events.length, ended: true, paused: false, speed },
-      );
-      assert.deepEqual(p.errors, []);
-      return { ms: c.end[0]! - c.readyAt, c: after, total: p.t.record.events.length };
-    } finally {
-      await p.close();
-    }
-  };
-  const x1 = await run(1);
-  const idx = x1.c.progress.map(([i]) => i);
-  for (let i = 1; i < idx.length; i++) assert.ok(idx[i]! > idx[i - 1]!, `mtProgress idx increasing: ${idx.join(",")}`);
-  assert.equal(idx.at(-1), x1.total);
-  const waves = indicesOf(golden(BATTLE), 39);
-  for (const [i, w] of x1.c.progress) assert.equal(w, waves.filter((k) => k < i).length, `wave at idx ${i}`);
-  assert.equal(x1.c.progress.at(-1)![1], waves.length);
-  const x32 = await run(32);
-  t.diagnostic(`x1 ${Math.round(x1.ms)} ms, x32 ${Math.round(x32.ms)} ms (ratio ${(x1.ms / x32.ms).toFixed(1)})`);
-  assert.ok(x32.ms < x1.ms / 4, `x32 ${Math.round(x32.ms)} ms vs x1 ${Math.round(x1.ms)} ms`);
+  const p = await open(BATTLE);
+  try {
+    const total = p.t.record.events.length;
+    await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+    await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+    const rate = async (): Promise<{ calls: number; idx: number }> => {
+      const a = await p.call("mtState");
+      await p.page.waitForTimeout(WINDOW_MS);
+      const b = await p.call("mtState");
+      return { calls: b.calls - a.calls, idx: b.idx - a.idx };
+    };
+    const x1 = await rate();
+    await p.call("mtSpeed", 32);
+    const x32 = await rate();
+    t.diagnostic(`over ${WINDOW_MS} ms: x1 ${x1.calls} calls (+${x1.idx} idx), x32 ${x32.calls} calls (+${x32.idx} idx), ratio ${(x32.calls / x1.calls).toFixed(1)}`);
+    assert.ok(x1.calls > 0, "x1 makes progress");
+    assert.ok(x32.calls >= 4 * x1.calls, `x32 ${x32.calls} calls vs x1 ${x1.calls}`);
+    await p.waitFor((c) => c.end.length > 0, 400_000, "mtEnd");
+    await p.page.waitForTimeout(300);
+    const c = await p.calls();
+    assert.equal(c.end.length, 1, "mtEnd once");
+    const idx = c.progress.map(([i]) => i);
+    for (let i = 1; i < idx.length; i++) assert.ok(idx[i]! > idx[i - 1]!, `mtProgress idx increasing: ${idx.join(",")}`);
+    assert.equal(idx.at(-1), total);
+    const waves = indicesOf(p.t, 39);
+    for (const [i, w] of c.progress) assert.equal(w, waves.filter((k) => k < i).length, `wave at idx ${i}`);
+    assert.equal(c.progress.at(-1)![1], waves.length);
+    const state = await p.call("mtState");
+    assert.deepEqual(
+      { idx: state.idx, total: state.total, ended: state.ended, paused: state.paused, speed: state.speed },
+      { idx: total, total, ended: true, paused: false, speed: 32 },
+    );
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
 });
 
 test("mtPause freezes the applied index, mtResume restarts it; mtSpeed is clamped", { timeout: 180_000 }, async (t) => {
@@ -176,7 +184,7 @@ test("mtPause freezes the applied index, mtResume restarts it; mtSpeed is clampe
 
 // 83 entries, two waves (NewWave at 35 and 52), checkpoints at 6, 38, 55 and 78; Winner (81) is not the last entry.
 const SEEK = "regression/modes-fr_b_view_miss2.json.gz";
-test(`mtSeek on ${SEEK}: lands exactly on the target and plays on; backward is ignored; mtSeek(total) ends`, { timeout: 300_000 }, async (t) => {
+test(`mtSeek on ${SEEK}: lands exactly on the target (after the rebuild on a CheckPoint) and plays on; backward is ignored; mtSeek(total) ends`, { timeout: 300_000 }, async (t) => {
   if (skip(t)) return;
   const p = await open(SEEK);
   try {
@@ -186,22 +194,47 @@ test(`mtSeek on ${SEEK}: lands exactly on the target and plays on; backward is i
     const waveAt = (i: number): number => waves.filter((k) => k < i).length;
     await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
     await p.call("mtSpeed", 2);
+    /** mtSeek(n), then mtState in the same JS turn. */
+    const seekState = (n: number): Promise<any> =>
+      p.page.evaluate((x) => {
+        const el = (globalThis as any).document.getElementById("battle");
+        el.mtSeek(x);
+        return el.mtState();
+      }, n);
+    // mtSeek(n) (n not a CheckPoint index): the first mtProgress after it is n, the Game clip is shown again, playback goes on
     const seekTo = async (n: number): Promise<void> => {
       const mark = await p.callMarked("mtSeek", n);
       const c = await p.waitFor((c) => c.progress.length > mark, 60_000, `mtProgress after mtSeek(${n})`);
       assert.deepEqual(c.progress[mark]!.slice(0, 2), [n, waveAt(n)], `first mtProgress after mtSeek(${n})`);
+      const s = await p.call("mtState");
+      assert.deepEqual({ seeking: s.seeking, hidden: s.hidden }, { seeking: false, hidden: false }, `clip shown after mtSeek(${n})`);
       await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) > n, 60_000, `playback goes on after ${n}`);
-      assert.equal((await p.call("mtState")).speed, 2, "speed kept");
     };
     // middle of the first wave: jump to the checkpoint at 6, then fast-forward
     await seekTo(20);
-    // backward: no effect (the page reloads the player instead)
+    assert.equal((await p.call("mtState")).speed, 2, "speed kept");
+    // backward: no effect (the page reloads the player instead); the clip is never hidden
     await p.call("mtPause");
     const s0 = await p.call("mtState");
-    const mark = await p.callMarked("mtSeek", 10);
+    const mark = (await p.calls()).progress.length;
+    const sb = await seekState(10);
+    assert.deepEqual({ seeking: sb.seeking, hidden: sb.hidden, idx: sb.idx }, { seeking: false, hidden: false, idx: s0.idx }, "backward mtSeek ignored");
     await p.page.waitForTimeout(800);
     assert.equal((await p.call("mtState")).idx, s0.idx, "idx unchanged by a backward mtSeek");
     assert.equal((await p.calls()).progress.length, mark, "no mtProgress after a backward mtSeek");
+    // a forward seek hides the clip at once, even while paused
+    const checkpoint = indicesOf(p.t, 38).find((k) => k > s0.idx + 1)!;
+    await p.call("mtSpeed", 0.125);
+    const t0 = Date.now();
+    const sf = await seekState(checkpoint);
+    assert.deepEqual({ seeking: sf.seeking, hidden: sf.hidden }, { seeking: true, hidden: true }, "forward mtSeek running");
+    // on a CheckPoint index: the seek goes on until that CheckPoint has rebuilt the scene (one entry later), at 40 fps at x0.125
+    await p.waitFor((c) => c.progress.length > mark, 60_000, `mtProgress after mtSeek(${checkpoint})`);
+    t.diagnostic(`mtSeek(${checkpoint}) at x0.125, paused: ${Date.now() - t0} ms`);
+    assert.deepEqual((await p.calls()).progress[mark]!.slice(0, 2), [checkpoint + 1, waveAt(checkpoint + 1)], "landing after the CheckPoint");
+    const sc = await p.call("mtState");
+    assert.deepEqual({ seeking: sc.seeking, hidden: sc.hidden, speed: sc.speed }, { seeking: false, hidden: false, speed: 0.125 });
+    await p.call("mtSpeed", 2);
     await p.call("mtResume");
     // first entry of the next wave (its NewWave): jump to the checkpoint at 38, then fast-forward
     await seekTo(waves[1]!);
