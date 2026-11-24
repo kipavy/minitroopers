@@ -127,11 +127,11 @@ garde le lecteur d'origine. Détails : [conception](docs/superpowers/specs/2026-
 
 ### Aperçus de liens
 
-Un lien de combat collé dans Discord, WhatsApp, etc. s'affiche avec un aperçu (balises Open Graph et Twitter) :
-titre « Revoir : L'armée de X VS L'armée de Y » (ou « — Mission … », « — Raid, phase N »), date et vainqueur
-du combat, et une image fixe (`apps/server/public/img/og-battle.jpg`, générée par
-`apps/server/scripts/gen-og-image.mjs` à partir des images du jeu). Seule la page publique `/b/fview/<id>`
-est lisible par les robots d'aperçu : les autres pages de combat sont réservées à leur armée.
+Le lien public d'un combat quotidien (`/b/fview/<id>`, celui de `/history`) collé dans Discord, WhatsApp, etc.
+s'affiche avec un aperçu (balises Open Graph et Twitter) : titre « Revoir : L'armée de X VS L'armée de Y », date
+et vainqueur du combat, et une image fixe (`apps/server/public/img/og-battle.jpg`, générée par
+`apps/server/scripts/gen-og-image.mjs` à partir des images du jeu). Les missions et les raids n'ont pas de page
+publique, donc pas d'aperçu.
 
 ### Règles non vérifiables
 

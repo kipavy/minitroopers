@@ -409,35 +409,3 @@ for (const mode of MODES) {
     assert.equal(u.status, 302);
   });
 }
-
-/** og: tags of a page (values HTML-escaped). */
-const ogTags = (page: string): Record<string, string> =>
-  Object.fromEntries([...page.matchAll(/<meta property="(og:[^"]+)" content="([^"]*)"\/>/g)].map((m) => [m[1]!, m[2]!]));
-
-for (const mode of MODES) {
-  test(`[${mode}] link previews of mission tries: mission title, outcome, absolute URL of the try`, async () => {
-    const env = setup(mode);
-    const { cl, key, id } = await warp(env);
-    const abs = (path: string): string => (mode === "path" ? env.cfg.publicUrl : "") + loc(mode, path);
-    env.db.prepare("UPDATE armies SET rats = 6 WHERE id = ?").run(id);
-    prepare(env, id, "exterminate");
-    await get(env, cl, `/b/mission?n=0;chk=${key}`);
-    assert.ok(!won(missions(env, id)[0]!));
-    const t = ogTags(await (await get(env, cl, "/b/view/miss1")).text());
-    assert.equal(t["og:title"], "Revoir : L&#39;armée de Warp — Mission Extermination");
-    assert.equal(t["og:description"], "Combat MiniTroopers du 23/11/2026. Défaite de L&#39;armée de Warp.");
-    assert.equal(t["og:url"], abs(`/b/view/miss1?d=${today(env)}`));
-    assert.equal(t["og:image"], `${env.cfg.publicUrl}/img/og-battle.jpg`);
-
-    const env2 = setup(mode);
-    const w = await warp(env2);
-    army(env2, "alpha", strong);
-    prepare(env2, w.id, "infiltrate");
-    const at = env2.at("warp", `/b/mission?n=0;chk=${w.key}`);
-    await w.cl.req(at.url, { host: at.host });
-    const v = env2.at("warp", "/b/view/miss1");
-    const t2 = ogTags(await (await w.cl.req(v.url, { host: v.host })).text());
-    assert.equal(t2["og:title"], "Revoir : L&#39;armée de Warp — Mission Infiltration");
-    assert.equal(t2["og:description"], "Combat MiniTroopers du 23/11/2026. Victoire de L&#39;armée de alpha.");
-  });
-}

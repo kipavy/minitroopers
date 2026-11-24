@@ -33,29 +33,21 @@ export interface BattleView {
   at: number | null;
   /** Army and trooper names of input sides 0 and 1 (the log colours them by side). */
   sides: readonly [readonly string[], readonly string[]];
-  /** Link preview tags (battleOg). */
-  og: OgMeta;
+  /**
+   * Link preview tags (battleOg): daily battles only, whose public page `/b/fview/<id>` crawlers can read. Missions and
+   * raids have no public replay (owner-only pages), so no preview.
+   */
+  og?: OgMeta;
 }
 
-/** Name of each mission type in a link preview title. */
-const MISSION_OG: Record<string, string> = { exterminate: "Mission Extermination", infiltrate: "Mission Infiltration", epic: "Mission Épique" };
-
 /**
- * Link preview of a stored battle (Discord, WhatsApp…): "Revoir : <attacker> VS <defender>" (daily battles), "Revoir :
- * <attacker> — Mission …" / "— Raid, phase N"; "Combat MiniTroopers du DD/MM/AAAA." and the stored outcome; the fixed
- * image public/img/og-battle.jpg. `url`: canonical link of the replay (made absolute here).
+ * Link preview of a daily battle (Discord, WhatsApp…): "Revoir : <attacker> VS <defender>", "Combat MiniTroopers du
+ * DD/MM/AAAA." and the stored outcome, the fixed image public/img/og-battle.jpg. `url`: canonical public link of the
+ * replay (made absolute here).
  */
-export function battleOg(cfg: Config, b: BattleRow, attacker: string, defender: string, url: string): OgMeta {
-  const title =
-    b.kind === "raid"
-      ? `Revoir : ${attacker} — Raid${b.phase !== null ? `, phase ${b.phase}` : ""}`
-      : b.kind === "mission"
-        ? `Revoir : ${attacker} — ${MISSION_OG[b.mode ?? ""] ?? "Mission"}`
-        : `Revoir : ${attacker} VS ${defender}`;
-  // The opponent is named only when it is an army (daily battles, infiltration); rats, NPC armies: "Défaite de …".
-  const named = (b.kind === "battle" || b.mode === "infiltrate") && defender !== "";
-  const outcome =
-    b.winner === null ? "Match nul." : b.winner === b.input.attackerSide ? `Victoire de ${attacker}.` : named ? `Victoire de ${defender}.` : `Défaite de ${attacker}.`;
+export function battleOg(cfg: Config, b: Pick<BattleRow, "day" | "winner" | "input">, attacker: string, defender: string, url: string): OgMeta {
+  const title = `Revoir : ${attacker} VS ${defender}`;
+  const outcome = b.winner === null ? "Match nul." : `Victoire de ${b.winner === b.input.attackerSide ? attacker : defender}.`;
   const [y, m, d] = b.day.split("-");
   return {
     title,
@@ -106,5 +98,5 @@ var mtSides = ${raw(jsJson(v.sides))};
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"], og: v.og });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"], ...(v.og ? { og: v.og } : {}) });
 }

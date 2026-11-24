@@ -8,7 +8,7 @@ import { armyById, dayOver, fightRaid, lastRaidOfDay, markSeen, type NewModeBatt
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
-import { battleOg, battlePage } from "../views/battle.ts";
+import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
 import { playerData } from "./battle.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
@@ -100,7 +100,6 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
       endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${RAID_REWARD}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
-      og: battleOg(cfg, b, armyTitle(o.army.name, o.army.part), "", armyUrl(cfg, o.army.host, `/b/view/raid?d=${b.day}`)),
     };
     return c.html(String(battlePage(cfg, view)));
   });

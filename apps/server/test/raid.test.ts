@@ -362,28 +362,3 @@ test("HQ raid box: won out (20 phases) and protected views", async () => {
   const locked = String(hqPage(env.cfg, { ...base, locked: true, raid: { phase: 2, step: 2, alive: 2, over: false, lastWin: false, key: "" } }));
   assert.ok(locked.includes(`<h1 class="hbox">Raid Phase 2</h1>\n<div class="box2bottom"><div class="action bcount1"></div></div></div></div>`));
 });
-
-/** og: tags of a page (values HTML-escaped). */
-const ogTags = (page: string): Record<string, string> =>
-  Object.fromEntries([...page.matchAll(/<meta property="(og:[^"]+)" content="([^"]*)"\/>/g)].map((m) => [m[1]!, m[2]!]));
-
-for (const mode of MODES) {
-  test(`[${mode}] link previews of raids: "Raid, phase N", outcome, absolute URL of the raid page`, async () => {
-    const env = setup(mode, {}, { battleSeed: () => 4242 });
-    const { cl, key, id } = await warp(env);
-    recruit(env, id, "hero", STRONG, 1_000_000);
-    recruit(env, id, "hera", STRONG, 1_007_919);
-    await get(env, cl, `/b/raid?phase=1;chk=${key}`);
-    await get(env, cl, `/b/raid?phase=2;chk=${key}`);
-    const rows = raids(env, id);
-    assert.equal(rows.length, 2);
-    const t = ogTags(await (await get(env, cl, "/b/view/raid")).text());
-    assert.equal(t["og:title"], "Revoir : L&#39;armée de Warp — Raid, phase 2");
-    assert.equal(
-      t["og:description"],
-      `Combat MiniTroopers du 23/11/2026. ${won(rows[1]!) ? "Victoire" : "Défaite"} de L&#39;armée de Warp.`,
-    );
-    assert.equal(t["og:url"], (mode === "path" ? env.cfg.publicUrl : "") + loc(mode, `/b/view/raid?d=${today(env)}`));
-    assert.equal(t["og:image"], `${env.cfg.publicUrl}/img/og-battle.jpg`);
-  });
-}
