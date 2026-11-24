@@ -4,6 +4,15 @@ import type { BattleInput } from "@mt/engine";
 import { openDb } from "../src/db.ts";
 import { TRAININGS_KEPT, armyByHost, createArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
 import { create, setup, type Client, type Env } from "./helpers.ts";
+import { decodeBattleFlashvars } from "./hxdecode.ts";
+
+/** endMsg and attackerSide of the battle embed of a page. */
+function embedOf(page: string): { endMsg: string; attackerSide: number } {
+  const part = page.split('<div id="swf_battle" class="swf"></div>')[1]!;
+  const fv = JSON.parse(/flashvars : ("(?:[^"\\]|\\.)*")/.exec(part)![1]!) as string;
+  const d = decodeBattleFlashvars(fv);
+  return { endMsg: d.vars.endMsg as string, attackerSide: d.input.attackerSide };
+}
 
 /** Two bare armies (A, B) in a fresh database. */
 function db2() {
@@ -132,4 +141,36 @@ test("/b/tview/<id> is public; after 11 trainings the oldest one answers 404; /b
   const page = await (await get(env, cl, "/b/train")).text();
   assert.equal([...page.matchAll(/href="[^"]*\/b\/tview\/(\d+)"/g)].length, 10);
   assert.ok(page.includes(`/b/tview/${ids[10]}"`) && !page.includes(`/b/tview/${ids[0]}"`));
+});
+
+test("a generated opponent far beyond the drawable power is refused (err=missing), nothing stored", async () => {
+  const { env, cl, key } = await world();
+  for (const opp of ["filler:10000000:1", "filler:999:1"]) {
+    const res = await get(env, cl, `/b/train/fight?opp=${opp};chk=${key}`);
+    assert.match(res.headers.get("location")!, /\/b\/train\?err=missing$/, opp);
+  }
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 0);
+});
+
+test("own army, malformed or nonexistent opp are refused, nothing stored", async () => {
+  const { env, cl, key, id } = await world();
+  assert.match((await get(env, cl, `/b/train/fight?opp=${id};chk=${key}`)).headers.get("location")!, /err=self$/);
+  for (const opp of ["abc", "999999"]) assert.match((await get(env, cl, `/b/train/fight?opp=${opp};chk=${key}`)).headers.get("location")!, /err=missing$/, opp);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 0);
+});
+
+test("the defender opening a shared training sees it from its own side", async () => {
+  const { env, cl, key } = await world();
+  // the defender is a real army with a session: Foe2 created through a client
+  const other = env.client("7.7.7.7");
+  assert.equal((await create(env, other, "Foe2", { part: "0" })).status, 302);
+  const res = await get(env, cl, "/b/train/fight", { method: "POST", form: { chk: key, friend: "Foe2" } });
+  const tid = /(\d+)$/.exec(res.headers.get("location")!)![1]!;
+  const t = trainingById(env.db, Number(tid))!;
+  const attackerWon = t.winner !== null && t.winner === t.input.attackerSide;
+  const seen = embedOf(await (await other.req(`/a/foe2/b/tview/${tid}`, { host: "localhost" })).text());
+  assert.equal(seen.endMsg, attackerWon ? "Ce combat s'est soldé par un échec !" : "Tu as remporté ce combat !");
+  assert.equal(seen.attackerSide, 1 - t.input.attackerSide);
+  const mine = embedOf(await (await get(env, cl, `/b/tview/${tid}`)).text());
+  assert.equal(mine.endMsg, attackerWon ? "Tu as remporté ce combat !" : "Ce combat s'est soldé par un échec !");
 });

@@ -1,7 +1,7 @@
 import type { Context, Hono } from "hono";
 import { randomBytes, randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { pickTrainingOpponents } from "@mt/game";
+import { parseFillerId, pickTrainingOpponents } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
@@ -68,12 +68,23 @@ export function registerTrain(pages: Hono<Env>, deps: Deps): void {
     }
   }
 
+  /**
+   * An opponent id sent back by the training page: a stored or faction army, or a generated army whose power the draw
+   * could have produced (fillers within ±20 % of the own power; here up to double max(power, 10)). Any other filler id is
+   * refused: its power is free in the URL, and a huge one would make a huge army (seconds of simulation, a huge row).
+   */
+  function drawable(ref: string, power: number): Foe | null {
+    const fill = parseFillerId(ref);
+    if (fill && fill.power > 2 * Math.max(power, 10)) return null;
+    return foeOf(db, ref);
+  }
+
   function train(c: Context<Env>, a: { chk: unknown; opp: string | undefined; friend: unknown }, status: 302 | 303): Response {
     const o = ownedArmy(deps, c);
     if (o instanceof Response) return o;
     const to = (path: string): Response => c.redirect(armyUrl(cfg, o.army.host, path), status);
     if (!isSessionKey(c, a.chk)) return to("/b/train");
-    const foe = a.friend !== undefined ? foeByName(db, a.friend) : a.opp !== undefined ? foeOf(db, a.opp) : null;
+    const foe = a.friend !== undefined ? foeByName(db, a.friend) : a.opp !== undefined ? drawable(a.opp, o.power) : null;
     const r = resolve(o.army, foe);
     if (typeof r === "string") return to(`/b/train?err=${r}`);
     const id = insertTraining(db, { attackerId: o.army.id, defenderId: r.foe.defenderId, defenderRef: r.foe.defenderRef, input: r.input, winner: r.winner, now: now() });
@@ -99,7 +110,10 @@ export function registerTrain(pages: Hono<Env>, deps: Deps): void {
     const host = c.get("armyHost") ?? (own === null ? null : (armyById(db, own)?.host ?? null));
     const mine = attacker !== null && own === attacker.id;
     const back = mine ? armyUrl(cfg, attacker.host, "/b/train") : host !== null ? armyUrl(cfg, host, "/hq") : "/";
-    const won = t.winner !== null && t.winner === t.input.attackerSide;
+    // Like /b/fview: the defender sees the replay from its own side, with its own result.
+    const viewerDefends = own !== null && own === t.defenderId;
+    const attackerWon = t.winner !== null && t.winner === t.input.attackerSide;
+    const won = viewerDefends ? t.winner !== null && !attackerWon : attackerWon;
     const endMsg = won ? "Tu as remporté ce combat !" : "Ce combat s'est soldé par un échec !";
     const view = {
       host,
@@ -108,7 +122,7 @@ export function registerTrain(pages: Hono<Env>, deps: Deps): void {
       defender,
       heading: `Entraînement : ${attackerTitle} VS ${defender}`,
       ...playerData(c, b, attackerTitle, defender),
-      flashvars: clientParams(battleData(t.input, ARMY_SWF), { endMsg }),
+      flashvars: clientParams(battleData(viewerDefends ? { ...t.input, attackerSide: 1 - t.input.attackerSide } : t.input, ARMY_SWF), { endMsg }),
       endUrl: back,
       back,
       battleId: `t${t.id}`,
