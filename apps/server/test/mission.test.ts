@@ -409,3 +409,30 @@ for (const mode of MODES) {
     assert.equal(u.status, 302);
   });
 }
+
+test("mission won on a weekend day pays ×3: +12, message and money animation", async () => {
+  const env = setup("path");
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, key, id } = await warp(env);
+  setTroopers(env, id, strong);
+  prepare(env, id, "exterminate");
+  await get(env, cl, `/b/mission?n=0;chk=${key}`);
+  assert.ok(won(missions(env, id)[0]!));
+  assert.equal(credits(env, id), 112);
+  const page = await (await get(env, cl, "/b/view/miss1")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, "Tu as remporté la mission du jour ! Ton armée gagne +12 [T]");
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));
+});
+
+test("mission lost on a weekend day still pays nothing and goes back to /hq", async () => {
+  const env = setup("path");
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, key, id } = await warp(env);
+  env.db.prepare("UPDATE armies SET rats = 6 WHERE id = ?").run(id);
+  prepare(env, id, "exterminate");
+  await get(env, cl, `/b/mission?n=0;chk=${key}`);
+  assert.ok(!won(missions(env, id)[0]!));
+  assert.equal(credits(env, id), 100);
+  const page = await (await get(env, cl, "/b/view/miss1")).text();
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq"))};`));
+});

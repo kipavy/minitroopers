@@ -17,9 +17,10 @@ export function skillIconStyle(skill: number): string {
  * scripts/gen-tips.mjs and checked against the archived pages); `{name}` stands for the trooper's name, escaped
  * here. A skill missing from the file falls back to its French name alone.
  */
-export function skillTip(skill: number, trooperName: string): Html {
+export function skillTip(skill: number, trooperName: string, owned = true): Html {
   const t = TIPS[String(skill)];
-  if (!t) return tip(Data.skillRow(skill).name, "");
+  const locked = owned ? "" : `<div class="locked">Pas encore acquise</div>`;
+  if (!t) return tip(Data.skillRow(skill).name, raw(locked));
   const body = t.body.replaceAll("{name}", esc(trooperName));
-  return tip(t.title, raw(`<div class="s">${body}</div>`));
+  return tip(t.title, raw(`${locked}<div class="s">${body}</div>`));
 }

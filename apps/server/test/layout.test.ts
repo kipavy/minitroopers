@@ -6,6 +6,7 @@ import { openDb } from "../src/db.ts";
 import { createApp } from "../src/app.ts";
 import { html, jsq, raw, esc } from "../src/views/html.ts";
 import { layout, tip } from "../src/views/layout.ts";
+import { create, setup } from "./helpers.ts";
 
 // sha256 of the original stylesheet (recon/assets/extra/site-elements/css/style.css of the work tree, not in the repository).
 const ORIGINAL_STYLE_SHA256 = "3ca21ce00d609ec2b18ca52ac9a289124151965fea9c7b79b9446d9165a697ac";
@@ -31,6 +32,7 @@ test("layout keeps the original frame and wires local assets", () => {
   const out = String(layout(cfg, { title: "MiniTroopers", content: html`<p>hi</p>`, host: "nsun", pass: true }));
   for (const cls of ["ptop", "bottomsite", "ptopsite", 'id="content"', "dbottom", 'class="copy"', "pbottomleft", 'class="dbg"', "indust"]) assert.ok(out.includes(cls), cls);
   assert.ok(out.includes('href="/css/style.css'));
+  assert.ok(out.indexOf('href="/css/extras.css') > out.indexOf('href="/css/style.css'), "extras.css after style.css");
   assert.ok(out.includes('src="/js/jquery.min.js"'));
   assert.ok(out.includes('src="/ruffle/ruffle.js"'));
   assert.ok(out.includes('src="/js/embed.js"'));
@@ -82,6 +84,7 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
   for (const [p, type] of [
     ["/img/bg/garden.jpg", /image\/jpeg/],
     ["/img/skills.png", /image\/png/],
+    ["/css/extras.css", /text\/css/],
     ["/swf/client_fr_play.swf", /shockwave/],
     ["/swf/mini.swf", /shockwave/],
     ["/swf/army.swf", /shockwave/],
@@ -103,4 +106,42 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
 test("jsq: JS-escapes \\ ' and line breaks, then HTML-escapes &<>\" (safe in onmouseover=\"…('…')\")", () => {
   assert.equal(jsq("s'est").value, "s\\'est");
   assert.equal(jsq('a\\b\n<i>"&').value, "a\\\\b\\n&lt;i&gt;&quot;&amp;");
+});
+
+const SATURDAY = Date.parse("2026-11-28T10:00:00Z");
+const BANNER = 'class="event-banner"';
+/** Home page, trooper sheet and HQ of a fresh army at clock `t`. */
+async function pages(t: number, extra: Record<string, string> = {}): Promise<{ home: string; sheet: string; hq: string }> {
+  const env = setup("path", extra);
+  env.clock.t = t;
+  const cl = env.client();
+  const home = await (await cl.req("/", { host: "localhost" })).text();
+  await create(env, cl, "Warp");
+  const page = async (path: string): Promise<string> => {
+    const at = env.at("warp", path);
+    return (await cl.req(at.url, { host: at.host })).text();
+  };
+  return { home, sheet: await page("/t/0"), hq: await page("/hq") };
+}
+
+test("event banner on Saturday: on the HQ only, top of its right column, with the coin icon", async () => {
+  const p = await pages(SATURDAY);
+  const right = p.hq.indexOf('<td class="right">');
+  assert.ok(right > 0 && p.hq.indexOf(BANNER) > right, "inside the right column");
+  assert.equal(p.hq.split(BANNER).length, 2, "one banner");
+  assert.match(p.hq, /×3 <img src="\/img\/token\.png"[^>]*\/> dans tous les combats/);
+  assert.ok(!p.home.includes(BANNER), "not on the home page");
+  assert.ok(!p.sheet.includes(BANNER), "not on the trooper sheet");
+});
+
+test("no event banner on Monday", async () => {
+  assert.ok(!(await pages(Date.parse("2026-11-23T10:00:00Z"))).hq.includes(BANNER));
+});
+
+test("no event banner when WEEKEND_MULTIPLIER=1", async () => {
+  assert.ok(!(await pages(SATURDAY, { WEEKEND_MULTIPLIER: "1" })).hq.includes(BANNER));
+});
+
+test("event banner follows TZ_GAME: Saturday 00:30 in Paris is still Friday in UTC", async () => {
+  assert.ok((await pages(Date.parse("2026-11-27T23:30:00Z"))).hq.includes(BANNER));
 });

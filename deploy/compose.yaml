@@ -1,6 +1,6 @@
 # Docker Compose behind Cloudflare Tunnel (see deploy/README.md). Variables come from deploy/.env (never committed):
 #   PUBLIC_URL=https://minitroopers.example.org   URL_MODE=path|subdomain   BASE_DOMAIN=example.org
-#   TZ_GAME=Europe/Paris   CF_NETWORK=<docker network shared with the cloudflared container>
+#   TZ_GAME=Europe/Paris   WEEKEND_MULTIPLIER=3   CF_NETWORK=<docker network shared with the cloudflared container>
 # No published port: only cloudflared reaches the server, which is what makes TRUST_PROXY=1 safe.
 services:
   minitroopers:
@@ -16,6 +16,7 @@ services:
       URL_MODE: ${URL_MODE:-path}
       BASE_DOMAIN: ${BASE_DOMAIN:-localhost}
       TZ_GAME: ${TZ_GAME:-Europe/Paris}
+      WEEKEND_MULTIPLIER: ${WEEKEND_MULTIPLIER:-3}
     networks:
       - tunnel
 

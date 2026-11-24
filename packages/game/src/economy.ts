@@ -50,3 +50,15 @@ export const EPIC_NPC_MAX = 100;
  */
 export const RATS_MAX = 100;
 export const NPC_SEED_MAX = 100_000;
+
+/** True when the game day `day` ("YYYY-MM-DD") is a Saturday or a Sunday. */
+export function isWeekend(day: string): boolean {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return wd === 0 || wd === 6;
+}
+
+/** Credits multiplier of a reward won on game day `day`: `weekend` on Saturdays and Sundays, 1 otherwise. */
+export function rewardMultiplier(day: string, weekend: number): number {
+  return isWeekend(day) ? weekend : 1;
+}

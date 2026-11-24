@@ -50,6 +50,10 @@ test("strict parsing: TRUST_PROXY, PUBLIC_URL, TZ_GAME, BASE_DOMAIN fail at star
   assert.equal(loadConfig({ PUBLIC_URL: "https://x.example/" }).publicUrl, "https://x.example");
   assert.equal(loadConfig({ TZ_GAME: "America/New_York" }).tzGame, "America/New_York");
   for (const v of ["Mars/Olympus", "", "Europe/Pariss"]) assert.throws(() => loadConfig({ TZ_GAME: v }), /TZ_GAME/, v);
+  assert.equal(loadConfig({}).weekendMultiplier, 3);
+  assert.equal(loadConfig({ WEEKEND_MULTIPLIER: "1" }).weekendMultiplier, 1);
+  assert.equal(loadConfig({ WEEKEND_MULTIPLIER: "10" }).weekendMultiplier, 10);
+  for (const v of ["0", "-1", "2.5", "abc", "11", ""]) assert.throws(() => loadConfig({ WEEKEND_MULTIPLIER: v }), /WEEKEND_MULTIPLIER/, v);
   // the port of the army URLs comes from PUBLIC_URL: a port in BASE_DOMAIN is refused (it would never match a Host header)
   assert.throws(() => loadConfig({ URL_MODE: "subdomain", BASE_DOMAIN: "lvh.me:8080" }), /BASE_DOMAIN.*port/);
   assert.throws(() => loadConfig({ URL_MODE: "path", BASE_DOMAIN: "lvh.me:8080" }), /BASE_DOMAIN.*port/);

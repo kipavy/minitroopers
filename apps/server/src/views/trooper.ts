@@ -87,7 +87,7 @@ function skillList(v: SheetView): Html {
   const flashvars = clientParams(trooperData(v.trooper, v.army.faction, MINI_SWF));
   const icons = PLACEMENT.map((s) =>
     owned.has(s) ? html`<li class="on" ${skillTip(s, name)} style="${skillIconStyle(s)}"></li>
-` : html`<li style="${skillIconStyle(s)}"></li>
+` : html`<li ${skillTip(s, name, false)} style="${skillIconStyle(s)}"></li>
 `,
   );
   return html`<ul class="skills"><li class="soldier">

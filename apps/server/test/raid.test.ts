@@ -362,3 +362,18 @@ test("HQ raid box: won out (20 phases) and protected views", async () => {
   const locked = String(hqPage(env.cfg, { ...base, locked: true, raid: { phase: 2, step: 2, alive: 2, over: false, lastWin: false, key: "" } }));
   assert.ok(locked.includes(`<h1 class="hbox">Raid Phase 2</h1>\n<div class="box2bottom"><div class="action bcount1"></div></div></div></div>`));
 });
+
+test("raid phase won on a weekend day pays ×3: +12, message and money animation", async () => {
+  const env = setup("path", {}, { battleSeed: () => 4242 });
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, key, id } = await warp(env);
+  recruit(env, id, "weak", 1, 7);
+  recruit(env, id, "hero", STRONG, 1_000_000);
+  recruit(env, id, "hera", STRONG, 1_007_919);
+  await get(env, cl, `/b/raid?phase=1;chk=${key}`);
+  assert.ok(won(raids(env, id)[0]!));
+  assert.equal(credits(env, id), 112);
+  const page = await (await get(env, cl, "/b/view/raid")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, "Félicitations, tu as remporté le raid ! Ton armée gagne +12 [T] et tu peut tenter le raid suivant.");
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));
+});

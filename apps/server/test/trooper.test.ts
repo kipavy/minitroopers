@@ -7,6 +7,7 @@ import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
 const plain = (s: string): string => s.replaceAll("&#39;", "'");
+const LOCKED = "Pas encore acquise";
 
 async function army(env: Env, o: { seed?: number; choices?: number[]; credits?: number } = {}) {
   const cl = env.client();
@@ -38,7 +39,11 @@ for (const mode of MODES) {
     assert.equal(lis.length, 140);
     const lit = lis.filter((m) => m[1]).map((m) => Number(m[2]) / 30 + (Number(m[3]) / 30) * 20);
     assert.deepEqual(lit.sort((a, b) => a - b), sheet.skills.filter((s) => s < 140).sort((a, b) => a - b));
-    const want = clientParams(trooperData(trooperInput(t), armyByHost(env.db, "warp")!.faction, MINI_SWF));
+    const icons = [...html.matchAll(/<li( class="on")?( onmouseover="[^"]*")?[^>]*style="background : url\('\/img\/skills\.png'\)[^"]*"><\/li>/g)];
+    assert.equal(icons.length, 140);
+    assert.ok(icons.every((m) => m[2]), "every skill icon has a tooltip");
+    assert.ok(icons.every((m) => !m[2]!.includes(LOCKED) === Boolean(m[1])), "only the unowned ones are marked as not acquired");
+    const want =clientParams(trooperData(trooperInput(t), armyByHost(env.db, "warp")!.faction, MINI_SWF));
     const m = /flashvars : ("(?:[^"\\]|\\.)*")/.exec(html.split('class="soldier"')[1]!)!;
     assert.equal(JSON.parse(m[1]!), want);
     assert.ok(html.includes(`<a href="${loc(env, mode, "/hq")}" class="company">Fiche de ${t.name}</a>`));

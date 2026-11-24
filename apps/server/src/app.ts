@@ -5,6 +5,7 @@ import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Config } from "./config.ts";
 import { clientIp } from "./ip.ts";
 import { sameOrigin } from "./origin.ts";
+import { runWithNow } from "./requestClock.ts";
 import { sessionMiddleware, type Session } from "./session.ts";
 import { serveStatic } from "./static.ts";
 import { isValidHost, resolveArmyHost } from "./urls.ts";
@@ -81,7 +82,7 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
       host = resolveArmyHost(cfg, c.req.header("host"), c.req.path)?.host ?? null;
     }
     c.set("armyHost", host);
-    await next();
+    await runWithNow(deps.now ?? Date.now, next);
   });
   pages.use("*", sessionMiddleware(cfg, db));
   mount?.(pages);

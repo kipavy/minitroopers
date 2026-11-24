@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import { createHash, randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { RAID_PER_BATTLE, RAID_REWARD, dayKey, npcArmy, raidPower, raidTrooperRange } from "@mt/game";
+import { RAID_PER_BATTLE, RAID_REWARD, dayKey, npcArmy, raidPower, raidTrooperRange, rewardMultiplier } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildModeInput } from "../battleInput.ts";
 import { armyById, dayOver, fightRaid, lastRaidOfDay, markSeen, type NewModeBattle, type RaidRecruit } from "../repo.ts";
@@ -23,7 +23,7 @@ export function raidNpcSeed(day: string, armyId: number, phase: number): number 
 }
 
 /** Archived first-view message of a won raid ($EX/html/fr/b_view_raid.html; "tu peut" sic). */
-const WON_FIRST = `Félicitations, tu as remporté le raid ! Ton armée gagne +${RAID_REWARD} [T] et tu peut tenter le raid suivant.`;
+const wonFirst = (reward: number): string => `Félicitations, tu as remporté le raid ! Ton armée gagne +${reward} [T] et tu peut tenter le raid suivant.`;
 const LOST = "Ce combat s'est soldé par un échec !";
 
 export function registerRaid(pages: Hono<Env>, deps: Deps): void {
@@ -52,7 +52,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     const byId = new Map(input.armies[input.attackerSide]!.troopers.map((t, i) => [t.id, fighters[i]!.recruitArmyId]));
     const dead = outcome.graveyard.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
     const win = outcome.winner !== null && outcome.winner === input.attackerSide;
-    return { mode: "raid", defenderId: null, defenderRef: null, input, winner: outcome.winner, reward: win ? RAID_REWARD : 0, dead };
+    return { mode: "raid", defenderId: null, defenderRef: null, input, winner: outcome.winner, reward: win ? RAID_REWARD * rewardMultiplier(day, cfg.weekendMultiplier) : 0, dead };
   }
 
   /**
@@ -87,8 +87,9 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
+    const reward = RAID_REWARD * rewardMultiplier(b.day, cfg.weekendMultiplier);
     // UNVERIFIED: the defeat message of a raid was never archived; the archived replay text is used.
-    const endMsg = won ? (fresh ? WON_FIRST : "Tu as remporté ce combat !") : LOST;
+    const endMsg = won ? (fresh ? wonFirst(reward) : "Tu as remporté ce combat !") : LOST;
     const view = {
       host: o.army.host,
       pass: o.army.passwordHash !== null,
@@ -97,7 +98,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
       heading: null,
       ...playerData(c, b, armyTitle(o.army.name, o.army.part), ""),
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${RAID_REWARD}`) : hq,
+      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
     };

@@ -28,9 +28,10 @@ Les données (base SQLite `minitroopers.db`, WAL) vont dans `var/` (gitignoré).
 | `DATA_DIR` | `var` | dossier des données (relatif à la racine du dépôt) |
 | `TRUST_PROXY` | `0` | `0`/`false` ou `1`/`true` : IP client lue dans `CF-Connecting-IP` (derrière Cloudflare Tunnel seulement, voir ci-dessous) |
 | `TZ_GAME` | `Europe/Paris` | fuseau IANA du jour de jeu |
+| `WEEKEND_MULTIPLIER` | `3` | gains de combat (batailles, missions, raids) multipliés le samedi et le dimanche du jour de jeu, avec une bannière sur toutes les pages ; `1` désactive l’événement (entier de 1 à 10) |
 
 Toute valeur invalide (`TRUST_PROXY` autre que `0`/`1`/`true`/`false`, `PUBLIC_URL` qui n'est pas une URL http(s),
-`TZ_GAME` inconnu, `BASE_DOMAIN` avec un port) arrête le serveur au démarrage avec un message explicite.
+`TZ_GAME` inconnu, `WEEKEND_MULTIPLIER` hors de 1 à 10, `BASE_DOMAIN` avec un port) arrête le serveur au démarrage avec un message explicite.
 
 **`TRUST_PROXY=1` n'est sûr que si le port n'est joignable que par le proxy** (`cloudflared` ou le reverse proxy) :
 le serveur croit alors l'en-tête `CF-Connecting-IP`, que n'importe quel client direct pourrait forger pour

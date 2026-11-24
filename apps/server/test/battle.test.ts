@@ -553,6 +553,48 @@ test("playerData: a log that cannot be built gives an empty log, not an exceptio
   assert.equal(seen.length, 1, "the failure is logged once");
 });
 
+/** One fresh battle at clock `t` (path mode): credits gained, the first-view message and the end URL. */
+async function fightAt(t: number, extra: Record<string, string> = {}) {
+  const env = setup("path", extra);
+  env.clock.t = t;
+  const { cl, id } = await warp(env);
+  const foeId = foe(env, "foe", "Foe", [
+    { seed: 1234567, name: "Bob" },
+    { seed: 2345678, name: "Rob" },
+  ]);
+  const target = attackLinks(await (await get(env, cl, "/b/opp")).text()).find((l) => l.ref === String(foeId))!;
+  const before = credits(env, id);
+  await get(env, cl, pathOf("path", target.href));
+  const row = battles(env, id)[0]!;
+  const page = await (await get(env, cl, "/b/view/bat1")).text();
+  return { win: won(row), gained: credits(env, id) - before, endMsg: decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, page };
+}
+
+const msgFor = (win: boolean, n: number): string => `${win ? "Tu as remporté cette bataille !" : "Tu as perdu cette bataille !"} Ton armée gagne +${n} [T]`;
+
+test("battle on a weekend day pays ×3 (credits, end message, money animation)", async () => {
+  const r = await fightAt(Date.parse("2026-11-28T10:00:00Z")); // samedi
+  const n = r.win ? 6 : 3;
+  assert.equal(r.gained, n);
+  assert.equal(r.endMsg, msgFor(r.win, n));
+  assert.ok(r.page.includes(`document.location = ${JSON.stringify(loc("path", `/hq?money=${n}`))};`));
+});
+
+test("WEEKEND_MULTIPLIER=1 pays ×1 on Saturday", async () => {
+  const r = await fightAt(Date.parse("2026-11-28T10:00:00Z"), { WEEKEND_MULTIPLIER: "1" });
+  assert.equal(r.gained, r.win ? 2 : 1);
+  assert.equal(r.endMsg, msgFor(r.win, r.win ? 2 : 1));
+});
+
+test("the weekend follows the game day (Europe/Paris), not UTC", async () => {
+  const sat = await fightAt(Date.parse("2026-11-28T22:30:00Z")); // samedi 23:30 à Paris
+  assert.equal(sat.gained, sat.win ? 6 : 3);
+  const mon = await fightAt(Date.parse("2026-11-29T23:30:00Z")); // lundi 00:30 à Paris
+  assert.equal(mon.gained, mon.win ? 2 : 1);
+  const satEarly = await fightAt(Date.parse("2026-11-27T23:30:00Z")); // samedi 00:30 à Paris, vendredi en UTC
+  assert.equal(satEarly.gained, satEarly.win ? 6 : 3);
+});
+
 /** Open Graph / Twitter meta tags of a page (`<meta property|name="k" content="v"/>`), values still HTML-escaped. */
 function metaTags(page: string): Record<string, string> {
   const out: Record<string, string> = {};
