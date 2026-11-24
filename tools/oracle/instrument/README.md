@@ -478,6 +478,12 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   n'a eu lieu 10 s (horloge murale) après `mtInit` (image de fond jamais chargée, `imageurl` en 404). Le `setTimeout` de
   Ruffle a été vu se déclencher après ≈ 7 s pour 10 s : `mtWaitCheck` se réarme jusqu'à 10 s de `Date`. Remède proposé
   par la page : un `mtSeek` au-delà du point de blocage (le saut détruit l'étape bloquée).
+- `mtUnwait` (avant chaque `frame()` de lecture ou de saut) : les étapes `PlayerStatus` (40) et `Winner` (34)
+  n'utilisent pas le trooper `tid` de leur entrée dans `apply()`, mais leur constructeur attend qu'il soit à l'écran.
+  Après un saut, la reconstruction du `CheckPoint` a retiré les morts : une telle entrée après ce `CheckPoint` dont le
+  `tid` est mort attendait pour toujours (raid de l'e2e bloqué à 35/38 après « Fin », puis à 37 sur le `Winner`).
+  Leurs ids en attente sont vidés ; en lecture normale le `tid` est encore à l'écran (mourant au pire), rien ne change. Test : `player.test.ts`
+  (« dead trooper's PlayerStatus », `basic/00047` et `fixtures/raid-seek-stuck.json`).
 - `mtShot()` : `BitmapData(720, 440).draw(stage)`, `getPixels` → ARGB 720 × 440 × 4 octets en base64 (≈ 1,7 Mo ;
   encodeur `mtB64` par table de 4096 paires de caractères écrites dans un `ByteArray`, ≈ 1,8 s sous le Chromium émulé).
   Le canvas WebGL de Ruffle n'a pas `preserveDrawingBuffer` : la page ne peut pas le lire de façon fiable. `""` en cas
@@ -530,8 +536,9 @@ SHA-256 : avant `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856
 
 Avec l'API de lecture (tâche « lecteur amélioré ») : pause/vitesse/progression `9049b212…` (`?v=4`) ; avec saut,
 blocage et capture, SHA-256 `1e54abf53911950cae99bcc819721b4eb7f5842b7c186cdbc9130ff6a50a5b4a` (deux builds dans
-deux dossiers de travail : même SHA-256), `CLIENT_SWF` en `?v=5`. Le `pushbyte 14` du correctif ci-dessus est alors
-à l'octet 302920 du corps décompressé (la classe des helpers a grandi). Les insertions P-code dans le Game sont
+deux dossiers de travail : même SHA-256), `CLIENT_SWF` en `?v=5` ; avec `mtUnwait`, SHA-256
+`dd1519e16f986931b696624d2159d3f0294577c7cd8c0d2059a252d3108c1c45` (deux builds : même SHA-256), `?v=6`. Le `pushbyte 14` du correctif ci-dessus est alors
+à l'octet 302920 du corps décompressé (la classe des helpers a grandi ; un peu plus loin avec `mtUnwait`, `patch-play-textfields.mjs` le retrouve). Les insertions P-code dans le Game sont
 inchangées (ci-dessous) : tout le nouveau code est dans les helpers.
 
 - Innocuité (`build-play.ps1 -Verify`) : 29 fichiers P-code diffèrent octet à octet sur 290, 4 hors renumérotation

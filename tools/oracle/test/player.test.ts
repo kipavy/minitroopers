@@ -5,11 +5,18 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { battleData, clientParams } from "@mt/engine";
+import { battleData, clientParams, type BattleInput } from "@mt/engine";
+import { simulateBattle } from "@mt/engine/internal";
 import { OracleRunner, chromiumAvailable, type OracleTrace } from "../src/runner.ts";
 
-const golden = (id: string): OracleTrace =>
-  JSON.parse(gunzipSync(readFileSync(new URL(`../golden/${id}`, import.meta.url))).toString("utf8")) as OracleTrace;
+/** A golden trace, or a fixture battle input (`fixture:<name>`, events from the engine). */
+const golden = (id: string): OracleTrace => {
+  if (id.startsWith("fixture:")) {
+    const input = JSON.parse(readFileSync(new URL(`fixtures/${id.slice(8)}`, import.meta.url), "utf8")) as BattleInput;
+    return { input, record: simulateBattle(input) } as unknown as OracleTrace;
+  }
+  return JSON.parse(gunzipSync(readFileSync(new URL(`../golden/${id}`, import.meta.url))).toString("utf8")) as OracleTrace;
+};
 
 /** BattleMsg index of an `EV time|tid|type` line. */
 const msgType = (ev: string): number => Number(/^(\d+)/.exec(ev.slice(3).split("|")[2] ?? "")![1]);
@@ -290,3 +297,31 @@ test("mtStuck fires once, within 12 s, when the background image never loads", {
     await p.close();
   }
 });
+
+// A PlayerStatus (40) right after a CheckPoint (38), whose tid trooper is dead: after a jump to that CheckPoint the
+// scene rebuild has removed the trooper, and the original step waited for it forever (raid seen stuck at idx 35/38
+// after "Fin"). mtUnwait drops that wait. basic/00047: CheckPoint 36, PlayerStatus 37, Winner 39; the raid of the
+// e2e test that hung (fixtures/raid-seek-stuck.json, 38 entries): CheckPoint 34, PlayerStatus 35 (tid 2, dead).
+for (const [id, cp] of [["basic/00047.json.gz", 36], ["fixture:raid-seek-stuck.json", 34]] as const) {
+  test(`mtSeek past a CheckPoint followed by a dead trooper's PlayerStatus does not hang (${id})`, { timeout: 300_000 }, async (t) => {
+    if (skip(t)) return;
+    const p = await open(id);
+    try {
+      const total = p.t.record.events.length;
+      assert.equal(msgType(p.t.record.events[cp]!), 38);
+      assert.equal(msgType(p.t.record.events[cp + 1]!), 40);
+      await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+      await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+      const target = cp + 3 >= total ? total : cp + 3;
+      const mark = await p.callMarked("mtSeek", target);
+      const c = await p.waitFor((c) => c.progress.length > mark, 90_000, `mtProgress after mtSeek(${target})`);
+      assert.ok(c.progress[mark]![0] >= target, `landed at ${c.progress[mark]![0]}, target ${target}`);
+      if (target === total) await p.waitFor((c) => c.end.length > 0, 30_000, "mtEnd");
+      else await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) > target, 60_000, `playback goes on after ${target}`);
+      assert.deepEqual(c.stuck, [], "no mtStuck");
+      assert.deepEqual(p.errors, []);
+    } finally {
+      await p.close();
+    }
+  });
+}

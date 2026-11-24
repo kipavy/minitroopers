@@ -539,6 +539,7 @@ ofs0081:
             }
             while(_loc3_ < _loc2_)
             {
+               mtUnwait(param1);
                param1.§k\n/$\x03§();
                _loc3_++;
                mtCalls++;
@@ -576,6 +577,7 @@ ofs0081:
          }
          while(!mtSeekDone(param1) && !mtBlocked(param1))
          {
+            mtUnwait(param1);
             param1.§k\n/$\x03§();
             if(getTimer() - param2 >= param3)
             {
@@ -647,6 +649,21 @@ ofs0081:
       public static function mtApplied(param1:§Q\btf§) : int
       {
          return mtTotal - param1.§\x1e-\x02\x07\x01§.length - (param1.§^h'l\x02§ != null ? 1 : 0);
+      }
+
+      // The steps of PlayerStatus (BattleMsg 40) and Winner (34) never use their entry's tid trooper in apply(), but
+      // their constructor still waits for it to be on screen. After a checkpoint jump the rebuild has removed the dead
+      // troopers, so such an entry after that CheckPoint whose tid died would wait forever (seen on a raid: a seek to
+      // the end stuck after the last CheckPoint, the Winner never applied). Their pending ids are dropped; in a plain
+      // replay the tid trooper is still on screen (dying at worst), so nothing changes there.
+      public static function mtUnwait(param1:§Q\btf§) : void
+      {
+         var _loc2_:* = param1.§^h'l\x02§;
+         var _loc3_:int = _loc2_ == null ? -1 : int(_loc2_.§SV\x1d\x01§["An%6"][")-Z\x19\x01"]);
+         if((_loc3_ == 40 || _loc3_ == 34) && _loc2_.§(;D\n§.length > 0)
+         {
+            _loc2_.§(;D\n§ = [];
+         }
       }
 
       // the current step has waited more than its 500 ticks (the Game's own debug timeout)
