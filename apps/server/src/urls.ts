@@ -31,8 +31,14 @@ export function resolveArmyHost(cfg: Config, hostHeader: string | undefined, pat
   return isValidHost(sub) ? { host: sub, path: pathname } : null;
 }
 
-/** Preview image of a daily battle (routes/og.ts), absolute from PUBLIC_URL: served at the site root of any host. */
-export const battleImageUrl = (cfg: Config, id: number): string => `${cfg.publicUrl}/og/battle/${id}.jpg`;
+/** Banner design version (og.ts), bumped on any design change: cache file names and the image URL carry it. */
+export const BANNER_VERSION = 5;
+
+/**
+ * Preview image of a daily battle (routes/og.ts), absolute from PUBLIC_URL: served at the site root of any host. `?v=`
+ * changes the URL with the design, since the image is cached for long by Cloudflare and by the chat apps.
+ */
+export const battleImageUrl = (cfg: Config, id: number): string => `${cfg.publicUrl}/og/battle/${id}.jpg?v=${BANNER_VERSION}`;
 
 /** Absolute form of a site link (`armyUrl` gives a path in path mode): relative links are prefixed with PUBLIC_URL. */
 export const absoluteUrl = (cfg: Config, link: string): string => (link.startsWith("/") ? `${cfg.publicUrl}${link}` : link);
