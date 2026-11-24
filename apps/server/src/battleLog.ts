@@ -194,12 +194,12 @@ export function battleLog(input: BattleInput, armyNames?: readonly [string, stri
 
   // Step the battle like Battle.run(), noticing which troopers die during each step.
   const lines: LogLine[] = [];
-  let dead = new Set<number>();
+  let buried = new Set<number>();
   let done = 0;
   const flush = (): void => {
     const current = new Set(b.graveyard);
-    const fresh = [...current].filter((id) => !dead.has(id));
-    dead = current;
+    const fresh = [...current].filter((id) => !buried.has(id));
+    buried = current;
     const from = done;
     for (; done < b.history.length; done++) {
       const h = b.history[done]!;
