@@ -4,6 +4,7 @@ import { battleReward, dayKey } from "@mt/game";
 import { clientParams, gridData, simulateOutcome, type BattleInput } from "@mt/engine";
 import { armyByHost, createArmy, trooperInput, troopersOf } from "../src/repo.ts";
 import { MINI_SWF } from "../src/views/swf.ts";
+import { BANNER_VERSION } from "../src/urls.ts";
 import { seedFactions } from "../src/admin/factions.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
@@ -620,7 +621,7 @@ for (const mode of MODES) {
       "og:title": "Revoir : L&#39;armée de Warp VS L&#39;armée de Foe",
       "og:description": `Combat MiniTroopers du 23/11/2026. ${winner === null ? "Match nul." : `Victoire de ${winner}.`}`,
       "og:url": url,
-      "og:image": `${base}/og/battle/${row.id}.jpg`,
+      "og:image": `${base}/og/battle/${row.id}.jpg?v=${BANNER_VERSION}`,
       "og:image:type": "image/jpeg",
       "og:image:width": "1200",
       "og:image:height": "630",
@@ -681,6 +682,6 @@ test("link previews: battleOg names the stored winner (attacker or defender), a 
   assert.equal(og(null).description, "Combat MiniTroopers du 22/11/2026. Match nul.");
   assert.equal(og(0).title, "Revoir : L'armée de A VS L'armée de D");
   assert.equal(og(0).url, `${cfg.publicUrl}/b/fview/7`);
-  assert.equal(og(0).image, `${cfg.publicUrl}/og/battle/7.jpg`);
+  assert.equal(og(0).image, `${cfg.publicUrl}/og/battle/7.jpg?v=${BANNER_VERSION}`);
   assert.equal(og(0).imageAlt, og(0).title);
 });

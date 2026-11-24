@@ -31,8 +31,7 @@ export interface Banner {
   site: string;
 }
 
-/** Bumped on any design change: cached files are named after it. */
-export const BANNER_VERSION = 5;
+export { BANNER_VERSION } from "./urls.ts";
 
 export const W = 1200;
 export const H = 630;
