@@ -125,6 +125,14 @@ identique à l'original, ce que vérifie le banc oracle. `v1.0.0` (et l'image `g
 garde le lecteur d'origine. Détails : [conception](docs/superpowers/specs/2026-11-24-lecteur-ameliore-design.md),
 [recherche sur le SWF](docs/research/lecteur-swf.md).
 
+### Aperçus de liens
+
+Le lien public d'un combat quotidien (`/b/fview/<id>`, celui de `/history`) collé dans Discord, WhatsApp, etc.
+s'affiche avec un aperçu (balises Open Graph et Twitter) : titre « Revoir : L'armée de X VS L'armée de Y », date
+et vainqueur du combat, et une image fixe (`apps/server/public/img/og-battle.jpg`, générée par
+`apps/server/scripts/gen-og-image.mjs` à partir des images du jeu). Les missions et les raids n'ont pas de page
+publique, donc pas d'aperçu.
+
 ### Règles non vérifiables
 
 Le moteur de combat est prouvé identique au SWF. En revanche, certaines règles ne s'exécutaient que sur le

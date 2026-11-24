@@ -30,3 +30,6 @@ export function resolveArmyHost(cfg: Config, hostHeader: string | undefined, pat
   const sub = h.slice(0, -suffix.length);
   return isValidHost(sub) ? { host: sub, path: pathname } : null;
 }
+
+/** Absolute form of a site link (`armyUrl` gives a path in path mode): relative links are prefixed with PUBLIC_URL. */
+export const absoluteUrl = (cfg: Config, link: string): string => (link.startsWith("/") ? `${cfg.publicUrl}${link}` : link);

@@ -13,6 +13,7 @@ import type { Context } from "hono";
 import type { Env as AppEnv } from "../src/app.ts";
 import { battleLog } from "../src/battleLog.ts";
 import { playerData } from "../src/routes/battle.ts";
+import { battleOg } from "../src/views/battle.ts";
 import type { BattleRow } from "../src/repo.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
@@ -483,7 +484,7 @@ for (const mode of MODES) {
     const input = JSON.parse(row.input) as BattleInput;
     const total = simulateBattle(input).events.length;
     const page = await (await get(env, cl, "/b/view/bat1")).text();
-    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=2"></script>'));
+    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=3"></script>'));
     assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
     assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=2"/>'));
     const { log, at } = playerVars(page);
@@ -592,4 +593,114 @@ test("the weekend follows the game day (Europe/Paris), not UTC", async () => {
   assert.equal(mon.gained, mon.win ? 2 : 1);
   const satEarly = await fightAt(Date.parse("2026-11-27T23:30:00Z")); // samedi 00:30 à Paris, vendredi en UTC
   assert.equal(satEarly.gained, satEarly.win ? 6 : 3);
+});
+
+/** Open Graph / Twitter meta tags of a page (`<meta property|name="k" content="v"/>`), values still HTML-escaped. */
+function metaTags(page: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const m of page.matchAll(/<meta (?:property|name)="((?:og|twitter):[^"]+|theme-color)" content="([^"]*)"\/>/g)) out[m[1]!] = m[2]!;
+  return out;
+}
+
+for (const mode of MODES) {
+  test(`[${mode}] link previews: the battle pages carry og:/twitter: tags (title, date, winner, public URL, fixed image)`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const foeId = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
+    await get(env, cl, "/b/opp");
+    await get(env, cl, `/b/battle?opp=${foeId};n=0;chk=${key}`);
+    const row = battles(env, id)[0]!;
+    const winner = row.winner === null ? null : won(row) ? "L&#39;armée de Warp" : "L&#39;armée de Foe";
+    const base = env.cfg.publicUrl;
+    const url = mode === "path" ? `${base}/a/warp/b/fview/${row.id}` : `http://warp.lvh.me:8080/b/fview/${row.id}`;
+    const expected = {
+      "theme-color": "#d4a244",
+      "og:site_name": "MiniTroopers",
+      "og:type": "website",
+      "og:title": "Revoir : L&#39;armée de Warp VS L&#39;armée de Foe",
+      "og:description": `Combat MiniTroopers du 23/11/2026. ${winner === null ? "Match nul." : `Victoire de ${winner}.`}`,
+      "og:url": url,
+      "og:image": `${base}/img/og-battle.jpg`,
+      "og:image:type": "image/jpeg",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "og:image:alt": "MiniTroopers : un combat à revoir",
+      "twitter:card": "summary_large_image",
+    };
+    // 1st view of /b/view/bat1 = the just-fought page ("+N [T]", markSeen), 2nd view = the replay: same tags on both
+    const fresh = metaTags(await (await get(env, cl, "/b/view/bat1")).text());
+    assert.deepEqual(fresh, expected);
+    const replay = await (await get(env, cl, "/b/view/bat1")).text();
+    assert.deepEqual(metaTags(replay), expected);
+    // "Partager" on the attacker's own /b/view/batN copies the public page, the only one others (and crawlers) can open
+    assert.ok(replay.includes(`var mtShare = ${JSON.stringify(url)};`));
+    // the public page seen by a stranger (the one crawlers read)
+    const stranger = env.client("3.3.3.3");
+    const pub = await stranger.req(`/b/fview/${row.id}`, mode === "path" ? {} : { host: "lvh.me:8080" });
+    assert.equal(pub.status, 200);
+    assert.deepEqual(metaTags(await pub.text()), expected);
+    // absolute URLs built from PUBLIC_URL (subdomain mode: the attacker's host on the same scheme and port)
+    assert.match(fresh["og:image"]!, /^https?:\/\//);
+    assert.ok(fresh["og:image"]!.startsWith(`${env.cfg.publicUrl}/`));
+    assert.match(fresh["og:url"]!, /^https?:\/\//);
+    if (mode === "path") assert.ok(fresh["og:url"]!.startsWith(`${env.cfg.publicUrl}/a/warp/`));
+    else assert.ok(fresh["og:url"]!.startsWith(`${new URL(env.cfg.publicUrl).protocol}//warp.${env.cfg.baseDomain}:${new URL(env.cfg.publicUrl).port}/`));
+  });
+
+  test(`[${mode}] link previews: a hostile army name is escaped in og:title / og:description`, async () => {
+    const env = setup(mode);
+    const { cl, key } = await warp(env);
+    const foeId = foe(env, "evil", "Evil", [{ seed: 1234567, name: "Bob" }]);
+    env.db.prepare("UPDATE armies SET name = ? WHERE id = ?").run(`<script>"&`, foeId);
+    await get(env, cl, "/b/opp");
+    await get(env, cl, `/b/battle?opp=${foeId};n=0;chk=${key}`);
+    const page = await (await get(env, cl, "/b/view/bat1")).text();
+    const tags = metaTags(page);
+    assert.equal(tags["og:title"], "Revoir : L&#39;armée de Warp VS L&#39;armée de &lt;script&gt;&quot;&amp;");
+    assert.ok(!page.includes(`<script>"&`));
+  });
+
+  test(`[${mode}] link previews: no og: tag outside the battle pages (/hq, /history)`, async () => {
+    const env = setup(mode);
+    const { cl } = await warp(env);
+    for (const path of ["/hq", "/history"]) {
+      const page = await (await get(env, cl, path)).text();
+      assert.ok(page.length > 0);
+      assert.deepEqual(metaTags(page), {}, path);
+      assert.ok(!page.includes("og:"), path);
+    }
+  });
+}
+
+test("link previews: battleOg names the stored winner (attacker or defender), a null winner is a draw", () => {
+  const cfg = setup("path").cfg;
+  const row = (winner: number | null) => ({ day: "2026-11-22", winner, input: { attackerSide: 1 } as BattleInput });
+  const og = (winner: number | null) => battleOg(cfg, row(winner), "L'armée de A", "L'armée de D", "/b/fview/7");
+  assert.equal(og(1).description, "Combat MiniTroopers du 22/11/2026. Victoire de L'armée de A.");
+  assert.equal(og(0).description, "Combat MiniTroopers du 22/11/2026. Victoire de L'armée de D.");
+  assert.equal(og(null).description, "Combat MiniTroopers du 22/11/2026. Match nul.");
+  assert.equal(og(0).title, "Revoir : L'armée de A VS L'armée de D");
+  assert.equal(og(0).url, `${cfg.publicUrl}/b/fview/7`);
+});
+
+test("link previews: public/img/og-battle.jpg is a 1200x630 JPEG under 200 KB, served as image/jpeg", async () => {
+  const res = await setup("path").app.request("/img/og-battle.jpg");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "image/jpeg");
+  const buf = Buffer.from(await res.arrayBuffer());
+  assert.ok(buf.equals(readFileSync(new URL("../public/img/og-battle.jpg", import.meta.url))));
+  assert.ok(buf.length < 200 * 1024, `${buf.length} bytes`);
+  assert.deepEqual([...buf.subarray(0, 3)], [0xff, 0xd8, 0xff], "SOI");
+  let pos = 2;
+  let size: { w: number; h: number } | null = null;
+  while (pos < buf.length && !size) {
+    assert.equal(buf[pos], 0xff, "marker");
+    const marker = buf[pos + 1]!;
+    const len = buf.readUInt16BE(pos + 2);
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      size = { h: buf.readUInt16BE(pos + 5), w: buf.readUInt16BE(pos + 7) };
+    }
+    pos += 2 + len;
+  }
+  assert.deepEqual(size, { w: 1200, h: 630 });
 });

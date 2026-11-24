@@ -285,9 +285,12 @@
     setTimeout(capture, 30);
   }
 
-  /** This page's URL with `at=<idx>` (other query parameters kept). */
+  /**
+   * The shared link with `at=<idx>`: the battle's public page (mtShare, /b/fview/<id>) when there is one, since this page
+   * may be the attacker's own /b/view/batN that nobody else can open; else this page's URL (other parameters kept).
+   */
   function linkAt(idx) {
-    var href = w.location.href.split("#")[0];
+    var href = typeof w.mtShare === "string" && w.mtShare ? w.mtShare : w.location.href.split("#")[0];
     var q = href.indexOf("?");
     var base = q < 0 ? href : href.slice(0, q);
     var parts = q < 0 ? [] : href.slice(q + 1).split(/[&;]/);

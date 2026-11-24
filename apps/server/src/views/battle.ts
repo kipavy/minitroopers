@@ -1,7 +1,9 @@
 import type { LogLine } from "../battleLog.ts";
 import type { Config } from "../config.ts";
 import { html, raw, type Html } from "./html.ts";
-import { layout } from "./layout.ts";
+import { layout, type OgMeta } from "./layout.ts";
+import type { BattleRow } from "../repo.ts";
+import { absoluteUrl } from "../urls.ts";
 import { jsJson, jsStr, swfEmbed } from "./swf.ts";
 
 export interface BattleView {
@@ -31,6 +33,29 @@ export interface BattleView {
   at: number | null;
   /** Army and trooper names of input sides 0 and 1 (the log colours them by side). */
   sides: readonly [readonly string[], readonly string[]];
+  /**
+   * Link preview tags (battleOg): daily battles only, whose public page `/b/fview/<id>` crawlers can read. Missions and
+   * raids have no public replay (owner-only pages), so no preview.
+   */
+  og?: OgMeta;
+}
+
+/**
+ * Link preview of a daily battle (Discord, WhatsApp…): "Revoir : <attacker> VS <defender>", "Combat MiniTroopers du
+ * DD/MM/AAAA." and the stored outcome, the fixed image public/img/og-battle.jpg. `url`: canonical public link of the
+ * replay (made absolute here).
+ */
+export function battleOg(cfg: Config, b: Pick<BattleRow, "day" | "winner" | "input">, attacker: string, defender: string, url: string): OgMeta {
+  const title = `Revoir : ${attacker} VS ${defender}`;
+  const outcome = b.winner === null ? "Match nul." : `Victoire de ${b.winner === b.input.attackerSide ? attacker : defender}.`;
+  const [y, m, d] = b.day.split("-");
+  return {
+    title,
+    description: `Combat MiniTroopers du ${d}/${m}/${y}. ${outcome}`,
+    url: absoluteUrl(cfg, url),
+    image: `${cfg.publicUrl}/img/og-battle.jpg`,
+    imageAlt: "MiniTroopers : un combat à revoir",
+  };
 }
 
 /**
@@ -58,8 +83,9 @@ ${v.heading}
 var mtLog = ${raw(jsJson(v.log))};
 var mtAt = ${raw(jsJson(v.at))};
 var mtSides = ${raw(jsJson(v.sides))};
+var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 </script>
-<script type="text/javascript" src="/js/player.js?v=2"></script>
+<script type="text/javascript" src="/js/player.js?v=3"></script>
 <div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
 <div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>
@@ -73,5 +99,5 @@ var mtSides = ${raw(jsJson(v.sides))};
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"] });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"], ...(v.og ? { og: v.og } : {}) });
 }
