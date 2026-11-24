@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
 import type { BattleInput } from "@mt/engine";
 import { simulateBattle } from "@mt/engine/internal";
-import { battleLog } from "../src/battleLog.ts";
+import { battleLog, markStalemate, type LogLine } from "../src/battleLog.ts";
 
 const GOLDEN = join(import.meta.dirname, "../../../tools/oracle/golden");
 const load = (tag: string, n = 3): BattleInput[] =>
@@ -23,7 +23,7 @@ for (const tag of ["basic", "rats", "large"]) {
       const rec = simulateBattle(input);
       const log = battleLog(input, NAMES);
       const winLine = rec.winner === null ? "Match nul" : `Victoire de ${NAMES[rec.winner]}`;
-      assert.equal(log.length, rec.events.length + (rec.winner === null ? 1 : 0), "one line per history entry");
+      assert.equal(log.length, rec.events.length, "one line per history entry");
       log.forEach((l, k) => assert.equal(l.i, k));
       const waves = rec.events.filter((e) => /\|39\(/.test(e)).length;
       assert.equal(new Set(log.map((l) => l.w)).size, waves + 1, "w = NewWave count + 1");
@@ -48,4 +48,18 @@ test("battleLog: damage and kills mention trooper names", () => {
   const text = battleLog(input, NAMES).map((l) => l.t).join("\n");
   assert.match(text, /tire sur .+ : \d+ dégâts?/);
   assert.match(text, /est mort/);
+});
+
+test("markStalemate: Match nul lands on the last entry, no extra line", () => {
+  // No committed golden ends in a stalemate (btime > 50000), so the finishing step is tested directly.
+  const lines: LogLine[] = [{ i: 0, w: 0, t: "A tire sur B : 3 dégâts" }, { i: 1, w: 0, t: "" }];
+  markStalemate(lines);
+  assert.equal(lines.length, 2);
+  assert.equal(lines.filter((l) => l.t).at(-1)!.t, "Match nul");
+  const spoken: LogLine[] = [{ i: 0, w: 0, t: "A recharge" }];
+  markStalemate(spoken);
+  assert.equal(spoken[0]!.t, "A recharge. Match nul");
+  const none: LogLine[] = [];
+  markStalemate(none);
+  assert.deepEqual(none, []);
 });

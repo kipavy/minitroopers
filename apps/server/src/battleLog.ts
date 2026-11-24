@@ -60,11 +60,17 @@ function merge(hits: Hit[]): Merged[] {
 const hitsOf = (m: HxEnum): Hit[] =>
   (m.params ?? []).flatMap((v) => (isHit(v) ? [v] : Array.isArray(v) ? v.filter(isHit) : []));
 
+/** Closes a log of a battle without winner: "Match nul" goes on the last entry's line (no extra line). */
+export function markStalemate(lines: LogLine[]): void {
+  const last = lines[lines.length - 1];
+  if (last) last.t += `${last.t ? ". " : ""}Match nul`;
+}
+
 /**
  * The French battle log: one line per `Battle.history` entry of the battle `input` describes, in
  * order, so line `k` matches the SWF's entry `k`. `armyNames` are the names of the armies on side 0
  * and side 1 (the input carries none); without them the winner is named by its side. A stalemate
- * (no winner) gets one extra "Match nul" line after the last entry.
+ * (no winner) ends with "Match nul" on the last entry's line, so the log always has one line per entry.
  */
 export function battleLog(input: BattleInput, armyNames?: readonly [string, string]): LogLine[] {
   const b = new Battle(input);
@@ -218,6 +224,6 @@ export function battleLog(input: BattleInput, armyNames?: readonly [string, stri
     remember();
   }
   flush();
-  if (b.winner === null) lines.push({ i: lines.length, w: wave, t: "Match nul" });
+  if (b.winner === null) markStalemate(lines);
   return lines;
 }
