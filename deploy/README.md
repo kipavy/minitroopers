@@ -51,6 +51,7 @@ Valeurs fixées par l'image : `NODE_ENV=production`, `PORT=8080`, `LISTEN_HOST=0
 | `BASE_DOMAIN` | `localhost` | domaine des armées en mode `subdomain` (au moins deux labels, sans port) |
 | `TRUST_PROXY` | `0` | `1` : IP client lue dans `CF-Connecting-IP` (voir Cloudflare Tunnel) |
 | `TZ_GAME` | `Europe/Paris` | fuseau IANA du jour de jeu |
+| `WEEKEND_MULTIPLIER` | `3` | gains de combat (batailles, missions, raids) multipliés le samedi et le dimanche du jour de jeu, avec une bannière sur toutes les pages ; `1` désactive l’événement (entier de 1 à 10) |
 
 Détail et contrôles au démarrage : [apps/server/README.md](../apps/server/README.md).
 

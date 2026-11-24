@@ -16,6 +16,8 @@ export interface Config {
   dataDir: string;
   trustProxy: boolean;
   tzGame: string;
+  /** Credits multiplier of rewards won on Saturdays and Sundays of the game day (WEEKEND_MULTIPLIER, 1-10, 1 = off). */
+  weekendMultiplier: number;
   /** Cookies get the Secure flag when the public URL is https. */
   secureCookies: boolean;
 }
@@ -55,6 +57,10 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   } catch {
     throw new Error(`invalid TZ_GAME: ${JSON.stringify(tzGame)} (an IANA time zone, e.g. Europe/Paris)`);
   }
+  const wm = env.WEEKEND_MULTIPLIER ?? "3";
+  if (!/^[0-9]+$/.test(wm) || Number(wm) < 1 || Number(wm) > 10) {
+    throw new Error(`invalid WEEKEND_MULTIPLIER: ${JSON.stringify(wm)} (an integer from 1 to 10; 1 disables the weekend event)`);
+  }
   // HOST is deliberately not read: tcsh and others export it as the machine name, which is not an address to bind.
   const warnings: string[] = [];
   if (env.HOST) warnings.push(`HOST=${env.HOST} is ignored (often the machine name); set LISTEN_HOST to choose the listening address`);
@@ -68,6 +74,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     dataDir: env.DATA_DIR ?? "var",
     trustProxy: trust === "1" || trust === "true",
     tzGame,
+    weekendMultiplier: Number(wm),
     secureCookies: pub.protocol === "https:",
   };
 }
