@@ -418,8 +418,9 @@ SWF servi aux navigateurs pour tous les éléments Flash du site (combats, fiche
 `client_fr.swf` (même source vérifiée par SHA-256) dont **une seule branche** est modifiée, celle du
 contrôle d'intégrité `chk` de `Main._rsq` (`if (hash(data) != chk) return;`, voir `PC_MAIN` ci-dessus).
 Le hash est un algorithme maison exécuté par un interpréteur embarqué que le serveur ne peut pas
-calculer : l'original n'affiche rien sans un `chk` valide. Aucun helper de trace ; seule autre
-modification, des **données d'image** (aucun code) : voir « Icônes transparentes » ci-dessous.
+calculer : l'original n'affiche rien sans un `chk` valide. Aucun helper de trace ; autres
+modifications : l'**API de lecture** (« API de lecture » ci-dessous), des **données d'image** (« Icônes
+transparentes ») et la hauteur des champs de texte (« Champs de texte »).
 
 - Construction : `build-play.ps1` (appelle `build.ps1 -Play`, mêmes outils, même `-replace` P-code ;
   `-WorkDir` par défaut `..\minitroopers-work\oracle-build-play`, `-Verify` liste les différences P-code).
@@ -428,6 +429,32 @@ modification, des **données d'image** (aucun code) : voir « Icônes transparen
   `ifeq` saute vers l'instruction suivante dans les deux cas, donc **tout `chk` (ou aucun) est accepté**
   (le serveur envoie `chk=play`, cf. `clientParams` du moteur).
 - Résultat : `client_fr_play.swf` + `.sha256`, reproductible (deux builds donnent le même SHA-256).
+
+### API de lecture (pause, vitesse, progression)
+
+Points d'accroche et noms : `docs/research/lecteur-swf.md`. Comme pour l'oracle, des appels insérés en P-code dans
+le `Game` (`ffdec -replace`, plusieurs paires FIND/REPLACE par corps de méthode via `parts` dans `build.ps1`) et des
+helpers statiques AS3 dans la classe vide `§(m]a\x02§` (sections `HELPERS_PLAY_IMPORTS` + `HELPERS_PLAY`, recompilées
+par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchangé) :
+
+| Point | Où | Effet |
+|---|---|---|
+| `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38) et `NewWave` (39), appelle `mtReady` |
+| `PC_PLAY_GAME_FRAME` | même handler, état 2 : `this.frame()` | devient `mtFrame(this)` |
+| `PC_PLAY_FAST` | `§Bl{K\x01§` (isFast : `ticks >= 8`) | `(ticks >= 8) \| mtFast` (`bitor` + `convert_b`) : à vitesse ≥ 8 les mêmes effets que le mode natif 16× sont coupés |
+
+- SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves})` une fois ; `mtProgress(idx, wave)` au plus
+  une fois par image, seulement si `idx` change (`idx = total − queue.length − (step ? 1 : 0)`, `wave` = nombre de
+  `NewWave` appliqués) ; `mtEnd()` une fois, quand `Winner` (dernière entrée) est appliqué (`idx = total`).
+- Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
+  `mtState()` = `{idx, wave, total, speed, paused, ended}`.
+- `mtFrame` : en pause aucun appel ; sinon `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
+  à-coups compris, consommés par appel), 1 seul si l'écran PAUSE natif est ouvert ; sous ×1, `stage.frameRate = 40 × speed`
+  (au-delà, 40). Budget de temps : 10 ms, ou la moitié de l'intervalle entre les deux dernières images si elles sont plus
+  lentes (plafond 100 ms), au moins un appel. Sur une machine rapide c'est 10 ms ; sous le Chromium x64 émulé (un
+  `frame()` y coûte 3 à 15 ms, une image 40 à 150 ms) un budget fixe de 10 ms plafonne ×32 à ≈ ×1,5, le budget relatif
+  donne ≈ ×5 au prix d'une cadence au plus divisée par deux.
+- Test : `tools/oracle/test/player.test.ts` (Ruffle web, `OracleRunner.newPage`).
 
 ### Icônes transparentes (bitmaps 17 et 19, bogue de Ruffle a111ceec)
 
@@ -473,15 +500,43 @@ SHA-256 : avant `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856
 `7e6a9b1aef651aa0e76e4d1c7b10237d58b4ed5e807e60d0404567750ee2de5c` (vérifié par `apps/server/test/assets.test.ts`).
 `CLIENT_SWF` passe à `?v=3` pour que les navigateurs reprennent les deux correctifs.
 
-- Innocuité (`build-play.ps1 -Verify`) : un seul fichier P-code diffère sur 290,
-  `§,7u\x1f§` (Main) ; hors renumérotation des labels de saut (`ofs0081` → `ofs0080`, `ofs00f0` → `ofs00ef`,
-  conséquence du retrait d'une instruction d'un octet), le diff est exactement :
+Avec l'API de lecture (tâche « lecteur amélioré ») : SHA-256
+`9049b2123bc96f3a9f3952fb10e345230789465f90689e9e4a8e88f536268bb0` (deux builds dans deux dossiers de travail :
+même SHA-256), `CLIENT_SWF` en `?v=4`. Le `pushbyte 14` du correctif ci-dessus est alors à l'octet 302188 du corps
+décompressé (la classe des helpers a grandi).
+
+- Innocuité (`build-play.ps1 -Verify`) : 29 fichiers P-code diffèrent octet à octet sur 290, 4 hors renumérotation
+  `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation
+  des labels de saut :
 
 ```
+=== §,7u\x1f§ (Main._rsq)
                      getlocal 6
                      ifeq ofs0081
 -                    returnvoid
                   ofs0081:
+
+=== §Q\btf§ (Game, handler ENTER_FRAME §&l\f[\x01§)
+   initproperty QName(PackageNamespace(""),")\x11\x1d\x0e")
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  getlocal0
++  callpropvoid QName(PackageNamespace(""),"mtInit"), 1
+   jump …
+ …
+-  findproperty QName(PackageNamespace(""),"k\n/$\x03")
+-  callpropvoid QName(PackageNamespace(""),"k\n/$\x03"), 0
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  getlocal0
++  callpropvoid QName(PackageNamespace(""),"mtFrame"), 1
+
+=== §Q\btf§ (Game, §Bl{K\x01§)
+   pushbyte 8
+   greaterequals
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  getproperty QName(PackageNamespace(""),"mtFast")
++  bitor
++  convert_b
+   returnvalue
 ```
 
 Affichage (Ruffle web, `OracleRunner.runPlay`, `test/play.test.ts`) :

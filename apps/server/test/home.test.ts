@@ -353,7 +353,7 @@ for (const mode of MODES) {
 test("home page: offers carry flashvars safe in the script, 2 skill tooltips each", async () => {
   const env = setup("path");
   const html = await (await env.client().req("/")).text();
-  assert.equal([...html.matchAll(/swfobject\.embedSWF\("\/swf\/client_fr_play\.swf\?v=3"/g)].length, 5);
+  assert.equal([...html.matchAll(/swfobject\.embedSWF\("\/swf\/client_fr_play\.swf\?v=4"/g)].length, 5);
   for (const m of html.matchAll(/flashvars : ("(?:[^"\\]|\\.)*")/g)) {
     const fv = JSON.parse(m[1]!) as string;
     assert.match(fv, /^data=[A-Za-z0-9%._~!*()-]+&chk=play&imageurl=\/img\/&onclick=_\.selectTrooper\(100\d,\d+\)$/);

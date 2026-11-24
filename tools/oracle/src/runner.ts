@@ -365,6 +365,17 @@ export class OracleRunner {
     }
   }
 
+  /**
+   * Opens a fresh page on the runner's server (`/` = the Ruffle page above, `__mtLoad(url, params, extra)`),
+   * for tests that drive a player themselves; the caller closes it.
+   */
+  async newPage(): Promise<{ page: import("playwright").Page; origin: string; playSwf: string; embed: typeof PLAY_EMBED }> {
+    await this.start();
+    const page = await this.context!.newPage();
+    await page.goto(this.origin + "/");
+    return { page, origin: this.origin, playSwf: `${this.origin}/swf/play.swf`, embed: PLAY_EMBED };
+  }
+
   async run(input: BattleInput, opts: Omit<RunOptions, "swf"> = {}): Promise<OracleTrace> {
     const { lines } = await this.runRaw(input, { ...opts, swf: "trace" });
     return { formatVersion: 1, swfSha256: traceSwfSha256(), input, record: parseTrace(lines) };

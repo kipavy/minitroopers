@@ -6,7 +6,8 @@
 //     unreferenced class of the original SWF (FFDec -importScript can only replace existing
 //     classes, not add new ones). That class is recompiled from AS3; it had only an empty
 //     constructor.
-//   - PC_*: three call sites are inserted in the P-code of original methods (FIND must occur
+//   - HELPERS_PLAY_*: same, for client_fr_play.swf (build.ps1 -Play): the replay API.
+//   - PC_*: call sites are inserted in the P-code of original methods (FIND must occur
 //     exactly once in the method, it is replaced by REPLACE), via `ffdec -replace <script>
 //     <pcode> <methodBodyIndex>`. No original method is recompiled from AS3, so their
 //     bytecode stays identical except for the inserted instructions.
@@ -232,4 +233,232 @@ ofs0081:
 getlocal 6
 ifeq ofs0081
 ofs0081:
+//@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
+   import flash.external.ExternalInterface;
+   import flash.utils.getTimer;
+
+//@@ HELPERS_PLAY  (client_fr_play.swf: replay API, static methods of §(m]a\x02§; docs/research/lecteur-swf.md)
+      // --- state (one Game per player instance). Applied index: total - queue.length - (step ? 1 : 0).
+      public static var mtGame:§Q\btf§ = null;
+      public static var mtTotal:int = 0;
+      public static var mtCps:Array = [];
+      public static var mtWaves:Array = [];
+      public static var mtSpd:Number = 1;
+      public static var mtAcc:Number = 0;
+      public static var mtPaused:Boolean = false;
+      public static var mtEnded:Boolean = false;
+      // read by the Game's isFast() (PC_PLAY_FAST): suppresses the same FX as the native 16x mode
+      public static var mtFast:Boolean = false;
+      public static var mtIdx:int = -1;
+      public static var mtWave:int = 0;
+      public static var mtLast:int = 0;
+
+      // --- SWF -> page
+      public static function mtOut(param1:String, param2:Array) : void
+      {
+         if(!ExternalInterface.available)
+         {
+            return;
+         }
+         try
+         {
+            ExternalInterface.call.apply(null,[param1].concat(param2));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // --- page -> SWF (registered by mtInit on the Ruffle element)
+      public static function mtPause() : void
+      {
+         mtPaused = true;
+      }
+
+      public static function mtResume() : void
+      {
+         mtPaused = false;
+      }
+
+      public static function mtSpeed(param1:Number) : void
+      {
+         if(isNaN(param1))
+         {
+            return;
+         }
+         mtSpd = param1 < 0.125 ? 0.125 : (param1 > 32 ? 32 : param1);
+         mtFast = mtSpd >= 8;
+         try
+         {
+            if(mtGame != null && mtGame.§\x011wD§.stage != null)
+            {
+               mtGame.§\x011wD§.stage.frameRate = mtSpd < 1 ? 40 * mtSpd : 40;
+            }
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      public static function mtState() : Object
+      {
+         return {
+            "idx":(mtIdx < 0 ? 0 : mtIdx),
+            "wave":mtWave,
+            "total":mtTotal,
+            "speed":mtSpd,
+            "paused":mtPaused,
+            "ended":mtEnded
+         };
+      }
+
+      // --- Game hooks
+      // state 0 -> 1 (PC_PLAY_GAME_INIT): the history is complete and nothing has been applied yet
+      public static function mtInit(param1:§Q\btf§) : void
+      {
+         var _loc2_:Array = param1.§\x1e-\x02\x07\x01§;
+         var _loc3_:int = 0;
+         var _loc4_:int = 0;
+         mtGame = param1;
+         mtTotal = _loc2_.length;
+         mtCps = [];
+         mtWaves = [];
+         mtSpd = 1;
+         mtAcc = 0;
+         mtPaused = false;
+         mtEnded = false;
+         mtFast = false;
+         mtIdx = -1;
+         mtWave = 0;
+         mtLast = getTimer();
+         while(_loc3_ < _loc2_.length)
+         {
+            _loc4_ = int(_loc2_[_loc3_]["An%6"][")-Z\x19\x01"]);
+            if(_loc4_ == 38)
+            {
+               mtCps.push(_loc3_);
+            }
+            else if(_loc4_ == 39)
+            {
+               mtWaves.push(_loc3_);
+            }
+            _loc3_++;
+         }
+         if(ExternalInterface.available)
+         {
+            try
+            {
+               ExternalInterface.addCallback("mtPause",mtPause);
+               ExternalInterface.addCallback("mtResume",mtResume);
+               ExternalInterface.addCallback("mtSpeed",mtSpeed);
+               ExternalInterface.addCallback("mtState",mtState);
+            }
+            catch(_loc_e_:*)
+            {
+            }
+         }
+         mtOut("mtReady",[{
+            "total":mtTotal,
+            "checkpoints":mtCps,
+            "waves":mtWaves
+         }]);
+      }
+
+      // state 2 (PC_PLAY_GAME_FRAME), instead of one frame() per player frame: speed >= 1 -> floor(acc += speed)
+      // calls (frame() is tick-exact, hit-stop included); speed < 1 -> one call, stage.frameRate lowered.
+      // Time budget: 10 ms, or half the previous frame interval when frames are slower (slow renderer: the speed
+      // still scales, the frame rate at most halves), never above 100 ms; at least one call.
+      public static function mtFrame(param1:§Q\btf§) : void
+      {
+         var _loc2_:int = 0;
+         var _loc3_:int = 0;
+         var _loc4_:int = getTimer();
+         var _loc5_:int = (_loc4_ - mtLast) >> 1;
+         mtLast = _loc4_;
+         if(_loc5_ < 10)
+         {
+            _loc5_ = 10;
+         }
+         else if(_loc5_ > 100)
+         {
+            _loc5_ = 100;
+         }
+         if(!mtPaused)
+         {
+            mtAcc += mtSpd < 1 ? 1 : mtSpd;
+            _loc2_ = int(mtAcc);
+            mtAcc -= _loc2_;
+            if(param1.§w\x0b\x01o\x02§ != null && _loc2_ > 1)
+            {
+               _loc2_ = 1;
+            }
+            while(_loc3_ < _loc2_)
+            {
+               param1.§k\n/$\x03§();
+               _loc3_++;
+               if(getTimer() - _loc4_ >= _loc5_)
+               {
+                  break;
+               }
+            }
+         }
+         mtReport(param1);
+      }
+
+      // mtProgress(idx, wave) when the applied index changed; mtEnd() once Winner (the last entry) is applied
+      public static function mtReport(param1:§Q\btf§) : void
+      {
+         var _loc2_:int = mtTotal - param1.§\x1e-\x02\x07\x01§.length - (param1.§^h'l\x02§ != null ? 1 : 0);
+         if(_loc2_ == mtIdx)
+         {
+            return;
+         }
+         mtIdx = _loc2_;
+         while(mtWave < mtWaves.length && mtWaves[mtWave] < _loc2_)
+         {
+            mtWave++;
+         }
+         mtOut("mtProgress",[_loc2_,mtWave]);
+         if(_loc2_ >= mtTotal && !mtEnded)
+         {
+            mtEnded = true;
+            mtOut("mtEnd",[]);
+         }
+      }
+//@@ PC_PLAY_GAME_INIT_FIND  (Game ENTER_FRAME handler, state 0 -> 1, same spot as PC_GAME)
+getlex QName(PackageNamespace(""),"(\x1ar3")
+getproperty QName(PackageNamespace(""),"{DEL}\x0fY@")
+initproperty QName(PackageNamespace(""),")\x11\x1d\x0e")
+jump ofs0068
+//@@ PC_PLAY_GAME_INIT_REPLACE  (=> `§(m]a\x02§.mtInit(this);` once the history is complete, before any animation)
+getlex QName(PackageNamespace(""),"(\x1ar3")
+getproperty QName(PackageNamespace(""),"{DEL}\x0fY@")
+initproperty QName(PackageNamespace(""),")\x11\x1d\x0e")
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtInit"), 1
+jump ofs0068
+//@@ PC_PLAY_GAME_FRAME_FIND  (Game ENTER_FRAME handler, state 2: `this.frame();`)
+ofs0093:
+findproperty QName(PackageNamespace(""),"k\n/$\x03")
+callpropvoid QName(PackageNamespace(""),"k\n/$\x03"), 0
+ofs009a:
+//@@ PC_PLAY_GAME_FRAME_REPLACE  (=> `§(m]a\x02§.mtFrame(this);`, which calls frame() 0..n times)
+ofs0093:
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtFrame"), 1
+ofs009a:
+//@@ PC_PLAY_FAST_FIND  (Game isFast() §Bl{K\x01§: `return ticksPerFrame >= 8;`)
+pushbyte 8
+greaterequals
+returnvalue
+//@@ PC_PLAY_FAST_REPLACE  (=> `return (ticksPerFrame >= 8) | §(m]a\x02§.mtFast;`)
+pushbyte 8
+greaterequals
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getproperty QName(PackageNamespace(""),"mtFast")
+bitor
+convert_b
+returnvalue
 //@@ END

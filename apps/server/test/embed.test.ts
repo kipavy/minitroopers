@@ -15,12 +15,12 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
   win.window = win;
   vm.runInNewContext(readFileSync(new URL("../public/js/embed.js", import.meta.url), "utf8"), win);
   const params = { menu: false, flashvars: "data=abc&chk=1", scale: "noscale", allowScriptAccess: "always", bgcolor: "#F2DDB8", wmode: "transparent" };
-  win.swfobject.embedSWF("/swf/client_fr_play.swf?v=3", "swf_a", 720, 440, "10.0.0", null, null, params, { id: "battle", class: "swf" });
+  win.swfobject.embedSWF("/swf/client_fr_play.swf?v=4", "swf_a", 720, 440, "10.0.0", null, null, params, { id: "battle", class: "swf" });
   win.swfobject.embedSWF("/swf/mini.swf", "swf_b", 214, 216, "10.0.0", null, null, params, { id: "tr_view", class: "swf_transparent" });
   assert.equal(loaded.length, 2);
   assert.equal(replaced.length, 2);
   const c = loaded[0];
-  assert.equal(c.url, "/swf/client_fr_play.swf?v=3");
+  assert.equal(c.url, "/swf/client_fr_play.swf?v=4");
   assert.equal(c.parameters, "data=abc&chk=1");
   assert.equal(c.autoplay, "on");
   assert.equal(c.splashScreen, false);
