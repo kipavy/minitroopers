@@ -105,6 +105,7 @@ ${o.content}
 </div></div></div>
 <div class="dbottom"><div class="pbottomleft"></div>
 <div class="art_mouse"></div>
+<div class="dbg"><div class="indust"></div></div>
 </div>
 <div class="copy">${protect}(c) Killian Pavy · <a href="https://github.com/kipavy/minitroopers" target="_blank" rel="noopener">GitHub</a></div></div></div>
 </body></html>`;

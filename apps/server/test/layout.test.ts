@@ -29,7 +29,7 @@ test("layout escapes a <script> in the army name and title", () => {
 
 test("layout keeps the original frame and wires local assets", () => {
   const out = String(layout(cfg, { title: "MiniTroopers", content: html`<p>hi</p>`, host: "nsun", pass: true }));
-  for (const cls of ["ptop", "bottomsite", "ptopsite", 'id="content"', "dbottom", 'class="copy"', "pbottomleft"]) assert.ok(out.includes(cls), cls);
+  for (const cls of ["ptop", "bottomsite", "ptopsite", 'id="content"', "dbottom", 'class="copy"', "pbottomleft", 'class="dbg"', "indust"]) assert.ok(out.includes(cls), cls);
   assert.ok(out.includes('href="/css/style.css'));
   assert.ok(out.includes('src="/js/jquery.min.js"'));
   assert.ok(out.includes('src="/ruffle/ruffle.js"'));
