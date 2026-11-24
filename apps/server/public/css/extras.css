@@ -43,3 +43,27 @@ td.right > .event-banner {
 	box-sizing : border-box;
 }
 
+
+/* HQ battle box with 6 or 7 battles (5 + COMMANDEMENT): one row, equal gaps on both sides (5.5 px / 7.5 px); the
+   "play" tiles keep the left part of bgo2.gif (52x22: tank + "GO !"), muzzle flash included, shifted 3 px left so the
+   tank is centred (layout validated by Killian on 2026-11-24). */
+.bcount6 {
+	padding-left : 4.5px !important;
+}
+.bcount6 .b {
+	width : 51px;
+}
+.bcount7 {
+	padding-left : 6.5px !important;
+}
+.bcount7 .b {
+	width : 43px;
+}
+.bcount6 .b.bgo2 a img, .bcount7 .b.bgo2 a img {
+	width : 26px;
+	height : 22px;
+	object-fit : none;
+	object-position : 0 0;
+	position : relative;
+	left : -3px;
+}

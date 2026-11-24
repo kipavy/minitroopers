@@ -49,21 +49,23 @@ function copyAs(env: Env, id: number, kind: string, mode: string | null, phase: 
 }
 
 for (const mode of MODES) {
-  test(`[${mode}] no recruit, missions locked: the 3rd battle view goes to /endDay, the 2nd to /hq?money`, async () => {
+  test(`[${mode}] no recruit, missions locked: the 5th battle view goes to /endDay, the 4th to /hq?money`, async () => {
     const env = setup(mode);
     const { cl, id } = await warp(env);
     const v1 = await fight(env, cl);
     assert.equal(dayOver(env.db, id, today(env)), false);
     assert.ok(toHq(await view(env, cl, v1)));
-    const v2 = await fight(env, cl);
-    const p2 = await view(env, cl, v2);
-    assert.ok(toHq(p2) && !endsAt(p2, mode));
-    const v3 = await fight(env, cl);
+    await fight(env, cl);
+    await fight(env, cl);
+    const v4 = await fight(env, cl);
+    const p4 = await view(env, cl, v4);
+    assert.ok(toHq(p4) && !endsAt(p4, mode));
+    const v5 = await fight(env, cl);
     assert.equal(dayOver(env.db, id, today(env)), true);
-    const p3 = await view(env, cl, v3);
-    assert.ok(endsAt(p3, mode), "3rd view ends the day");
+    const p5 = await view(env, cl, v5);
+    assert.ok(endsAt(p5, mode), "5th view ends the day");
     // single shot: the replay is a plain replay
-    assert.ok(!endsAt(await view(env, cl, v3), mode));
+    assert.ok(!endsAt(await view(env, cl, v5), mode));
 
     const res = await get(env, cl, "/endDay");
     assert.equal(res.status, 200);
@@ -76,15 +78,14 @@ for (const mode of MODES) {
     assert.ok(!page.includes("braziball") && !page.includes("trax.motion-twin"));
   });
 
-  test(`[${mode}] unlocked missions unplayed: 3rd battle goes to /hq, then the 3rd failed mission try goes to /endDay`, async () => {
+  test(`[${mode}] unlocked missions unplayed: 5th battle goes to /hq, then the 3rd failed mission try goes to /endDay`, async () => {
     const env = setup(mode);
     const { cl, id } = await warp(env);
     env.db.prepare("UPDATE armies SET missions_unlocked = 1 WHERE id = ?").run(id);
-    await fight(env, cl);
-    await fight(env, cl);
-    const v3 = await fight(env, cl);
+    for (let n = 0; n < 4; n++) await fight(env, cl);
+    const v5 = await fight(env, cl);
     assert.equal(dayOver(env.db, id, today(env)), false);
-    assert.ok(toHq(await view(env, cl, v3)));
+    assert.ok(toHq(await view(env, cl, v5)));
     assert.equal((await get(env, cl, "/endDay")).status, 302);
     assert.equal((await get(env, cl, "/endDay")).headers.get("location"), loc(mode, "/hq"));
     // 3 lost tries, stored one by one
@@ -103,11 +104,10 @@ for (const mode of MODES) {
     const r = createArmy(env.db, { host: "rec", name: "rec", part: 0, faction: 1, credits: 0, recruiterId: id, createdIp: "9.9.9.9", createdCid: null, now: env.clock.t, trooper: { seed: 77, name: "Rec" }, maxPerIp: 99, dayOf: () => "x" });
     assert.ok(r.ok);
     env.db.prepare("UPDATE armies SET recruit_confirmed_at = ? WHERE id = ?").run(env.clock.t, r.army.id);
-    await fight(env, cl);
-    await fight(env, cl);
-    const v3 = await fight(env, cl);
+    for (let n = 0; n < 4; n++) await fight(env, cl);
+    const v5 = await fight(env, cl);
     assert.equal(dayOver(env.db, id, today(env)), false);
-    assert.ok(toHq(await view(env, cl, v3)));
+    assert.ok(toHq(await view(env, cl, v5)));
     assert.equal((await get(env, cl, "/endDay")).status, 302);
     // the raid is lost: its first view ends the day
     copyAs(env, id, "raid", "raid", 1, "loss");

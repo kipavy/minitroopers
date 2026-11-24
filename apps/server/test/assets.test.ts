@@ -96,9 +96,8 @@ for (const mode of MODES) {
     assert.equal((await create(env, warp, "Warp", { part: "0", recruit: "boss" })).status, 302);
     const at = env.at("warp", "/b/battle");
     assert.equal((await warp.req(at.url, { host: at.host, form: { chk: warp.key!, n: "0", friend: "Boss" } })).status, 303);
-    // Warp (1 trooper, no recruit, missions locked) ends its day with 2 more battles: /endDay is shown
-    await fight(env, warp, "warp");
-    await fight(env, warp, "warp");
+    // Warp (1 trooper, no recruit, missions locked) ends its day with 4 more battles: /endDay is shown
+    for (let n = 0; n < 4; n++) await fight(env, warp, "warp");
     await fight(env, boss, "boss");
 
     const pages: [Client, string, string][] = [

@@ -5,13 +5,16 @@ export const STARTING_CREDITS = 0;
 
 const COMMANDEMENT = 69;
 
-/** 3 battles a day, +1 per trooper with COMMANDEMENT (skill 69), max 5 (recon §2.10). */
+/**
+ * 5 battles a day, +1 per trooper with COMMANDEMENT (skill 69), max 7. The original gave 3 (+1 each, max 5, recon
+ * §2.10); raised for this instance (2026-11-24), the skill still adds at most 2 as its description says.
+ */
 export function battlesPerDay(troopers: { skills: number[] }[]): number {
   const n = troopers.filter((t) => t.skills.includes(COMMANDEMENT)).length;
-  return Math.min(5, 3 + n);
+  return Math.min(7, 5 + n);
 }
 
-/** Battles a day for these troopers (3, +1 per COMMANDEMENT trooper, max 5). */
+/** Battles a day for these troopers (5, +1 per COMMANDEMENT trooper, max 7). */
 export const battleAllowance = (troopers: readonly BattleTrooperInput[]): number =>
   battlesPerDay(troopers.map((t) => ({ skills: describeTrooper(t).skills })));
 

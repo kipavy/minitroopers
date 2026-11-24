@@ -206,7 +206,7 @@ for (const mode of MODES) {
     // the HQ tile links the battle
     const hq = await (await get(env, cl, "/hq")).text();
     assert.ok(hq.includes(`<a href="${loc(mode, "/b/view/bat1")}"`));
-    assert.ok(hq.includes("Il te reste 2 batailles aujourd&#39;hui !"));
+    assert.ok(hq.includes("Il te reste 4 batailles aujourd&#39;hui !"));
     // unknown battle number: back to the HQ
     const none = await get(env, cl, "/b/view/bat2");
     assert.equal(none.status, 302);
@@ -302,7 +302,7 @@ for (const mode of MODES) {
     assert.ok(page.includes("Cette attaque n&#39;est plus valable.") || page.includes("Cette attaque n'est plus valable."));
   });
 
-  test(`[${mode}] 3 battles a day: the 4th is refused; wrong key and opponents off the list are refused`, async () => {
+  test(`[${mode}] 5 battles a day: the 6th is refused; wrong key and opponents off the list are refused`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await warp(env);
     const other = foe(env, "other", "Other", [{ seed: 1234567, name: "Bob" }]);
@@ -323,17 +323,17 @@ for (const mode of MODES) {
     assert.ok(err.includes("poperror"));
     assert.ok(err.includes("Cet adversaire ne fait pas partie de ta liste du jour."));
     void other;
-    for (let n = 0; n < 3; n++) {
+    for (let n = 0; n < 5; n++) {
       const r = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[n]!.ref)};n=${n};chk=${key}`);
       assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat${n + 1}?d=${today(env)}`));
     }
     const c3 = credits(env, id);
-    const fourth = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[3]!.ref)};n=3;chk=${key}`);
-    assert.equal(fourth.status, 302);
-    assert.equal(fourth.headers.get("location"), loc(mode, "/hq"));
-    const friend = await get(env, cl, "/b/battle", { form: { chk: key, n: "3", friend: "Other" } });
+    const sixth = await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[0]!.ref)};n=5;chk=${key}`);
+    assert.equal(sixth.status, 302);
+    assert.equal(sixth.headers.get("location"), loc(mode, "/hq"));
+    const friend = await get(env, cl, "/b/battle", { form: { chk: key, n: "5", friend: "Other" } });
     assert.equal(friend.headers.get("location"), loc(mode, "/hq"));
-    assert.equal(battles(env, id).length, 3);
+    assert.equal(battles(env, id).length, 5);
     assert.equal(credits(env, id), c3);
     // no battle left: the opponents page sends back to the HQ
     assert.equal((await get(env, cl, "/b/opp")).headers.get("location"), loc(mode, "/hq"));
@@ -378,7 +378,7 @@ for (const mode of MODES) {
     const fview = await (await get(env, cl, `/b/fview/${r2.id}`)).text();
     assert.match(fview, /VS\nL&#39;armée de Sang-surs/);
     // the HQ tiles count both
-    assert.ok((await (await get(env, cl, "/hq")).text()).includes("Il te reste 1 bataille aujourd&#39;hui !"));
+    assert.ok((await (await get(env, cl, "/hq")).text()).includes("Il te reste 3 batailles aujourd&#39;hui !"));
     assert.equal((await get(env, cl, "/b/fview/999999")).status, 404);
   });
 
@@ -433,9 +433,9 @@ for (const mode of MODES) {
     env.clock.t = Date.parse("2026-11-23T22:59:00Z"); // 23:59 in Paris (UTC+1)
     const { cl, key, id } = await warp(env);
     const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
-    for (let n = 0; n < 3; n++) await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[n]!.ref)};n=${n};chk=${key}`);
-    assert.equal(battles(env, id).length, 3);
-    assert.equal((await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[3]!.ref)};n=3;chk=${key}`)).headers.get("location"), loc(mode, "/hq"));
+    for (let n = 0; n < 5; n++) await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[n]!.ref)};n=${n};chk=${key}`);
+    assert.equal(battles(env, id).length, 5);
+    assert.equal((await get(env, cl, `/b/battle?opp=${encodeURIComponent(links[0]!.ref)};n=5;chk=${key}`)).headers.get("location"), loc(mode, "/hq"));
     env.clock.t = Date.parse("2026-11-23T23:00:00Z"); // 00:00 in Paris
     assert.equal(today(env), "2026-11-24");
     // yesterday's opponent and URL are no longer valid
@@ -449,7 +449,7 @@ for (const mode of MODES) {
     const r = await get(env, cl, pathOf(mode, next[0]!.href));
     assert.equal(r.headers.get("location"), loc(mode, `/b/view/bat1?d=${today(env)}`));
     assert.equal(battles(env, id).filter((b) => b.day === "2026-11-24").length, 1);
-    assert.ok((await (await get(env, cl, "/hq")).text()).includes("Il te reste 2 batailles aujourd&#39;hui !"));
+    assert.ok((await (await get(env, cl, "/hq")).text()).includes("Il te reste 4 batailles aujourd&#39;hui !"));
   });
 
   test(`[${mode}] hostile army and trooper names never reach a flashvar or an attribute unencoded`, async () => {

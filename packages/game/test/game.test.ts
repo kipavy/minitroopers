@@ -91,11 +91,12 @@ test("economy", () => {
   for (let i = 5; i <= 14; i++) assert.equal(referralBounty(i), 10);
   for (let i = 15; i <= 34; i++) assert.equal(referralBounty(i), 5);
   assert.equal(referralBounty(35), 0);
-  assert.equal(battlesPerDay([{ skills: [1] }, { skills: [] }]), 3);
+  assert.equal(battlesPerDay([{ skills: [1] }, { skills: [] }]), 5);
   const c = { skills: [69, 2] };
-  assert.equal(battlesPerDay([c, c, c]), 5);
-  assert.equal(battlesPerDay([c, c, c, c, c]), 5);
-  assert.equal(battlesPerDay([c]), 4);
+  assert.equal(battlesPerDay([c]), 6);
+  assert.equal(battlesPerDay([c, c]), 7);
+  assert.equal(battlesPerDay([c, c, c]), 7);
+  assert.equal(battlesPerDay([c, c, c, c, c]), 7);
   assert.equal(battleReward(true), 2);
   assert.equal(battleReward(false), 1);
   assert.equal(STARTING_CREDITS, 0);
