@@ -29,8 +29,8 @@
       contextMenu: "off",
       backgroundColor: "#F2DDB8"
     };
-    // Ruffle's default renderer unless the embed asks for one: its plain WebGL renderer has no BitmapData.draw (the
-    // battle client, the troopers grid and the replay API need it).
+    // Per-embed renderer choice (swfEmbed `renderer`). Ruffle's plain WebGL renderer has no BitmapData.draw (the
+    // troopers grid, the battle pause screen), so it is only requested where the SWF never draws.
     if (params.renderer) config.preferredRenderer = params.renderer;
     if (params.scale) config.scale = params.scale;
     if (params.menu !== undefined) config.menu = params.menu !== false && params.menu !== "false";

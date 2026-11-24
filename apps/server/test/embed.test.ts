@@ -7,7 +7,7 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
   const loaded: any[] = [];
   const replaced: any[] = [];
   const mkEl = (id?: string) => ({ id, className: "", style: {} as Record<string, string>, parentNode: { replaceChild: (n: any, o: any) => replaced.push([n, o]) }, load: (c: any) => loaded.push(c) });
-  const targets: Record<string, any> = { swf_a: mkEl("swf_a"), swf_b: mkEl("swf_b") };
+  const targets: Record<string, any> = { swf_a: mkEl("swf_a"), swf_b: mkEl("swf_b"), swf_c: mkEl("swf_c") };
   const win: any = {
     RufflePlayer: { newest: () => ({ createPlayer: () => mkEl() }) },
     document: { getElementById: (i: string) => targets[i] ?? null },
@@ -27,7 +27,9 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
   assert.equal(c.unmuteOverlay, "hidden");
   assert.equal(c.contextMenu, "off");
   assert.equal(c.backgroundColor, "#F2DDB8");
-  assert.equal(c.preferredRenderer, undefined, "Ruffle's default renderer (plain WebGL has no BitmapData.draw)");
+  assert.equal(c.preferredRenderer, undefined); // Ruffle's default: plain WebGL has no BitmapData.draw
+  win.swfobject.embedSWF("/swf/client_fr_play.swf?v=3", "swf_c", 670, 240, "10.0.0", null, null, { ...params, renderer: "webgl" }, { id: "recuits", class: "swf" });
+  assert.equal(loaded[2].preferredRenderer, "webgl");
   assert.equal(c.scale, "noscale");
   assert.equal(c.allowScriptAccess, true);
   assert.equal(c.wmode, "transparent");

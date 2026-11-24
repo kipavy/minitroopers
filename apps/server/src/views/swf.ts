@@ -24,10 +24,10 @@ export function jsJson(v: unknown): string {
  * `flashvars` is already the `data=…&chk=…` string from clientParams(); `id`/`objId` are trusted identifiers.
  * `opaque`: the battle embed of the original pages (no `wmode`, class `swf`).
  */
-export function swfEmbed(o: { id: string; width: number; height: number; flashvars: string; objId: string; swf?: string; opaque?: boolean }): Html {
+export function swfEmbed(o: { id: string; width: number; height: number; flashvars: string; objId: string; swf?: string; opaque?: boolean; renderer?: "webgl" }): Html {
   const swf = o.swf ?? CLIENT_SWF;
   return raw(
-    `<div id="${o.id}" class="swf"></div>\n<script type="text/javascript">var swfp = { menu : false, flashvars : ${jsStr(o.flashvars)}, scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8'${o.opaque ? "" : " ,wmode : 'transparent'"} };\n` +
+    `<div id="${o.id}" class="swf"></div>\n<script type="text/javascript">var swfp = { menu : false, flashvars : ${jsStr(o.flashvars)}, scale : 'noscale', allowScriptAccess : 'always', bgcolor : '#F2DDB8'${o.opaque ? "" : " ,wmode : 'transparent'"}${o.renderer ? ` ,renderer : '${o.renderer}'` : ""} };\n` +
       `\tswfobject.embedSWF(${jsStr(swf)},${jsStr(o.id)},${o.width},${o.height},'10.0.0',null,null,swfp,{ id : ${jsStr(o.objId)}, 'class' : ${o.opaque ? "'swf'" : "'swf_transparent'"} })</script>`,
   );
 }
