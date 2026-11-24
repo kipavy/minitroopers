@@ -397,8 +397,8 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
       assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "current log line highlighted");
 
-      // 4. backward: a click on the timeline at wave 1's start (or, without waves, at half the current index) → a new
-      // Ruffle player, then mtSeek there, still paused
+      // 4. backward: a click on the timeline inside wave 1 (= that wave's start), or without waves Shift + click at half
+      // the current index (= that exact event) → a new Ruffle player, then mtSeek there, still paused
       const back = ready.waves.length > 0 ? firstWave : Math.floor(s1.idx / 2);
       assert.ok(back < s1.idx && back > 0, `a target before the current index (${back} < ${s1.idx})`);
       await page.evaluate(() => {
@@ -406,7 +406,10 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       });
       const players = (await playerInfo(page)).players;
       const track = (await page.locator("#mtp-track").boundingBox())!;
-      await page.mouse.click(track.x + ((back + 0.25) / ready.total) * track.width, track.y + track.height / 2);
+      const x = track.x + ((ready.waves.length > 0 ? back + 1.5 : back + 0.25) / ready.total) * track.width;
+      if (ready.waves.length === 0) await page.keyboard.down("Shift");
+      await page.mouse.click(x, track.y + track.height / 2);
+      if (ready.waves.length === 0) await page.keyboard.up("Shift");
       await until(page, () => playerInfo(page), (p) => p.players === players + 1 && p.ready !== null && p.first !== null, 120_000, "player recreated and landed");
       assert.equal(await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old), undefined, "a new Ruffle element");
       const s2 = await until(page, () => swfState(page), (s) => !s.seeking, 60_000, "backward seek done");
@@ -421,7 +424,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.deepEqual([png.width, png.height], [720, 440]);
 
       // 6. x32, play, then "Fin": the banner shows the stored winner, its button leads to /hq?money=N
-      await page.locator("#mtp-speed").fill("8"); // the speed slider's last step: x32
+      await page.locator("#mtp-speed").fill("32"); // the speed slider's last notch: x32
       await page.click("#mtp-play");
       const s3 = await until(page, () => swfState(page), (s) => !s.paused, 10_000, "play button");
       assert.equal(s3.speed, 32);

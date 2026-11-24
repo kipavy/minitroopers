@@ -14,8 +14,19 @@
   var embed = w.swfobject && w.swfobject.embedSWF;
   if (!embed) return;
 
-  var SPEEDS = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32];
-  var SPEED_TEXT = ["×1/8", "×1/4", "×1/2", "×1", "×2", "×4", "×8", "×16", "×32"];
+  // Speed slider: notches of a quarter octave from x1/8 (0) to x32 (32); x1 is notch 12.
+  var NOTCHES = 32;
+  var notchSpeed = function (v) {
+    return Math.pow(2, v / 4 - 3);
+  };
+  var speedNotch = function (x) {
+    return Math.max(0, Math.min(NOTCHES, Math.round((Math.log(x) / Math.LN2 + 3) * 4)));
+  };
+  var speedText = function (x) {
+    if (x >= 1) return "×" + (Math.round(x * 10) / 10);
+    var inv = 1 / x;
+    return Math.abs(inv - Math.round(inv)) < 0.01 ? "×1/" + Math.round(inv) : "×" + (Math.round(x * 100) / 100);
+  };
   var READY_MS = 10000;
   var JUMP = 10;
   var log = w.mtLog || [];
@@ -196,8 +207,8 @@
     update();
   }
   function stepSpeed(dir) {
-    var i = SPEEDS.indexOf(speed) + dir;
-    if (i >= 0 && i < SPEEDS.length) setSpeed(SPEEDS[i]);
+    var v = speedNotch(speed) + dir;
+    if (v >= 0 && v <= NOTCHES) setSpeed(notchSpeed(v));
   }
   function toggleX2() {
     if (speed === 2) setSpeed(beforeX2 === 2 ? 1 : beforeX2);
@@ -315,14 +326,16 @@
     var key = e.key;
     var act = null;
     if (key === " " || key === "Spacebar" || key === "k" || key === "K") act = togglePause;
-    else if (key === "ArrowRight") act = e.shiftKey ? nextWave : nextEvent;
-    else if (key === "ArrowLeft") act = e.shiftKey ? prevWave : prevEvent;
+    else if (key === "ArrowRight") act = e.shiftKey ? function () { seek(currentIdx() + JUMP); } : nextEvent;
+    else if (key === "ArrowLeft") act = e.shiftKey ? function () { seek(currentIdx() - JUMP); } : prevEvent;
     else if (key === "n" || key === "N") act = nextWave;
     else if (key === "p" || key === "P") act = prevWave;
     else if (key === "Home") act = function () { seek(0); };
     else if (key === "End") act = function () { seek(total()); };
-    else if (key === "+" || key === "=" || key === "Add") act = function () { stepSpeed(1); };
-    else if (key === "-" || key === "_" || key === "Subtract") act = function () { stepSpeed(-1); };
+    else if (key === "PageDown") act = nextWave;
+    else if (key === "PageUp") act = prevWave;
+    else if (key === "+" || key === "=" || key === "Add" || key === ">") act = function () { stepSpeed(1); };
+    else if (key === "-" || key === "_" || key === "Subtract" || key === "<") act = function () { stepSpeed(-1); };
     else if (key === "c" || key === "C") act = captureSoon;
     else if (key === "?") act = toggleHelp;
     else if (key === "Escape" && ui && !ui.help.hidden) act = toggleHelp;
@@ -408,14 +421,24 @@
       var from = k === 0 ? 0 : waves[k - 1];
       var to = k < waves.length ? waves[k] : t;
       if (to <= from) continue;
-      var seg = node("span", "mtp-seg" + (k % 2 ? " mtp-odd" : ""), k === 0 ? "" : String(k));
+      var seg = node("span", "mtp-seg" + (k % 2 ? " mtp-odd" : ""));
+      // numbered like the waves people see: the opening deployment is wave 1, each NewWave starts the next one
+      seg.appendChild(node("span", "mtp-seg__label", String(k + 1)));
       seg.style.left = (from / t) * 100 + "%";
       seg.style.width = ((to - from) / t) * 100 + "%";
-      seg.title = k === 0 ? "Déploiement" : "Vague " + k;
+      seg.title = "Vague " + (k + 1);
       seg.setAttribute("data-wave", String(k));
       ui.segs.appendChild(seg);
       ui.segList.push(seg);
     }
+  }
+
+/** First history index of the wave holding index n (0 before the first wave). */
+  function waveStart(n) {
+    var waves = info.ready ? info.ready.waves : [];
+    var start = 0;
+    for (var i = 0; i < waves.length && waves[i] <= n; i++) start = waves[i];
+    return start;
   }
 
   /** Last shown log line at or before index i (binary search), or -1. */
@@ -441,21 +464,25 @@
     var t = total();
     var idx = Math.min(info.idx, t);
     var waves = ready ? info.ready.waves.length : 0;
-    ui.play.textContent = ended ? "↺" : paused ? "▶" : "❚❚";
+    var shape = ended ? "again" : paused ? "play" : "pause";
+    if (ui.play.getAttribute("data-shape") !== shape) {
+      ui.play.setAttribute("data-shape", shape);
+      ui.play.innerHTML = "";
+      ui.play.appendChild(icon(shape));
+    }
     ui.play.title = ended ? "Revoir (Espace)" : paused ? "Lecture (Espace)" : "Pause (Espace)";
-    var si = SPEEDS.indexOf(speed);
-    ui.range.value = String(si);
-    ui.speedValue.textContent = SPEED_TEXT[si];
+    ui.range.value = String(speedNotch(speed));
+    ui.speedValue.textContent = speedText(speed);
     ui.x2.setAttribute("aria-pressed", speed === 2 ? "true" : "false");
     var pct = t > 0 ? (idx / t) * 100 : 0;
     ui.cursor.style.left = pct + "%";
     for (var j = 0; ui.segList && j < ui.segList.length; j++) {
       var sw = Number(ui.segList[j].getAttribute("data-wave"));
-      toggleClass(ui.segList[j], "mtp-curwave", sw > 0 && sw === info.wave);
+      toggleClass(ui.segList[j], "mtp-curwave", sw === info.wave);
     }
     var id = typeof w.battleID === "string" ? w.battleID : "";
     ui.where.textContent = ready
-      ? "Combat #" + id + " · événement " + idx + " / " + t + (waves ? " · vague " + info.wave + " / " + waves : "")
+      ? "Combat #" + id + " · événement " + idx + " / " + t + " · vague " + (info.wave + 1) + " / " + (waves + 1)
       : "Combat #" + id + " · chargement…";
     if (idx !== shownIdx) {
       shownIdx = idx;
@@ -523,6 +550,48 @@
     if (last < text.length) li.appendChild(d.createTextNode(text.slice(last)));
   }
 
+  var SVG = "http://www.w3.org/2000/svg";
+  function svg(width, height) {
+    var e = d.createElementNS(SVG, "svg");
+    e.setAttribute("width", String(width));
+    e.setAttribute("height", String(height));
+    e.setAttribute("viewBox", "0 0 " + width + " " + height);
+    e.setAttribute("aria-hidden", "true");
+    e.setAttribute("class", "mtp-icon");
+    return e;
+  }
+  function shape(parent, tag, attrs) {
+    var e = d.createElementNS(SVG, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e);
+    return e;
+  }
+  /** n chevrons pointing left (dir -1) or right (1), stroked. */
+  function chevrons(n, dir) {
+    var step = 5;
+    var width = 6 + step * (n - 1) + 4;
+    var e = svg(width, 14);
+    for (var i = 0; i < n; i++) {
+      var x = 2 + i * step;
+      var pts = dir > 0 ? x + ",2.5 " + (x + 5) + ",7 " + x + ",11.5" : x + 5 + ",2.5 " + x + ",7 " + (x + 5) + ",11.5";
+      shape(e, "polyline", { points: pts, fill: "none", stroke: "currentColor", "stroke-width": "2.3", "stroke-linecap": "round", "stroke-linejoin": "round" });
+    }
+    return e;
+  }
+  function icon(kind) {
+    var e = svg(16, 16);
+    if (kind === "pause") {
+      shape(e, "rect", { x: "3.2", y: "2.5", width: "3.4", height: "11", rx: "0.8", fill: "currentColor" });
+      shape(e, "rect", { x: "9.4", y: "2.5", width: "3.4", height: "11", rx: "0.8", fill: "currentColor" });
+    } else if (kind === "play") {
+      shape(e, "path", { d: "M4.5 2.5 L13 8 L4.5 13.5 Z", fill: "currentColor", stroke: "currentColor", "stroke-width": "1", "stroke-linejoin": "round" });
+    } else {
+      shape(e, "path", { d: "M12.6 8.6 A4.8 4.8 0 1 1 9.8 3.6", fill: "none", stroke: "currentColor", "stroke-width": "2.2", "stroke-linecap": "round" });
+      shape(e, "path", { d: "M8.4 0.9 L13 3.4 L8.9 6.4 Z", fill: "currentColor" });
+    }
+    return e;
+  }
+
   function build() {
     var bar = d.getElementById("mtp-bar");
     var logBox = d.getElementById("mtp-log");
@@ -566,15 +635,48 @@
     // timeline + info line
     var track = node("div", "mtp-track");
     track.id = "mtp-track";
-    track.title = "Aller à ce moment du combat";
+    track.title = "Clic : début de la vague · glisser ou Maj + clic : cet événement";
     ui.segs = node("div", "mtp-segs");
     ui.cursor = node("div", "mtp-cursor");
+    ui.ghost = node("div", "mtp-ghost");
+    ui.ghost.hidden = true;
     track.appendChild(ui.segs);
+    track.appendChild(ui.ghost);
     track.appendChild(ui.cursor);
-    track.addEventListener("click", function (e) {
+    // click: start of that wave; drag or Shift + click: that exact event
+    var drag = null;
+    var at = function (e) {
       var r = track.getBoundingClientRect();
-      if (r.width > 0) seek(Math.round(((e.clientX - r.left) / r.width) * total()));
+      return r.width > 0 ? Math.max(0, Math.min(total(), Math.round(((e.clientX - r.left) / r.width) * total()))) : 0;
+    };
+    track.addEventListener("pointerdown", function (e) {
+      if (!info.ready || e.button !== 0) return;
+      drag = { x: e.clientX, moved: false, shift: e.shiftKey };
+      if (track.setPointerCapture) track.setPointerCapture(e.pointerId);
+      e.preventDefault();
     });
+    track.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      if (Math.abs(e.clientX - drag.x) > 3) drag.moved = true;
+      if (drag.moved) {
+        var n = at(e);
+        ui.ghost.hidden = false;
+        ui.ghost.style.left = (total() > 0 ? (n / total()) * 100 : 0) + "%";
+        message("Événement " + n);
+      }
+    });
+    var release = function (e) {
+      if (!drag) return;
+      var exact = drag.moved || drag.shift || e.shiftKey;
+      drag = null;
+      ui.ghost.hidden = true;
+      if (e.type === "pointerup") {
+        var n = at(e);
+        seek(exact ? n : waveStart(n));
+      }
+    };
+    track.addEventListener("pointerup", release);
+    track.addEventListener("pointercancel", release);
     bar.appendChild(track);
     var meta = node("div", "mtp-meta");
     ui.where = node("span", "mtp-where");
@@ -590,16 +692,21 @@
         seek(currentIdx() + delta);
       };
     };
-    transport.appendChild(button("«««", "", "Début du combat (Début)", function () { seek(0); }, "mtp-start"));
-    transport.appendChild(button("««", "", "Vague précédente (P)", prevWave, "mtp-prevwave"));
-    transport.appendChild(button("«", "mtp-wide", JUMP + " événements en arrière", jump(-JUMP)));
-    transport.appendChild(button("‹", "", "Événement précédent (←)", prevEvent, "mtp-prev"));
-    ui.play = button("❚❚", "mtp-play", "Pause (Espace)", togglePause, "mtp-play");
+    var tbtn = function (n, dir, cls, title, fn, id) {
+      var b = button("", "mtp-tr" + (cls ? " " + cls : ""), title, fn, id);
+      b.appendChild(chevrons(n, dir));
+      transport.appendChild(b);
+    };
+    tbtn(4, -1, "", "Début du combat (Début)", function () { seek(0); }, "mtp-start");
+    tbtn(3, -1, "", "Vague précédente (P)", prevWave, "mtp-prevwave");
+    tbtn(2, -1, "mtp-wide", JUMP + " événements en arrière (Maj + ←)", jump(-JUMP), "mtp-back10");
+    tbtn(1, -1, "", "Événement précédent (←)", prevEvent, "mtp-prev");
+    ui.play = button("", "mtp-play", "Pause (Espace)", togglePause, "mtp-play");
     transport.appendChild(ui.play);
-    transport.appendChild(button("›", "", "Événement suivant (→)", nextEvent, "mtp-next"));
-    transport.appendChild(button("»", "mtp-wide", JUMP + " événements en avant", jump(JUMP)));
-    transport.appendChild(button("»»", "", "Vague suivante (N)", nextWave, "mtp-nextwave"));
-    transport.appendChild(button("»»»", "", "Fin du combat (Fin)", function () { seek(total()); }, "mtp-end"));
+    tbtn(1, 1, "", "Événement suivant (→)", nextEvent, "mtp-next");
+    tbtn(2, 1, "mtp-wide", JUMP + " événements en avant (Maj + →)", jump(JUMP), "mtp-fwd10");
+    tbtn(3, 1, "", "Vague suivante (N)", nextWave, "mtp-nextwave");
+    tbtn(4, 1, "", "Fin du combat (Fin)", function () { seek(total()); }, "mtp-end");
     bar.appendChild(transport);
 
     // speed, x2, help
@@ -610,14 +717,21 @@
     ui.range.type = "range";
     ui.range.id = "mtp-speed";
     ui.range.min = "0";
-    ui.range.max = String(SPEEDS.length - 1);
+    ui.range.max = String(NOTCHES);
     ui.range.step = "1";
     ui.range.setAttribute("aria-label", "Vitesse");
     var onRange = function () {
-      setSpeed(SPEEDS[Number(ui.range.value)] || 1);
+      setSpeed(notchSpeed(Number(ui.range.value)));
     };
     ui.range.addEventListener("input", onRange);
     ui.range.addEventListener("change", onRange);
+    var ticks = node("span", "mtp-ticks");
+    for (var v = 0; v <= NOTCHES; v++) {
+      var tick = node("i", v % 4 === 0 ? (v === 12 ? "mtp-tick mtp-tick--major mtp-tick--one" : "mtp-tick mtp-tick--major") : "mtp-tick");
+      tick.style.left = (v / NOTCHES) * 100 + "%";
+      ticks.appendChild(tick);
+    }
+    scale.appendChild(ticks);
     scale.appendChild(ui.range);
     second.appendChild(scale);
     ui.speedValue = node("span", "mtp-speed__value");
@@ -639,28 +753,67 @@
     ui.help = node("div", "mtp-help");
     ui.help.id = "mtp-help";
     ui.help.hidden = true;
+    // keys: alternatives joined by "ou", chords by "+"
     var keys = [
-      [["Espace", "K"], "pause / lecture"],
-      [["←", "→"], "événement précédent / suivant"],
-      [["P", "N"], "vague précédente / suivante (ou Maj + ← / →)"],
-      [["Début", "Fin"], "début / fin du combat"],
-      [["−", "+"], "vitesse"],
-      [["C"], "capture d'écran"],
-      [["?"], "cette aide"]
+      [[["Espace"], ["K"]], "Pause, reprise"],
+      [[["←"], ["→"]], "Un événement en arrière, en avant"],
+      [[["Maj", "←"], ["Maj", "→"]], "Dix événements"],
+      [[["P"], ["N"]], "Vague précédente, suivante"],
+      [[["Pg préc."], ["Pg suiv."]], "Vague précédente, suivante"],
+      [[["Début"], ["Fin"]], "Début, fin du combat"],
+      [[["<"], [">"]], "Plus lent, plus vite (un cran)"],
+      [[["C"]], "Capture d'écran"],
+      [[["?"]], "Cette aide"]
     ];
-    var table = node("table");
+    var mouse = [
+      ["Frise", "Clic", "Début de cette vague"],
+      ["", "Glisser", "Cet événement précis"],
+      ["", "Maj + clic", "Cet événement précis"],
+      ["Journal", "Clic sur une ligne", "Y aller"]
+    ];
+    var head = node("div", "mtp-help__head");
+    head.appendChild(node("span", "mtp-help__q", "?"));
+    head.appendChild(node("span", "mtp-help__title", "Raccourcis clavier"));
+    head.appendChild(button("×", "mtp-help__close", "Fermer l'aide", toggleHelp));
+    ui.help.appendChild(head);
+    var table = node("table", "mtp-help__table");
+    var section = function (text) {
+      var tr = node("tr", "mtp-help__section");
+      var th = node("th", "", text);
+      th.colSpan = 3;
+      tr.appendChild(th);
+      table.appendChild(tr);
+    };
+    section("Clavier");
     for (var h = 0; h < keys.length; h++) {
       var tr = node("tr");
-      var td = node("td");
-      for (var q = 0; q < keys[h][0].length; q++) {
-        if (q) td.appendChild(d.createTextNode(" "));
-        td.appendChild(node("kbd", "", keys[h][0][q]));
+      var td = node("td", "mtp-help__keys");
+      td.colSpan = 2;
+      var alts = keys[h][0];
+      for (var q = 0; q < alts.length; q++) {
+        if (q) td.appendChild(node("span", "mtp-help__or", alts.length > 2 ? "," : "ou"));
+        for (var c = 0; c < alts[q].length; c++) {
+          if (c) td.appendChild(node("span", "mtp-help__plus", "+"));
+          td.appendChild(node("kbd", "", alts[q][c]));
+        }
       }
       tr.appendChild(td);
       tr.appendChild(node("td", "", keys[h][1]));
       table.appendChild(tr);
     }
-    ui.help.appendChild(node("div", "mtp-help__title", "Raccourcis clavier"));
+    section("Souris");
+    for (var m = 0; m < mouse.length; m++) {
+      var mr = node("tr");
+      mr.appendChild(node("td", "mtp-help__where", mouse[m][0]));
+      var how = node("td", "mtp-help__how");
+      if (mouse[m][1] === "Maj + clic") {
+        how.appendChild(node("kbd", "", "Maj"));
+        how.appendChild(d.createTextNode(" + clic"));
+      } else how.textContent = mouse[m][1];
+      mr.appendChild(how);
+      mr.appendChild(node("td", "", mouse[m][2]));
+      table.appendChild(mr);
+    }
     ui.help.appendChild(table);
     bar.appendChild(ui.help);
 

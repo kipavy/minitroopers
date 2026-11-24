@@ -186,7 +186,7 @@ export function battleLog(input: BattleInput, armyNames?: readonly [string, stri
       case 36:
         return `${who} descend de son véhicule`;
       case 39:
-        return `Nouvelle vague (${wave})`;
+        return `Vague ${wave + 1}`;
       default:
         return "";
     }
