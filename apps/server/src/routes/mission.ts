@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, armyPower, battleData, clientParams, simulateOutcome, type BattleArmyInput, type BattleTrooperInput } from "@mt/engine";
 import {
-  EPIC_NPC_MAX, EPIC_SIDE_MAX, MISSION_UNLOCK_COST, dayKey, dayRats, epicPower, fillerArmy, missionOfDay, missionReward, npcArmy,
+  EPIC_NPC_MAX, EPIC_SIDE_MAX, MISSION_UNLOCK_COST, dayKey, dayRats, epicPower, fillerArmy, missionOfDay, missionReward, npcArmy, rewardMultiplier,
   pickInfiltrationTarget, ratArmy, type MissionType,
 } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
@@ -108,7 +108,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
       if (e instanceof InvalidBattleInput) return "invalid";
       throw e;
     }
-    return { mode, defenderId, defenderRef, input, winner, reward: missionReward(winner === input.attackerSide) };
+    return { mode, defenderId, defenderRef, input, winner, reward: missionReward(winner === input.attackerSide) * rewardMultiplier(day, cfg.weekendMultiplier) };
   }
 
   // "Débloquer pour 5": paid once, then back to the HQ.
@@ -154,7 +154,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
-    const reward = missionReward(won);
+    const reward = missionReward(won) * rewardMultiplier(b.day, cfg.weekendMultiplier);
     // UNVERIFIED: the "just played" message of a mission was never archived; built like the battle one.
     const endMsg = fresh
       ? won

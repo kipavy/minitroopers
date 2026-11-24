@@ -2,7 +2,7 @@ import type { Context, Hono } from "hono";
 import { formBody } from "../form.ts";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { battleAllowance, battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
+import { battleAllowance, battleReward, dayKey, rewardMultiplier, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { cachedBattleLog, type LogLine } from "../battleLog.ts";
@@ -65,7 +65,10 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
   const today = (): string => dayOf(now());
 
   /** Builds and resolves the battle against `foe`, reading the attacker as stored (inside the fight transaction). */
-  function resolve(army: ArmyRow, foe: Foe): NewBattle | string {
+  /** Credits of a battle fought on game day `day` (weekend event included). */
+  const rewardOf = (win: boolean, day: string): number => battleReward(win) * rewardMultiplier(day, cfg.weekendMultiplier);
+
+  function resolve(army: ArmyRow, foe: Foe, day: string): NewBattle | string {
     if (foe.defenderId === army.id) return "self";
     const mine = battleTroopers(db, army.id); // deployment order (RECON4 §3)
     if (mine.length === 0 || foe.army.troopers.length === 0) return "invalid"; // the engine only rejects 0 vs 0
@@ -77,7 +80,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       if (e instanceof InvalidBattleInput) return "invalid";
       throw e;
     }
-    return { defenderId: foe.defenderId, defenderRef: foe.defenderRef, input, winner, reward: battleReward(winner === input.attackerSide) };
+    return { defenderId: foe.defenderId, defenderRef: foe.defenderRef, input, winner, reward: rewardOf(winner === input.attackerSide, day) };
   }
 
   /**
@@ -106,12 +109,12 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       decide: () => {
         if (byName) {
           const foe = foeByName(db, a.friend);
-          return foe ? resolve(o.army, foe) : "missing";
+          return foe ? resolve(o.army, foe, day) : "missing";
         }
         const list = dayOpponents<ArmyRef>(db, o.army.id, day) ?? [];
         const foe = a.opp !== undefined && list.some((x) => x.id === a.opp) ? foeOf(db, a.opp) : null;
         if (!foe || foe.defenderId === o.army.id) return "opp";
-        return resolve(o.army, foe);
+        return resolve(o.army, foe, day);
       },
     });
     if (r.ok) return to(byName ? `/b/fview/${r.id}` : `/b/view/bat${r.n}?d=${day}`);
@@ -142,7 +145,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const sessionArmy = c.get("session").armyId;
     const fresh = sessionArmy === b.attackerId && !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
-    const reward = battleReward(won);
+    const reward = rewardOf(won, b.day);
     const viewerDefends = sessionArmy !== null && sessionArmy === b.defenderId;
     const viewerWon = viewerDefends ? b.winner !== null && !won : won;
     // UNVERIFIED: the defeat variant of the "just fought" message was never captured; built like the victory one.
