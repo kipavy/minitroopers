@@ -7,6 +7,7 @@ import { clientIp } from "./ip.ts";
 import { sameOrigin } from "./origin.ts";
 import { runWithNow } from "./requestClock.ts";
 import { sessionMiddleware, type Session } from "./session.ts";
+import { registerOg } from "./routes/og.ts";
 import { serveStatic } from "./static.ts";
 import { isValidHost, resolveArmyHost } from "./urls.ts";
 
@@ -56,6 +57,7 @@ export function createApp(deps: Deps, mount?: (pages: Hono<Env>) => void): Hono<
     db.prepare("SELECT 1").get();
     return c.text("ok", 200, { "cache-control": "no-store" });
   });
+  registerOg(app, deps);
 
   const pages = new Hono<Env>();
   pages.use("*", securityHeaders);

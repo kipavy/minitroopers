@@ -603,7 +603,7 @@ function metaTags(page: string): Record<string, string> {
 }
 
 for (const mode of MODES) {
-  test(`[${mode}] link previews: the battle pages carry og:/twitter: tags (title, date, winner, public URL, fixed image)`, async () => {
+  test(`[${mode}] link previews: the battle pages carry og:/twitter: tags (title, date, winner, public URL, per-battle image)`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await warp(env);
     const foeId = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
@@ -620,11 +620,11 @@ for (const mode of MODES) {
       "og:title": "Revoir : L&#39;armée de Warp VS L&#39;armée de Foe",
       "og:description": `Combat MiniTroopers du 23/11/2026. ${winner === null ? "Match nul." : `Victoire de ${winner}.`}`,
       "og:url": url,
-      "og:image": `${base}/img/og-battle.jpg`,
+      "og:image": `${base}/og/battle/${row.id}.jpg`,
       "og:image:type": "image/jpeg",
       "og:image:width": "1200",
       "og:image:height": "630",
-      "og:image:alt": "MiniTroopers : un combat à revoir",
+      "og:image:alt": "Revoir : L&#39;armée de Warp VS L&#39;armée de Foe",
       "twitter:card": "summary_large_image",
     };
     // 1st view of /b/view/bat1 = the just-fought page ("+N [T]", markSeen), 2nd view = the replay: same tags on both
@@ -674,33 +674,13 @@ for (const mode of MODES) {
 
 test("link previews: battleOg names the stored winner (attacker or defender), a null winner is a draw", () => {
   const cfg = setup("path").cfg;
-  const row = (winner: number | null) => ({ day: "2026-11-22", winner, input: { attackerSide: 1 } as BattleInput });
+  const row = (winner: number | null) => ({ id: 7, day: "2026-11-22", winner, input: { attackerSide: 1 } as BattleInput });
   const og = (winner: number | null) => battleOg(cfg, row(winner), "L'armée de A", "L'armée de D", "/b/fview/7");
   assert.equal(og(1).description, "Combat MiniTroopers du 22/11/2026. Victoire de L'armée de A.");
   assert.equal(og(0).description, "Combat MiniTroopers du 22/11/2026. Victoire de L'armée de D.");
   assert.equal(og(null).description, "Combat MiniTroopers du 22/11/2026. Match nul.");
   assert.equal(og(0).title, "Revoir : L'armée de A VS L'armée de D");
   assert.equal(og(0).url, `${cfg.publicUrl}/b/fview/7`);
-});
-
-test("link previews: public/img/og-battle.jpg is a 1200x630 JPEG under 200 KB, served as image/jpeg", async () => {
-  const res = await setup("path").app.request("/img/og-battle.jpg");
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-type"), "image/jpeg");
-  const buf = Buffer.from(await res.arrayBuffer());
-  assert.ok(buf.equals(readFileSync(new URL("../public/img/og-battle.jpg", import.meta.url))));
-  assert.ok(buf.length < 200 * 1024, `${buf.length} bytes`);
-  assert.deepEqual([...buf.subarray(0, 3)], [0xff, 0xd8, 0xff], "SOI");
-  let pos = 2;
-  let size: { w: number; h: number } | null = null;
-  while (pos < buf.length && !size) {
-    assert.equal(buf[pos], 0xff, "marker");
-    const marker = buf[pos + 1]!;
-    const len = buf.readUInt16BE(pos + 2);
-    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
-      size = { h: buf.readUInt16BE(pos + 5), w: buf.readUInt16BE(pos + 7) };
-    }
-    pos += 2 + len;
-  }
-  assert.deepEqual(size, { w: 1200, h: 630 });
+  assert.equal(og(0).image, `${cfg.publicUrl}/og/battle/7.jpg`);
+  assert.equal(og(0).imageAlt, og(0).title);
 });

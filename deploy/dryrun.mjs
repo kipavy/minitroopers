@@ -4,12 +4,14 @@
 // 2. runs the Dockerfile's install there (npm ci --omit=dev --ignore-scripts),
 // 3. starts the Dockerfile's CMD with its ENV (free PORT, temporary DATA_DIR),
 // 4. checks a few routes (200), then SIGTERM: exit code 0 within 5 s.
+// Between 2 and 3, draws a link preview banner (resvg's native binary for this platform, the bundled font).
 // Prints the copied size and "OK"; exits 1 on the first error. No dependency.
 import { execFileSync, spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const REPO = resolve(import.meta.dirname, "..");
 const ROUTES = ["/healthz", "/", "/css/style.css", "/ruffle/ruffle.js", "/swf/client_fr_play.swf", "/favicon.ico"];
@@ -90,7 +92,7 @@ async function main() {
       ".env.local", "deploy/.env.production", "var/minitroopers.sqlite", "deploy/data/x.sqlite3", "x.sqlite-wal",
       "var/minitroopers.db", "var/minitroopers.db-shm", "x.db", "apps/server/node_modules/hono/index.js", "tools/bin/ms-playwright/x", "tools/oracle/golden-full/x"];
     const MUST_KEEP = ["Dockerfile", "package-lock.json", "apps/server/src/main.ts", "apps/server/migrations/001_init.sql", "apps/server/data/tips.fr.json",
-      "apps/server/public/swf/client_fr_play.swf", "packages/engine/src/index.ts", "tools/oracle/package.json"];
+      "apps/server/public/swf/client_fr_play.swf", "apps/server/fonts/LilitaOne-Regular.ttf", "packages/engine/src/index.ts", "tools/oracle/package.json"];
     for (const p of MUST_EXCLUDE) if (!ignored(p)) throw new Error(`.dockerignore does not exclude ${p}`);
     for (const p of MUST_KEEP) if (ignored(p)) throw new Error(`.dockerignore excludes ${p}`);
     console.log(`.dockerignore: ${MUST_EXCLUDE.length} planted paths excluded, ${MUST_KEEP.length} needed paths kept`);
@@ -113,6 +115,12 @@ async function main() {
       if (existsSync(join(ctx, "node_modules", dev))) throw new Error(`devDependency installed: ${dev}`);
     }
     console.log(`with node_modules: ${du(ctx)}`);
+    const og = pathToFileURL(join(ctx, "apps/server/src/og.ts")).href;
+    const banner = { kind: "COMBAT", left: { name: "a", faction: 3, troopers: 1 }, right: { name: "b", faction: 2, troopers: 1 }, bg: "bg/garden.jpg", footer: "x", site: "y" };
+    // (no --input-type: the rasteriser worker inherits execArgv)
+    execFileSync(process.execPath, ["-e",
+      `import(${JSON.stringify(og)}).then((m) => m.bannerJpeg(${JSON.stringify(banner)})).then((j) => { if (j[0] !== 0xff || j[1] !== 0xd8) throw new Error("not a JPEG"); console.log("og banner: " + j.length + " bytes"); });`],
+      { cwd: ctx, stdio: "inherit" });
 
     // 3. Start the CMD with the Dockerfile's ENV
     const { env, cmd } = readDockerfile(join(REPO, "Dockerfile"));

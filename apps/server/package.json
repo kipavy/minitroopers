@@ -10,7 +10,9 @@
     "@hono/node-server": "^2.1.11",
     "@mt/engine": "*",
     "@mt/game": "*",
-    "hono": "^4.13.20"
+    "@resvg/resvg-js": "^2.6.2",
+    "hono": "^4.13.20",
+    "jpeg-js": "^0.4.4"
   },
   "devDependencies": {
     "playwright": "1.65.1"
