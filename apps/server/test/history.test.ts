@@ -238,6 +238,7 @@ for (const mode of MODES) {
     const page = await (await get(env, b, "boss", "/history")).text();
     assert.ok(page.includes(`<td class="right">\n\n<div id="swf_recuits" class="swf"></div>`));
     assert.ok(page.includes(`swfobject.embedSWF("/swf/client_fr_play.swf?v=3","swf_recuits",670,240,'10.0.0',null,null,swfp,{ id : "recuits", 'class' : 'swf' })</script>\n\n<table class="log">`));
+    assert.ok(page.includes(" ,renderer : 'webgl' };"), "the recruits animation asks for plain WebGL");
     const fv = flashvarsOf(page, "swf_recuits");
     assert.ok(!fv.includes("wmode"));
     const dec = decodeRecruitsFlashvars(fv);

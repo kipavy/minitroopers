@@ -51,7 +51,8 @@ export interface HistoryView {
  * $S3/03602485362_history.html (no defence: the text right under the `<h2>`, no `<ul>`).
  */
 export function historyRight(cfg: Config, v: HistoryView): Html {
-  const anim = v.animation === null ? "" : html`${swfEmbed({ id: "swf_recuits", width: 670, height: 240, flashvars: v.animation, objId: "recuits", opaque: true })}
+  // The recruits animation ran at 16 fps on an Adreno laptop with Ruffle's default renderer, 60 with plain WebGL.
+  const anim = v.animation === null ? "" : html`${swfEmbed({ id: "swf_recuits", width: 670, height: 240, flashvars: v.animation, objId: "recuits", opaque: true, renderer: "webgl" })}
 
 `;
   const battles =
