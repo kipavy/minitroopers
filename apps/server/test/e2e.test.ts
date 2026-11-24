@@ -384,18 +384,34 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await page.click("#mtp-play");
       const s0 = await until(page, () => swfState(page), (s) => s.paused, 10_000, "pause button");
 
-      // 3. forward: click on a log line ahead
+      // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
+      // → goes to the next shown line the same way; the share link reopens on that line (step 7)
       const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
       const firstWave = ready.waves[0] ?? 0;
-      // a line with another one before it (that one is highlighted once j is reached)
-      const j = lines.find((i, k) => k >= 1 && i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 2) ?? lines.find((i, k) => k >= 1 && i > s0.idx)!;
-      assert.ok(j > s0.idx, `a log line ahead (${j} > ${s0.idx})`);
+      const k = lines.findIndex((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 3);
+      assert.ok(k >= 0 && k + 1 < lines.length, "a log line ahead, and one after it");
+      const j = lines[k]!;
+      const current = (): Promise<number | null> =>
+        page.evaluate(() => {
+          const li = (globalThis as unknown as { document: { querySelector(s: string): { getAttribute(a: string): string } | null } }).document.querySelector("#mtp-log li.mtp-cur");
+          return li ? Number(li.getAttribute("data-i")) : null;
+        });
       await page.click(`#mtp-log li[data-i="${j}"]`);
-      const s1 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx >= j, 120_000, `seek to ${j}`);
-      assert.ok(landed(j, s1.idx), `log click: idx ${s1.idx} for line ${j}`);
+      const s1 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j, 120_000, `seek to line ${j}`);
+      assert.ok(landed(j + 1, s1.idx), `log click: idx ${s1.idx} for line ${j}`);
       await page.waitForTimeout(800);
       assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
-      assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "current log line highlighted");
+      assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "one current log line");
+      assert.equal(await current(), j, "the clicked line is the highlighted one");
+      const j2 = lines[k + 1]!;
+      await page.keyboard.press("ArrowRight");
+      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j2, 120_000, `→ to line ${j2}`);
+      assert.ok(landed(j2 + 1, s1b.idx), `→: idx ${s1b.idx} for line ${j2}`);
+      assert.equal(await until(page, current, (c) => c === j2, 5_000, "highlight after →"), j2);
+      await page.click("#mtp-link");
+      const link = await page.inputValue(".mtp-linkbox");
+      assert.ok(link.endsWith(`at=${s1b.idx}`), `share link ${link}`);
+      await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
 
       // 4. backward: a click on the timeline inside wave 1 (= that wave's start), or without waves Shift + click at half
       // the current index (= that exact event) → a new Ruffle player, then mtSeek there, still paused
@@ -431,11 +447,14 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.deepEqual(errors, []);
       await swfReplay(page, `${mode}-player`, won, at("bidasses", `/hq?money=${won ? 2 : 1}`));
 
-      // 7. ?at=N on the replay page: the first reported index is N
-      await page.goto(`${battleUrl}&at=${j}`);
+      // 7. the share link (?at=N) on the replay page: the first reported index is N, whose current line is j2 again
+      assert.ok(link.startsWith(battleUrl.split("?")[0]!));
+      await page.goto(link);
       await playerReady(page, `${mode}-at`);
       const p = await until(page, () => playerInfo(page), (p) => p.first !== null, 120_000, "first mtProgress with ?at=");
-      assert.ok(landed(j, p.first!), `?at=${j}: started at ${p.first}`);
+      assert.ok(landed(s1b.idx, p.first!), `?at=${s1b.idx}: started at ${p.first}`);
+      const lineAt = lines.filter((i) => i <= p.first! - 1).at(-1);
+      assert.equal(lineAt, j2, "the shared moment shows the same current line");
 
       // 8. 390 px wide: the player is scaled down, no horizontal scrolling
       const m = await page.context().newPage();

@@ -218,15 +218,17 @@
     }
   }
 
+  // The current log line is the last shown entry applied (index <= idx - 1); going to line i means applying it:
+  // seek(i + 1), so that it becomes the current line.
   function nextEvent() {
-    var idx = currentIdx();
-    for (var i = 0; i < events.length; i++) if (events[i] > idx) return seek(events[i]);
-    seek(total());
+    var cur = eventAt(currentIdx() - 1);
+    if (cur + 1 < events.length) seek(events[cur + 1] + 1);
+    else seek(total());
   }
   function prevEvent() {
-    var idx = currentIdx();
-    for (var i = events.length - 1; i >= 0; i--) if (events[i] < idx - 1) return seek(events[i]);
-    seek(0);
+    var cur = eventAt(currentIdx() - 1);
+    if (cur >= 1) seek(events[cur - 1] + 1);
+    else seek(0);
   }
   function nextWave() {
     var idx = currentIdx();
@@ -536,7 +538,9 @@
     all.sort(function (a, b) {
       return b.length - a.length;
     });
-    if (all.length) nameRe = new RegExp(all.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|"), "g");
+    // whole names only, never inside a longer word ("Rat" in "Rate")
+    var alts = all.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|");
+    if (all.length) nameRe = new RegExp("(?<![\\p{L}\\p{N}])(?:" + alts + ")(?![\\p{L}\\p{N}])", "gu");
   })();
   function fillLine(li, text) {
     if (!nameRe) return void li.appendChild(d.createTextNode(text));
@@ -839,7 +843,7 @@
     list.addEventListener("click", function (e) {
       var t = e.target;
       while (t && t !== list && !t.getAttribute("data-i")) t = t.parentNode;
-      if (t && t !== list) seek(Number(t.getAttribute("data-i")));
+      if (t && t !== list) seek(Number(t.getAttribute("data-i")) + 1);
     });
     details.appendChild(list);
     details.addEventListener("toggle", function () {
