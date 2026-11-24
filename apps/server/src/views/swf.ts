@@ -11,7 +11,12 @@ export const ARMY_SWF = "/swf/army.swf?v=2";
  * U+2028/2029 written as \u escapes, so no content can close the script element or break the literal.
  */
 export function jsStr(s: string): string {
-  return JSON.stringify(s).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  return jsJson(s);
+}
+
+/** Any JSON value as a JavaScript literal, escaped like jsStr. */
+export function jsJson(v: unknown): string {
+  return JSON.stringify(v).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
 }
 
 /**

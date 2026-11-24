@@ -7,6 +7,7 @@ import { MINI_SWF } from "../src/views/swf.ts";
 import { seedFactions } from "../src/admin/factions.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
+import { simulateBattle } from "@mt/engine/internal";
 
 const MODES: Mode[] = ["path", "subdomain"];
 
@@ -74,6 +75,14 @@ function battleFlashvars(html: string): string {
 }
 
 const won = (r: Row): boolean => r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide;
+
+/** The enhanced player's data of a battle page: `var mtLog = [...];` and `var mtAt = n|null;`. */
+function playerVars(html: string): { log: { i: number; w: number; t: string }[]; at: number | null } {
+  const log = /^var mtLog = (.*);$/m.exec(html);
+  const at = /^var mtAt = (.*);$/m.exec(html);
+  assert.ok(log && at, "player data present");
+  return { log: JSON.parse(log[1]!) as { i: number; w: number; t: string }[], at: JSON.parse(at[1]!) as number | null };
+}
 
 for (const mode of MODES) {
   test(`[${mode}] /b/opp: 5 opponents frozen for the day, grids xmax 4, attack links and the friend form`, async () => {
@@ -456,6 +465,47 @@ for (const mode of MODES) {
     const dec = decodeBattleFlashvars(battleFlashvars(page));
     assert.equal(dec.input.armies[1].troopers[0]!.name, "</script>'\"x");
     assert.deepEqual(dec.input, JSON.parse(battles(env, id)[0]!.input));
+  });
+
+  test(`[${mode}] enhanced player: player.js, one log line per history entry, ?at= parsed and bounded`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const foeId = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
+    void foeId;
+    await get(env, cl, "/b/battle", { form: { chk: key, n: "0", friend: "Foe" } });
+    const row = battles(env, id)[0]!;
+    const input = JSON.parse(row.input) as BattleInput;
+    const total = simulateBattle(input).events.length;
+    const page = await (await get(env, cl, "/b/view/bat1")).text();
+    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=1"></script>'));
+    assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
+    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=1"/>'));
+    const { log, at } = playerVars(page);
+    assert.equal(log.length, total, "one line per history entry");
+    assert.deepEqual(log.map((l) => l.i), [...log.keys()]);
+    assert.equal(at, null);
+    assert.ok(log.some((l) => l.t.includes("L'armée de Warp") || l.t.includes("L'armée de Foe")), "army names in the log");
+    // ?at=: a positive integer, bounded by the history length; anything else is ignored
+    const atOf = async (q: string): Promise<number | null> => {
+      const r = await get(env, cl, `/b/view/bat1${q}`);
+      assert.equal(r.status, 200, q);
+      return playerVars(await r.text()).at;
+    };
+    assert.equal(await atOf("?at=5"), 5);
+    assert.equal(await atOf(`?d=${today(env)};at=7`), 7);
+    assert.equal(await atOf(`?d=${today(env)}&at=${total}`), total);
+    assert.equal(await atOf("?at=999999"), total);
+    assert.equal(await atOf(`?at=${"9".repeat(400)}`), total);
+    for (const q of ["?at=-3", "?at=abc", "?at=0", "?at=", "?at=5.5", "?at=+5", "?at=0x10", "?at=%00"]) assert.equal(await atOf(q), null, q);
+    // the public replay page too
+    const fview = await get(env, cl, `/b/fview/${row.id}?at=3`);
+    assert.equal(fview.status, 200);
+    assert.equal(playerVars(await fview.text()).at, 3);
+    // only battle pages load the player
+    for (const p of ["/hq", "/b/opp", "/history"]) {
+      const other = await (await get(env, cl, p)).text();
+      assert.ok(!other.includes("player.js") && !other.includes("player.css"), p);
+    }
   });
 
   test(`[${mode}] strangers and other armies: no action, no page of someone else's battles`, async () => {

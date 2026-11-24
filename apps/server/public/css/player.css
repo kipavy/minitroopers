@@ -1,0 +1,307 @@
+/* Enhanced battle player (public/js/player.js): every rule is scoped to .mtp-* or body.mtp. */
+.mtp-game .swfframe {
+	float : left;
+	margin-left : 10px;
+}
+.mtp-screen {
+	width : 720px;
+	height : 440px;
+	overflow : hidden;
+}
+.mtp-stage {
+	width : 720px;
+	height : 440px;
+	transform-origin : 0px 0px;
+}
+.mtp-log {
+	float : left;
+	width : 190px;
+	height : 460px;
+	margin-top : 40px;
+	margin-left : 8px;
+	background : #F2DDB8;
+	border : 1px solid #b98a4e;
+	border-radius : 8px;
+	box-sizing : border-box;
+	display : flex;
+	flex-direction : column;
+	font-size : 0.9em;
+}
+.mtp-game .nam + .mtp-log {
+	margin-top : 32px;
+	height : 490px;
+}
+.mtp-loghead {
+	display : flex;
+	align-items : center;
+	justify-content : space-between;
+	padding : 4px 6px;
+	border-bottom : 1px solid #d8b884;
+	font-weight : bold;
+	font-variant : small-caps;
+}
+.mtp-lines {
+	position : relative;
+	flex : 1;
+	overflow-y : auto;
+	margin : 0px;
+	padding : 2px 0px;
+	list-style : none;
+}
+.mtp-lines li {
+	padding : 2px 6px;
+	cursor : pointer;
+	line-height : 1.25;
+	border-left : 3px solid transparent;
+}
+.mtp-lines li:hover {
+	background : #f8e9cc;
+}
+.mtp-lines li.mtp-future {
+	opacity : 0.55;
+}
+.mtp-lines li.mtp-wave {
+	margin-top : 4px;
+	font-weight : bold;
+	color : #283d7c;
+}
+.mtp-lines li.mtp-next {
+	border-left-color : #d8b884;
+}
+.mtp-lines li.mtp-cur {
+	background : #e7c48a;
+	border-left-color : #6b4320;
+	opacity : 1;
+}
+.mtp-folded .mtp-lines {
+	display : none;
+}
+.mtp-log.mtp-folded {
+	height : auto;
+}
+.mtp-bar {
+	clear : both;
+	width : 740px;
+	margin-left : 10px;
+	margin-top : 10px;
+	padding : 8px 10px;
+	background : #F2DDB8;
+	border : 1px solid #b98a4e;
+	border-radius : 8px;
+	box-sizing : border-box;
+}
+.mtp-wait {
+	opacity : 0.5;
+	pointer-events : none;
+}
+.mtp-off .mtp-bar, .mtp-off .mtp-log, .mtp-nolog .mtp-log {
+	display : none;
+}
+.mtp-off .swfframe, .mtp-nolog .swfframe {
+	float : none;
+	margin-left : 120px;
+}
+.mtp-row {
+	display : flex;
+	flex-wrap : wrap;
+	align-items : center;
+	gap : 4px 6px;
+	margin : 4px 0px;
+}
+.mtp-label {
+	font-weight : bold;
+	font-variant : small-caps;
+	margin-left : 6px;
+}
+.mtp-btn {
+	min-width : 34px;
+	height : 26px;
+	padding : 0px 8px;
+	border : 1px solid #6b4320;
+	border-radius : 4px;
+	background : #e3a54a linear-gradient(#f6cf7f, #d9933a);
+	color : #fff;
+	font-family : "Segoe UI", "Lucida Grande", "Trebuchet MS", Arial, "lucida sans unicode", sans-serif;
+	font-size : 0.95em;
+	font-weight : bold;
+	font-variant : small-caps;
+	text-shadow : -1px 0px 2px rgba(0,0,0,0.5), 0px 1px 2px rgba(0,0,0,0.5), 1px 0px 2px rgba(0,0,0,0.5);
+	cursor : pointer;
+	touch-action : manipulation;
+}
+.mtp-btn:hover {
+	background : #eab35e linear-gradient(#fbdc99, #e3a24a);
+}
+.mtp-btn.mtp-on {
+	background : #8a5424 linear-gradient(#a8692a, #6b4320);
+}
+.mtp-main {
+	min-width : 90px;
+	height : 30px;
+	font-size : 1.05em;
+}
+.mtp-small {
+	padding : 0px 4px;
+	height : 22px;
+	min-width : 0px;
+	font-size : 0.85em;
+}
+.mtp-track {
+	position : relative;
+	height : 18px;
+	margin : 8px 0px 4px 0px;
+	border : 1px solid #6b4320;
+	border-radius : 4px;
+	background : #fff4df;
+	overflow : hidden;
+	cursor : pointer;
+	touch-action : manipulation;
+}
+.mtp-seg {
+	position : absolute;
+	top : 0px;
+	bottom : 0px;
+	border-left : 1px solid #6b4320;
+	box-sizing : border-box;
+}
+.mtp-seg.mtp-odd {
+	background : #f3dfba;
+}
+.mtp-played {
+	position : absolute;
+	left : 0px;
+	top : 0px;
+	bottom : 0px;
+	background : rgba(217,147,58,0.55);
+	pointer-events : none;
+}
+.mtp-cursor {
+	position : absolute;
+	top : -1px;
+	bottom : -1px;
+	width : 3px;
+	margin-left : -1px;
+	background : #283d7c;
+	pointer-events : none;
+}
+.mtp-pos {
+	margin-left : auto;
+	font-size : 0.9em;
+}
+.mtp-msg {
+	font-size : 0.9em;
+	color : #283d7c;
+	font-weight : bold;
+}
+.mtp-linkbox {
+	width : 260px;
+	max-width : 100%;
+	font-size : 0.85em;
+	color : #283d7c;
+}
+.mtp-alert {
+	margin-bottom : 6px;
+	padding : 6px 10px;
+	border : 2px solid #8e1b0e;
+	border-radius : 6px;
+	background : #d23a20;
+	color : #fff;
+	font-weight : bold;
+}
+.mtp-alert .mtp-btn {
+	margin-left : 8px;
+}
+.mtp-help {
+	margin-top : 6px;
+	padding : 6px 10px;
+	border-top : 1px solid #d8b884;
+	font-size : 0.9em;
+}
+.mtp-help kbd {
+	display : inline-block;
+	min-width : 14px;
+	padding : 0px 4px;
+	border : 1px solid #6b4320;
+	border-radius : 3px;
+	background : #fff4df;
+	font-family : inherit;
+	text-align : center;
+}
+.mtp-help td {
+	padding : 2px 8px 2px 0px;
+}
+@media (max-width : 979px) {
+	body.mtp .site {
+		width : auto;
+		margin : 0px;
+	}
+	body.mtp .ptop, body.mtp .sp, body.mtp .pleft, body.mtp .pright, body.mtp .arthead, body.mtp .camera, body.mtp .ptopleft, body.mtp .art_mouse, body.mtp .pbottomleft {
+		display : none;
+	}
+	body.mtp a.logo {
+		position : relative;
+		margin : 0px auto;
+		max-width : 100%;
+		background-size : contain;
+		height : 90px;
+	}
+	body.mtp .frame {
+		margin-top : 0px;
+		background : none;
+	}
+	body.mtp .ptopsite {
+		background : none;
+	}
+	body.mtp #content {
+		min-height : 0px;
+		padding : 0px 8px;
+	}
+	body.mtp .game {
+		padding-bottom : 10px;
+	}
+	body.mtp .game .swfframe, body.mtp .mtp-off .swfframe, body.mtp .mtp-nolog .swfframe {
+		float : none;
+		width : auto;
+		height : auto;
+		margin : 0px;
+		padding : 0px;
+		background : none;
+	}
+	body.mtp .game h1 {
+		height : auto;
+		padding : 6px 4px;
+		background : #6b4320;
+		border-radius : 6px 6px 0px 0px;
+	}
+	body.mtp .mtp-screen {
+		width : 100%;
+	}
+	body.mtp .mtp-log, body.mtp .mtp-game .nam + .mtp-log {
+		float : none;
+		width : auto;
+		height : auto;
+		max-height : 45vh;
+		margin : 8px 0px 0px 0px;
+	}
+	body.mtp .mtp-bar {
+		width : auto;
+		margin : 8px 0px 0px 0px;
+		padding : 6px;
+	}
+	body.mtp .mtp-btn {
+		height : 34px;
+		min-width : 40px;
+	}
+	body.mtp .mtp-small {
+		height : 28px;
+	}
+	body.mtp .mtp-track {
+		height : 26px;
+	}
+	body.mtp .game .button5 {
+		margin-left : 0px;
+	}
+	body.mtp .copy {
+		width : auto;
+	}
+}

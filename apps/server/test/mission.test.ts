@@ -7,8 +7,20 @@ import { buildModeInput, type ModeKind } from "../src/battleInput.ts";
 import { armyByHost, createArmy, fightMission, type NewModeBattle } from "../src/repo.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
+import { simulateBattle } from "@mt/engine/internal";
 
 const MODES: Mode[] = ["path", "subdomain"];
+
+/** The enhanced player's log of a battle page against the engine history: one line per entry, the waves counted alike. */
+function assertPlayerLog(html: string, input: BattleInput): void {
+  const m = /^var mtLog = (.*);$/m.exec(html);
+  assert.ok(m && html.includes('src="/js/player.js'), "enhanced player on the page");
+  const log = JSON.parse(m[1]!) as { i: number; w: number; t: string }[];
+  const events = simulateBattle(input).events;
+  assert.equal(log.length, events.length, "one log line per history entry");
+  const waves = events.filter((e) => /^(d+)/.exec(e.slice(3).split("|")[2] ?? "")?.[1] === "39").length;
+  assert.equal(Math.max(0, ...log.map((l) => l.w)), waves, "log waves = NewWave entries");
+}
 const FIXTURES = new URL("../../../packages/engine/test/fixtures/modes/", import.meta.url);
 const BG_MODE: Record<number, ModeKind> = { 1: "exterminate", 2: "infiltrate", 3: "epic", 4: "raid" };
 
@@ -234,6 +246,7 @@ for (const mode of MODES) {
     const page = await (await get(env, cl, "/b/view/miss2")).text();
     const dec = decodeBattleFlashvars(battleFlashvars(page));
     assert.deepEqual(dec.input, inputs[1]);
+    assertPlayerLog(page, inputs[1]!);
     assert.equal(dec.vars.endMsg, "Ce combat s'est soldé par un échec !");
     assert.ok(page.includes(`document.location = ${JSON.stringify(loc(mode, "/hq"))};`));
     assert.ok(!page.includes("<h1>"), "no title outside the infiltration");

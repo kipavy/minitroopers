@@ -29,8 +29,9 @@
       contextMenu: "off",
       backgroundColor: "#F2DDB8",
       // Ruffle's default (WebGPU, then wgpu over WebGL) ran the 16-trooper recruits animation at 16 fps on an Adreno
-      // laptop; its plain WebGL renderer ran it at 60. The other renderers remain fallbacks.
-      preferredRenderer: "webgl"
+      // laptop; its plain WebGL renderer ran it at 60. The other renderers remain fallbacks. A page (or a test, on a
+      // GPU-less browser whose plain WebGL lacks BitmapData.draw) may choose another one in RufflePlayer.config.
+      preferredRenderer: w.RufflePlayer.config.preferredRenderer || "webgl"
     };
     if (params.scale) config.scale = params.scale;
     if (params.menu !== undefined) config.menu = params.menu !== false && params.menu !== "false";

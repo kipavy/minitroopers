@@ -5,6 +5,7 @@ import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@
 import { battleAllowance, battleReward, dayKey, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
+import { cachedBattleLog, type LogLine } from "../battleLog.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeByName, foeOf, type Foe } from "../foes.ts";
 import { armyByHost, armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, dayOver, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
@@ -14,6 +15,24 @@ import { armyTitle, missingPage } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
+
+/** `?at=`: a positive history index, bounded by `total`; absent, 0, negative or not a plain integer: null. */
+export function atParam(c: Context<Env>, total: number): number | null {
+  const q = queryParam(c, "at");
+  if (q === undefined || !/^[0-9]+$/.test(q)) return null;
+  const n = Math.min(Number(q), total);
+  return n > 0 ? n : null;
+}
+
+/**
+ * Data of the enhanced player for a stored battle: its French log (army names in input order: the viewer's swap of
+ * `attackerSide` only concerns the flashvars) and the `?at=` start.
+ */
+export function playerData(c: Context<Env>, b: BattleRow, attacker: string, defender: string): { log: LogLine[]; at: number | null } {
+  const other = defender || "L'adversaire";
+  const log = cachedBattleLog(b.input, b.input.attackerSide === 0 ? [attacker, other] : [other, attacker]);
+  return { log, at: atParam(c, log.length) };
+}
 
 // UNVERIFIED: the original battle seed range is unknown; archived seeds are all below 2^25. Any int32 replays the same.
 const SEED_MAX = 0x40000000;
@@ -121,11 +140,14 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
         ? "Tu as remporté ce combat !"
         : "Ce combat s'est soldé par un échec !";
     const hq = host !== null ? armyUrl(cfg, host, "/hq") : "/";
+    const attackerTitle = attacker ? armyTitle(attacker.name, attacker.part) : "L'armée inconnue";
+    const defender = defenderTitle(db, b);
     const view = {
       host,
       pass: host !== null && (armyByHost(db, host)?.passwordHash ?? null) !== null,
-      attacker: attacker ? armyTitle(attacker.name, attacker.part) : "L'armée inconnue",
-      defender: defenderTitle(db, b),
+      attacker: attackerTitle,
+      defender,
+      ...playerData(c, b, attackerTitle, defender),
       // The replay takes the viewer's side (RECON4 §1.2: b_fview_262579954 seen by its defender has attackerSide 1);
       // the stored input is unchanged and the engine does not read attackerSide.
       flashvars: clientParams(battleData(viewerDefends ? { ...b.input, attackerSide: 1 - b.input.attackerSide } : b.input, ARMY_SWF), { endMsg }),

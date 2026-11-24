@@ -93,3 +93,16 @@ test("embed.js: a field-less GET form (Ruffle's navigateToURL) navigates to its 
   assert.deepEqual(native, [post, withFields, noAction]);
   assert.equal(assigned.length, 2);
 });
+
+test("embed.js: a renderer chosen in RufflePlayer.config replaces the default webgl", () => {
+  const loaded: any[] = [];
+  const el = { id: "swf_a", className: "", style: {}, parentNode: { replaceChild: () => {} }, load: (c: any) => loaded.push(c) };
+  const win: any = {
+    RufflePlayer: { config: { preferredRenderer: "wgpu-webgl" }, newest: () => ({ createPlayer: () => ({ ...el, id: undefined }) }) },
+    document: { getElementById: (i: string) => (i === "swf_a" ? el : null) },
+  };
+  win.window = win;
+  vm.runInNewContext(readFileSync(new URL("../public/js/embed.js", import.meta.url), "utf8"), win);
+  win.swfobject.embedSWF("/swf/client_fr_play.swf?v=5", "swf_a", 720, 440, "10.0.0", null, null, {}, { id: "battle" });
+  assert.equal(loaded[0].preferredRenderer, "wgpu-webgl");
+});

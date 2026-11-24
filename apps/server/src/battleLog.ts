@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Data, HitEvent, type BattleInput, type HxEnum } from "@mt/engine";
 import { Battle } from "@mt/engine/internal";
 
@@ -225,5 +226,22 @@ export function battleLog(input: BattleInput, armyNames?: readonly [string, stri
   }
   flush();
   if (b.winner === null) markStalemate(lines);
+  return lines;
+}
+
+const LOG_CACHE_SIZE = 32;
+const logCache = new Map<string, LogLine[]>();
+
+/**
+ * `battleLog`, memoized by input and army names (a whole simulation per call: ~140 ms for a large battle).
+ * Bounded LRU; the returned lines are shared, never mutate them.
+ */
+export function cachedBattleLog(input: BattleInput, armyNames: readonly [string, string]): LogLine[] {
+  const key = createHash("sha256").update(JSON.stringify([input, armyNames])).digest("base64");
+  let lines = logCache.get(key);
+  if (lines) logCache.delete(key);
+  else lines = battleLog(input, armyNames);
+  logCache.set(key, lines);
+  if (logCache.size > LOG_CACHE_SIZE) logCache.delete(logCache.keys().next().value!);
   return lines;
 }

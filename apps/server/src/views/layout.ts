@@ -36,6 +36,10 @@ export interface LayoutOpts {
   pass?: boolean;
   /** Extra class on <body> (the original uses e.g. "hideSwf"). */
   bodyClass?: string;
+  /** Mobile viewport meta (the battle pages, whose layout adapts to narrow screens). */
+  viewport?: boolean;
+  /** Extra stylesheets after style.css (local paths). */
+  css?: readonly string[];
 }
 
 /**
@@ -52,7 +56,10 @@ ${o.title === null ? html`<title>MiniTroopers</title>` : html`<title>MiniTrooper
 -
 ${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
-<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
+${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
+` : ""}<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
+${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="${href}"/>
+`)}
 <script type="text/javascript" src="/js/jquery.min.js"></script>
 <script type="text/javascript" src="/ruffle/ruffle.js"></script>
 <script type="text/javascript" src="/js/embed.js"></script>
