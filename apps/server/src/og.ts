@@ -32,7 +32,7 @@ export interface Banner {
 }
 
 /** Bumped on any design change: cached files are named after it. */
-export const BANNER_VERSION = 2;
+export const BANNER_VERSION = 3;
 
 export const W = 1200;
 export const H = 630;
@@ -123,13 +123,27 @@ const TILT = -2.5;
  * The "VS" mark, drawn as vector shapes (chunky cartoon letters, blocky italic S) in banner coordinates, around
  * x 528..666, y 128..198.
  */
-const VS_V = "M529 133L560 132L572 167L585 131L601 130L576 197L561 198Z";
+// V: measured on the reference (final position: already tilted with the band and leaning).
+const VS_V = "M528 135L550 132L563 165L572 133L597 130L576 197.5L553 198.5Z";
+// S: drawn upright around (633, 162), then leaned (skewX −13.5°) and tilted (−5°) like the reference's S.
 const VS_S = ((): string => {
   const pts: [number, number][] = [
-    [5, 0], [59, 0], [64, 5], [64, 23], [46, 23], [46, 16], [26, 16], [26, 26], [58, 26], [64, 32], [64, 61], [59, 66],
+    [5, 0], [59, 0], [64, 5], [64, 25], [46, 25], [46, 18], [26, 18], [26, 27], [58, 26], [64, 32], [64, 61], [59, 66],
     [5, 66], [0, 61], [0, 43], [18, 43], [18, 50], [38, 50], [38, 40], [6, 40], [0, 34], [0, 5],
   ];
-  return pts.map(([u, v], i) => `${i ? "L" : "M"}${(600 + u + (66 - v) * 0.06).toFixed(1)} ${130 + v}`).join("") + "Z";
+  const sk = Math.tan((13.5 * Math.PI) / 180);
+  const r = (-5 * Math.PI) / 180;
+  return (
+    pts
+      .map(([u, v], i) => {
+        const x0 = u - 32 - (v - 33) * sk;
+        const y0 = v - 33;
+        const x = 633 + x0 * Math.cos(r) - y0 * Math.sin(r);
+        const y = 162 + x0 * Math.sin(r) + y0 * Math.cos(r);
+        return `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`;
+      })
+      .join("") + "Z"
+  );
 })();
 
 function vsMark(): string {
