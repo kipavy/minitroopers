@@ -1110,3 +1110,58 @@ export function dayOver(db: DatabaseSync, armyId: number, day: string): boolean 
   if (army?.missionsUnlocked && !m.won && m.used - m.reset < MISSION_ATTEMPTS) return false;
   return raidDay(db, armyId, day).over || raidAlive(db, armyId, day).length === 0;
 }
+
+// --- trainings (/b/train): their own table, so that they never count anywhere ---
+
+/** Trainings kept per army (the oldest are deleted when a new one is stored). */
+export const TRAININGS_KEPT = 10;
+
+export interface TrainingRow {
+  id: number;
+  attackerId: number;
+  defenderId: number | null;
+  defenderRef: string | null;
+  input: BattleInput;
+  winner: number | null;
+  createdAt: number;
+}
+
+const toTraining = (r: Record<string, unknown>): TrainingRow => ({
+  id: Number(r.id),
+  attackerId: Number(r.attacker_id),
+  defenderId: r.defender_id === null ? null : Number(r.defender_id),
+  defenderRef: (r.defender_ref as string | null) ?? null,
+  input: JSON.parse(r.input as string) as BattleInput,
+  winner: r.winner === null ? null : Number(r.winner),
+  createdAt: Number(r.created_at),
+});
+
+/** Stores a training and keeps only the TRAININGS_KEPT most recent of its attacker (one transaction). */
+export function insertTraining(
+  db: DatabaseSync,
+  t: { attackerId: number; defenderId: number | null; defenderRef: string | null; input: BattleInput; winner: number | null; now: number },
+): number {
+  return immediate(db, () => {
+    const id = Number(
+      (
+        db
+          .prepare("INSERT INTO trainings(attacker_id, defender_id, defender_ref, input, winner, created_at) VALUES (?,?,?,?,?,?) RETURNING id")
+          .get(t.attackerId, t.defenderId, t.defenderRef, JSON.stringify(t.input), t.winner, t.now) as { id: number }
+      ).id,
+    );
+    db.prepare(
+      "DELETE FROM trainings WHERE attacker_id = ? AND id NOT IN (SELECT id FROM trainings WHERE attacker_id = ? ORDER BY id DESC LIMIT ?)",
+    ).run(t.attackerId, t.attackerId, TRAININGS_KEPT);
+    return id;
+  })!;
+}
+
+export function trainingById(db: DatabaseSync, id: number): TrainingRow | null {
+  const r = db.prepare("SELECT * FROM trainings WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+  return r ? toTraining(r) : null;
+}
+
+/** The trainings of an army, most recent first (at most TRAININGS_KEPT). */
+export function recentTrainings(db: DatabaseSync, attackerId: number): TrainingRow[] {
+  return (db.prepare("SELECT * FROM trainings WHERE attacker_id = ? ORDER BY id DESC LIMIT ?").all(attackerId, TRAININGS_KEPT) as Record<string, unknown>[]).map(toTraining);
+}
