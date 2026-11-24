@@ -37,14 +37,14 @@ const POWER_TIP = raw(
   `onmouseover="mt.js.Tip.show(this,'${esc("<div class=\\'tiptop\\'><div class=\\'tipbottom\\'><div class=\\'tipbg\\'><div class=\\'tipcontent\\'><img src=\\'/img/pixel.gif\\' class=\\'pixel\\' /><h2>Puissance</h2></div></div></div>")}')" onmouseout="mt.js.Tip.hide()"`,
 );
 
-/** One opponent of the list: its grid, the action button (`href`, `label`), its title and power. Shared with /b/train. */
-export function foeCell(f: OppFoe, i: number, href: string, label: string): Html {
+/** One opponent of the list: its grid, the action button (`href`, `label`, confirmed unless `confirm` is false), its title and power. Shared with /b/train. */
+export function foeCell(f: OppFoe, i: number, href: string, label: string, confirm = true): Html {
   // UNVERIFIED: the archived lists show 1-row (285x72, size1) and 2-row (285x144, size2) grids; rows = ceil(n/4).
   const rows = Math.max(1, Math.ceil(f.troopers.length / GRID_COLS));
   const data = gridData({ army: f.troopers, xmax: GRID_COLS, ymax: rows, add: false, fac: f.faction, space: -1, action: null }, MINI_SWF);
   return html`<td class="choosetd size${rows}"><div class="backchoose"><div class="troopers">${swfEmbed({ id: `swf_opp_${i}`, width: 285, height: CELL_H * rows, flashvars: clientParams(data), objId: `opp_${i}` })}</div>
 <div class="clear"></div>
-<a href="${href}" class="button5" onclick="return confirm('Confirmer cette action ?')">${label}</a>
+${confirm ? html`<a href="${href}" class="button5" onclick="return confirm('Confirmer cette action ?')">${label}</a>` : html`<a href="${href}" class="button5">${label}</a>`}
 <h1>${f.title}</h1>
 <ul class="carac"><li class="po"><img src="/img/powers.png" ${POWER_TIP}/>
 ${f.power}</li></ul></div></td>

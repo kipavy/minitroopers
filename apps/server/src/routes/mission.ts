@@ -154,7 +154,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
-    const reward = missionReward(won) * rewardMultiplier(b.day, cfg.weekendMultiplier);
+    const reward = b.reward ?? missionReward(won) * rewardMultiplier(b.day, cfg.weekendMultiplier);
     // UNVERIFIED: the "just played" message of a mission was never archived; built like the battle one.
     const endMsg = fresh
       ? won

@@ -145,7 +145,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
     const sessionArmy = c.get("session").armyId;
     const fresh = sessionArmy === b.attackerId && !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
-    const reward = rewardOf(won, b.day);
+    const reward = b.reward ?? rewardOf(won, b.day);
     const viewerDefends = sessionArmy !== null && sessionArmy === b.defenderId;
     const viewerWon = viewerDefends ? b.winner !== null && !won : won;
     // UNVERIFIED: the defeat variant of the "just fought" message was never captured; built like the victory one.

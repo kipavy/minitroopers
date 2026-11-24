@@ -277,7 +277,7 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   assert.equal(a, null);
   const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, pendingRecruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
   const mission = { type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" };
-  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, step: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
+  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, now: 0, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, step: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
   const html = String(hqPage(env.cfg, view));
   assert.ok(html.includes('<div id="notification"><div class="poptop">'));
   assert.ok(html.includes("Félicitations ! &lt;b&gt;x&lt;/b&gt;"));

@@ -22,6 +22,8 @@ export interface HqView {
   battleTotal: number;
   /** Seconds until the daily reset. */
   resetIn: number;
+  /** Time the page is rendered at (app clock): the weekend event banner. */
+  now: number;
   /** Recruits waiting for their confirmation on /history. */
   pendingRecruits?: number;
   /** The last battle the army defended by infiltration (fr/hq-levelup.html: one item only), and the time it is seen at. */
@@ -223,7 +225,7 @@ ${left}
 ${historyList(cfg, v)}
 </td>
 <td class="right">
-${eventBanner(cfg)}
+${eventBanner(cfg, v.now)}
 ${battleBox(cfg, v)}
 
 ${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}

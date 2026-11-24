@@ -685,3 +685,42 @@ test("link previews: battleOg names the stored winner (attacker or defender), a 
   assert.equal(og(0).image, `${cfg.publicUrl}/og/battle/7.jpg?v=${BANNER_VERSION}`);
   assert.equal(og(0).imageAlt, og(0).title);
 });
+
+test("the first view shows the reward actually paid, even if the config changed since the battle", async () => {
+  const env = setup("path");
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, id } = await warp(env);
+  const foeId = foe(env, "foe", "Foe", [
+    { seed: 1234567, name: "Bob" },
+    { seed: 2345678, name: "Rob" },
+  ]);
+  const target = attackLinks(await (await get(env, cl, "/b/opp")).text()).find((l) => l.ref === String(foeId))!;
+  const before = credits(env, id);
+  await get(env, cl, pathOf("path", target.href));
+  const win = won(battles(env, id)[0]!);
+  const n = credits(env, id) - before;
+  assert.equal(n, win ? 6 : 3);
+  env.cfg.weekendMultiplier = 1;
+  const page = await (await get(env, cl, "/b/view/bat1")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, msgFor(win, n));
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", `/hq?money=${n}`))};`));
+});
+
+test("a battle stored before migration 010 (reward NULL) shows the reward computed from the config", async () => {
+  const env = setup("path");
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, id } = await warp(env);
+  const foeId = foe(env, "foe", "Foe", [
+    { seed: 1234567, name: "Bob" },
+    { seed: 2345678, name: "Rob" },
+  ]);
+  const page = await (await get(env, cl, "/b/opp")).text();
+  const target = attackLinks(page).find((l) => l.ref === String(foeId))!;
+  assert.ok(page.replaceAll("&#39;", "'").includes("onclick=\"return confirm('Confirmer cette action ?')\">Attaquer !</a>"), "/b/opp keeps its confirmations");
+  await get(env, cl, pathOf("path", target.href));
+  env.db.prepare("UPDATE battles SET reward = NULL WHERE attacker_id = ?").run(id);
+  const win = won(battles(env, id)[0]!);
+  env.cfg.weekendMultiplier = 2;
+  const view = await (await get(env, cl, "/b/view/bat1")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(view)).vars.endMsg, msgFor(win, win ? 4 : 2));
+});
