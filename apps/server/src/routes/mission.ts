@@ -17,7 +17,7 @@ import {
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
-import { battlePage } from "../views/battle.ts";
+import { battleOg, battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
 import { playerData } from "./battle.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
@@ -175,6 +175,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
       endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
+      og: battleOg(cfg, b, armyTitle(o.army.name, o.army.part), defender, armyUrl(cfg, o.army.host, `/b/view/${c.req.param("m")}?d=${b.day}`)),
     };
     return c.html(String(battlePage(cfg, view)));
   });

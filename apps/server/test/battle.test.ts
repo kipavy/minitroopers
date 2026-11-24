@@ -551,3 +551,92 @@ test("playerData: a log that cannot be built gives an empty log, not an exceptio
   }
   assert.equal(seen.length, 1, "the failure is logged once");
 });
+
+/** Open Graph / Twitter meta tags of a page (`<meta property|name="k" content="v"/>`), values still HTML-escaped. */
+function metaTags(page: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const m of page.matchAll(/<meta (?:property|name)="((?:og|twitter):[^"]+|theme-color)" content="([^"]*)"\/>/g)) out[m[1]!] = m[2]!;
+  return out;
+}
+
+for (const mode of MODES) {
+  test(`[${mode}] link previews: the battle pages carry og:/twitter: tags (title, date, winner, public URL, fixed image)`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const foeId = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
+    await get(env, cl, "/b/opp");
+    await get(env, cl, `/b/battle?opp=${foeId};n=0;chk=${key}`);
+    const row = battles(env, id)[0]!;
+    const winner = row.winner === null ? null : won(row) ? "L&#39;armée de Warp" : "L&#39;armée de Foe";
+    const base = env.cfg.publicUrl;
+    const url = mode === "path" ? `${base}/a/warp/b/fview/${row.id}` : `http://warp.lvh.me:8080/b/fview/${row.id}`;
+    const expected = {
+      "theme-color": "#d4a244",
+      "og:site_name": "MiniTroopers",
+      "og:type": "website",
+      "og:title": "Revoir : L&#39;armée de Warp VS L&#39;armée de Foe",
+      "og:description": `Combat MiniTroopers du 23/11/2026. ${winner === null ? "Match nul." : `Victoire de ${winner}.`}`,
+      "og:url": url,
+      "og:image": `${base}/img/og-battle.jpg`,
+      "og:image:type": "image/jpeg",
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "og:image:alt": "MiniTroopers : un combat à revoir",
+      "twitter:card": "summary_large_image",
+    };
+    // the just-fought page, the replay, and the public page seen by a stranger
+    assert.deepEqual(metaTags(await (await get(env, cl, "/b/view/bat1")).text()), expected);
+    assert.deepEqual(metaTags(await (await get(env, cl, "/b/view/bat1")).text()), expected);
+    const stranger = env.client("3.3.3.3");
+    const pub = await stranger.req(`/b/fview/${row.id}`, mode === "path" ? {} : { host: "lvh.me:8080" });
+    assert.equal(pub.status, 200);
+    assert.deepEqual(metaTags(await pub.text()), expected);
+    assert.ok(url.startsWith("http"), "absolute og:url");
+  });
+
+  test(`[${mode}] link previews: a hostile army name is escaped in og:title / og:description`, async () => {
+    const env = setup(mode);
+    const { cl, key } = await warp(env);
+    const foeId = foe(env, "evil", "Evil", [{ seed: 1234567, name: "Bob" }]);
+    env.db.prepare("UPDATE armies SET name = ? WHERE id = ?").run(`<script>"&`, foeId);
+    await get(env, cl, "/b/opp");
+    await get(env, cl, `/b/battle?opp=${foeId};n=0;chk=${key}`);
+    const page = await (await get(env, cl, "/b/view/bat1")).text();
+    const tags = metaTags(page);
+    assert.equal(tags["og:title"], "Revoir : L&#39;armée de Warp VS L&#39;armée de &lt;script&gt;&quot;&amp;");
+    assert.ok(!page.includes(`<script>"&`));
+  });
+
+  test(`[${mode}] link previews: no og: tag outside the battle pages (/hq, /history)`, async () => {
+    const env = setup(mode);
+    const { cl } = await warp(env);
+    for (const path of ["/hq", "/history"]) {
+      const page = await (await get(env, cl, path)).text();
+      assert.ok(page.length > 0);
+      assert.deepEqual(metaTags(page), {}, path);
+      assert.ok(!page.includes("og:"), path);
+    }
+  });
+}
+
+test("link previews: public/img/og-battle.jpg is a 1200x630 JPEG under 200 KB, served as image/jpeg", async () => {
+  const res = await setup("path").app.request("/img/og-battle.jpg");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "image/jpeg");
+  const buf = Buffer.from(await res.arrayBuffer());
+  assert.ok(buf.equals(readFileSync(new URL("../public/img/og-battle.jpg", import.meta.url))));
+  assert.ok(buf.length < 200 * 1024, `${buf.length} bytes`);
+  assert.deepEqual([...buf.subarray(0, 3)], [0xff, 0xd8, 0xff], "SOI");
+  let pos = 2;
+  let size: { w: number; h: number } | null = null;
+  while (pos < buf.length && !size) {
+    assert.equal(buf[pos], 0xff, "marker");
+    const marker = buf[pos + 1]!;
+    const len = buf.readUInt16BE(pos + 2);
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      size = { h: buf.readUInt16BE(pos + 5), w: buf.readUInt16BE(pos + 7) };
+    }
+    pos += 2 + len;
+  }
+  assert.deepEqual(size, { w: 1200, h: 630 });
+});
