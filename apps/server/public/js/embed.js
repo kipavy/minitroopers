@@ -27,7 +27,10 @@
       splashScreen: false,
       unmuteOverlay: "hidden", // Ruffle's "click to unmute" overlay would cover the end-of-battle banner
       contextMenu: "off",
-      backgroundColor: "#F2DDB8"
+      backgroundColor: "#F2DDB8",
+      // Ruffle's default (WebGPU, then wgpu over WebGL) ran the 16-trooper recruits animation at 16 fps on an Adreno
+      // laptop; its plain WebGL renderer ran it at 60. The other renderers remain fallbacks.
+      preferredRenderer: "webgl"
     };
     if (params.scale) config.scale = params.scale;
     if (params.menu !== undefined) config.menu = params.menu !== false && params.menu !== "false";
