@@ -430,7 +430,7 @@ transparentes ») et la hauteur des champs de texte (« Champs de texte »).
   (le serveur envoie `chk=play`, cf. `clientParams` du moteur).
 - Résultat : `client_fr_play.swf` + `.sha256`, reproductible (deux builds donnent le même SHA-256).
 
-### API de lecture (pause, vitesse, progression)
+### API de lecture (pause, vitesse, progression, saut, blocage, capture)
 
 Points d'accroche et noms : `docs/research/lecteur-swf.md`. Comme pour l'oracle, des appels insérés en P-code dans
 le `Game` (`ffdec -replace`, plusieurs paires FIND/REPLACE par corps de méthode via `parts` dans `build.ps1`) et des
@@ -439,21 +439,43 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
 
 | Point | Où | Effet |
 |---|---|---|
-| `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38) et `NewWave` (39), appelle `mtReady` |
+| `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38), `NewWave` (39) et `Winner` (34), arme la détection de blocage en état 1, appelle `mtReady` |
 | `PC_PLAY_GAME_FRAME` | même handler, état 2 : `this.frame()` | devient `mtFrame(this)` |
 | `PC_PLAY_FAST` | `§Bl{K\x01§` (isFast : `ticks >= 8`) | `(ticks >= 8) \| mtFast` (`bitor` + `convert_b`) : à vitesse ≥ 8 les mêmes effets que le mode natif 16× sont coupés |
 
 - SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves})` une fois ; `mtProgress(idx, wave)` au plus
   une fois par image, seulement si `idx` change (`idx = total − queue.length − (step ? 1 : 0)`, `wave` = nombre de
-  `NewWave` appliqués) ; `mtEnd()` une fois, quand `Winner` (dernière entrée) est appliqué (`idx = total`).
+  `NewWave` appliqués) ; `mtEnd()` une fois, quand l'entrée `Winner` est appliquée (son index est relevé par `mtInit` :
+  elle n'est pas toujours la dernière ; son application vide la file, donc `idx = total`) ; `mtStuck(idx)` une fois par
+  blocage (ci-dessous).
 - Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
-  `mtState()` = `{idx, wave, total, speed, paused, ended}`.
+  `mtState()` = `{idx, wave, total, speed, paused, ended}`, `mtSeek(n)`, `mtShot()`.
 - `mtFrame` : en pause aucun appel ; sinon `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
   à-coups compris, consommés par appel), 1 seul si l'écran PAUSE natif est ouvert ; sous ×1, `stage.frameRate = 40 × speed`
   (au-delà, 40). Budget de temps : 10 ms, ou la moitié de l'intervalle entre les deux dernières images si elles sont plus
-  lentes (plafond 100 ms), au moins un appel. Sur une machine rapide c'est 10 ms ; sous le Chromium x64 émulé (un
-  `frame()` y coûte 3 à 15 ms, une image 40 à 150 ms) un budget fixe de 10 ms plafonne ×32 à ≈ ×1,5, le budget relatif
-  donne ≈ ×5 au prix d'une cadence au plus divisée par deux.
+  lentes (plafond 100 ms), au moins un appel ; l'intervalle de référence part de la première image de l'état 2 (pas de
+  `mtInit`, sinon l'attente de l'image de fond compterait). Sur une machine rapide c'est 10 ms ; sous le Chromium x64
+  émulé (un `frame()` y coûte 3 à 15 ms, une image 40 à 150 ms) un budget fixe de 10 ms plafonne ×32 à ≈ ×1,5, le budget
+  relatif donne ≈ ×5 au prix d'une cadence au plus divisée par deux.
+- `mtSeek(n)` (n borné à `total`) : vers l'avant seulement ; `n` ≤ index appliqué → rien (le retour arrière se fait en
+  rechargeant le lecteur côté page). Sans effet si le combat est fini ou si l'écran PAUSE natif est ouvert. Le clip du
+  Game est masqué et le drapeau rapide levé ; à l'image suivante (`mtSeekStep`), saut au dernier `CheckPoint` (38) ≤ n
+  encore dans la file (`mtJump` : le saut natif Espace `§KV\t\x16\x03§` généralisé à une cible — file tronquée à ce 38,
+  étape courante détruite, drapeau de reconstruction `§'A~X§`, horloge = temps du 38 − 1, file d'à-coups `§~Y\x12(\x01§`
+  vidée, `ylcZ()` sur chaque animation ; rien si ce 38 est déjà en tête), puis appels à `frame()` répartis sur les images
+  avec le même budget, jusqu'à `idx ≥ n` (au plus une entrée appliquée par tick : on s'arrête exactement sur `n`, sauf
+  `Winner` qui saute à `total`). Alors le clip réapparaît, le drapeau rapide reprend sa valeur (vitesse ≥ 8) et un seul
+  `mtProgress(n, wave)` est envoyé ; aucun `mtProgress` pendant le saut. La lecture reprend à la vitesse et à l'état de
+  pause courants. Un blocage pendant le saut l'interrompt.
+- Blocage : `mtStuck(idx)` quand l'étape courante attend depuis plus de ses 500 ticks (compteur hérité
+  `§/\x12#\x1c\x02§ ≤ 0`, le délai de débogage du Game lui-même), une fois par étape ; ou quand aucune image de l'état 2
+  n'a eu lieu 10 s (horloge murale) après `mtInit` (image de fond jamais chargée, `imageurl` en 404). Le `setTimeout` de
+  Ruffle a été vu se déclencher après ≈ 7 s pour 10 s : `mtWaitCheck` se réarme jusqu'à 10 s de `Date`. Remède proposé
+  par la page : un `mtSeek` au-delà du point de blocage (le saut détruit l'étape bloquée).
+- `mtShot()` : `BitmapData(720, 440).draw(stage)`, `getPixels` → ARGB 720 × 440 × 4 octets en base64 (≈ 1,7 Mo ;
+  encodeur `mtB64` par table de 4096 paires de caractères écrites dans un `ByteArray`, ≈ 1,8 s sous le Chromium émulé).
+  Le canvas WebGL de Ruffle n'a pas `preserveDrawingBuffer` : la page ne peut pas le lire de façon fiable. `""` en cas
+  d'échec.
 - Test : `tools/oracle/test/player.test.ts` (Ruffle web, `OracleRunner.newPage`).
 
 ### Icônes transparentes (bitmaps 17 et 19, bogue de Ruffle a111ceec)
@@ -500,10 +522,11 @@ SHA-256 : avant `294fea6b0d73f43d0eb8c8eb10ffa201db7afa4484d62ff2be211eb06740856
 `7e6a9b1aef651aa0e76e4d1c7b10237d58b4ed5e807e60d0404567750ee2de5c` (vérifié par `apps/server/test/assets.test.ts`).
 `CLIENT_SWF` passe à `?v=3` pour que les navigateurs reprennent les deux correctifs.
 
-Avec l'API de lecture (tâche « lecteur amélioré ») : SHA-256
-`9049b2123bc96f3a9f3952fb10e345230789465f90689e9e4a8e88f536268bb0` (deux builds dans deux dossiers de travail :
-même SHA-256), `CLIENT_SWF` en `?v=4`. Le `pushbyte 14` du correctif ci-dessus est alors à l'octet 302188 du corps
-décompressé (la classe des helpers a grandi).
+Avec l'API de lecture (tâche « lecteur amélioré ») : pause/vitesse/progression `9049b212…` (`?v=4`) ; avec saut,
+blocage et capture, SHA-256 `1114a61120ab4894ec383eade491443a55307b1c7e464b60f0c7678c687f380b` (deux builds dans
+deux dossiers de travail : même SHA-256), `CLIENT_SWF` en `?v=5`. Le `pushbyte 14` du correctif ci-dessus est alors
+à l'octet 302800 du corps décompressé (la classe des helpers a grandi). Les insertions P-code dans le Game sont
+inchangées (ci-dessous) : tout le nouveau code est dans les helpers.
 
 - Innocuité (`build-play.ps1 -Verify`) : 29 fichiers P-code diffèrent octet à octet sur 290, 4 hors renumérotation
   `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation
