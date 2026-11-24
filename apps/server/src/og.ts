@@ -32,7 +32,7 @@ export interface Banner {
 }
 
 /** Bumped on any design change: cached files are named after it. */
-export const BANNER_VERSION = 4;
+export const BANNER_VERSION = 5;
 
 export const W = 1200;
 export const H = 630;
@@ -182,7 +182,27 @@ const RAYS: readonly (readonly [number, number, number])[] = [
   [22, 170, 7], [38, 130, 5], [252, 140, 5], [286, 150, 6], [112, 120, 5], [72, 150, 6], [-62, 110, 4], [232, 120, 4],
 ];
 
-export function bannerSvg(b: Banner): string {
+/** Faction tint of the two halves: flat layer opacity and central glow opacity, per side. */
+export interface Tint {
+  left: number;
+  right: number;
+  glowL: number;
+  glowR: number;
+  /** mix-blend-mode of the flat layers (normal: plain alpha). */
+  blend?: string;
+  /** Extra black over the whole background (0 = none). */
+  dark?: number;
+  /** Warm grade of the whole background: opacity of an orange layer blended like the tints (0 = none). */
+  warm?: number;
+  warmColour?: string;
+}
+/**
+ * Fitted to BetterTrooper's card on the same sewer background (colour picked on 10 terrain patches, mean colour and
+ * texture contrast): overlay blending keeps the terrain's texture, a light orange grade warms both halves.
+ */
+export const TINT: Tint = { left: 0.3, right: 0.3, glowL: 0.2, glowR: 0.16, blend: "overlay", warm: 0.2, warmColour: "#d08030" };
+
+export function bannerSvg(b: Banner, tint: Tint = TINT): string {
   logoUri ??= dataUri("logo.png", "image/png");
   const nameL = fitText(b.left.name.toUpperCase(), 430, 94, 52);
   const nameR = fitText(b.right.name.toUpperCase(), 430, 94, 52);
@@ -222,14 +242,16 @@ export function bannerSvg(b: Banner): string {
 <filter id="glow" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="9"/></filter>
 <linearGradient id="boltFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${H}"><stop offset="0.2" stop-color="#fff" stop-opacity="0"/><stop offset="0.38" stop-color="#fff"/><stop offset="0.82" stop-color="#fff"/><stop offset="0.97" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="boltMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#boltFade)"/></mask>
-<radialGradient id="warmL" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.left.faction)}" stop-opacity="0.5"/><stop offset="1" stop-color="${colourOf(b.left.faction)}" stop-opacity="0"/></radialGradient>
-<radialGradient id="warmR" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.right.faction)}" stop-opacity="0.4"/><stop offset="1" stop-color="${colourOf(b.right.faction)}" stop-opacity="0"/></radialGradient>
+<radialGradient id="warmL" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.left.faction)}" stop-opacity="${tint.glowL}"/><stop offset="1" stop-color="${colourOf(b.left.faction)}" stop-opacity="0"/></radialGradient>
+<radialGradient id="warmR" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.right.faction)}" stop-opacity="${tint.glowR}"/><stop offset="1" stop-color="${colourOf(b.right.faction)}" stop-opacity="0"/></radialGradient>
 <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
 </defs>
 <image href="${bgUri(b.bg)}" x="0" y="-52" width="1200" height="734" preserveAspectRatio="xMidYMid slice"/>
-<rect width="${W}" height="${H}" fill="#000" fill-opacity="0.12"/>
-<rect width="${W}" height="${H}" fill="${colourOf(b.right.faction)}" fill-opacity="0.2"/>
-<g clip-path="url(#lh)"><rect width="${W}" height="${H}" fill="#000" fill-opacity="0.05"/><rect width="${W}" height="${H}" fill="${colourOf(b.left.faction)}" fill-opacity="0.24"/></g>
+<rect width="${W}" height="${H}" fill="#000" fill-opacity="${0.12 + (tint.dark ?? 0)}"/>
+<rect width="${W}" height="${H}" fill="${tint.warmColour ?? "#ff9a2e"}" fill-opacity="${tint.warm ?? 0}" style="mix-blend-mode:${tint.blend ?? "normal"}"/>
+<rect width="${W}" height="${H}" fill="${colourOf(b.right.faction)}" fill-opacity="${tint.right}" style="mix-blend-mode:${tint.blend ?? "normal"}"/>
+<rect width="${W}" height="${H}" fill="#000" fill-opacity="0.05" clip-path="url(#lh)"/>
+<g style="mix-blend-mode:${tint.blend ?? "normal"}"><rect width="${W}" height="${H}" fill="${colourOf(b.left.faction)}" fill-opacity="${tint.left}" clip-path="url(#lh)"/></g>
 <rect width="${W}" height="${H}" fill="url(#top)"/>
 <rect width="${W}" height="${H}" fill="url(#vig)"/>
 <g transform="rotate(${TILT} 600 150)"><rect x="-60" y="56" width="1320" height="42" fill="#fff" fill-opacity="0.08"/><rect x="-60" y="98" width="1320" height="104" fill="#000" fill-opacity="0.5"/><rect x="-60" y="202" width="1320" height="5" fill="#000" fill-opacity="0.22"/></g>
