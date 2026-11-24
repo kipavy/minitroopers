@@ -5,8 +5,20 @@ import { armyPower, type BattleInput } from "@mt/engine";
 import { armyByHost, createArmy, fightRaid, raidRecruits, type NewModeBattle, type RaidRecruit } from "../src/repo.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
+import { simulateBattle } from "@mt/engine/internal";
 
 const MODES: Mode[] = ["path", "subdomain"];
+
+/** The enhanced player's log of a battle page against the engine history: one line per entry, the waves counted alike. */
+function assertPlayerLog(html: string, input: BattleInput): void {
+  const m = /^var mtLog = (.*);$/m.exec(html);
+  assert.ok(m && html.includes('src="/js/player.js'), "enhanced player on the page");
+  const log = JSON.parse(m[1]!) as { i: number; w: number; t: string }[];
+  const events = simulateBattle(input).events;
+  assert.equal(log.length, events.length, "one log line per history entry");
+  const waves = events.filter((e) => /\|39\(/.test(e)).length;
+  assert.equal(Math.max(0, ...log.map((l) => l.w)), waves, "log waves = NewWave entries");
+}
 
 const today = (env: Env): string => dayKey(new Date(env.clock.t), "Europe/Paris");
 const credits = (env: Env, id: number): number => (env.db.prepare("SELECT credits FROM armies WHERE id = ?").get(id) as { credits: number }).credits;
@@ -182,6 +194,7 @@ for (const mode of MODES) {
     assert.deepEqual(decodeBattleFlashvars(battleFlashvars(first)).input, JSON.parse(raids(env, id)[0]!.input));
     assert.equal((env.db.prepare("SELECT created_at FROM battles WHERE id = ?").get(raids(env, id)[0]!.id) as { created_at: number }).created_at, Date.parse("2026-11-23T22:59:59Z"));
     assert.ok(!first.includes("Retour</a>"), "first view: no button");
+    assertPlayerLog(first, JSON.parse(raids(env, id)[0]!.input) as BattleInput);
     assert.ok((await (await get(env, cl, "/b/view/raid?d=2026-11-23")).text()).includes("Retour</a>"), "single-shot first view");
     for (const q of ["", "?d=2026-11-22", "?d=2026-11-25", "?d=junk"]) {
       assert.equal((await get(env, cl, `/b/view/raid${q}`)).headers.get("location"), loc(mode, "/hq"), q);

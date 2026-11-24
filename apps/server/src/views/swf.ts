@@ -1,7 +1,7 @@
 import { raw, type Html } from "./html.ts";
 
 /** Local SWF files. The shipped client_fr_play.swf has the original `chk` check bypassed (recon §3.2). */
-export const CLIENT_SWF = "/swf/client_fr_play.swf?v=3";
+export const CLIENT_SWF = "/swf/client_fr_play.swf?v=6";
 export const MINI_SWF = "/swf/mini.swf?v=2";
 /** `gfx` of the battle data (ClientMode 0), like the original `…/swf/army.swf?v=2`. */
 export const ARMY_SWF = "/swf/army.swf?v=2";
@@ -11,7 +11,12 @@ export const ARMY_SWF = "/swf/army.swf?v=2";
  * U+2028/2029 written as \u escapes, so no content can close the script element or break the literal.
  */
 export function jsStr(s: string): string {
-  return JSON.stringify(s).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+  return jsJson(s);
+}
+
+/** Any JSON value as a JavaScript literal, escaped like jsStr. */
+export function jsJson(v: unknown): string {
+  return JSON.stringify(v).replace(/[<>&\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
 }
 
 /**

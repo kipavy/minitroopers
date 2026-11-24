@@ -196,6 +196,12 @@ npm run admin -- create-army --name "Rats Morts" --part 4 --faction 2 --troopers
 Les noms de compétences de l'exemple sont à adapter : la commande indique, pour chaque montée de niveau
 refusée, les options que la graine propose réellement.
 
+## Pages de combat : paramètre `?at=`
+
+Les pages de combat (`/b/view/…`, `/b/fview/<id>`) acceptent `?at=<n>` : le lecteur amélioré démarre au
+n-ième événement de l'historique du combat. `n` est un entier positif, borné au nombre d'événements ; absent, `0`,
+négatif ou non entier, il est ignoré et le combat démarre au début. Le bouton de partage du lecteur produit ce lien.
+
 ## Tests
 
 ```sh

@@ -15,7 +15,7 @@ import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { BattleInput } from "@mt/engine";
-import { pngDistance } from "./png.ts";
+import { decodePng, pngDistance } from "./png.ts";
 
 const REPO = resolve(import.meta.dirname, "../../..");
 const MAIN = join(REPO, "apps/server/src/main.ts");
@@ -99,13 +99,81 @@ async function launch() {
 
 type Page = Awaited<ReturnType<Awaited<ReturnType<typeof launch>>["newPage"]>>;
 
+interface Ready {
+  total: number;
+  checkpoints: number[];
+  waves: number[];
+}
+/** What public/js/player.js exposes as `window.mtPlayer`. */
+interface PlayerInfo {
+  ready: Ready | null;
+  idx: number;
+  /** First idx reported by the current Ruffle player (null before its first mtProgress). */
+  first: number | null;
+  /** Ruffle players created so far (1 + backward seeks). */
+  players: number;
+}
+interface SwfState {
+  idx: number;
+  wave: number;
+  total: number;
+  speed: number;
+  paused: boolean;
+  ended: boolean;
+  seeking: boolean;
+  hidden: boolean;
+}
+const playerInfo = (page: Page): Promise<PlayerInfo> =>
+  page.evaluate(() => {
+    const p = (globalThis as unknown as { mtPlayer: PlayerInfo }).mtPlayer;
+    return { ready: p.ready, idx: p.idx, first: p.first, players: p.players };
+  });
+const swfState = (page: Page): Promise<SwfState> =>
+  page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { mtState(): SwfState } } }).document.getElementById("battle").mtState());
+
+/** Polls `get` until `ok` holds. */
+async function until<T>(page: Page, get: () => Promise<T>, ok: (v: T) => boolean, ms: number, what: string): Promise<T> {
+  const deadline = Date.now() + ms;
+  for (;;) {
+    const v = await get().catch(() => undefined);
+    if (v !== undefined && ok(v)) return v;
+    if (Date.now() > deadline) assert.fail(`${what} not within ${ms} ms (last: ${JSON.stringify(v)})`);
+    await page.waitForTimeout(100);
+  }
+}
+
 /**
- * Waits for the battle page's Ruffle player to show the end banner of client_fr_play.swf, checks it against the winner
- * stored in the database (`won`), then clicks "continuer" until the SWF's endBattle() reaches `end`.
+ * Waits for the enhanced player (mtReady) and checks the page's log against the SWF: one line per history entry, as
+ * many waves. Returns what mtReady reported.
+ */
+async function playerReady(page: Page, label: string): Promise<Ready> {
+  const info = await until(page, () => playerInfo(page), (p) => p.ready !== null, 120_000, `${label}: mtReady`);
+  const ready = info.ready!;
+  const log = await page.evaluate(() => (globalThis as unknown as { mtLog: { i: number; w: number; t: string }[] }).mtLog);
+  assert.equal(log.length, ready.total, `${label}: log lines = SWF history entries`);
+  assert.equal(Math.max(0, ...log.map((l) => l.w)), ready.waves.length, `${label}: log waves = SWF waves`);
+  assert.ok(await page.locator("#mtp-bar").isVisible(), `${label}: control bar shown`);
+  return ready;
+}
+
+/**
+ * Waits for the battle page's Ruffle player, jumps to the end through the enhanced player ("Fin", mtSeek(total): the
+ * emulated Chromium of the dev PC plays far slower than real time), waits for the end banner of client_fr_play.swf,
+ * checks it against the winner stored in the database (`won`), then clicks "continuer" until the SWF's endBattle()
+ * reaches `end`.
  */
 async function swfReplay(page: Page, label: string, won: boolean, end: string): Promise<void> {
   const player = page.locator("ruffle-player#battle");
   await player.waitFor({ timeout: 30_000 });
+  await playerReady(page, label);
+  // "Fin" again if the jump stopped short (a step stuck before the end: a new seek destroys it, as the stuck warning's
+  // "Vague suivante" does)
+  let last: SwfState | undefined;
+  for (let i = 0; i < 4 && !(last && (last.ended || last.idx >= last.total)); i++) {
+    await page.keyboard.press("End");
+    last = await until(page, () => swfState(page), (s) => s.ended || s.idx >= s.total, 30_000, `${label}: end of the battle after "Fin"`).catch(() => undefined);
+  }
+  assert.ok(last, `${label}: end of the battle after "Fin"`);
   const box = (await player.boundingBox())!;
   const victory = readFileSync(join(FIXTURES, "banner-victoire.png"));
   const defeat = readFileSync(join(FIXTURES, "banner-defaite.png"));
@@ -114,6 +182,13 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   // The crop matches a reference up to PNG encoding noise (measured: 0.0002 mean channel difference, banners 10.4 apart).
   const banner = (png: Buffer): "VICTOIRE" | "DEFAITE" | null =>
     pngDistance(png, victory) < 1 ? "VICTOIRE" : pngDistance(png, defeat) < 1 ? "DEFAITE" : null;
+  // Ruffle's "hardware acceleration is disabled" notice (GPU-less Chromium) may cover the banner: closed like its × would.
+  const closeNotice = (): Promise<void> =>
+    page.evaluate(() => {
+      const el = (globalThis as unknown as { document: { getElementById(id: string): { shadowRoot?: { getElementById(id: string): { classList: { add(c: string): void } } | null } } | null } }).document.getElementById("battle");
+      el?.shadowRoot?.getElementById("hardware-acceleration-modal")?.classList.add("hidden");
+    });
+  await closeNotice();
   let shot = await page.screenshot({ clip });
   while (banner(shot) === null) {
     if (Date.now() > deadline) {
@@ -123,6 +198,7 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
       assert.fail(`${label}: no end-of-battle banner (crops saved in var/)`);
     }
     await page.waitForTimeout(1000);
+    await closeNotice();
     shot = await page.screenshot({ clip });
   }
   assert.equal(banner(shot), won ? "VICTOIRE" : "DEFAITE", `${label}: banner drawn by the SWF vs winner in the database`);
@@ -225,6 +301,175 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
 
       // 6. Ruffle replays it: the SWF's end banner shows the stored winner, its endBattle() goes to /hq?money=<reward>
       await swfReplay(page, `${mode}-battle`, won, at("bidasses", `/hq?money=${won ? 2 : 1}`));
+    } finally {
+      db?.close();
+      await browser.close();
+      await stop(server);
+      rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+}
+
+// Enhanced battle player (public/js/player.js) on the "just fought" page: keyboard without clicking into Ruffle (and
+// never over an input, Ctrl/Meta or F5), pause button, log click forward, wave click backward (new Ruffle player,
+// right index, pause kept), PNG capture, x32 then "Fin": the end banner still shows the stored winner and its button
+// still leads to /hq?money=N. Then ?at=N on the replay page, and a 390 px wide window without horizontal scrolling.
+type Doc = {
+  body: { appendChild(e: unknown): void; dispatchEvent(e: unknown): boolean };
+  documentElement: { scrollWidth: number; clientWidth: number };
+  createElement(t: string): { id: string };
+  getElementById(id: string): { __old?: boolean; remove(): void; getBoundingClientRect(): { width: number; right: number } };
+};
+
+for (const mode of ["path", "subdomain"] as Mode[]) {
+  test(`[e2e ${mode}] enhanced player: shortcuts, pause, log and wave seeks, capture, x32 to the end, ?at=, mobile`, { timeout: 900_000 }, async (t) => {
+    if (!browsersInstalled()) return t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
+    mkdirSync(join(REPO, "var"), { recursive: true });
+    const dataDir = mkdtempSync(join(REPO, "var", `e2e5-${mode}-`));
+    const port = await freePort();
+    const root = mode === "path" ? `http://localhost:${port}` : `http://${BASE_DOMAIN}:${port}`;
+    const at = (host: string, path: string): string => (mode === "path" ? `${root}/a/${host}${path}` : `http://${host}.${BASE_DOMAIN}:${port}${path}`);
+    const env: Record<string, string> = { URL_MODE: mode, PORT: String(port), DATA_DIR: dataDir, ...(mode === "subdomain" ? { BASE_DOMAIN } : {}) };
+    const server = await startServer(env);
+    const browser = await launch();
+    let db: DatabaseSync | undefined;
+    try {
+      db = new DatabaseSync(join(dataDir, "minitroopers.db"), { readOnly: true });
+      const page = await (await browser.newContext({ viewport: { width: 1280, height: 1100 }, acceptDownloads: true })).newPage();
+      page.on("dialog", (d) => void d.accept());
+      const errors: string[] = [];
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${root}/`);
+      await createArmyIn(page, "Bidasses", at("bidasses", "/hq"));
+      const army = db.prepare("SELECT id FROM armies WHERE host = 'bidasses'").get() as { id: number };
+      await page.goto(at("bidasses", "/b/opp"));
+      await Promise.all([page.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/bat1?d="))), page.click('a.button5[href*="/b/battle?"] >> nth=0')]);
+      const battleUrl = page.url();
+      const b = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ?").get(army.id) as { input: string; winner: number | null };
+      const won = b.winner !== null && b.winner === (JSON.parse(b.input) as BattleInput).attackerSide;
+      await page.locator("ruffle-player#battle").waitFor({ timeout: 30_000 });
+      const ready = await playerReady(page, `${mode}-player`);
+      const landed = (n: number, idx: number): boolean => idx === n || (ready.checkpoints.includes(n) && idx === n + 1);
+
+      // 1. shortcuts without any click into Ruffle: Space pauses, K resumes
+      await page.keyboard.press(" ");
+      await until(page, () => swfState(page), (s) => s.paused, 10_000, "Space pauses");
+      await page.keyboard.press("k");
+      await until(page, () => swfState(page), (s) => !s.paused, 10_000, "K resumes");
+      // not taken: F5, Ctrl+R, Ctrl+K, Meta+Space (default action kept, nothing done)
+      const prevented = await page.evaluate(() => {
+        const KE = (globalThis as unknown as { KeyboardEvent: new (t: string, o: object) => { defaultPrevented: boolean } }).KeyboardEvent;
+        const d = (globalThis as unknown as { document: Doc }).document;
+        return [{ key: "F5" }, { key: "r", ctrlKey: true }, { key: "k", ctrlKey: true }, { key: " ", metaKey: true }].map((k) => {
+          const e = new KE("keydown", { ...k, bubbles: true, cancelable: true });
+          d.body.dispatchEvent(e);
+          return e.defaultPrevented;
+        });
+      });
+      assert.deepEqual(prevented, [false, false, false, false], "F5, Ctrl+R, Ctrl+K, Meta+Space not intercepted");
+      // typing into a field types, it does not drive the player
+      await page.evaluate(() => {
+        const d = (globalThis as unknown as { document: Doc }).document;
+        const i = d.createElement("input");
+        i.id = "probe";
+        d.body.appendChild(i);
+      });
+      await page.focus("#probe");
+      await page.keyboard.type("k c");
+      assert.equal(await page.inputValue("#probe"), "k c");
+      assert.equal((await swfState(page)).paused, false, "keys typed into a field ignored");
+      await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("probe").remove());
+
+      // 2. pause button (the seeks below run paused: they land exactly where asked)
+      await page.click("#mtp-play");
+      const s0 = await until(page, () => swfState(page), (s) => s.paused, 10_000, "pause button");
+
+      // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
+      // → goes to the next shown line the same way; the share link reopens on that line (step 7)
+      const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
+      const firstWave = ready.waves[0] ?? 0;
+      const k = lines.findIndex((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 3);
+      assert.ok(k >= 0 && k + 1 < lines.length, "a log line ahead, and one after it");
+      const j = lines[k]!;
+      const current = (): Promise<number | null> =>
+        page.evaluate(() => {
+          const li = (globalThis as unknown as { document: { querySelector(s: string): { getAttribute(a: string): string } | null } }).document.querySelector("#mtp-log li.mtp-cur");
+          return li ? Number(li.getAttribute("data-i")) : null;
+        });
+      await page.click(`#mtp-log li[data-i="${j}"]`);
+      const s1 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j, 120_000, `seek to line ${j}`);
+      assert.ok(landed(j + 1, s1.idx), `log click: idx ${s1.idx} for line ${j}`);
+      await page.waitForTimeout(800);
+      assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
+      assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "one current log line");
+      assert.equal(await current(), j, "the clicked line is the highlighted one");
+      const j2 = lines[k + 1]!;
+      await page.keyboard.press("ArrowRight");
+      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j2, 120_000, `→ to line ${j2}`);
+      assert.ok(landed(j2 + 1, s1b.idx), `→: idx ${s1b.idx} for line ${j2}`);
+      assert.equal(await until(page, current, (c) => c === j2, 5_000, "highlight after →"), j2);
+      await page.click("#mtp-link");
+      const link = await page.inputValue(".mtp-linkbox");
+      assert.ok(link.endsWith(`at=${s1b.idx}`), `share link ${link}`);
+      await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
+
+      // 4. backward: a click on the timeline inside wave 1 (= that wave's start), or without waves Shift + click at half
+      // the current index (= that exact event) → a new Ruffle player, then mtSeek there, still paused
+      const back = ready.waves.length > 0 ? firstWave : Math.floor(s1.idx / 2);
+      assert.ok(back < s1.idx && back > 0, `a target before the current index (${back} < ${s1.idx})`);
+      await page.evaluate(() => {
+        (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old = true;
+      });
+      const players = (await playerInfo(page)).players;
+      const track = (await page.locator("#mtp-track").boundingBox())!;
+      const x = track.x + ((ready.waves.length > 0 ? back + 1.5 : back + 0.25) / ready.total) * track.width;
+      if (ready.waves.length === 0) await page.keyboard.down("Shift");
+      await page.mouse.click(x, track.y + track.height / 2);
+      if (ready.waves.length === 0) await page.keyboard.up("Shift");
+      await until(page, () => playerInfo(page), (p) => p.players === players + 1 && p.ready !== null && p.first !== null, 120_000, "player recreated and landed");
+      assert.equal(await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old), undefined, "a new Ruffle element");
+      const s2 = await until(page, () => swfState(page), (s) => !s.seeking, 60_000, "backward seek done");
+      assert.ok(landed(back, s2.idx), `backward: idx ${s2.idx} for ${back}`);
+      assert.equal(s2.paused, true, "pause kept across the new player");
+      assert.equal(s2.speed, s0.speed, "speed kept across the new player");
+
+      // 5. capture: a 720x440 PNG download
+      const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.click("#mtp-shot")]);
+      assert.match(download.suggestedFilename(), /\.png$/);
+      const png = decodePng(readFileSync((await download.path())!));
+      assert.deepEqual([png.width, png.height], [720, 440]);
+
+      // 6. x32, play, then "Fin": the banner shows the stored winner, its button leads to /hq?money=N
+      await page.locator("#mtp-speed").fill("32"); // the speed slider's last notch: x32
+      await page.click("#mtp-play");
+      const s3 = await until(page, () => swfState(page), (s) => !s.paused, 10_000, "play button");
+      assert.equal(s3.speed, 32);
+      assert.deepEqual(errors, []);
+      await swfReplay(page, `${mode}-player`, won, at("bidasses", `/hq?money=${won ? 2 : 1}`));
+
+      // 7. the share link (?at=N) on the replay page: the first reported index is N, whose current line is j2 again
+      assert.ok(link.startsWith(battleUrl.split("?")[0]!));
+      await page.goto(link);
+      await playerReady(page, `${mode}-at`);
+      const p = await until(page, () => playerInfo(page), (p) => p.first !== null, 120_000, "first mtProgress with ?at=");
+      assert.ok(landed(s1b.idx, p.first!), `?at=${s1b.idx}: started at ${p.first}`);
+      const lineAt = lines.filter((i) => i <= p.first! - 1).at(-1);
+      assert.equal(lineAt, j2, "the shared moment shows the same current line");
+
+      // 8. 390 px wide: the player is scaled down, no horizontal scrolling
+      const m = await page.context().newPage();
+      await m.setViewportSize({ width: 390, height: 844 });
+      await m.goto(battleUrl);
+      await m.locator("ruffle-player#battle").waitFor({ timeout: 30_000 });
+      await playerReady(m, `${mode}-mobile`);
+      const sizes = await m.evaluate(() => {
+        const d = (globalThis as unknown as { document: Doc }).document;
+        const r = d.getElementById("battle").getBoundingClientRect();
+        return { scroll: d.documentElement.scrollWidth, client: d.documentElement.clientWidth, width: r.width, right: r.right };
+      });
+      assert.ok(sizes.scroll <= sizes.client, `no horizontal scrolling: ${JSON.stringify(sizes)}`);
+      assert.ok(sizes.width <= 390 && sizes.width > 300 && sizes.right <= 390, `player scaled to the width: ${JSON.stringify(sizes)}`);
+      assert.ok(await m.locator("#mtp-bar").isVisible());
     } finally {
       db?.close();
       await browser.close();

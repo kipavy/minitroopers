@@ -10,6 +10,7 @@ import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
 import { battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
+import { playerData } from "./battle.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
 
 // UNVERIFIED: the original battle seed range is unknown (same range as the daily battles).
@@ -94,6 +95,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
       attacker: armyTitle(o.army.name, o.army.part),
       defender: "",
       heading: null,
+      ...playerData(c, b, armyTitle(o.army.name, o.army.part), ""),
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
       endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${RAID_REWARD}`) : hq,
       back: fresh ? null : hq,

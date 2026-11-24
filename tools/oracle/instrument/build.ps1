@@ -10,7 +10,7 @@
      Game ENTER_FRAME handler and of Main._rsq, and replaces those 3 method bodies
      (`ffdec -replace`, P-code: no original code is recompiled from AS3);
   4. adds the HELPERS section as static methods of the empty class §(m]a\x02§ and
-     recompiles that class only (`ffdec -importScript`);
+     recompiles that class only (`ffdec -importScript`; -Play: HELPERS_PLAY and the PC_PLAY_* edits);
   5. writes assets/oracle/client_fr_trace.swf and client_fr_trace.swf.sha256.
   With -Verify, also exports the P-code of the result and lists the files whose P-code
   differs from the original (README "Innocuité").
@@ -24,7 +24,7 @@ param(
   [string]$WorkDir = (Join-Path $PSScriptRoot "..\..\..\..\minitroopers-work\oracle-build"),
   [switch]$Verify,
   # build assets/swf/client_fr_play.swf instead (see build-play.ps1): the chk check removed,
-  # no trace helpers
+  # the replay API (PC_PLAY_GAME_*, PC_PLAY_FAST, HELPERS_PLAY), no trace helpers
   [switch]$Play
 )
 $ErrorActionPreference = "Stop"
@@ -120,9 +120,18 @@ $pcodeEdits = @(
      trait = 'trait method QName(PackageNamespace(""),"_rsq")' }
 )
 if ($Play) {
-  # only the chk branch of Main._rsq, with its own FIND/REPLACE sections
-  $pcodeEdits = @($pcodeEdits | Where-Object { $_.name -eq "PC_MAIN" })
-  $pcodeEdits[0].name = "PC_PLAY_MAIN"
+  # the chk branch of Main._rsq, and the replay API hooks of the Game (own FIND/REPLACE sections);
+  # `parts` = several FIND/REPLACE pairs applied to the same method body
+  $game = $pcodeEdits | Where-Object { $_.name -eq "PC_GAME" }
+  $main = $pcodeEdits | Where-Object { $_.name -eq "PC_MAIN" }
+  $pcodeEdits = @(
+    @{ name = "PC_PLAY_MAIN"; class = $main.class; rel = $main.rel; sig = $main.sig; trait = $main.trait },
+    @{ name = "PC_PLAY_GAME"; parts = @("PC_PLAY_GAME_INIT", "PC_PLAY_GAME_FRAME")
+       class = $game.class; rel = $game.rel; sig = $game.sig; trait = $game.trait },
+    @{ name = "PC_PLAY_FAST"; class = $game.class; rel = $game.rel
+       sig = "      public function ${S}Bl{K\x01${S}() : Boolean"
+       trait = 'trait method QName(PackageNamespace(""),"Bl{K\x01")' }
+  )
 }
 $argLines = New-Object System.Collections.Generic.List[string]
 foreach ($e in $pcodeEdits) {
@@ -136,9 +145,11 @@ foreach ($e in $pcodeEdits) {
   $mStart = $trait; while ($pc[$mStart] -ne "method") { $mStart++ }
   $mEnd = $mStart; while ($pc[$mEnd] -ne "end ; method") { $mEnd++ }
   $method = (($pc[$mStart..$mEnd]) -join "`n") + "`n"
-  $find = Get-Section "$($e.name)_FIND"
-  $at = Find-Once $method $find "$($e.name)_FIND"
-  $method = $method.Remove($at, $find.Length).Insert($at, (Get-Section "$($e.name)_REPLACE"))
+  foreach ($part in $(if ($e.parts) { $e.parts } else { @($e.name) })) {
+    $find = Get-Section "${part}_FIND"
+    $at = Find-Once $method $find "${part}_FIND"
+    $method = $method.Remove($at, $find.Length).Insert($at, (Get-Section "${part}_REPLACE"))
+  }
   $file = Join-Path $WorkDir "$($e.name).pcode"
   [IO.File]::WriteAllText($file, $method, $Utf8)
   $argLines.Add($e.class); $argLines.Add($file); $argLines.Add([string]$bodyIndex)
@@ -147,25 +158,24 @@ foreach ($e in $pcodeEdits) {
 $argsFile = Join-Path $WorkDir "replace-args.txt"
 [IO.File]::WriteAllText($argsFile, (($argLines -join "`n") + "`n"), $Utf8)
 New-Item -ItemType Directory -Force $OutDir | Out-Null
-Invoke-FFDec @("-replace", $Src, $(if ($Play) { $Out } else { $Step1 }), $argsFile)
+Invoke-FFDec @("-replace", $Src, $Step1, $argsFile)
 
 # 4. helpers: static methods added to the empty class §(m]a\x02§, recompiled from AS3
-#    (not for -Play: the -replace output above is already the final SWF)
-if (-not $Play) {
+#    (trace: HELPERS_IMPORTS + HELPERS; -Play: HELPERS_PLAY_IMPORTS + HELPERS_PLAY, the replay API)
+$hSec = if ($Play) { "HELPERS_PLAY" } else { "HELPERS" }
 $hRel = "scripts\${S}(m]a%5Cx02${S}.as"
 $h = Read-Text (Join-Path $Decomp $hRel)
 $pkg = "package`n{`n"
-$at = Find-Once $h $pkg "HELPERS_IMPORTS"
-$h = $h.Insert($at + $pkg.Length, (Get-Section "HELPERS_IMPORTS"))
+$at = Find-Once $h $pkg "${hSec}_IMPORTS"
+$h = $h.Insert($at + $pkg.Length, (Get-Section "${hSec}_IMPORTS"))
 $ctor = "      public function ${S}(m]a\x02${S}()`n"
-$at = Find-Once $h $ctor "HELPERS"
-$h = $h.Insert($at, (Get-Section "HELPERS"))
+$at = Find-Once $h $ctor $hSec
+$h = $h.Insert($at, (Get-Section $hSec))
 $dst = Join-Path $Import $hRel
 New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
 [IO.File]::WriteAllText($dst, $h, $Utf8)
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 Invoke-FFDec @("-importScript", $Step1, $Out, $Import)
-}
 # 4b. -Play only: bitmaps 17/19 made transparent ahead of the original's threshold() (Ruffle a111ceec draws them
 #     white; README "client_fr_play.swf"). Bitmap data only, no code.
 if ($Play) {

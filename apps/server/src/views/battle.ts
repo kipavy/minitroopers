@@ -1,7 +1,8 @@
+import type { LogLine } from "../battleLog.ts";
 import type { Config } from "../config.ts";
 import { html, raw, type Html } from "./html.ts";
 import { layout } from "./layout.ts";
-import { jsStr, swfEmbed } from "./swf.ts";
+import { jsJson, jsStr, swfEmbed } from "./swf.ts";
 
 export interface BattleView {
   /** Army host of the page frame (logo / footer links), null on the site root. */
@@ -24,6 +25,12 @@ export interface BattleView {
    * epic and raid pages, RECON3).
    */
   heading?: string | null;
+  /** French log of the battle, one line per history entry (enhanced player, public/js/player.js). */
+  log: readonly LogLine[];
+  /** `?at=`: history index the player starts at (null: from the start). */
+  at: number | null;
+  /** Army and trooper names of input sides 0 and 1 (the log colours them by side). */
+  sides: readonly [readonly string[], readonly string[]];
 }
 
 /**
@@ -46,7 +53,16 @@ ${v.defender}
 ${v.heading}
 </h1>
 `;
-  const content = html`<div class="game">${title}${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div>
+  // The enhanced player (player.js) wraps swfobject.embedSWF before the embed runs; the log is drawn beside the frame.
+  const content = html`<script type="text/javascript">
+var mtLog = ${raw(jsJson(v.log))};
+var mtAt = ${raw(jsJson(v.at))};
+var mtSides = ${raw(jsJson(v.sides))};
+</script>
+<script type="text/javascript" src="/js/player.js?v=2"></script>
+<div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
+<div id="mtp-bar" class="mtp-bar"></div></div>
+<div id="mtp-log" class="mtp-log"></div>
 
 <script type="text/javascript">
 	function endBattle() {
@@ -57,5 +73,5 @@ ${v.heading}
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"] });
 }

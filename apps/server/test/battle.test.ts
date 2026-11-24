@@ -7,6 +7,13 @@ import { MINI_SWF } from "../src/views/swf.ts";
 import { seedFactions } from "../src/admin/factions.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
+import { simulateBattle } from "@mt/engine/internal";
+import { readFileSync, readdirSync } from "node:fs";
+import type { Context } from "hono";
+import type { Env as AppEnv } from "../src/app.ts";
+import { battleLog } from "../src/battleLog.ts";
+import { playerData } from "../src/routes/battle.ts";
+import type { BattleRow } from "../src/repo.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
 
@@ -74,6 +81,14 @@ function battleFlashvars(html: string): string {
 }
 
 const won = (r: Row): boolean => r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide;
+
+/** The enhanced player's data of a battle page: `var mtLog = [...];` and `var mtAt = n|null;`. */
+function playerVars(html: string): { log: { i: number; w: number; t: string }[]; at: number | null } {
+  const log = /^var mtLog = (.*);$/m.exec(html);
+  const at = /^var mtAt = (.*);$/m.exec(html);
+  assert.ok(log && at, "player data present");
+  return { log: JSON.parse(log[1]!) as { i: number; w: number; t: string }[], at: JSON.parse(at[1]!) as number | null };
+}
 
 for (const mode of MODES) {
   test(`[${mode}] /b/opp: 5 opponents frozen for the day, grids xmax 4, attack links and the friend form`, async () => {
@@ -176,7 +191,7 @@ for (const mode of MODES) {
     assert.equal(dec.vars.endMsg, won(row) ? "Tu as remporté cette bataille ! Ton armée gagne +2 [T]" : "Tu as perdu cette bataille ! Ton armée gagne +1 [T]");
     assert.equal(dec.vars.imageurl, "/img/");
     assert.ok(page.includes(`document.location = ${JSON.stringify(loc(mode, `/hq?money=${reward}`))};`));
-    assert.ok(page.includes("/swf/client_fr_play.swf?v=3"));
+    assert.ok(page.includes("/swf/client_fr_play.swf?v=6"));
     assert.ok(page.includes(",720,440,"));
     assert.match(page, /<h1>\nL&#39;armée de Warp\nVS\nL&#39;armée de Foe\n<\/h1>/);
     assert.ok(page.includes("<title>MiniTroopers</title>"));
@@ -458,6 +473,49 @@ for (const mode of MODES) {
     assert.deepEqual(dec.input, JSON.parse(battles(env, id)[0]!.input));
   });
 
+  test(`[${mode}] enhanced player: player.js, one log line per history entry, ?at= parsed and bounded`, async () => {
+    const env = setup(mode);
+    const { cl, key, id } = await warp(env);
+    const foeId = foe(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
+    void foeId;
+    await get(env, cl, "/b/battle", { form: { chk: key, n: "0", friend: "Foe" } });
+    const row = battles(env, id)[0]!;
+    const input = JSON.parse(row.input) as BattleInput;
+    const total = simulateBattle(input).events.length;
+    const page = await (await get(env, cl, "/b/view/bat1")).text();
+    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=2"></script>'));
+    assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
+    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=2"/>'));
+    const { log, at } = playerVars(page);
+    assert.equal(log.length, total, "one line per history entry");
+    assert.deepEqual(log.map((l) => l.i), [...log.keys()]);
+    assert.equal(at, null);
+    const sides = JSON.parse(/^var mtSides = (.*);$/m.exec(page)![1]!) as string[][];
+    assert.deepEqual(sides, [["L'armée de Warp", ...input.armies[0].troopers.map((t) => t.name)], ["L'armée de Foe", "Bob"]]);
+    assert.ok(log.some((l) => l.t.includes("L'armée de Warp") || l.t.includes("L'armée de Foe")), "army names in the log");
+    // ?at=: a positive integer, bounded by the history length; anything else is ignored
+    const atOf = async (q: string): Promise<number | null> => {
+      const r = await get(env, cl, `/b/view/bat1${q}`);
+      assert.equal(r.status, 200, q);
+      return playerVars(await r.text()).at;
+    };
+    assert.equal(await atOf("?at=5"), 5);
+    assert.equal(await atOf(`?d=${today(env)};at=7`), 7);
+    assert.equal(await atOf(`?d=${today(env)}&at=${total}`), total);
+    assert.equal(await atOf("?at=999999"), total);
+    assert.equal(await atOf(`?at=${"9".repeat(400)}`), total);
+    for (const q of ["?at=-3", "?at=abc", "?at=0", "?at=", "?at=5.5", "?at=+5", "?at=0x10", "?at=%00"]) assert.equal(await atOf(q), null, q);
+    // the public replay page too
+    const fview = await get(env, cl, `/b/fview/${row.id}?at=3`);
+    assert.equal(fview.status, 200);
+    assert.equal(playerVars(await fview.text()).at, 3);
+    // only battle pages load the player
+    for (const p of ["/hq", "/b/opp", "/history"]) {
+      const other = await (await get(env, cl, p)).text();
+      assert.ok(!other.includes("player.js") && !other.includes("player.css"), p);
+    }
+  });
+
   test(`[${mode}] strangers and other armies: no action, no page of someone else's battles`, async () => {
     const env = setup(mode);
     const { id } = await warp(env);
@@ -473,3 +531,23 @@ for (const mode of MODES) {
     assert.equal(battles(env, id).length, 0);
   });
 }
+
+test("playerData: a log that cannot be built gives an empty log, not an exception (the page stays up)", () => {
+  const input = JSON.parse(readFileSync(new URL("../../../packages/engine/test/fixtures/modes/" + readdirSync(new URL("../../../packages/engine/test/fixtures/modes/", import.meta.url)).find((f) => f.endsWith(".json"))!, import.meta.url), "utf8")).input as BattleInput;
+  (input.armies[0].troopers[0] as { force: unknown }).force = null;
+  assert.throws(() => battleLog(input, ["A", "B"]), "the corrupted input makes the log builder throw");
+  const row = { id: 1, input } as BattleRow;
+  const c = { req: { url: "http://x/b/view/bat1" } } as unknown as Context<AppEnv>;
+  const err = console.error;
+  const seen: unknown[][] = [];
+  console.error = (...args: unknown[]) => void seen.push(args);
+  try {
+    const d = playerData(c, row, "A", "B");
+    assert.deepEqual(d.log, []);
+    assert.equal(d.at, null);
+    assert.equal(d.sides.length, 2);
+  } finally {
+    console.error = err;
+  }
+  assert.equal(seen.length, 1, "the failure is logged once");
+});
