@@ -27,11 +27,11 @@
       splashScreen: false,
       unmuteOverlay: "hidden", // Ruffle's "click to unmute" overlay would cover the end-of-battle banner
       contextMenu: "off",
-      backgroundColor: "#F2DDB8",
-      // Ruffle's default (WebGPU, then wgpu over WebGL) ran the 16-trooper recruits animation at 16 fps on an Adreno
-      // laptop; its plain WebGL renderer ran it at 60. The other renderers remain fallbacks.
-      preferredRenderer: "webgl"
+      backgroundColor: "#F2DDB8"
     };
+    // Per-embed renderer choice (swfEmbed `renderer`). Ruffle's plain WebGL renderer has no BitmapData.draw (the
+    // troopers grid, the battle pause screen), so it is only requested where the SWF never draws.
+    if (params.renderer) config.preferredRenderer = params.renderer;
     if (params.scale) config.scale = params.scale;
     if (params.menu !== undefined) config.menu = params.menu !== false && params.menu !== "false";
     if (params.allowScriptAccess) config.allowScriptAccess = params.allowScriptAccess === "always" || params.allowScriptAccess === true;
