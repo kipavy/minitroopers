@@ -353,7 +353,7 @@ test("HQ raid box: won out (20 phases) and protected views", async () => {
   const env = setup("path");
   const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, pendingRecruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
   const mission = { type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" };
-  const base = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, nextBounty: 50, moneyDelta: 0, notice: null, mission };
+  const base = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, now: 0, nextBounty: 50, moneyDelta: 0, notice: null, mission };
   const done = String(hqPage(env.cfg, { ...base, locked: false, raid: { phase: RAID_MAX_PHASE, step: RAID_MAX_PHASE, alive: 4, over: true, lastWin: true, key: "ABCDEF" } }));
   assert.ok(done.includes(`<h1 class="hbox">Raid Phase ${RAID_MAX_PHASE}</h1>`));
   assert.ok(done.includes(`<a href="/a/nsun/b/view/raid" class="b_bg bwin_bg" onmouseover="_.showTip('raid_tip','Tu as remporté le raid !')"`));
@@ -373,6 +373,21 @@ test("raid phase won on a weekend day pays ×3: +12, message and money animation
   await get(env, cl, `/b/raid?phase=1;chk=${key}`);
   assert.ok(won(raids(env, id)[0]!));
   assert.equal(credits(env, id), 112);
+  const page = await (await get(env, cl, "/b/view/raid")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, "Félicitations, tu as remporté le raid ! Ton armée gagne +12 [T] et tu peut tenter le raid suivant.");
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));
+});
+
+test("a raid phase's first view shows the reward actually paid, even if the config changed since", async () => {
+  const env = setup("path", {}, { battleSeed: () => 4242 });
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, key, id } = await warp(env);
+  recruit(env, id, "weak", 1, 7);
+  recruit(env, id, "hero", STRONG, 1_000_000);
+  recruit(env, id, "hera", STRONG, 1_007_919);
+  await get(env, cl, `/b/raid?phase=1;chk=${key}`);
+  assert.equal(credits(env, id), 112);
+  env.cfg.weekendMultiplier = 1;
   const page = await (await get(env, cl, "/b/view/raid")).text();
   assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, "Félicitations, tu as remporté le raid ! Ton armée gagne +12 [T] et tu peut tenter le raid suivant.");
   assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));

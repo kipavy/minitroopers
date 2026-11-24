@@ -558,6 +558,8 @@ export interface BattleRow {
   mode: string | null;
   /** Raid phase (null otherwise). */
   phase: number | null;
+  /** Credits paid when it was fought (null for battles stored before migration 010). */
+  reward: number | null;
 }
 
 const battleOf = (r: Raw): BattleRow => ({
@@ -572,6 +574,7 @@ const battleOf = (r: Raw): BattleRow => ({
   kind: r.kind as string,
   mode: (r.mode as string | null) ?? null,
   phase: (r.phase as number | null) ?? null,
+  reward: (r.reward as number | null) ?? null,
 });
 
 export function battleById(db: DatabaseSync, id: number): BattleRow | null {
@@ -600,7 +603,7 @@ export function battleOppOfDay(db: DatabaseSync, armyId: number, day: string, n:
 
 /**
  * Deletes an army (admin, abuse). Its own battles, troopers, daily rows, sessions and notices go with it (cascades);
- * battles it defended stay for their attackers with `defender_ref = 'gone:<name>'`; armies it recruited lose their recruiter.
+ * battles and trainings it defended stay for their attackers with `defender_ref = 'gone:<name>'`; armies it recruited lose their recruiter.
  * A faction army is never deleted (false), nor an unknown id.
  */
 export function deleteArmy(db: DatabaseSync, armyId: number): boolean {
@@ -612,6 +615,7 @@ function deleteArmyTx(db: DatabaseSync, armyId: number): boolean {
   const a = db.prepare("SELECT name, is_faction FROM armies WHERE id = ?").get(armyId) as { name: string; is_faction: number } | undefined;
   if (!a || a.is_faction === 1) return false;
   db.prepare("UPDATE battles SET defender_ref = ? WHERE defender_id = ?").run(`gone:${a.name}`, armyId);
+  db.prepare("UPDATE trainings SET defender_ref = ? WHERE defender_id = ?").run(`gone:${a.name}`, armyId);
   db.prepare("DELETE FROM armies WHERE id = ?").run(armyId);
   return true;
 }
@@ -650,8 +654,8 @@ export function fight(
     if (typeof d === "string") return (out = { ok: false, reason: "refused", code: d }), null;
     const id = Number(
       db
-        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, opp, created_at) VALUES (?, ?, ?, ?, ?, ?, 'battle', ?, ?)")
-        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.opp, p.now).lastInsertRowid,
+        .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, opp, reward, created_at) VALUES (?, ?, ?, ?, ?, ?, 'battle', ?, ?, ?)")
+        .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.opp, d.reward, p.now).lastInsertRowid,
     );
     db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
     return (out = { ok: true, id, n: used + 1 });
@@ -876,8 +880,8 @@ export type ModeResult =
 function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; now: number; kind: "mission" | "raid"; phase?: number }, d: NewModeBattle): number {
   const id = Number(
     db
-      .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode, phase, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-      .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.kind, d.mode, p.phase ?? null, p.now).lastInsertRowid,
+      .prepare("INSERT INTO battles(day, attacker_id, defender_id, defender_ref, input, winner, kind, mode, phase, reward, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(p.day, p.armyId, d.defenderId, d.defenderRef, JSON.stringify(d.input), d.winner, p.kind, d.mode, p.phase ?? null, d.reward, p.now).lastInsertRowid,
   );
   db.prepare("UPDATE armies SET credits = credits + ? WHERE id = ?").run(d.reward, p.armyId);
   return id;

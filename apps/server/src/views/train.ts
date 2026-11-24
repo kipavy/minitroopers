@@ -51,7 +51,7 @@ function recentList(cfg: Config, v: TrainView): Html | "" {
  */
 export function trainPage(cfg: Config, v: TrainView): Html {
   const fight = (ref: string): string => armyUrl(cfg, v.army.host, `/b/train/fight?opp=${encodeURIComponent(ref)};chk=${v.key}`);
-  const cells = v.foes.map((f, i) => foeCell(f, i, fight(f.ref), "S'entraîner !"));
+  const cells = v.foes.map((f, i) => foeCell(f, i, fight(f.ref), "S'entraîner !", false));
   cells.splice(Math.min(1, cells.length), 0, mateCell(cfg, v));
   const rows: Html[] = [];
   for (let i = 0; i < cells.length; i += 2) rows.push(html`<tr>

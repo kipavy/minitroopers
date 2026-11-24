@@ -40,6 +40,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       power: armyPower(troopers),
       battles: o.locked ? [] : battlesOfDay(db, army.id, day),
       battleTotal: battleAllowance(troopers),
+      now: t,
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
       pendingRecruits: pendingRecruits(db, army.id),
       lastDefense: lastDefense(army.id, t),

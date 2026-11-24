@@ -436,3 +436,17 @@ test("mission lost on a weekend day still pays nothing and goes back to /hq", as
   const page = await (await get(env, cl, "/b/view/miss1")).text();
   assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq"))};`));
 });
+
+test("a mission's first view shows the reward actually paid, even if the config changed since", async () => {
+  const env = setup("path");
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  const { cl, key, id } = await warp(env);
+  setTroopers(env, id, strong);
+  prepare(env, id, "exterminate");
+  await get(env, cl, `/b/mission?n=0;chk=${key}`);
+  assert.equal(credits(env, id), 112);
+  env.cfg.weekendMultiplier = 1;
+  const page = await (await get(env, cl, "/b/view/miss1")).text();
+  assert.equal(decodeBattleFlashvars(battleFlashvars(page)).vars.endMsg, "Tu as remporté la mission du jour ! Ton armée gagne +12 [T]");
+  assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));
+});

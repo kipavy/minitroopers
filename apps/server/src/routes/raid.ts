@@ -87,7 +87,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
     if (!b) return c.redirect(hq);
     const fresh = !b.seen && markSeen(db, b.id);
     const won = b.winner !== null && b.winner === b.input.attackerSide;
-    const reward = RAID_REWARD * rewardMultiplier(b.day, cfg.weekendMultiplier);
+    const reward = b.reward ?? RAID_REWARD * rewardMultiplier(b.day, cfg.weekendMultiplier);
     // UNVERIFIED: the defeat message of a raid was never archived; the archived replay text is used.
     const endMsg = won ? (fresh ? wonFirst(reward) : "Tu as remporté ce combat !") : LOST;
     const view = {

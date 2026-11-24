@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { BattleInput } from "@mt/engine";
 import { openDb } from "../src/db.ts";
-import { TRAININGS_KEPT, armyByHost, createArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
+import { TRAININGS_KEPT, armyByHost, createArmy, deleteArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
 import { create, setup, type Client, type Env } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
 
@@ -87,6 +87,7 @@ test("/b/train shows 5 opponents with \"S'entraîner !\" links, the by-name form
   assert.ok(page.includes("Affronte l'armée de ton choix :") && page.includes(">Affronter !<"));
   assert.match(page, /href="\/a\/warp\/b\/train"[^>]*>Autres adversaires</);
   assert.ok(page.includes("Entraînement"));
+  assert.ok(!page.includes("confirm("), "a free training never asks for a confirmation (Killian, 2026-11-25)");
 });
 
 test("a training: replay page, no credits, no battle, quota unchanged", async () => {
@@ -173,4 +174,12 @@ test("the defender opening a shared training sees it from its own side", async (
   assert.equal(seen.attackerSide, 1 - t.input.attackerSide);
   const mine = embedOf(await (await get(env, cl, `/b/tview/${tid}`)).text());
   assert.equal(mine.endMsg, attackerWon ? "Tu as remporté ce combat !" : "Ce combat s'est soldé par un échec !");
+});
+
+test("deleteArmy: a training against the deleted army keeps its name as gone:<name>, like battles", () => {
+  const { db, a, b } = db2();
+  const id = insertTraining(db, { attackerId: a, defenderId: b, defenderRef: null, input: INPUT, winner: 1, now: 1 });
+  assert.equal(deleteArmy(db, b), true);
+  const t = trainingById(db, id)!;
+  assert.deepEqual({ defenderId: t.defenderId, defenderRef: t.defenderRef }, { defenderId: null, defenderRef: "gone:Bbb" });
 });
