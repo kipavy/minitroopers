@@ -116,7 +116,7 @@ intégré nativement : pas d'extension de navigateur.
 | `←` / `→` | événement précédent / suivant (Maj : saut de plusieurs événements) |
 | `P` / `N` (ou PgHaut / PgBas) | vague précédente / suivante |
 | `Début` / `Fin` | début / fin du combat |
-| `+` / `-` | vitesse supérieure / inférieure |
+| `+` / `-` ou `>` / `<` | vitesse supérieure / inférieure |
 | `C` | capture d'écran |
 | `?`, `Échap` | afficher / fermer l'aide |
 

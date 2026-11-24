@@ -36,7 +36,12 @@ export function playerData(
 ): { log: LogLine[]; at: number | null; sides: [string[], string[]] } {
   const other = defender || "L'adversaire";
   const names: [string, string] = b.input.attackerSide === 0 ? [attacker, other] : [other, attacker];
-  const log = cachedBattleLog(b.input, names);
+  let log: LogLine[] = [];
+  try {
+    log = cachedBattleLog(b.input, names);
+  } catch (e) {
+    console.error("battleLog failed for battle", b.id, e);
+  }
   const side = (s: 0 | 1): string[] => [names[s], ...b.input.armies[s].troopers.map((t) => t.name).filter((n) => typeof n === "string" && n.trim() !== "")];
   return { log, at: atParam(c, log.length), sides: [side(0), side(1)] };
 }

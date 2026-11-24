@@ -8,6 +8,12 @@ import { seedFactions } from "../src/admin/factions.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
 import { simulateBattle } from "@mt/engine/internal";
+import { readFileSync, readdirSync } from "node:fs";
+import type { Context } from "hono";
+import type { Env as AppEnv } from "../src/app.ts";
+import { battleLog } from "../src/battleLog.ts";
+import { playerData } from "../src/routes/battle.ts";
+import type { BattleRow } from "../src/repo.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
 
@@ -525,3 +531,23 @@ for (const mode of MODES) {
     assert.equal(battles(env, id).length, 0);
   });
 }
+
+test("playerData: a log that cannot be built gives an empty log, not an exception (the page stays up)", () => {
+  const input = JSON.parse(readFileSync(new URL("../../../packages/engine/test/fixtures/modes/" + readdirSync(new URL("../../../packages/engine/test/fixtures/modes/", import.meta.url)).find((f) => f.endsWith(".json"))!, import.meta.url), "utf8")).input as BattleInput;
+  (input.armies[0].troopers[0] as { force: unknown }).force = null;
+  assert.throws(() => battleLog(input, ["A", "B"]), "the corrupted input makes the log builder throw");
+  const row = { id: 1, input } as BattleRow;
+  const c = { req: { url: "http://x/b/view/bat1" } } as unknown as Context<AppEnv>;
+  const err = console.error;
+  const seen: unknown[][] = [];
+  console.error = (...args: unknown[]) => void seen.push(args);
+  try {
+    const d = playerData(c, row, "A", "B");
+    assert.deepEqual(d.log, []);
+    assert.equal(d.at, null);
+    assert.equal(d.sides.length, 2);
+  } finally {
+    console.error = err;
+  }
+  assert.equal(seen.length, 1, "the failure is logged once");
+});

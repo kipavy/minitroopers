@@ -540,7 +540,8 @@
     });
     // whole names only, never inside a longer word ("Rat" in "Rate")
     var alts = all.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|");
-    if (all.length) nameRe = new RegExp("(?<![\\p{L}\\p{N}])(?:" + alts + ")(?![\\p{L}\\p{N}])", "gu");
+    // lookbehind: Safari < 16.4 throws on it, no colouring then
+    if (all.length) try { nameRe = new RegExp("(?<![\\p{L}\\p{N}])(?:" + alts + ")(?![\\p{L}\\p{N}])", "gu"); } catch (e) { nameRe = null; }
   })();
   function fillLine(li, text) {
     if (!nameRe) return void li.appendChild(d.createTextNode(text));

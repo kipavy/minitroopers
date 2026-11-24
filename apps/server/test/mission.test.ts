@@ -18,7 +18,7 @@ function assertPlayerLog(html: string, input: BattleInput): void {
   const log = JSON.parse(m[1]!) as { i: number; w: number; t: string }[];
   const events = simulateBattle(input).events;
   assert.equal(log.length, events.length, "one log line per history entry");
-  const waves = events.filter((e) => /^(d+)/.exec(e.slice(3).split("|")[2] ?? "")?.[1] === "39").length;
+  const waves = events.filter((e) => /\|39\(/.test(e)).length;
   assert.equal(Math.max(0, ...log.map((l) => l.w)), waves, "log waves = NewWave entries");
 }
 const FIXTURES = new URL("../../../packages/engine/test/fixtures/modes/", import.meta.url);
