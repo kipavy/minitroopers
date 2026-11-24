@@ -442,6 +442,7 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
 | `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38), `NewWave` (39) et `Winner` (34), arme la détection de blocage en état 1, appelle `mtReady` |
 | `PC_PLAY_GAME_FRAME` | même handler, état 2 : `this.frame()` | devient `mtFrame(this)` |
 | `PC_PLAY_FAST` | `§Bl{K\x01§` (isFast : `ticks >= 8`) | `(ticks >= 8) \| mtFast` (`bitor` + `convert_b`) : à vitesse ≥ 8 les mêmes effets que le mode natif 16× sont coupés |
+| `PC_PLAY_KF` (+ `PC_PLAY_KF_STACK`) | même handler, état 0 : `if (battle.resolve())` | `resolve()`, puis `mtKf(battle)`, puis le test d'origine sur le résultat de `resolve()` (resté sur la pile ; `maxstack` 2 → 3). **Seul ajout dans l'état 0**, en lecture seule (images clés, ci-dessous) |
 
 - SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves})` une fois ; `mtProgress(idx, wave)` au plus
   une fois par image, seulement si `idx` change (`idx = total − queue.length − (step ? 1 : 0)`, `wave` = nombre de
@@ -449,9 +450,11 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   elle n'est pas toujours la dernière ; son application vide la file, donc `idx = total`) ; `mtStuck(idx)` une fois par
   blocage (ci-dessous).
 - Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
-  `mtState()` = `{idx, wave, total, speed, paused, ended, seeking, hidden, calls}` (`seeking` : saut en cours,
-  `hidden` : clip du Game masqué, `calls` : appels à `frame()` de lecture, hors sauts — la vitesse effective), `mtSeek(n)`,
-  `mtShot()`.
+  `mtState()` = `{idx, wave, total, speed, paused, ended, seeking, hidden, calls, kf, banner}` (`seeking` : saut en
+  cours, `hidden` : clip du Game masqué, `calls` : appels à `frame()` de lecture, hors sauts — la vitesse effective, `kf` :
+  nombre d'images clés, `banner` : l'action `Winner` et sa bannière sont à l'écran), `mtGoto(n)` (`mtSeek(n)` : alias),
+  `mtShot()`. Pour les tests seulement : `mtDump()`, `mtHistStr()`, `mtStopAt(n)`, `mtSettle(max)`, `mtKfSize()`
+  (ci-dessous).
 - `mtFrame` : en pause aucun appel ; sinon `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
   à-coups compris, consommés par appel), 1 seul si l'écran PAUSE natif est ouvert ; sous ×1, `stage.frameRate = 40 × speed`
   (au-delà, 40). Budget de temps : 10 ms, ou la moitié de l'intervalle entre les deux dernières images si elles sont plus
@@ -459,20 +462,68 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   `mtInit`, sinon l'attente de l'image de fond compterait). Sur une machine rapide c'est 10 ms ; sous le Chromium x64
   émulé (un `frame()` y coûte 3 à 15 ms, une image 40 à 150 ms) un budget fixe de 10 ms plafonne ×32 à ≈ ×1,5, le budget
   relatif donne ≈ ×5 au prix d'une cadence au plus divisée par deux.
-- `mtSeek(n)` (n borné à `total`) : vers l'avant seulement ; `n` ≤ index appliqué → rien (le retour arrière se fait en
-  rechargeant le lecteur côté page). Sans effet si le combat est fini ou si l'écran PAUSE natif est ouvert. Le clip du
-  Game est masqué et le drapeau rapide levé ; à l'image suivante (`mtSeekStep`), saut au dernier `CheckPoint` (38) ≤ n
-  encore dans la file (`mtJump` : le saut natif Espace `§KV\t\x16\x03§` généralisé à une cible — file tronquée à ce 38,
-  étape courante détruite, drapeau de reconstruction `§'A~X§`, horloge = temps du 38 − 1, file d'à-coups `§~Y\x12(\x01§`
-  vidée, `ylcZ()` sur chaque animation ; rien si ce 38 est déjà en tête), puis appels à `frame()` répartis sur les images
-  avec le même budget, jusqu'à `idx ≥ n` **et** `§'A~X§` retombé (`mtSeekDone` : le 38 du saut a été appliqué et la
-  scène reconstruite). Au plus une entrée est appliquée par tick : on s'arrête exactement sur `n`, sauf `Winner` qui
-  saute à `total`, et sauf un `n` qui est l'index d'un `CheckPoint` : on s'arrête alors à `n + 1`, après la
-  reconstruction, plutôt que de montrer quelques ticks la scène de l'ancienne vague. Alors le clip réapparaît, le
-  drapeau rapide reprend sa valeur (vitesse ≥ 8) et un seul `mtProgress(idx, wave)` est envoyé ; aucun `mtProgress`
-  pendant le saut. Pendant le saut la scène tourne à 40 images/s quelle que soit la vitesse (sinon un saut à ×0,125
-  serait 8 fois plus lent) ; `40 × speed` est rétabli ensuite sous ×1. La lecture reprend à la vitesse et à l'état de
-  pause courants. Un blocage pendant le saut l'interrompt.
+- **Images clés** (`mtKf`, `PC_PLAY_KF`) : appelé après chaque `battle.resolve()` de l'état 0, il ne fait que **lire**
+  l'historique et les troopers : `getInfos()` (`§WU|\x04§`) construit des objets neufs à partir des champs du trooper
+  (`§` V\x11§` = copie de tableau Haxe, `concat`, `§*\x1f\n$§` des armes = objets neufs), sans tirage aléatoire ni
+  écriture — c'est la même fonction que le `CheckPoint` natif appelle. Une image clé dès que l'historique a 4 entrées de
+  plus que la précédente (`resolve()` en ajoute parfois plusieurs d'un coup : l'écart réel est celui d'un tour), et
+  après chaque `NewWave` (39), plus une image vide à l'index 0. Contenu : `i` (entrées appliquées), `t` (infos des
+  troopers vivants), `x` (en plus pour chacun : état `TrooperState`, statuts, blessures, soigné, PV du véhicule), `d`/`dx`
+  (morts de la vague : listes de morts des équipes, vidées par `NewWave` ; un corps est « au sol » s'il était `FALLEN`
+  au `resolve()` précédent sa mort, ou si le `resolve()` qui l'a tué l'a projeté — effet de tir 2, `mtFly` —, ce que
+  son état `DEAD` ne dit plus), `g` (armes au sol : `[x, y, infos]` des cases).
+  Preuve d'innocuité : `player.test.ts` compare `Battle.history` (sérialisé par `mtHistStr`, mêmes `mtStr` que la trace)
+  aux lignes `EV` de l'oracle, à l'octet près, sur 30 combats de référence.
+- **Historique jamais modifié** : `mtInit` en garde une copie profonde (`mtHist`) et la file du Game devient
+  `mtHist.slice(0)` (le Game consommait `Battle.history` lui-même). L'affichage modifie les entrées qu'il joue (le
+  déploiement vide ses infos par `pop()`, les infos des `CheckPoint`/déploiements finissent dans les troopers créés, les
+  tableaux des entrées 41/42 sont vidés par `shift()`, un tir manqué reçoit 0 dégât) : `mtFresh`, appelé avant chaque
+  `frame()` (via `mtUnwait`), remplace les 16 premières entrées de la file encore « vierges » (dictionnaire
+  `mtPristine`) par des copies (au plus un pas commence par tick, au plus 16 ticks par `frame()` : la touche native +).
+- `mtGoto(n)` (n borné à `[0, total]`) : saut **synchrone, dans les deux sens, sans recharger le lecteur**. Refusé
+  (`false`) si l'écran PAUSE natif est ouvert ; avant l'état 2 il est différé à la première image de lecture. Il
+  prend la dernière image clé `≤ n` (et `≤` l'index du `Winner`, pour que la fin soit rejouée) ; si l'index appliqué
+  courant est entre cette image et `n`, il continue simplement depuis la position courante. Sinon `mtRestore` :
+  - arrêt de l'étape courante, `ylcZ()` sur chaque action (comme le saut natif Espace) ; l'action `Winner` est retirée
+    avec sa bannière et son panneau de fin ; tweens détruits sauf celui des marqueurs de chef (`§*\x17Z\x10§`, un
+    singleton qui ne se recrée pas) ; file d'à-coups vidée ; armes et objets au sol, particules retirés ; fin
+    annulée (`§HUgt\x03§`, teinte de la carte, opacité des panneaux et de l'horloge) ;
+  - horloge et sa valeur haute = temps de la dernière entrée appliquée ; file = `mtHist` depuis l'image clé ;
+  - troopers : celui qui est vivant, sans véhicule, du même côté et avec le même type d'arme en main que dans l'image
+    clé est **réutilisé** (`mtReuse` : champs de `§\x17;!\x01§` sans reconstruire la peinture, debout, orientation par
+    défaut du côté, plus de statut, blessure, étiquette, tremblement, vitesse, effet de couleur ni sprite d'effet) ;
+    les autres sont détruits et recréés par `§y#;B\x01§(infos)` (ce que fait la reconstruction native du `CheckPoint`
+    pour un trooper absent). Créer la peinture est le plus coûteux (≈ 7 à 40 ms par trooper sous le banc émulé,
+    1 à 3 ms pour un trooper réutilisé). Les images pré-rendues des peintures (cache `§;io&§.§n6?\f\x02§` compté par
+    référence, vidé à 0) des troopers détruits sont retenues (`mtPin`/`mtUnpin`) jusqu'à la fin du rejeu ;
+  - état en plus (`mtExtra`) : statuts, blessures, soigné, PV du véhicule ; poses tenues jouées jusqu'à leur dernière
+    image (`mtFf`, ≤ 60 images ou jusqu'à ce qu'elle boucle) : au sol (`FALLEN` → `ground_crash`), en joue (`AIM` →
+    `aim`), rechargement (`RELOAD` → `reload_init`) ; ces poses rendent le trooper occupé jusqu'à leur fin, comme en
+    lecture quand elles commencent ;
+  - morts de la vague : créés depuis leurs infos, état en plus, tués (`§\x16mf\x01§`), animation `dead` (ou
+    `ground_crash` pour un corps au sol) jouée ;
+  - armes au sol recréées (`§z&\x01§.§lv\x0f0§`, posées) ; panneaux latéraux : dernière entrée `PlayerStatus` (40) de chaque
+    côté avant l'image clé, ou l'état de départ (cases masquées, « 00 »).
+  
+  Puis rejeu caché et synchrone jusqu'à `n` (drapeau rapide, clip masqué, `mtHurry` : la valeur haute de l'horloge est
+  mise au temps de l'étape courante, qui s'applique dès que ses troopers sont libres au lieu d'attendre que l'horloge y
+  monte), au plus 250 ms ; s'il en reste, la suite est répartie sur les images suivantes (`mtSeekStep`, budget par image
+  comme la lecture). À la fin : clip réaffiché, drapeau rapide rétabli, `ended` recalculé (faux avant le `Winner`), un
+  seul `mtProgress(n, wave)`, et `mtEnd()` de nouveau si la fin est atteinte. Pause et vitesse inchangées. Retour :
+  `true` si `n` est atteint au retour de l'appel.
+- Ce qu'une image clé ne peut pas rendre (données d'affichage que l'historique ne porte pas) : les décalages en pixels
+  ajoutés par l'affichage (recul à l'impact, attaquant au corps à corps arrêté contre la position *dessinée* de sa
+  victime) — conservés en lecture jusqu'au prochain déplacement du trooper, absents après un saut (le test d'équivalence
+  compare les positions à 32 px près, celles des corps à 96 px : les explosions les poussent encore) ; l'orientation
+  (gauche/droite) d'un trooper qui n'a pas bougé depuis l'image clé ; les blessures portées par un corps après sa mort ;
+  l'image exacte de l'animation des corps ; les compétences à usage unique déjà consommées (liste de la fiche du
+  trooper, `§\x1e;h\n\x01§`).
+- Pour les tests : `mtDump()` (une ligne par trooper à l'écran : id, côté, position en pixels, PV, mort, au sol, arme en
+  main, armes `id/type/munitions/réserve`, casque, véhicule, statuts, blessures des vivants, soigné ; armes au sol ;
+  panneaux ; fin et bannière), `mtHistStr(copie)` (`Battle.history`, ou `mtHist`), `mtStopAt(n)` (la lecture se met en
+  pause dès que `n` est appliqué), `mtSettle(max)` (`frame()` sans nouvelle étape jusqu'à ce qu'aucune action, tween,
+  à-coup ni trooper occupé ne reste : le pas en attente est remis en tête de file), `mtKfSize()` (`[images clés,
+  objets et tableaux qu'elles possèdent, valeurs, plus grand écart entre deux images]`).
 - Blocage : `mtStuck(idx)` quand l'étape courante attend depuis plus de ses 500 ticks (compteur hérité
   `§/\x12#\x1c\x02§ ≤ 0`, le délai de débogage du Game lui-même), une fois par étape ; ou quand aucune image de l'état 2
   n'a eu lieu 10 s (horloge murale) après `mtInit` (image de fond jamais chargée, `imageurl` en 404). Le `setTimeout` de

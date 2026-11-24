@@ -126,7 +126,7 @@ if ($Play) {
   $main = $pcodeEdits | Where-Object { $_.name -eq "PC_MAIN" }
   $pcodeEdits = @(
     @{ name = "PC_PLAY_MAIN"; class = $main.class; rel = $main.rel; sig = $main.sig; trait = $main.trait },
-    @{ name = "PC_PLAY_GAME"; parts = @("PC_PLAY_GAME_INIT", "PC_PLAY_GAME_FRAME")
+    @{ name = "PC_PLAY_GAME"; parts = @("PC_PLAY_GAME_INIT", "PC_PLAY_GAME_FRAME", "PC_PLAY_KF", "PC_PLAY_KF_STACK")
        class = $game.class; rel = $game.rel; sig = $game.sig; trait = $game.trait },
     @{ name = "PC_PLAY_FAST"; class = $game.class; rel = $game.rel
        sig = "      public function ${S}Bl{K\x01${S}() : Boolean"

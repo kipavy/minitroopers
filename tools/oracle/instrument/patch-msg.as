@@ -236,7 +236,10 @@ ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
    import flash.display.BitmapData;
    import flash.external.ExternalInterface;
+   import flash.geom.ColorTransform;
    import flash.utils.ByteArray;
+   import flash.utils.Dictionary;
+   import flash.utils.getQualifiedClassName;
    import flash.utils.getTimer;
    import flash.utils.setTimeout;
 
@@ -258,14 +261,145 @@ ofs0081:
       public static var mtWave:int = 0;
       // getTimer() at the previous state-2 frame, -1 before the first one
       public static var mtLast:int = -1;
-      // seek target (-1: none) and whether its checkpoint jump is still to be done
+      // target of a seek still replaying over frames (-1: none)
       public static var mtSeekTo:int = -1;
-      public static var mtSeekJump:Boolean = false;
       // the step mtStuck was last sent for
       public static var mtStuckOn:Object = null;
       // wall-clock time (ms) of mtInit
       public static var mtInitAt:Number = 0;
       public static var mtCalls:int = 0;
+      // keyframes taken by mtKf while the battle is computed: {i: entries applied, t: trooper infos, x: their extra
+      // state, d: this wave's dead, g: weapons on the ground}; the battle they belong to; history length at the last one;
+      // next history index to scan for NewWave
+      public static var mtKfs:Array = [];
+      public static var mtKfB:* = null;
+      public static var mtKfN:int = 0;
+      public static var mtKfScan:int = 0;
+      // logic trooper -> its body lies "down" on screen: it was on the ground (FALLEN) after the last resolve() it was
+      // alive, or the resolve() that killed it knocked it flying (hit effect 2: it lands on the ground). Its state then
+      // says DEAD only. mtKfDead: logic troopers already seen dead.
+      public static var mtKfFall:Dictionary = new Dictionary();
+      public static var mtKfDead:Dictionary = new Dictionary();
+      // deep copy of Battle.history taken by mtInit: the Game plays copies, the history itself is never touched
+      public static var mtHist:Array = [];
+      // mtGoto target waiting for the Game's state 2 (-1: none)
+      public static var mtPend:int = -1;
+      // test support: playback pauses once this index is applied (-1: none)
+      public static var mtStop:int = -1;
+
+      // --- serialisation, same code as the trace build's (HELPERS): mtHistStr lines compare to the oracle's EV lines
+      public static function mtEsc(param1:String) : String
+      {
+         var _loc2_:String = "";
+         var _loc3_:int = 0;
+         var _loc4_:int = 0;
+         var _loc5_:String = null;
+         while(_loc3_ < param1.length)
+         {
+            _loc4_ = param1.charCodeAt(_loc3_);
+            _loc3_++;
+            if(_loc4_ < 32 || _loc4_ > 126 || "\\\"|;=,{}[]()<>".indexOf(param1.charAt(_loc3_ - 1)) >= 0)
+            {
+               _loc5_ = _loc4_.toString(16);
+               while(_loc5_.length < 4)
+               {
+                  _loc5_ = "0" + _loc5_;
+               }
+               _loc2_ += "\\u" + _loc5_;
+            }
+            else
+            {
+               _loc2_ += param1.charAt(_loc3_ - 1);
+            }
+         }
+         return _loc2_;
+      }
+
+      public static function mtStr(param1:*, param2:int = 0) : String
+      {
+         var _loc3_:Boolean = false;
+         var _loc4_:Array = null;
+         var _loc5_:int = 0;
+         var _loc6_:String = null;
+         if(param1 === null || param1 === undefined)
+         {
+            return "null";
+         }
+         if(param2 > 16)
+         {
+            return "<deep>";
+         }
+         if(param1 is Boolean)
+         {
+            return param1 ? "true" : "false";
+         }
+         if(param1 is Number)
+         {
+            return String(param1);
+         }
+         if(param1 is String)
+         {
+            return "\"" + §(m]a\x02§.mtEsc(param1) + "\"";
+         }
+         if(param1 is Array)
+         {
+            _loc4_ = [];
+            _loc5_ = 0;
+            while(_loc5_ < param1.length)
+            {
+               _loc4_.push(§(m]a\x02§.mtStr(param1[_loc5_],param2 + 1));
+               _loc5_++;
+            }
+            return "[" + _loc4_.join(",") + "]";
+         }
+         if(param1 is §P!L/\x02§.§\x15)\x01\x02§)
+         {
+            return "T" + String(§P!L/\x02§.§\x15)\x01\x02§(param1).§(m\x0fl\x01§());
+         }
+         if(param1 is §P!L/\x02§.§\r\x07 \x05\x01§)
+         {
+            return "Q" + §P!L/\x02§.§\r\x07 \x05\x01§(param1).§v\x01§ + ":" + §P!L/\x02§.§\r\x07 \x05\x01§(param1).§l\x01§;
+         }
+         if(param1 is Function)
+         {
+            return "<fn>";
+         }
+         try
+         {
+            _loc3_ = param1.__enum__ === true;
+         }
+         catch(_loc_e_:*)
+         {
+            _loc3_ = false;
+         }
+         if(_loc3_)
+         {
+            _loc4_ = param1["7\x02@d\x02"];
+            _loc6_ = String(int(param1[")-Z\x19\x01"]));
+            if(_loc4_ == null || _loc4_.length == 0)
+            {
+               return _loc6_;
+            }
+            return _loc6_ + "(" + §(m]a\x02§.mtStr(_loc4_,param2 + 1).slice(1,-1) + ")";
+         }
+         if(getQualifiedClassName(param1) == "Object")
+         {
+            _loc4_ = [];
+            for(_loc6_ in param1)
+            {
+               _loc4_.push(_loc6_);
+            }
+            _loc4_.sort();
+            _loc5_ = 0;
+            while(_loc5_ < _loc4_.length)
+            {
+               _loc4_[_loc5_] = §(m]a\x02§.mtEsc(_loc4_[_loc5_]) + "=" + §(m]a\x02§.mtStr(param1[_loc4_[_loc5_]],param2 + 1);
+               _loc5_++;
+            }
+            return "{" + _loc4_.join(";") + "}";
+         }
+         return "<" + §(m]a\x02§.mtEsc(getQualifiedClassName(param1)) + ">";
+      }
 
       // --- SWF -> page
       public static function mtOut(param1:String, param2:Array) : void
@@ -332,33 +466,95 @@ ofs0081:
             "ended":mtEnded,
             "seeking":mtSeekTo >= 0,
             "hidden":(mtGame != null && !mtGame.§\x011wD§.visible),
-            "calls":mtCalls
+            "calls":mtCalls,
+            "kf":mtKfs.length,
+            "banner":mtWinner(mtGame) != null
          };
       }
 
-      // Forward only (n <= the applied index: nothing; the page reloads the player to go back). The Game clip is
-      // hidden until the applied index reaches n and a jump's scene rebuild is done (mtSeekStep); mtProgress is sent
-      // then. Ignored while the native
-      // pause screen is open.
-      public static function mtSeek(param1:int) : void
+      public static function mtSeek(param1:int) : Boolean
       {
-         if(mtGame == null || mtEnded || mtGame.§w\x0b\x01o\x02§ != null)
+         return mtGoto(param1);
+      }
+
+      // Instant seek, both ways (n clamped to [0, total]): restores the last keyframe at or before n (unless the current
+      // position is closer), then replays up to n hidden and synchronously, for at most 250 ms; the rest, if any, is
+      // replayed over the next frames (mtSeekStep). mtProgress is sent once n is reached; mtEnd again if n is past the
+      // Winner entry. Pause and speed are kept. Returns true if n is reached on return; false if refused (native pause
+      // screen open), deferred (Game not playing yet: done at its first frame) or still replaying.
+      public static function mtGoto(param1:int) : Boolean
+      {
+         var _loc2_:§Q\btf§ = mtGame;
+         var _loc3_:int = 0;
+         var _loc4_:int = 0;
+         var _loc5_:int = 0;
+         if(_loc2_ == null || _loc2_.§w\x0b\x01o\x02§ != null)
          {
-            return;
+            return false;
+         }
+         if(param1 < 0)
+         {
+            param1 = 0;
          }
          if(param1 > mtTotal)
          {
             param1 = mtTotal;
          }
-         if(param1 <= mtApplied(mtGame))
+         if(int(_loc2_.§)\x11\x1d\x0e§.§)-Z\x19\x01§) != 2)
          {
-            return;
+            mtPend = param1;
+            return false;
+         }
+         mtPend = -1;
+         _loc3_ = mtApplied(_loc2_);
+         _loc4_ = mtKfs.length - 1;
+         while(_loc4_ > 0 && (int(mtKfs[_loc4_].i) > param1 || int(mtKfs[_loc4_].i) > mtWinIdx))
+         {
+            _loc4_--;
+         }
+         if(_loc3_ > param1 || _loc3_ < int(mtKfs[_loc4_].i))
+         {
+            mtRestore(_loc2_,mtKfs[_loc4_]);
          }
          mtSeekTo = param1;
-         mtSeekJump = true;
          mtFast = true;
-         mtGame.§\x011wD§.visible = false;
-         mtRate();
+         _loc2_.§\x011wD§.visible = false;
+         _loc5_ = getTimer();
+         while(mtApplied(_loc2_) < param1 && !mtBlocked(_loc2_) && getTimer() - _loc5_ < 250)
+         {
+            mtUnwait(_loc2_);
+            mtHurry(_loc2_);
+            _loc2_.§k\n/$\x03§();
+         }
+         mtUnpin();
+         if(mtApplied(_loc2_) >= param1 || mtBlocked(_loc2_))
+         {
+            mtSeekEnd(_loc2_);
+         }
+         else
+         {
+            mtRate();
+         }
+         return mtSeekTo < 0;
+      }
+
+      // the Winner action (BattleMsg 34) still running, if any
+      public static function mtWinner(param1:§Q\btf§) : Object
+      {
+         var _loc2_:int = 0;
+         if(param1 == null)
+         {
+            return null;
+         }
+         while(_loc2_ < param1.§{DEL}=\x04u§.length)
+         {
+            if(param1.§{DEL}=\x04u§[_loc2_] is §I&\x01§.§r`M8\x03§)
+            {
+               return param1.§{DEL}=\x04u§[_loc2_];
+            }
+            _loc2_++;
+         }
+         return null;
       }
 
       // the stage's pixels, ARGB 720x440, in base64 (Ruffle's WebGL canvas cannot be read reliably by the page)
@@ -431,6 +627,17 @@ ofs0081:
          var _loc4_:int = 0;
          mtGame = param1;
          mtTotal = _loc2_.length;
+         mtHist = mtCopy(_loc2_);
+         mtPristine = new Dictionary();
+         while(_loc3_ < mtHist.length)
+         {
+            mtPristine[mtHist[_loc3_]] = true;
+            _loc3_++;
+         }
+         _loc3_ = 0;
+         param1.§\x1e-\x02\x07\x01§ = mtQueue(0);
+         mtPend = -1;
+         mtStop = -1;
          mtCps = [];
          mtWaves = [];
          mtWinIdx = mtTotal - 1;
@@ -443,7 +650,6 @@ ofs0081:
          mtWave = 0;
          mtLast = -1;
          mtSeekTo = -1;
-         mtSeekJump = false;
          mtStuckOn = null;
          mtCalls = 0;
          while(_loc3_ < _loc2_.length)
@@ -472,7 +678,13 @@ ofs0081:
                ExternalInterface.addCallback("mtSpeed",mtSpeed);
                ExternalInterface.addCallback("mtState",mtState);
                ExternalInterface.addCallback("mtSeek",mtSeek);
+               ExternalInterface.addCallback("mtGoto",mtGoto);
                ExternalInterface.addCallback("mtShot",mtShot);
+               ExternalInterface.addCallback("mtDump",mtDump);
+               ExternalInterface.addCallback("mtHistStr",mtHistStr);
+               ExternalInterface.addCallback("mtStopAt",mtStopAt);
+               ExternalInterface.addCallback("mtSettle",mtSettle);
+               ExternalInterface.addCallback("mtKfSize",mtKfSize);
             }
             catch(_loc_e_:*)
             {
@@ -524,7 +736,11 @@ ofs0081:
          {
             _loc5_ = 100;
          }
-         if(mtSeekTo >= 0)
+         if(mtPend >= 0)
+         {
+            mtGoto(mtPend);
+         }
+         else if(mtSeekTo >= 0)
          {
             mtSeekStep(param1,_loc4_,_loc5_);
          }
@@ -543,6 +759,12 @@ ofs0081:
                param1.§k\n/$\x03§();
                _loc3_++;
                mtCalls++;
+               if(mtStop >= 0 && mtApplied(param1) >= mtStop)
+               {
+                  mtStop = -1;
+                  mtPaused = true;
+                  break;
+               }
                if(getTimer() - _loc4_ >= _loc5_)
                {
                   break;
@@ -560,9 +782,8 @@ ofs0081:
          }
       }
 
-      // one player frame of a seek: the checkpoint jump, then frame() calls (fast flag on, Game clip hidden) until
-      // the target is reached (mtSeekDone), within the frame's time budget (param2: start, param3: budget); the stage
-      // runs at 40 fps meanwhile, whatever the speed
+      // one player frame of a seek whose synchronous part (mtGoto) ran out of time: frame() calls (fast flag on, Game clip
+      // hidden) until the target is reached, within the frame's time budget (param2: start, param3: budget)
       public static function mtSeekStep(param1:§Q\btf§, param2:int, param3:int) : void
       {
          if(param1.§w\x0b\x01o\x02§ != null)
@@ -570,79 +791,896 @@ ofs0081:
             mtSeekEnd(param1);
             return;
          }
-         if(mtSeekJump)
-         {
-            mtSeekJump = false;
-            mtJump(param1,mtSeekTo);
-         }
-         while(!mtSeekDone(param1) && !mtBlocked(param1))
+         while(mtApplied(param1) < mtSeekTo && !mtBlocked(param1))
          {
             mtUnwait(param1);
+            mtHurry(param1);
             param1.§k\n/$\x03§();
             if(getTimer() - param2 >= param3)
             {
                break;
             }
          }
-         if(mtSeekDone(param1) || mtBlocked(param1))
+         if(mtApplied(param1) >= mtSeekTo || mtBlocked(param1))
          {
             mtSeekEnd(param1);
          }
       }
 
-      // target reached and no scene rebuild pending (§'A~X§ is set by the jump and cleared when its CheckPoint is
-      // applied): a seek landing on a CheckPoint index ends one entry later rather than show the previous scene
-      public static function mtSeekDone(param1:§Q\btf§) : Boolean
-      {
-         return mtApplied(param1) >= mtSeekTo && !param1.§'A~X§;
-      }
-
+      // end of a seek: the Game clip shown again, mtProgress (and mtEnd past the Winner entry) sent
       public static function mtSeekEnd(param1:§Q\btf§) : void
       {
          mtSeekTo = -1;
-         mtSeekJump = false;
          mtFast = mtSpd >= 8;
          mtAcc = 0;
          param1.§\x011wD§.visible = true;
          mtRate();
+         if(mtApplied(param1) <= mtWinIdx)
+         {
+            mtEnded = false;
+         }
+         mtWave = 0;
+         mtIdx = -2;
+         mtReport(param1);
       }
 
-      // The Game's checkpoint skip (Space, §KV\t\x16\x03§) generalised to a target index: the queue restarts at the
-      // last CheckPoint (BattleMsg 38) at or before param2, whose application rebuilds the scene; the hit-stop queue
-      // is cleared too. Nothing to do if that checkpoint is already next.
-      public static function mtJump(param1:§Q\btf§, param2:int) : void
+      // --- keyframes. PC_PLAY_KF: called after each Battle.resolve() of the Game's state 0. Read-only: it only reads
+      // the history and the troopers (getInfos(): new objects built from their fields, no random draw, no write).
+      // A keyframe every 4 entries at least (resolve() steps add several at once) and after each NewWave (39).
+      public static function mtKf(param1:§P!L/\x02§.§\x0b\x0eNO§) : void
       {
-         var _loc3_:Array = param1.§\x1e-\x02\x07\x01§;
-         var _loc4_:int = mtTotal - _loc3_.length;
-         var _loc5_:int = -1;
-         var _loc6_:int = 0;
+         var _loc2_:Array = param1.§7\x13JZ\x03§;
+         var _loc3_:Boolean = false;
+         var _loc4_:int = 0;
+         var _loc5_:* = null;
+         var _loc6_:Object = {};
          var _loc7_:Array = null;
-         while(_loc6_ < _loc3_.length && _loc4_ + _loc6_ <= param2)
+         var _loc8_:int = 0;
+         if(param1 !== mtKfB)
          {
-            if(int(_loc3_[_loc6_]["An%6"][")-Z\x19\x01"]) == 38)
-            {
-               _loc5_ = _loc6_;
-            }
-            _loc6_++;
+            mtKfB = param1;
+            mtKfs = [{
+               "i":0,
+               "t":[],
+               "x":[],
+               "d":[],
+               "dx":[],
+               "g":[]
+            }];
+            mtKfN = 0;
+            mtKfScan = 0;
+            mtKfFall = new Dictionary();
+            mtKfDead = new Dictionary();
          }
-         if(_loc5_ <= 0)
+         while(mtKfScan < _loc2_.length)
+         {
+            if(int(_loc2_[mtKfScan]["An%6"][")-Z\x19\x01"]) == 39)
+            {
+               _loc3_ = true;
+            }
+            mtFly(_loc2_[mtKfScan]["An%6"],_loc6_,0);
+            mtKfScan++;
+         }
+         _loc4_ = 0;
+         while(_loc4_ < param1.§`1\x1f*\x02§.length)
+         {
+            _loc5_ = param1.§`1\x1f*\x02§[_loc4_];
+            _loc4_++;
+            if(_loc5_ is §P!L/\x02§.§59=F\x03§ && !_loc5_.§s*\x12\x1f§())
+            {
+               mtKfFall[_loc5_] = int(_loc5_.§=\x01XR\x02§.§)-Z\x19\x01§) == 4;
+               mtKfDead[_loc5_] = false;
+            }
+         }
+         _loc4_ = 0;
+         while(_loc4_ < param1.§p\x05e\x06\x01§.length)
+         {
+            _loc7_ = param1.§p\x05e\x06\x01§[_loc4_].§p\x18\x16j§;
+            _loc8_ = 0;
+            while(_loc8_ < _loc7_.length)
+            {
+               _loc5_ = _loc7_[_loc8_];
+               _loc8_++;
+               if(mtKfDead[_loc5_] !== true)
+               {
+                  mtKfDead[_loc5_] = true;
+                  if(_loc6_[int(_loc5_.§5E[\x1d§["7X\x01"])] === true)
+                  {
+                     mtKfFall[_loc5_] = true;
+                  }
+               }
+            }
+            _loc4_++;
+         }
+         if(_loc2_.length - mtKfN >= 4 || _loc3_ && _loc2_.length > mtKfN)
+         {
+            mtKfN = _loc2_.length;
+            mtKfs.push(mtKfTake(param1,mtKfN));
+         }
+      }
+
+      // the ids of the hits (plain objects with a tid "\x1e,d\x01" and effects "iE!m\x02") in param1 that knock their
+      // target flying (effect 2), into param2
+      public static function mtFly(param1:*, param2:Object, param3:int) : void
+      {
+         var _loc4_:* = null;
+         var _loc5_:int = 0;
+         var _loc6_:* = null;
+         var _loc7_:Boolean = false;
+         if(param1 === null || param1 === undefined || param3 > 8 || param1 is String || param1 is Number || param1 is Boolean)
          {
             return;
          }
-         param1.§\x1e-\x02\x07\x01§ = _loc3_.slice(_loc5_);
+         if(param1 is Array)
+         {
+            while(_loc5_ < param1.length)
+            {
+               mtFly(param1[_loc5_],param2,param3 + 1);
+               _loc5_++;
+            }
+            return;
+         }
+         if(getQualifiedClassName(param1) == "Object")
+         {
+            _loc4_ = param1["iE!m\x02"];
+            if(param1["\x1e,d\x01"] != null && _loc4_ is Array)
+            {
+               while(_loc5_ < _loc4_.length)
+               {
+                  _loc6_ = _loc4_[_loc5_];
+                  _loc5_++;
+                  try
+                  {
+                     _loc7_ = _loc6_ != null && _loc6_.__enum__ === true && int(_loc6_[")-Z\x19\x01"]) == 2;
+                  }
+                  catch(_loc_e_:*)
+                  {
+                     _loc7_ = false;
+                  }
+                  if(_loc7_)
+                  {
+                     param2[int(param1["\x1e,d\x01"])] = true;
+                  }
+               }
+            }
+            for(_loc6_ in param1)
+            {
+               if(_loc6_ != "5E[\x1d")
+               {
+                  mtFly(param1[_loc6_],param2,param3 + 1);
+               }
+            }
+            return;
+         }
+         try
+         {
+            _loc7_ = param1.__enum__ === true && param1["7\x02@d\x02"] != null;
+         }
+         catch(_loc_e_:*)
+         {
+            _loc7_ = false;
+         }
+         if(_loc7_)
+         {
+            mtFly(param1["7\x02@d\x02"],param2,param3 + 1);
+         }
+      }
+
+      // the battle's state once param2 entries are computed: infos and extra state of the troopers on the field, infos
+      // of this wave's dead (the teams' dead lists, emptied by NewWave), weapons lying on squares
+      public static function mtKfTake(param1:§P!L/\x02§.§\x0b\x0eNO§, param2:int) : Object
+      {
+         var _loc3_:Array = [];
+         var _loc4_:Array = [];
+         var _loc5_:Array = [];
+         var _loc6_:Array = [];
+         var _loc11_:Array = [];
+         var _loc7_:int = 0;
+         var _loc8_:int = 0;
+         var _loc9_:* = null;
+         var _loc10_:Array = null;
+         _loc10_ = param1.§`1\x1f*\x02§;
+         while(_loc7_ < _loc10_.length)
+         {
+            _loc9_ = _loc10_[_loc7_];
+            _loc7_++;
+            if(_loc9_ is §P!L/\x02§.§59=F\x03§ && !_loc9_.§s*\x12\x1f§())
+            {
+               _loc3_.push(_loc9_.§WU|\x04§());
+               _loc4_.push(mtKfX(_loc9_));
+            }
+         }
+         _loc7_ = 0;
+         while(_loc7_ < param1.§p\x05e\x06\x01§.length)
+         {
+            _loc10_ = param1.§p\x05e\x06\x01§[_loc7_].§p\x18\x16j§;
+            _loc8_ = 0;
+            while(_loc8_ < _loc10_.length)
+            {
+               _loc5_.push(_loc10_[_loc8_].§WU|\x04§());
+               _loc9_ = mtKfX(_loc10_[_loc8_]);
+               if(mtKfFall[_loc10_[_loc8_]] === true)
+               {
+                  _loc9_[0] = 4;
+               }
+               _loc11_.push(_loc9_);
+               _loc8_++;
+            }
+            _loc7_++;
+         }
+         _loc7_ = 0;
+         _loc10_ = param1.§UrNA\x01§;
+         while(_loc7_ < _loc10_.length)
+         {
+            _loc9_ = _loc10_[_loc7_];
+            _loc7_++;
+            _loc8_ = 0;
+            while(_loc8_ < _loc9_.§\x1dI\x02\r\x03§.length)
+            {
+               _loc6_.push([_loc9_.§v\x01§,_loc9_.§l\x01§,_loc9_.§\x1dI\x02\r\x03§[_loc8_].§*\x1f\n$§()]);
+               _loc8_++;
+            }
+         }
+         return {
+            "i":param2,
+            "t":_loc3_,
+            "x":_loc4_,
+            "d":_loc5_,
+            "dx":_loc11_,
+            "g":_loc6_
+         };
+      }
+
+      // [state index (TrooperState), status enums, body locations hit, healed, vehicle hp or -1]
+      public static function mtKfX(param1:*) : Array
+      {
+         var _loc2_:Array = [];
+         var _loc3_:int = 0;
+         while(_loc3_ < param1.§\x13fT$\x03§.length)
+         {
+            _loc2_.push(param1.§\x13fT$\x03§[_loc3_].§o\x1a\x01§);
+            _loc3_++;
+         }
+         return [int(param1.§=\x01XR\x02§.§)-Z\x19\x01§),_loc2_,param1.§3\x12\x06c\x03§.concat(),param1.§XEC3\x03§,param1.§J@`r§ == null ? -1 : int(param1.§J@`r§.§\x12?g-§)];
+      }
+
+      // deep copy of history data: arrays, plain objects (trooper data "5E[\x1d" shared), enums with parameters rebuilt;
+      // other class instances (logic objects, parameterless enums) shared
+      public static function mtCopy(param1:*) : *
+      {
+         var _loc2_:* = null;
+         var _loc3_:* = null;
+         var _loc4_:int = 0;
+         var _loc5_:Boolean = false;
+         var _loc6_:Class = null;
+         if(param1 === null || param1 === undefined || !(param1 is Object) || param1 is String || param1 is Number || param1 is Boolean)
+         {
+            return param1;
+         }
+         if(param1 is Array)
+         {
+            _loc2_ = [];
+            while(_loc4_ < param1.length)
+            {
+               _loc2_.push(mtCopy(param1[_loc4_]));
+               _loc4_++;
+            }
+            return _loc2_;
+         }
+         if(getQualifiedClassName(param1) == "Object")
+         {
+            _loc2_ = {};
+            for(_loc3_ in param1)
+            {
+               _loc2_[_loc3_] = _loc3_ == "5E[\x1d" ? param1[_loc3_] : mtCopy(param1[_loc3_]);
+            }
+            return _loc2_;
+         }
+         try
+         {
+            _loc5_ = param1.__enum__ === true && param1["7\x02@d\x02"] != null;
+         }
+         catch(_loc_e_:*)
+         {
+            _loc5_ = false;
+         }
+         if(_loc5_)
+         {
+            _loc6_ = Object(param1).constructor as Class;
+            return new _loc6_(param1["\x14s\x1e\x01"],param1[")-Z\x19\x01"],mtCopy(param1["7\x02@d\x02"]));
+         }
+         return param1;
+      }
+
+      // The Game's queue from history index param1: mtHist's entries. The display changes the entries it plays (deploys
+      // pop their infos, CheckPoint and deploy infos end up in the troopers they create, BattleMsg 41/42 arrays are
+      // emptied, misses get 0 damage): mtFresh replaces the head of the queue with copies before each frame(), so that
+      // mtHist stays as computed for the next restores.
+      public static var mtPristine:Dictionary = new Dictionary();
+
+      public static function mtQueue(param1:int) : Array
+      {
+         return mtHist.slice(param1);
+      }
+
+      // the first 16 entries of the queue (at most one step starts per tick, at most 16 ticks per frame(): the native
+      // fast-forward key) are copies
+      public static function mtFresh(param1:§Q\btf§) : void
+      {
+         var _loc2_:Array = param1.§\x1e-\x02\x07\x01§;
+         var _loc3_:int = 0;
+         while(_loc3_ < _loc2_.length && _loc3_ < 16)
+         {
+            if(mtPristine[_loc2_[_loc3_]] === true)
+            {
+               _loc2_[_loc3_] = mtCopy(_loc2_[_loc3_]);
+            }
+            _loc3_++;
+         }
+      }
+
+      // Puts the Game in the state of keyframe param2: current step and actions skipped (ylcZ, as the native checkpoint
+      // skip does), the Winner action and its banner and panel removed, tweens (but the leader markers' singleton),
+      // hit-stop, weapons and items on the ground, particles and the end of battle removed; troopers reused (mtReusable)
+      // or destroyed; queue from the keyframe, clock at its last entry; troopers created from copies of the keyframe
+      // infos as the CheckPoint rebuild (§;`b\x1c\x02§) does for absent ones; then the extra state (statuses, wounds,
+      // poses, vehicle hp), this wave's dead, weapons on the ground and the side panels (last PlayerStatus of each side
+      // before the keyframe).
+      public static function mtRestore(param1:§Q\btf§, param2:Object) : void
+      {
+         var _loc3_:Array = null;
+         var _loc4_:int = 0;
+         var _loc5_:* = null;
+         var _loc6_:* = null;
+         var _loc7_:Array = null;
+         var _loc8_:int = 0;
+         var _loc9_:int = int(param2.i);
          if(param1.§^h'l\x02§ != null)
          {
             param1.§^h'l\x02§.aGx2();
          }
-         param1.§'A~X§ = true;
-         param1.§uN\x0ed§ = int(param1.§\x1e-\x02\x07\x01§[0]["uN\x0ed"]) - 1;
-         param1.§~Y\x12(\x01§ = [];
-         _loc7_ = param1.§{DEL}=\x04u§.concat();
-         _loc6_ = 0;
-         while(_loc6_ < _loc7_.length)
+         _loc3_ = param1.§{DEL}=\x04u§.concat();
+         while(_loc4_ < _loc3_.length)
          {
-            _loc7_[_loc6_].ylcZ();
+            _loc5_ = _loc3_[_loc4_];
+            _loc4_++;
+            if(_loc5_ is §I&\x01§.§r`M8\x03§)
+            {
+               if(_loc5_.§E_i\b§ != null && _loc5_.§E_i\b§.parent != null)
+               {
+                  _loc5_.§E_i\b§.parent.removeChild(_loc5_.§E_i\b§);
+               }
+               if(_loc5_.§E't&\x01§ != null && _loc5_.§E't&\x01§.parent != null)
+               {
+                  _loc5_.§E't&\x01§.parent.removeChild(_loc5_.§E't&\x01§);
+               }
+               _loc5_.aGx2();
+            }
+            else
+            {
+               _loc5_.ylcZ();
+            }
+         }
+         _loc3_ = param1.§{DEL}=\x04u§.concat();
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            if(!_loc3_[_loc4_].§\x06TY0§)
+            {
+               _loc3_[_loc4_].aGx2();
+            }
+            _loc4_++;
+         }
+         param1.§{DEL}=\x04u§ = [];
+         param1.§^h'l\x02§ = null;
+         _loc3_ = param1.§;\x1az\x01§.§Te\x10\x01§.concat();
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            if(!(_loc3_[_loc4_] is §{DEL}\f\x01§.§*\x17Z\x10§) && !_loc3_[_loc4_].§Qg}\x07§)
+            {
+               _loc3_[_loc4_].aGx2();
+            }
+            _loc4_++;
+         }
+         param1.§~Y\x12(\x01§ = [];
+         _loc7_ = [];
+         _loc3_ = param1.§`1\x1f*\x02§.concat();
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            _loc5_ = _loc3_[_loc4_];
+            _loc6_ = mtInfo(param2.t,int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]));
+            if(_loc6_ != null && mtReusable(_loc5_,_loc6_))
+            {
+               _loc7_.push(_loc5_);
+            }
+            else
+            {
+               mtPin(_loc5_);
+               _loc5_.aGx2();
+            }
+            _loc4_++;
+         }
+         param1.§`1\x1f*\x02§ = _loc7_.concat();
+         _loc3_ = param1.§\x1dI\x02\r\x03§.concat();
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            _loc3_[_loc4_].aGx2();
+            _loc4_++;
+         }
+         param1.§\x1dI\x02\r\x03§ = [];
+         param1.§\\\x123a\x03§ = [];
+         _loc3_ = param1.§F;R\x12\x01§.§\x1fs\x0ev§.concat();
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            if(_loc7_.indexOf(_loc3_[_loc4_]) < 0)
+            {
+               _loc3_[_loc4_].aGx2();
+            }
+            _loc4_++;
+         }
+         param1.§F;R\x12\x01§.§\x1fs\x0ev§ = _loc7_.concat();
+         param1.§HUgt\x03§ = false;
+         param1.§F;R\x12\x01§.§\x011wD§.transform.colorTransform = new ColorTransform();
+         param1.§-\x05p,\x03§.alpha = 1;
+         _loc4_ = 0;
+         while(_loc4_ < param1.§a]e\x1b\x02§.length)
+         {
+            param1.§a]e\x1b\x02§[_loc4_].§$*w\x01§.alpha = 1;
+            _loc4_++;
+         }
+         _loc4_ = _loc9_ > 0 ? int(mtHist[_loc9_ - 1]["uN\x0ed"]) : 0;
+         param1.§uN\x0ed§ = _loc4_;
+         param1.§|H6s\x03§ = _loc4_;
+         param1.§\x02^\x10}\x03§ = 0;
+         param1.§I\x06ax\x03§ = null;
+         param1.§\x1e-\x02\x07\x01§ = mtQueue(_loc9_);
+         _loc3_ = mtCopy(param2.t);
+         _loc4_ = 0;
+         while(_loc4_ < _loc3_.length)
+         {
+            _loc5_ = param1.§;|^W§(int(_loc3_[_loc4_]["5E[\x1d"]["7X\x01"]));
+            if(_loc5_ != null)
+            {
+               mtReuse(_loc5_,_loc3_[_loc4_]);
+            }
+            else
+            {
+               param1.§y#;B\x01§(_loc3_[_loc4_]);
+            }
+            _loc4_++;
+         }
+         param1.§F;R\x12\x01§.§qp[q\x02§();
+         _loc4_ = 0;
+         while(_loc4_ < param2.x.length)
+         {
+            mtExtra(param1.§;|^W§(int(param2.t[_loc4_]["5E[\x1d"]["7X\x01"])),param2.x[_loc4_]);
+            _loc4_++;
+         }
+         _loc4_ = 0;
+         while(_loc4_ < param2.d.length)
+         {
+            _loc5_ = param1.§y#;B\x01§(mtCopy(param2.d[_loc4_]));
+            mtExtra(_loc5_,param2.dx[_loc4_],false);
+            _loc5_.§\x16mf\x01§();
+            _loc5_.§PNcV\x01§(int(param2.dx[_loc4_][0]) == 4 ? §/U3W§.§ohzk\x03§ : §/U3W§.§?u{T\x01§);
+            mtFf(_loc5_);
+            _loc4_++;
+         }
+         _loc4_ = 0;
+         while(_loc4_ < param2.g.length)
+         {
+            _loc7_ = param2.g[_loc4_];
+            _loc5_ = new §z&\x01§.§lv\x0f0§(mtCopy(_loc7_[2]));
+            _loc6_ = §n#\x07\f§.§\x12X\x0f\x15\x01§(_loc7_[0],_loc7_[1]);
+            _loc5_.§L\x16;=§(_loc6_["v\x01"],_loc6_["l\x01"],0);
+            _loc5_.§5%um\x01§ = true;
+            _loc4_++;
+         }
+         param1.§F;R\x12\x01§.§qp[q\x02§();
+         _loc4_ = 0;
+         while(_loc4_ < param1.§a]e\x1b\x02§.length)
+         {
+            _loc5_ = null;
+            _loc8_ = _loc9_ - 1;
+            while(_loc8_ >= 0)
+            {
+               _loc6_ = mtHist[_loc8_]["An%6"];
+               if(int(_loc6_[")-Z\x19\x01"]) == 40 && int(_loc6_["7\x02@d\x02"][0]) == _loc4_)
+               {
+                  _loc5_ = _loc6_["7\x02@d\x02"][1];
+                  break;
+               }
+               _loc8_--;
+            }
+            mtPanel(param1.§a]e\x1b\x02§[_loc4_],_loc5_);
+            _loc4_++;
+         }
+      }
+
+      // The animation clips of the troopers share pre-rendered frames by skin (§;io&§.§n6?\f\x02§, reference counted,
+      // disposed when the count falls to 0). The troopers a restore destroys hold their skins' frames (mtPin) until the
+      // end of the next jump (mtUnpin releases the previous jump's pins), so that the troopers recreated with the same
+      // skins, now or on a jump back, do not render them again: at most two scenes' skins are kept this way.
+      public static var mtPins:Array = [];
+      public static var mtPinsOld:Array = [];
+
+      public static function mtPin(param1:*) : void
+      {
+         var _loc2_:* = param1.§\x05\x03\x1a\x01§ == null ? null : param1.§\x05\x03\x1a\x01§.§=q2\x0e\x01§;
+         if(_loc2_ != null)
+         {
+            _loc2_.§exe*\x02§++;
+            mtPins.push(_loc2_);
+         }
+      }
+
+      public static function mtUnpin() : void
+      {
+         var _loc1_:* = null;
+         var _loc2_:int = 0;
+         var _loc3_:Array = mtPinsOld;
+         mtPinsOld = mtPins;
+         mtPins = [];
+         while(_loc3_.length > 0)
+         {
+            _loc1_ = _loc3_.pop();
+            _loc1_.§exe*\x02§--;
+            if(_loc1_.§exe*\x02§ > 0 || _loc1_.§\x10)L\x13\x02§)
+            {
+               continue;
+            }
+            _loc2_ = 0;
+            while(_loc2_ < _loc1_.§\x1a\b\x116\x02§.length)
+            {
+               if(_loc1_.§\x1a\b\x116\x02§[_loc2_] != null)
+               {
+                  _loc1_.§\x1a\b\x116\x02§[_loc2_].§UK\r\x01§.dispose();
+               }
+               _loc2_++;
+            }
+            _loc1_.§\x1a\b\x116\x02§ = [];
+         }
+      }
+
+      // the keyframe info of trooper id param2, if any
+      public static function mtInfo(param1:Array, param2:int) : Object
+      {
+         var _loc3_:int = 0;
+         while(_loc3_ < param1.length)
+         {
+            if(int(param1[_loc3_]["5E[\x1d"]["7X\x01"]) == param2)
+            {
+               return param1[_loc3_];
+            }
+            _loc3_++;
+         }
+         return null;
+      }
+
+      // A display trooper on the field, alive, not fading out, with no vehicle and holding the same weapon type on the
+      // same side as in the keyframe keeps its skin (building one is the costly part of a restore): mtReuse resets the
+      // rest as a new trooper would have it. Others are destroyed and created anew.
+      public static function mtReusable(param1:*, param2:Object) : Boolean
+      {
+         return !param1.§Qg}\x07§ && !param1.§\x06TY0§ && param1.§n*L%\x01§ == null && param1.§W\x19\x1bT\x03§ == null && param2["(\t\x01"] == null && param1.§\x10\x1e\x01§ != null && param1.§5\tmF§ != null && param1.§5\tmF§["An%6"] == param2["m\x0e\x01"] && param1.§9\x118u§ == int(param2["9\x118u"]);
+      }
+
+      // A reused trooper as §y#;B\x01§(info) creates one: info fields (§\x17;!\x01§ without the skin rebuild), standing,
+      // default facing of its side, no status, wound, label, shake, speed, colour effect or effect sprite left.
+      public static function mtReuse(param1:*, param2:Object) : void
+      {
+         var _loc3_:* = null;
+         var _loc4_:int = 0;
+         param1.§'~i\x17\x03§();
+         param1.§\x07\x15np\x02§ = false;
+         param1.§(\x1f\x15F\x01§ = Boolean(param2["(\x1f\x15F\x01"]);
+         param1.§\x12?g-§ = int(param2["\x12?g-"]);
+         param1.§\x17\\tX§(param2["\x1dI\x02\r\x03"]);
+         param1.§5\tmF§ = param1.§RH|(§(param2["m\x0e\x01"]);
+         param1.§\x13fT$\x03§ = [];
+         param1.§3\x12\x06c\x03§ = [];
+         param1.§XEC3\x03§ = false;
+         param1.§j^\n\x04\x01§ = false;
+         param1.§\x1c\x11_F\x03§ = false;
+         param1.§^\x05\x01!§ = null;
+         param1.§;\x1c\x1co\x03§ = 0;
+         param1.§A  (\x01§ = 0;
+         param1.§\x0f\x02-2\x03§ = 0;
+         param1.§\r\x19{DEL}O\x03§ = null;
+         param1.§\x06[\x01§ = 0;
+         param1.§u)\x01§ = 0;
+         param1.§|f\x01§ = 0;
+         param1.§N\x01§ = 0;
+         _loc3_ = param1.§\x011wD§;
+         _loc4_ = _loc3_.numChildren - 1;
+         while(_loc4_ >= 0)
+         {
+            if(_loc3_.getChildAt(_loc4_) != param1.§%dc\x01§)
+            {
+               _loc3_.removeChildAt(_loc4_);
+            }
+            _loc4_--;
+         }
+         _loc3_ = param1.§%dc\x01§;
+         _loc4_ = _loc3_.numChildren - 1;
+         while(_loc4_ >= 0)
+         {
+            if(_loc3_.getChildAt(_loc4_) != param1.§H\x19Z\x05§ && _loc3_.getChildAt(_loc4_) != param1.§pBI(\x03§)
+            {
+               _loc3_.removeChildAt(_loc4_);
+            }
+            _loc4_--;
+         }
+         param1.§\x011wD§.transform.colorTransform = new ColorTransform();
+         param1.§\x011wD§.alpha = 1;
+         param1.§\x011wD§.visible = true;
+         param1.§\x10\x1e\x01§.§1;\x01§.x = 0;
+         param1.§\x10\x1e\x01§.§1;\x01§.transform.colorTransform = new ColorTransform();
+         param1.§}3\x01o\x02§(int(param2["9\x118u"]));
+         param1.§qlh\t\x03§(param1.§\x136@\x02\x01§);
+         param1.§\x1f?\x0e\t\x03§(int(param2["v\x01"]),int(param2["l\x01"]));
+         param1.§PNcV\x01§(§/U3W§.§T$(K\x03§);
+         param1.§)&v\x07\x03§();
+         param1.rMm8();
+      }
+
+      // a side panel showing PlayerStatus data param2, or as created (boxes hidden) when null
+      public static function mtPanel(param1:*, param2:Object) : void
+      {
+         var _loc3_:int = 0;
+         if(param2 != null)
+         {
+            param1.§)%\x0fM\x02§(param2);
+            return;
+         }
+         param1.§\x13fT$\x03§ = null;
+         while(_loc3_ < param1.§;z-F\x01§.length)
+         {
+            param1.§;z-F\x01§[_loc3_]["E_i\b"].visible = false;
+            param1.§;z-F\x01§[_loc3_]["\x037u3\x01"].text = "00";
+            _loc3_++;
+         }
+      }
+
+      // the extra state of a keyframe trooper (mtKfX) on its display trooper; param3: also its pose (not for the dead)
+      public static function mtExtra(param1:*, param2:Array, param3:Boolean = true) : void
+      {
+         if(param1 == null)
+         {
+            return;
+         }
+         if(int(param2[4]) >= 0 && param1.§W\x19\x1bT\x03§ != null)
+         {
+            param1.§\x12?g-§ = int(param2[4]);
+         }
+         if(param2[1].length > 0 || param2[2].length > 0 || param2[3])
+         {
+            param1.§\x13fT$\x03§ = param2[1].concat();
+            param1.§3\x12\x06c\x03§ = param2[2].concat();
+            param1.§XEC3\x03§ = param2[3];
+            param1.§)&v\x07\x03§();
+         }
+         if(!param3)
+         {
+            return;
+         }
+         // FALLEN: on the ground ("ground_crash", held); AIM: aiming ("aim", held); RELOAD: "reload_init", held
+         if(int(param2[0]) == 4)
+         {
+            param1.§PNcV\x01§(§/U3W§.§ohzk\x03§);
+            mtFf(param1);
+         }
+         else if(int(param2[0]) == 1)
+         {
+            param1.§PNcV\x01§(§/U3W§.§2Ss@§);
+            mtFf(param1);
+         }
+         else if(int(param2[0]) == 2)
+         {
+            param1.§PNcV\x01§(§/U3W§.ZIxh);
+            mtFf(param1);
+         }
+      }
+
+      // plays a display trooper's current animation (and the ones it chains to) on, at most 60 frames or until it loops
+      public static function mtFf(param1:*) : void
+      {
+         var _loc2_:int = 0;
+         var _loc3_:* = param1.§\x05\x03\x1a\x01§;
+         while(_loc2_ < 60 && _loc3_.§,\x0ew^\x01§ && !_loc3_.§Yx\x02V\x01§)
+         {
+            _loc3_.§;a/P\x03§();
+            _loc2_++;
+         }
+         _loc3_.§c+,Y§();
+      }
+
+      // --- test support
+      // pauses playback once entry param1 - 1 is applied
+      public static function mtStopAt(param1:int) : void
+      {
+         mtStop = param1;
+      }
+
+      // runs frame() without starting new steps until no action or tween is left (at most param1 calls), so that a dump
+      // does not depend on how far the running animations are; returns the number of calls
+      public static function mtSettle(param1:int) : int
+      {
+         var _loc2_:§Q\btf§ = mtGame;
+         var _loc3_:Array = _loc2_.§\x1e-\x02\x07\x01§;
+         var _loc4_:int = 0;
+         if(_loc2_.§^h'l\x02§ != null)
+         {
+            _loc3_.unshift(_loc2_.§^h'l\x02§.§SV\x1d\x01§);
+            _loc2_.§^h'l\x02§.aGx2();
+            _loc2_.§^h'l\x02§ = null;
+         }
+         _loc2_.§\x1e-\x02\x07\x01§ = [];
+         while(_loc4_ < param1 && mtBusy(_loc2_))
+         {
+            _loc2_.§k\n/$\x03§();
+            _loc4_++;
+         }
+         if(_loc2_.§\x1e-\x02\x07\x01§.length == 0)
+         {
+            _loc2_.§\x1e-\x02\x07\x01§ = _loc3_;
+         }
+         return _loc4_;
+      }
+
+      // an action other than the Winner's, a tween, a hit-stop or a trooper's non-looping animation is running
+      public static function mtBusy(param1:§Q\btf§) : Boolean
+      {
+         var _loc2_:int = 0;
+         while(_loc2_ < param1.§{DEL}=\x04u§.length)
+         {
+            if(!(param1.§{DEL}=\x04u§[_loc2_] is §I&\x01§.§r`M8\x03§))
+            {
+               return true;
+            }
+            _loc2_++;
+         }
+         if(param1.§;\x1az\x01§.§Te\x10\x01§.length > 0 || param1.§~Y\x12(\x01§.length > 0)
+         {
+            return true;
+         }
+         _loc2_ = 0;
+         while(_loc2_ < param1.§`1\x1f*\x02§.length)
+         {
+            if(!param1.§`1\x1f*\x02§[_loc2_].§\x01|fz\x01§())
+            {
+               return true;
+            }
+            _loc2_++;
+         }
+         return false;
+      }
+
+      // comparable state of the scene: one line per display trooper by id (side, square, hp, dead, down, current
+      // weapon, weapons id/type/ammo/stock, helmet, vehicle, statuses, wounds), the weapons on the ground, the side
+      // panels, the end of battle. param1: also the animation, facing and pixel position (diagnostics)
+      public static function mtDump(param1:Boolean = false) : String
+      {
+         var _loc2_:§Q\btf§ = mtGame;
+         var _loc3_:Array = [];
+         var _loc4_:Array = null;
+         var _loc5_:* = null;
+         var _loc6_:int = 0;
+         var _loc7_:int = 0;
+         var _loc8_:Array = null;
+         var _loc9_:String = null;
+         if(_loc2_ == null)
+         {
+            return "";
+         }
+         _loc4_ = _loc2_.§`1\x1f*\x02§;
+         while(_loc6_ < _loc4_.length)
+         {
+            _loc5_ = _loc4_[_loc6_];
             _loc6_++;
+            _loc8_ = [];
+            _loc7_ = 0;
+            while(_loc7_ < _loc5_.§\x1dI\x02\r\x03§.length)
+            {
+               _loc8_.push(mtWeap(_loc5_.§\x1dI\x02\r\x03§[_loc7_]));
+               _loc7_++;
+            }
+            _loc9_ = "T" + int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]) + " s" + _loc5_.§9\x118u§ + " @" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§) + " hp" + _loc5_.§\x12?g-§ + (_loc5_.§Qg}\x07§ ? " dead" : "") + (_loc5_.§5%um\x01§ ? " down" : "") + " w" + (_loc5_.§5\tmF§ == null ? "-" : String(int(_loc5_.§5\tmF§["7X\x01"]))) + " [" + _loc8_.join(",") + "] h" + (_loc5_.§(\x1f\x15F\x01§ ? 1 : 0) + " v" + (_loc5_.§W\x19\x1bT\x03§ == null ? "-" : mtStr(_loc5_.§W\x19\x1bT\x03§["7X\x01"])) + " st" + mtStr(_loc5_.§\x13fT$\x03§) + (_loc5_.§Qg}\x07§ ? "" : " inj" + mtStr(_loc5_.§3\x12\x06c\x03§)) + (_loc5_.§XEC3\x03§ ? " healed" : "");
+            if(param1)
+            {
+               _loc9_ += " a" + (_loc5_.§9(Is§ == null ? "-" : String(int(_loc5_.§9(Is§[")-Z\x19\x01"]))) + " f" + _loc5_.§G\x1ad@§ + " g" + _loc5_.§4)\x01§ + "," + _loc5_.§A\x1f\x01§ + " px" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§);
+            }
+            _loc3_.push(_loc9_);
+         }
+         _loc4_ = _loc2_.§\x1dI\x02\r\x03§;
+         _loc6_ = 0;
+         while(_loc6_ < _loc4_.length)
+         {
+            _loc5_ = _loc4_[_loc6_];
+            _loc6_++;
+            _loc3_.push("G " + mtWeap(_loc5_.§\x12j;\x02\x01§) + " @" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§) + (_loc5_.§5%um\x01§ ? " landed" : ""));
+         }
+         _loc3_.sort();
+         _loc6_ = 0;
+         while(_loc6_ < _loc2_.§a]e\x1b\x02§.length)
+         {
+            _loc3_.push("P" + _loc6_ + " " + mtStr(_loc2_.§a]e\x1b\x02§[_loc6_].§\x13fT$\x03§));
+            _loc6_++;
+         }
+         _loc3_.push("E " + (_loc2_.§HUgt\x03§ ? 1 : 0) + (mtWinner(_loc2_) != null ? " banner" : ""));
+         return _loc3_.join("\n");
+      }
+
+      public static function mtWeap(param1:*) : String
+      {
+         return int(param1["7X\x01"]) + "/" + mtStr(param1["An%6"]) + "/" + int(param1["\x06\x01\x02"]["+8\x19{DEL}"]) + "/" + int(param1["\x06\x01\x02"]["\x1ap\x04f"]);
+      }
+
+      // Battle.history (param1: mtHist, the copy restores replay from), one oracle `EV time|tid|type` line per entry (as the
+      // trace build's mtDump prints them)
+      public static function mtHistStr(param1:Boolean = false) : String
+      {
+         var _loc1_:Array = [];
+         var _loc2_:Array = param1 ? mtHist : (mtKfB == null ? [] : mtKfB.§7\x13JZ\x03§);
+         var _loc3_:int = 0;
+         var _loc4_:* = null;
+         while(_loc3_ < _loc2_.length)
+         {
+            _loc4_ = _loc2_[_loc3_];
+            _loc1_.push("EV " + mtStr(_loc4_["uN\x0ed"]) + "|" + mtStr(_loc4_["\x1e,d\x01"]) + "|" + mtStr(_loc4_["An%6"]));
+            _loc3_++;
+         }
+         return _loc1_.join("\n");
+      }
+
+      // [number of keyframes, objects and arrays they own (trooper data and enums are shared, not counted), values they
+      // hold, largest gap between two of them]
+      public static function mtKfSize() : Array
+      {
+         var _loc1_:int = 0;
+         var _loc2_:int = 1;
+         var _loc3_:Array = [0,0];
+         while(_loc2_ < mtKfs.length)
+         {
+            if(int(mtKfs[_loc2_].i) - int(mtKfs[_loc2_ - 1].i) > _loc1_)
+            {
+               _loc1_ = int(mtKfs[_loc2_].i) - int(mtKfs[_loc2_ - 1].i);
+            }
+            _loc2_++;
+         }
+         mtCount(mtKfs,_loc3_);
+         return [mtKfs.length,_loc3_[0],_loc3_[1],_loc1_];
+      }
+
+      public static function mtCount(param1:*, param2:Array) : void
+      {
+         var _loc3_:* = null;
+         var _loc4_:int = 0;
+         if(param1 is Array)
+         {
+            param2[0]++;
+            while(_loc4_ < param1.length)
+            {
+               param2[1]++;
+               mtCount(param1[_loc4_],param2);
+               _loc4_++;
+            }
+         }
+         else if(param1 != null && !(param1 is String) && getQualifiedClassName(param1) == "Object")
+         {
+            param2[0]++;
+            for(_loc3_ in param1)
+            {
+               param2[1]++;
+               if(_loc3_ != "5E[\x1d")
+               {
+                  mtCount(param1[_loc3_],param2);
+               }
+            }
          }
       }
 
@@ -651,7 +1689,8 @@ ofs0081:
          return mtTotal - param1.§\x1e-\x02\x07\x01§.length - (param1.§^h'l\x02§ != null ? 1 : 0);
       }
 
-      // The steps of PlayerStatus (BattleMsg 40) and Winner (34) never use their entry's tid trooper in apply(), but
+      // Before each frame(): mtFresh (copies at the head of the queue), then: the steps of PlayerStatus (BattleMsg 40) and
+      // Winner (34) never use their entry's tid trooper in apply(), but
       // their constructor still waits for it to be on screen. After a checkpoint jump the rebuild has removed the dead
       // troopers, so such an entry after that CheckPoint whose tid died would wait forever (seen on a raid: a seek to
       // the end stuck after the last CheckPoint, the Winner never applied). Their pending ids are dropped; in a plain
@@ -660,9 +1699,22 @@ ofs0081:
       {
          var _loc2_:* = param1.§^h'l\x02§;
          var _loc3_:int = _loc2_ == null ? -1 : int(_loc2_.§SV\x1d\x01§["An%6"][")-Z\x19\x01"]);
+         mtFresh(param1);
          if((_loc3_ == 40 || _loc3_ == 34) && _loc2_.§(;D\n§.length > 0)
          {
             _loc2_.§(;D\n§ = [];
+         }
+      }
+
+      // hidden replay: the clock's high-water mark set to the current step's time, so that the step applies as soon as
+      // its troopers are idle instead of after the clock has counted up to it (only the clock widget shows that count)
+      public static function mtHurry(param1:§Q\btf§) : void
+      {
+         var _loc2_:* = param1.§^h'l\x02§;
+         var _loc3_:int = _loc2_ == null ? 0 : int(_loc2_.§SV\x1d\x01§["uN\x0ed"]);
+         if(_loc3_ > param1.§|H6s\x03§)
+         {
+            param1.§|H6s\x03§ = _loc3_;
          }
       }
 
@@ -717,6 +1769,22 @@ getlex QName(PackageNamespace(""),"(m]a\x02")
 getlocal0
 callpropvoid QName(PackageNamespace(""),"mtFrame"), 1
 ofs009a:
+//@@ PC_PLAY_KF_FIND  (Game ENTER_FRAME handler, state 0: `if(battle.resolve())`)
+callproperty QName(PackageNamespace(""),"MnRZ"), 0
+convert_b
+iffalse ofs0061
+//@@ PC_PLAY_KF_REPLACE  (=> `if((r = battle.resolve(), §(m]a\x02§.mtKf(battle), r))`: the only addition to state 0, read-only (keyframes))
+callproperty QName(PackageNamespace(""),"MnRZ"), 0
+getlex QName(PackageNamespace(""),"(m]a\x02")
+findproperty QName(PackageNamespace(""),"S\rNK\x02")
+getproperty QName(PackageNamespace(""),"S\rNK\x02")
+callpropvoid QName(PackageNamespace(""),"mtKf"), 1
+convert_b
+iffalse ofs0061
+//@@ PC_PLAY_KF_STACK_FIND  (same method: its declared operand stack depth)
+maxstack 2
+//@@ PC_PLAY_KF_STACK_REPLACE  (=> 3: resolve()'s result, the helper class and the battle while mtKf is called)
+maxstack 3
 //@@ PC_PLAY_FAST_FIND  (Game isFast() §Bl{K\x01§: `return ticksPerFrame >= 8;`)
 pushbyte 8
 greaterequals
