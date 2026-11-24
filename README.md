@@ -74,7 +74,7 @@ Toutes les fonctionnalités joueur de l'original sont présentes, avec les même
 - Remise à zéro quotidienne à minuit, dans le fuseau configurable `TZ_GAME`.
 
 **Exploitation**
-- Image Docker auto-hébergeable (amd64/arm64), Docker Compose, `HEALTHCHECK` sur `/healthz`, arrêt propre.
+- Image Docker `ghcr.io/kipavy/minitroopers` publiée par la CI (amd64/arm64), Docker Compose, `HEALTHCHECK` sur `/healthz`, arrêt propre.
 - Fonctionne derrière Cloudflare Tunnel : avec `TRUST_PROXY=1`, l'IP du client est lue dans `CF-Connecting-IP`.
 - CLI d'administration (`npm run admin`), voir [apps/server/README.md#administration](apps/server/README.md#administration) :
   - créer, afficher, renommer ou supprimer une armée ;
@@ -156,7 +156,7 @@ Au premier démarrage, les armées de faction sont créées. Configuration et te
 
 ### Héberger son instance
 
-Image Docker auto-hébergeable (amd64/arm64), Docker Compose derrière Cloudflare Tunnel, sauvegardes, mise à jour :
+Image Docker publiée par la CI sur `ghcr.io/kipavy/minitroopers` (amd64/arm64), Docker Compose derrière Cloudflare Tunnel, sauvegardes, mise à jour :
 [deploy/README.md](deploy/README.md).
 
 Le banc différentiel (`tools/oracle`) demande en plus Java 21 et JPEXS FFDec (instrumentation

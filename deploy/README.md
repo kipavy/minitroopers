@@ -6,7 +6,14 @@ L'image contient le serveur (`node apps/server/src/main.ts`, Node 24.12) et ses 
 
 ## Démarrage rapide
 
-Depuis la racine du dépôt :
+La CI publie l'image (amd64 et arm64) sur GHCR : `ghcr.io/kipavy/minitroopers:latest` suit `main`,
+`sha-<commit>` désigne un commit précis, `X.Y.Z` et `X.Y` suivent les tags `vX.Y.Z`.
+
+```sh
+docker run -d --name minitroopers -p 127.0.0.1:8080:8080 -v minitroopers-data:/data -e PUBLIC_URL=http://localhost:8080 ghcr.io/kipavy/minitroopers:latest
+```
+
+Pour construire l'image soi-même, depuis la racine du dépôt :
 
 ```sh
 docker build -t minitroopers .
