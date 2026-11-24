@@ -1,5 +1,4 @@
 # MiniTroopers remake: self-hosted server image (linux/amd64 and linux/arm64, see deploy/README.md).
-# The image contains Motion-Twin assets (SWF, images): never push it to a public registry.
 FROM node:24.12-bookworm-slim
 
 WORKDIR /app

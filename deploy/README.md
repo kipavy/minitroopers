@@ -4,13 +4,16 @@ L'image contient le serveur (`node apps/server/src/main.ts`, Node 24.12) et ses 
 (`hono`, `@hono/node-server`) ; ni Playwright, ni les outils du banc, ni les tests. Les données (base SQLite
 `minitroopers.db`) vont dans le volume `/data`.
 
-> **Ne jamais pousser l'image sur un registre public** (Docker Hub, GHCR public…) : elle contient les assets
-> de Motion-Twin (SWF, images), dont la redistribution n'est pas autorisée. Construire l'image sur la machine
-> qui la fait tourner, ou la garder dans un registre privé.
-
 ## Démarrage rapide
 
-Depuis la racine du dépôt :
+La CI publie l'image (amd64 et arm64) sur GHCR : `ghcr.io/kipavy/minitroopers:latest` suit `main`,
+`sha-<commit>` désigne un commit précis, `X.Y.Z` et `X.Y` suivent les tags `vX.Y.Z`.
+
+```sh
+docker run -d --name minitroopers -p 127.0.0.1:8080:8080 -v minitroopers-data:/data -e PUBLIC_URL=http://localhost:8080 ghcr.io/kipavy/minitroopers:latest
+```
+
+Pour construire l'image soi-même, depuis la racine du dépôt :
 
 ```sh
 docker build -t minitroopers .
@@ -30,8 +33,7 @@ reproductible, épingler le condensé (`FROM node:24.12-bookworm-slim@sha256:…
 `PUBLIC_URL` doit être **exactement** l'origine tapée dans le navigateur (`127.0.0.1` ≠ `localhost`) : sinon
 tout formulaire est refusé (403 « Requête refusée »).
 
-Image multi-architecture (amd64 et arm64, par exemple pour un Raspberry Pi), à garder en local ou dans un
-registre privé :
+Image multi-architecture (amd64 et arm64, par exemple pour un Raspberry Pi) :
 
 ```sh
 docker buildx build --platform linux/amd64,linux/arm64 -t minitroopers .
