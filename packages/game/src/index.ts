@@ -8,7 +8,7 @@ export { FACTIONS, factionBattleArmy } from "./factions.ts";
 export type { Faction, FactionTrooper } from "./factions.ts";
 export { fillerArmy, fillerBattleArmy, fillerId, parseFillerId } from "./fillers.ts";
 export type { FillerArmy, FillerTrooper } from "./fillers.ts";
-export { pickOpponents, OPPONENT_COUNT } from "./opponents.ts";
+export { pickOpponents, pickTrainingOpponents, OPPONENT_COUNT } from "./opponents.ts";
 export type { ArmyRef } from "./opponents.ts";
 export {
   MISSION_UNLOCK_COST, MISSION_ATTEMPTS, missionReward, RAID_REWARD, RAID_MAX_PHASE, RAID_PER_BATTLE,
