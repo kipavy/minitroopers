@@ -43,3 +43,79 @@ td.right > .event-banner {
 	box-sizing : border-box;
 }
 
+
+/* HQ battle box with 6 or 7 battles (5 + COMMANDEMENT): one row, equal gaps on both sides (5.5 px / 7.5 px); the
+   "play" tiles keep the left part of bgo2.gif (52x22: tank + "GO !"), muzzle flash included, shifted 3 px left so the
+   tank is centred (layout validated by Killian on 2026-11-24). */
+.bcount6 {
+	padding-left : 4.5px !important;
+}
+.bcount6 .b {
+	width : 51px;
+}
+.bcount7 {
+	padding-left : 6.5px !important;
+}
+.bcount7 .b {
+	width : 43px;
+}
+.bcount6 .b.bgo2 a img, .bcount7 .b.bgo2 a img {
+	width : 26px;
+	height : 22px;
+	object-fit : none;
+	object-position : 0 0;
+	position : relative;
+	left : -3px;
+}
+
+/* HQ battle box: link to the training page (/b/train), on the right of the info line (mockup B, validated). */
+.hqtip a.train-link {
+	float : right;
+	font-weight : bold;
+	color : #7a4a12;
+	text-decoration : underline;
+	margin-right : 4px;
+}
+
+/* Training page (/b/train): explanation + "Autres adversaires", then the last trainings under the opponents. */
+.train-head {
+	overflow : hidden;
+	margin : 0px 0px 8px 0px;
+}
+.train-head p {
+	float : left;
+	width : 420px;
+	margin : 6px 0px 0px 4px;
+	font-size : 0.9em;
+	color : #512f0d;
+}
+.train-head .but {
+	float : right;
+	width : 180px;
+	margin-right : 14px;
+}
+/* "S'entraîner !" is longer than "Attaquer !": smaller letters so it stays inside the 96 px button5 sprite */
+.train td.choosetd a.button5 {
+	font-size : 0.85em;
+	letter-spacing : -0.2px;
+}
+.train-recent {
+	margin : 10px 4px 0px 4px;
+}
+.train-recent h2 {
+	font-size : 1em;
+	color : #512f0d;
+	margin-bottom : 4px;
+}
+.train-recent li {
+	padding : 2px 0px 2px 22px;
+	background : transparent url("/img/bwin.gif") no-repeat 0px 0px;
+	background-size : 16px 16px;
+	line-height : 18px;
+}
+.train-recent li.defeat {
+	background-image : url("/img/bdefeat.gif");
+}
+.train-recent a {
+	color : #512f0d;
+}

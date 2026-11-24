@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { armyPower, validateBattleInput } from "@mt/engine";
 import type { BattleInput } from "@mt/engine";
 import {
-  FACTIONS, factionBattleArmy, fillerArmy, fillerBattleArmy, parseFillerId, pickOpponents, trooperName,
+  FACTIONS, OPPONENT_COUNT, factionBattleArmy, fillerArmy, fillerBattleArmy, parseFillerId, pickOpponents, pickTrainingOpponents, trooperName,
 } from "../src/index.ts";
 import type { ArmyRef } from "../src/index.ts";
 
@@ -153,4 +153,32 @@ test("pickOpponents: duplicate candidate ids are counted once", () => {
 
 test("trooperName still exported", () => {
   assert.equal(typeof trooperName, "function");
+});
+
+test("training draw: only real armies within half..double the own power, never self, fillers complete", () => {
+  const self = { id: "1", power: 40 };
+  const candidates = [10, 19, 20, 40, 55, 80, 81].map((power, i) => ({ id: String(i + 2), power }));
+  candidates.push({ id: "1", power: 40 });
+  const got = pickTrainingOpponents({ self, candidates, seed: "s1" });
+  assert.equal(got.length, OPPONENT_COUNT);
+  const real = got.filter((a) => !a.isFiller).map((a) => a.power).sort((x, y) => x - y);
+  assert.deepEqual(real, [20, 40, 55, 80]); // 40 = another army ("5"), not self
+  assert.ok(!got.some((a) => a.id === "1"));
+  assert.equal(got.filter((a) => a.isFiller).length, 1);
+});
+
+test("training draw: another seed gives another order among many candidates, the same seed the same list", () => {
+  const self = { id: "self", power: 100 };
+  const candidates = Array.from({ length: 30 }, (_, i) => ({ id: `a${i}`, power: 60 + i * 3 }));
+  const a = pickTrainingOpponents({ self, candidates, seed: "one" });
+  assert.deepEqual(pickTrainingOpponents({ self, candidates, seed: "one" }), a);
+  assert.notDeepEqual(pickTrainingOpponents({ self, candidates, seed: "two" }), a);
+  assert.ok(a.every((x) => !x.isFiller));
+});
+
+test("training draw: tiny armies use the same floor of 10 as pickOpponents (band 5..20)", () => {
+  const self = { id: "self", power: 5 };
+  const candidates = [4, 5, 20, 21].map((power, i) => ({ id: `a${i}`, power }));
+  const real = pickTrainingOpponents({ self, candidates, seed: "x" }).filter((a) => !a.isFiller).map((a) => a.power).sort((x, y) => x - y);
+  assert.deepEqual(real, [5, 20]);
 });

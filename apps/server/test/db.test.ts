@@ -91,7 +91,7 @@ function stage2Db(): DatabaseSync {
 
 test("migration 005 keeps armies, battles (filler included), recruits and sessions; foreign keys stay consistent", () => {
   const db = stage2Db();
-  assert.deepEqual(migrate(db), ["005_modes.sql", "006_history_order.sql", "007_admin_reset.sql", "008_admin_redraw.sql"]);
+  assert.deepEqual(migrate(db), ["005_modes.sql", "006_history_order.sql", "007_admin_reset.sql", "008_admin_redraw.sql", "009_trainings.sql"]);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal((db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys, 1);
   assert.equal(count(db, "SELECT COUNT(*) AS n FROM armies"), 3);
@@ -148,7 +148,7 @@ function stage3Db(): DatabaseSync {
 test("migration 006 keeps the data, drops daily.battles_used, adds battles.created_at and armies.deploy_order, caps rats", () => {
   const db = stage3Db();
   const before = db.prepare("SELECT * FROM battles ORDER BY id").all();
-  assert.deepEqual(migrate(db), ["006_history_order.sql", "007_admin_reset.sql", "008_admin_redraw.sql"]);
+  assert.deepEqual(migrate(db), ["006_history_order.sql", "007_admin_reset.sql", "008_admin_redraw.sql", "009_trainings.sql"]);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal((db.prepare("PRAGMA foreign_keys").get() as { foreign_keys: number }).foreign_keys, 1);
   assert.ok(!cols(db, "daily").includes("battles_used"));

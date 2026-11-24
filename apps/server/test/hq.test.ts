@@ -45,7 +45,7 @@ for (const mode of MODES) {
     assert.equal(res.headers.get("location"), mode === "path" ? "/a/warp/hq" : "http://warp.lvh.me:8080/hq");
   });
 
-  test(`[${mode}] HQ of a new army: money, power, 3 battle tiles, locked mission/raid, recruit link, timer`, async () => {
+  test(`[${mode}] HQ of a new army: money, power, 5 battle tiles, locked mission/raid, recruit link, timer`, async () => {
     const env = setup(mode);
     const { cl, a } = await army(env);
     const html = plain(await (await hqOf(env, cl, "warp")).text());
@@ -53,10 +53,10 @@ for (const mode of MODES) {
     assert.ok(html.includes(`<a href="${base}/hq" class="company">L'armée de Warp</a>`));
     assert.match(html, /<span id="targetMoney">0<\/span>/);
     assert.match(html, /class="power"[^>]*>5<\/div>/); // 1 trooper: 5 + 0 choices
-    assert.deepEqual(tilesOf(html), ["bgo2", "bgo2", "bgo2"]);
-    assert.ok(html.includes('<div class="action bcount3">'));
+    assert.deepEqual(tilesOf(html), ["bgo2", "bgo2", "bgo2", "bgo2", "bgo2"]);
+    assert.ok(html.includes('<div class="action bcount5">'));
     assert.ok(html.includes(`<a href="${base}/b/opp" class="b_bg bgo2_bg"`));
-    assert.ok(html.includes("Il te reste 3 batailles aujourd'hui !"));
+    assert.ok(html.includes("Il te reste 5 batailles aujourd'hui !"));
     assert.ok(html.includes("Nouvelle mission dans") && !html.includes("Nouvelles batailles"));
     assert.ok(html.includes("Protége ton armée avec un mot de passe !"));
     assert.match(html, /<h1 class="hbox">Mission : (Infiltrer|Exterminer)<\/h1>/);
@@ -95,15 +95,22 @@ for (const mode of MODES) {
     assert.match(html12, /class="power"[^>]*>60<\/div>/); // 12 * 5
   });
 
-  test(`[${mode}] 3 battle tiles, 4 with a COMMANDEMENT trooper`, async () => {
+  test(`[${mode}] 5 battle tiles, 6 with a COMMANDEMENT trooper, 7 with two (the max)`, async () => {
     const env = setup(mode);
     const { cl, a } = await army(env);
-    assert.equal(tilesOf(await (await hqOf(env, cl, "warp")).text()).length, 3);
+    assert.equal(tilesOf(await (await hqOf(env, cl, "warp")).text()).length, 5);
     env.db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices) VALUES (?,1,?,?,?)").run(a.id, COMMANDER.seed, "Chef", COMMANDER.choices);
     const html = plain(await (await hqOf(env, cl, "warp")).text());
-    assert.deepEqual(tilesOf(html), ["bgo2", "bgo2", "bgo2", "bgo2"]);
-    assert.ok(html.includes("Il te reste 4 batailles aujourd'hui !"));
-    assert.ok(html.includes('<div class="action bcount4">'));
+    assert.deepEqual(tilesOf(html), new Array(6).fill("bgo2"));
+    assert.ok(html.includes("Il te reste 6 batailles aujourd'hui !"));
+    assert.ok(html.includes('<div class="action bcount6">'));
+    env.db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices) VALUES (?,2,?,?,?)").run(a.id, COMMANDER.seed, "Chef2", COMMANDER.choices);
+    const html7 = plain(await (await hqOf(env, cl, "warp")).text());
+    assert.deepEqual(tilesOf(html7), new Array(7).fill("bgo2"));
+    assert.ok(html7.includes('<div class="action bcount7">'));
+    // 6+ tiles fit on one row only without the whitespace between inline-block tiles (5 and less keep the original markup)
+    assert.equal([...html7.matchAll(/<\/div><\/div><div class="b /g)].length, 6);
+    assert.equal([...html.matchAll(/<\/div><\/div><div class="b /g)].length, 5);
   });
 
   test(`[${mode}] played battles of today show as win/defeat tiles linking /b/view/batN`, async () => {
@@ -116,17 +123,19 @@ for (const mode of MODES) {
     ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 0, "mission"); // not a battle
     const html = plain(await (await hqOf(env, cl, "warp")).text());
     const base = mode === "path" ? "/a/warp" : "http://warp.lvh.me:8080";
-    assert.deepEqual(tilesOf(html), ["bwin", "bdefeat", "bgo2"]);
+    assert.deepEqual(tilesOf(html), ["bwin", "bdefeat", "bgo2", "bgo2", "bgo2"]);
     assert.ok(html.includes(`<a href="${base}/b/view/bat1" class="b_bg bwin_bg"`));
     assert.ok(html.includes(`<a href="${base}/b/view/bat2" class="b_bg bdefeat_bg"`));
-    assert.ok(html.includes("Il te reste 1 bataille aujourd'hui !"));
+    assert.ok(html.includes("Il te reste 3 batailles aujourd'hui !"));
+    ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 1, "battle");
+    ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 1, "battle");
     ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 1, "battle");
     const done = plain(await (await hqOf(env, cl, "warp")).text());
-    assert.deepEqual(tilesOf(done), ["bwin", "bdefeat", "bdefeat"]);
+    assert.deepEqual(tilesOf(done), ["bwin", "bdefeat", "bdefeat", "bdefeat", "bdefeat"]);
     assert.ok(done.includes("Tu as terminé tes batailles du jour !"));
     // the next game day starts from zero
     env.clock.t += 86_400_000;
-    assert.deepEqual(tilesOf(await (await hqOf(env, cl, "warp")).text()), ["bgo2", "bgo2", "bgo2"]);
+    assert.deepEqual(tilesOf(await (await hqOf(env, cl, "warp")).text()), new Array(5).fill("bgo2"));
   });
 
   test(`[${mode}] ?money=N animates the counter from credits-N`, async () => {
@@ -146,6 +155,19 @@ for (const mode of MODES) {
     }
   });
 
+  test(`[${mode}] HQ battle box links to the training page, also when no battle is left`, async () => {
+    const env = setup(mode);
+    const { cl, a } = await army(env);
+    const base = mode === "path" ? "/a/warp" : "http://warp.lvh.me:8080";
+    const has = (h: string): boolean => h.includes(`<a href="${base}/b/train" class="train-link"`) && h.includes(">» S'entraîner (illimité)</a>");
+    assert.ok(has(plain(await (await hqOf(env, cl, "warp")).text())));
+    const ins = env.db.prepare("INSERT INTO battles(day, attacker_id, defender_id, input, winner, kind) VALUES (?,?,NULL,?,?,?)");
+    for (let i = 0; i < 5; i++) ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 0, "battle");
+    const done = plain(await (await hqOf(env, cl, "warp")).text());
+    assert.ok(done.includes("Tu as terminé tes batailles du jour !"));
+    assert.ok(has(done));
+  });
+
   test(`[${mode}] protected army without its session shows the password form only`, async () => {
     const env = setup(mode);
     const { cl, a } = await army(env);
@@ -159,6 +181,7 @@ for (const mode of MODES) {
     assert.ok(html.includes('type="password"'));
     assert.ok(html.includes("Cette armée est protégée. Identifie-toi sur la gauche."));
     assert.deepEqual(tilesOf(html), []);
+    assert.ok(!html.includes("/b/train"), "locked HQ: no training link");
     // fr/hq.html: the troopers grid and its script, the clear, then the password form; no menu
     assert.ok(html.includes("swf_tr_view") && html.indexOf("swf_tr_view") < html.indexOf("insertpass"));
     assert.match(html, /<\/script><\/div>\n<div class="clear"><\/div>\n\n\n\n<div class="insertpass">/);
