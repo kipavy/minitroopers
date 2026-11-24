@@ -117,8 +117,9 @@ async function main() {
     console.log(`with node_modules: ${du(ctx)}`);
     const og = pathToFileURL(join(ctx, "apps/server/src/og.ts")).href;
     const banner = { kind: "COMBAT", left: { name: "a", faction: 3, troopers: 1 }, right: { name: "b", faction: 2, troopers: 1 }, bg: "bg/garden.jpg", footer: "x", site: "y" };
-    execFileSync(process.execPath, ["--input-type=module", "-e",
-      `const j = await (await import(${JSON.stringify(og)})).bannerJpeg(${JSON.stringify(banner)}); if (j[0] !== 0xff || j[1] !== 0xd8) throw new Error("not a JPEG"); console.log("og banner: " + j.length + " bytes");`],
+    // (no --input-type: the rasteriser worker inherits execArgv)
+    execFileSync(process.execPath, ["-e",
+      `import(${JSON.stringify(og)}).then((m) => m.bannerJpeg(${JSON.stringify(banner)})).then((j) => { if (j[0] !== 0xff || j[1] !== 0xd8) throw new Error("not a JPEG"); console.log("og banner: " + j.length + " bytes"); });`],
       { cwd: ctx, stdio: "inherit" });
 
     // 3. Start the CMD with the Dockerfile's ENV
