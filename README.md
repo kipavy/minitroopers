@@ -3,6 +3,8 @@
 Recréation fidèle de **MiniTroopers** (Motion-Twin, 2011–2023) : serveur léger en TypeScript,
 pages identiques à l'original, et un moteur de combat **prouvé identique** au SWF d'origine.
 
+![Page de création d'armée du remake](docs/img/creation-armee.png)
+
 Les fichiers du jeu (`assets/swf/`) sont © Motion-Twin. Voir [LICENSE](LICENSE) et [NOTICE](NOTICE).
 
 ## Pourquoi ce projet
