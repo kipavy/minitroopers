@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Rand } from "@mt/engine";
 import {
   dayKey, nextResetAt, prevDay, host, validateArmyName, dailyOffers, trooperName,
-  battlesPerDay, battleReward, referralBounty, STARTING_CREDITS,
+  battlesPerDay, battleReward, referralBounty, STARTING_CREDITS, rewardMultiplier, isWeekend,
 } from "../src/index.ts";
 
 test("host: recon cases", () => {
@@ -121,4 +121,14 @@ test("dayKey / nextResetAt Europe/Paris", () => {
   assert.equal(nextResetAt(new Date("2026-03-29T12:00:00Z"), tz).toISOString(), "2026-03-29T22:00:00.000Z");
   assert.equal(nextResetAt(new Date("2026-03-28T12:00:00Z"), tz).toISOString(), "2026-03-28T23:00:00.000Z");
   assert.equal(nextResetAt(new Date("2026-10-25T12:00:00Z"), tz).toISOString(), "2026-10-25T23:00:00.000Z");
+});
+
+test("rewardMultiplier: weekend days only", () => {
+  assert.equal(rewardMultiplier("2026-11-28", 3), 3); // samedi
+  assert.equal(rewardMultiplier("2026-11-29", 3), 3); // dimanche
+  assert.equal(rewardMultiplier("2026-11-27", 3), 1); // vendredi
+  assert.equal(rewardMultiplier("2026-11-30", 3), 1); // lundi
+  assert.equal(rewardMultiplier("2026-11-28", 1), 1);
+  assert.equal(isWeekend("2027-01-02"), true); // samedi, autre année
+  assert.equal(isWeekend("2027-01-04"), false);
 });
