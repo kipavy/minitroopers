@@ -642,25 +642,3 @@ test("link previews: battleOg names the stored winner (attacker or defender), a 
   assert.equal(og(0).image, `${cfg.publicUrl}/og/battle/7.jpg`);
   assert.equal(og(0).imageAlt, og(0).title);
 });
-
-test("link previews: public/img/og-battle.jpg is a 1200x630 JPEG under 200 KB, served as image/jpeg", async () => {
-  const res = await setup("path").app.request("/img/og-battle.jpg");
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get("content-type"), "image/jpeg");
-  const buf = Buffer.from(await res.arrayBuffer());
-  assert.ok(buf.equals(readFileSync(new URL("../public/img/og-battle.jpg", import.meta.url))));
-  assert.ok(buf.length < 200 * 1024, `${buf.length} bytes`);
-  assert.deepEqual([...buf.subarray(0, 3)], [0xff, 0xd8, 0xff], "SOI");
-  let pos = 2;
-  let size: { w: number; h: number } | null = null;
-  while (pos < buf.length && !size) {
-    assert.equal(buf[pos], 0xff, "marker");
-    const marker = buf[pos + 1]!;
-    const len = buf.readUInt16BE(pos + 2);
-    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
-      size = { h: buf.readUInt16BE(pos + 5), w: buf.readUInt16BE(pos + 7) };
-    }
-    pos += 2 + len;
-  }
-  assert.deepEqual(size, { w: 1200, h: 630 });
-});

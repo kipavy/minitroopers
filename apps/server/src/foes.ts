@@ -68,14 +68,13 @@ export function foeByName(db: DatabaseSync, name: unknown): Foe | null {
   return FACTIONS.some((f) => f.host === h) ? foeOf(db, `faction:${h}`) : null;
 }
 
-/** Name alone of the defender of a stored battle (a deleted army keeps its name in `gone:<name>`), null if unknown. */
+/** Name alone of the defender of a stored battle, null if unknown or deleted (`gone:<name>`: shown as unknown, like defenderTitle). */
 export function defenderName(db: DatabaseSync, b: { defenderId: number | null; defenderRef: string | null }): string | null {
   if (b.defenderId !== null) {
     const a = armyById(db, b.defenderId);
     if (a) return a.name;
   }
   if (b.defenderRef === null) return null;
-  if (b.defenderRef.startsWith("gone:")) return b.defenderRef.slice(5);
   return foeOf(db, b.defenderRef)?.name ?? null;
 }
 

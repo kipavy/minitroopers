@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildBattleInput } from "../src/battleInput.ts";
 import { battleTroopers } from "../src/deploy.ts";
-import { bannerSvg, BANNER_VERSION, fitText, xmlText, type Banner } from "../src/og.ts";
-import { createArmy } from "../src/repo.ts";
-import { ogStats } from "../src/routes/og.ts";
+import { bannerJpeg, bannerSvg, BANNER_VERSION, fitText, textWidth100, xmlText, type Banner } from "../src/og.ts";
+import { purgeBattleImages } from "../src/ogCache.ts";
+import { battleById, createArmy, deleteArmy } from "../src/repo.ts";
+import { battleBanner, ogLimits, ogStats } from "../src/routes/og.ts";
 import { setup, type Env, type Mode } from "./helpers.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
@@ -79,6 +80,7 @@ for (const mode of MODES) {
       assert.equal(res.headers.get("content-type"), "image/jpeg");
       assert.match(res.headers.get("cache-control")!, /^public, max-age=\d{6,}$/);
       assert.equal(res.headers.get("set-cookie"), null);
+      assert.equal(res.headers.get("x-content-type-options"), "nosniff");
       const buf = Buffer.from(await res.arrayBuffer());
       assert.deepEqual(jpegSize(buf), { w: 1200, h: 630 });
       assert.ok(buf.length < 300 * 1024, `${buf.length} bytes`);
@@ -93,12 +95,16 @@ test("/og/battle: 404 for an unknown id, a mission, a raid and a malformed path"
   const mission = battle(e, a, b, "mission");
   const raid = battle(e, a, b, "raid");
   for (const path of ["/og/battle/999999.jpg", `/og/battle/${mission}.jpg`, `/og/battle/${raid}.jpg`, "/og/battle/abc.jpg", `/og/battle/${mission}.png`]) {
-    assert.equal((await e.app.request(path)).status, 404, path);
+    const res = await e.app.request(path);
+    assert.equal(res.status, 404, path);
+    if (path.startsWith("/og/battle/") && path.endsWith(".jpg") && !path.includes("abc")) assert.equal(res.headers.get("x-content-type-options"), "nosniff");
   }
   assert.equal(existsSync(join(e.dir, "og")), false, "nothing drawn");
 });
 
-test("/og/battle: drawn once into DATA_DIR/og/<id>-v<version>.jpg, then served from that file", async () => {
+const ogFiles = (e: { dir: string }): string[] => (existsSync(join(e.dir, "og")) ? readdirSync(join(e.dir, "og")).sort() : []);
+
+test("/og/battle: drawn once into DATA_DIR/og/<id>-v<version>-<hash>.jpg, then served from that file", async () => {
   const e = env("path");
   const id = battle(e, army(e, "warp", "Warp", 1, 3), army(e, "foe", "Foe", 4, 2));
   const before = ogStats.generated;
@@ -107,7 +113,10 @@ test("/og/battle: drawn once into DATA_DIR/og/<id>-v<version>.jpg, then served f
   const b1 = Buffer.from(await r1.arrayBuffer());
   assert.ok(b1.equals(Buffer.from(await r2.arrayBuffer())));
   assert.equal(ogStats.generated, before + 1);
-  const file = join(e.dir, "og", `${id}-v${BANNER_VERSION}.jpg`);
+  const files = ogFiles(e);
+  assert.equal(files.length, 1);
+  assert.match(files[0]!, new RegExp(`^${id}-v${BANNER_VERSION}-[0-9a-f]{12}\.jpg$`));
+  const file = join(e.dir, "og", files[0]!);
   const mtime = statSync(file).mtimeMs;
   const again = Buffer.from(await (await e.app.request(`/og/battle/${id}.jpg`)).arrayBuffer());
   assert.ok(again.equals(b1));
@@ -149,4 +158,94 @@ test("bannerSvg: names are escaped, uppercased, shrunk then ellipsized to fit", 
   const long = fitText("W".repeat(20), 430, 94, 52);
   assert.equal(long.size, 52);
   assert.ok(long.text.endsWith("…") && long.text.length < 20);
+});
+
+test("/og/battle: a deleted defender shows as unknown (like the page), and its old banner is replaced, not served", async () => {
+  const e = env("path");
+  const foe = army(e, "foe", "Secret Name", 4);
+  const id = battle(e, army(e, "warp", "Warp", 1), foe);
+  assert.equal((await e.app.request(`/og/battle/${id}.jpg`)).status, 200);
+  const first = ogFiles(e);
+  assert.equal(first.length, 1);
+  const before = ogStats.generated;
+  assert.equal(deleteArmy(e.db, foe), true);
+  const b = battleById(e.db, id)!;
+  assert.equal(b.defenderRef, "gone:Secret Name");
+  assert.equal(battleBanner(e.cfg, e.db, b).right.name, "Inconnue");
+  assert.ok(!bannerSvg(battleBanner(e.cfg, e.db, b)).includes("SECRET"));
+  assert.equal((await e.app.request(`/og/battle/${id}.jpg`)).status, 200);
+  assert.equal(ogStats.generated, before + 1, "drawn again");
+  const now = ogFiles(e);
+  assert.equal(now.length, 1, "the old file is removed");
+  assert.notEqual(now[0], first[0]);
+});
+
+test("purgeBattleImages: removes the files (and temporary files) of the given battles only", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mt-og-"));
+  try {
+    for (const f of ["5-v4-aaaaaaaaaaaa.jpg", "5-v3-bbbbbbbbbbbb.jpg.9.tmp", "50-v4-cccccccccccc.jpg", "6-v4-dddddddddddd.jpg"]) writeFileSync(join(dir, f), "x");
+    assert.equal(purgeBattleImages(dir, [5, 6], join(dir, "6-v4-dddddddddddd.jpg")), 2);
+    assert.deepEqual(readdirSync(dir).sort(), ["50-v4-cccccccccccc.jpg", "6-v4-dddddddddddd.jpg"]);
+    assert.equal(purgeBattleImages(join(dir, "missing"), [5]), 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("/og/battle: beyond the waiting line, 503 with Retry-After (nothing drawn for it)", async () => {
+  const e = env("path");
+  const a = army(e, "warp", "Warp", 1);
+  const ids = [0, 1, 2].map(() => battle(e, a, army(e, `foe${Math.random().toString(36).slice(2, 8)}`, "Foe", 4)));
+  const saved = { ...ogLimits };
+  ogLimits.parallel = 1;
+  ogLimits.queue = 1;
+  try {
+    const p1 = e.app.request(`/og/battle/${ids[0]}.jpg`); // drawing
+    const p2 = e.app.request(`/og/battle/${ids[1]}.jpg`); // waiting
+    await new Promise((r) => setImmediate(r));
+    const busy = await e.app.request(`/og/battle/${ids[2]}.jpg`);
+    assert.equal(busy.status, 503);
+    assert.equal(busy.headers.get("retry-after"), "30");
+    assert.equal(busy.headers.get("x-content-type-options"), "nosniff");
+    assert.equal((await p1).status, 200);
+    assert.equal((await p2).status, 200); // the slot was handed over
+    assert.equal((await e.app.request(`/og/battle/${ids[2]}.jpg`)).status, 200);
+  } finally {
+    Object.assign(ogLimits, saved);
+  }
+});
+
+test("bannerJpeg: a render past its timeout is rejected, the rasteriser restarts for the next one", async () => {
+  const b: Banner = { kind: "COMBAT", left: { name: "a", faction: 0, troopers: 1 }, right: { name: "b", faction: 1, troopers: 1 }, bg: "bg/garden.jpg", footer: "x", site: "y" };
+  await assert.rejects(bannerJpeg(b, { timeoutMs: 1 }), /timeout/);
+  const ok = await bannerJpeg(b);
+  assert.deepEqual(jpegSize(ok), { w: 1200, h: 630 });
+});
+
+test("/og/battle: a failed drawing answers 500 for a while without drawing again; an unwritable cache still serves the image", async () => {
+  const e = env("path");
+  const id = battle(e, army(e, "warp", "Warp", 1), army(e, "foe", "Foe", 4));
+  // the cache directory is a file: writing fails, the drawn image is served anyway, no .tmp left
+  writeFileSync(join(e.dir, "og"), "not a directory");
+  const res = await e.app.request(`/og/battle/${id}.jpg`);
+  assert.equal(res.status, 200);
+  assert.deepEqual(jpegSize(Buffer.from(await res.arrayBuffer())), { w: 1200, h: 630 });
+  rmSync(join(e.dir, "og"));
+  // a battle whose input cannot be drawn: 500, then 500 again without a new attempt
+  e.db.prepare("UPDATE battles SET input = ? WHERE id = ?").run(JSON.stringify({ attackerSide: 0, background: { gfx: "bg/garden.jpg", id: 0 }, armies: null }), id);
+  const before = ogStats.generated;
+  const f1 = await e.app.request(`/og/battle/${id}.jpg`);
+  assert.equal(f1.status, 500);
+  assert.equal(f1.headers.get("retry-after"), "60");
+  assert.equal((await e.app.request(`/og/battle/${id}.jpg`)).status, 500);
+  assert.equal(ogStats.generated, before);
+});
+
+test("fitText: the ellipsis keeps the longest prefix that fits", () => {
+  const t = fitText("ABCDEFGHIJKLMNOPQRST", 430, 94, 52);
+  assert.ok(t.text.endsWith("…"));
+  const n = [...t.text].length - 1;
+  assert.ok((textWidth100(t.text) * 52) / 100 <= 430);
+  const longer = "ABCDEFGHIJKLMNOPQRST".slice(0, n + 1) + "…";
+  assert.ok((textWidth100(longer) * 52) / 100 > 430, "one more character would not fit");
 });

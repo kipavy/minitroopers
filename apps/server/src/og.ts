@@ -88,12 +88,17 @@ export function fitText(text: string, maxW: number, size: number, min: number): 
   const w = textWidth100(text);
   if ((w * size) / 100 <= maxW) return { text, size };
   if ((w * min) / 100 <= maxW) return { text, size: Math.floor((maxW * 100) / w) };
+  // Longest prefix + "…" that fits at `min` (binary search: few resvg measurements on the main thread).
   const chars = [...text];
-  for (let n = chars.length - 1; n > 0; n--) {
-    const t = chars.slice(0, n).join("").trimEnd() + "…";
-    if ((textWidth100(t) * min) / 100 <= maxW) return { text: t, size: min };
+  const cut = (n: number): string => (n > 0 ? chars.slice(0, n).join("").trimEnd() + "…" : "…");
+  let lo = 0;
+  let hi = chars.length - 1;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if ((textWidth100(cut(mid)) * min) / 100 <= maxW) lo = mid;
+    else hi = mid - 1;
   }
-  return { text: "…", size: min };
+  return { text: cut(lo), size: min };
 }
 
 /** Outlined text: drop shadow, dark outline, fill (a gradient id or a colour). */
@@ -256,6 +261,9 @@ let worker: Worker | null = null;
 let nextJob = 0;
 const jobs = new Map<number, { resolve: (b: Buffer) => void; reject: (e: Error) => void }>();
 
+/** A banner not rendered within this time is abandoned and the rasteriser restarted. */
+export const RENDER_TIMEOUT_MS = 10_000;
+
 /** The rasteriser thread (ogWorker.ts), started on first use; it keeps the process alive only while a job runs. */
 function rasteriser(): Worker {
   if (worker) return worker;
@@ -268,7 +276,8 @@ function rasteriser(): Worker {
     else j?.reject(new Error(m.error ?? "og worker"));
   });
   const fail = (e: Error): void => {
-    if (worker === w) worker = null;
+    if (worker !== w) return; // an abandoned thread (timeout): its jobs are already rejected, the map is the new thread's
+    worker = null;
     for (const j of jobs.values()) j.reject(e);
     jobs.clear();
   };
@@ -282,11 +291,23 @@ function rasteriser(): Worker {
  * The banner as a JPEG. The SVG is built here (a few ms: name widths are measured with resvg); rasterising (~200 ms)
  * and the JPEG encoding (~80 ms) run on a worker thread, so the server keeps answering meanwhile.
  */
-export function bannerJpeg(b: Banner, quality = 86): Promise<Buffer> {
-  const job: Job = { id: nextJob++, svg: bannerSvg(b), opts: RESVG_OPTS, quality };
+export function bannerJpeg(b: Banner, o: { quality?: number; timeoutMs?: number } = {}): Promise<Buffer> {
+  const job: Job = { id: nextJob++, svg: bannerSvg(b), opts: RESVG_OPTS, quality: o.quality ?? 86 };
   return new Promise((resolve, reject) => {
-    jobs.set(job.id, { resolve, reject });
     const w = rasteriser();
+    // Stuck render: every pending job fails and the thread is killed (its exit handler forgets it; the next job starts a new one).
+    const timer = setTimeout(() => {
+      const e = new Error("og render timeout");
+      for (const j of jobs.values()) j.reject(e);
+      jobs.clear();
+      if (worker === w) worker = null;
+      void w.terminate();
+    }, o.timeoutMs ?? RENDER_TIMEOUT_MS);
+    timer.unref();
+    jobs.set(job.id, {
+      resolve: (buf) => (clearTimeout(timer), resolve(buf)),
+      reject: (e) => (clearTimeout(timer), reject(e)),
+    });
     w.ref();
     w.postMessage(job);
   });

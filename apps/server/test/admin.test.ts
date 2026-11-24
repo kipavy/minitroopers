@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { SKILLS, defaultLeftOver, describeTrooper, levelUpOptions, type BattleInput, type BattleTrooperInput } from "@mt/engine";
 import { FACTIONS, MISSION_ATTEMPTS, battleAllowance, dayKey, dayRats, factionBattleArmy, ratArmy, seedsOffering } from "@mt/game";
@@ -558,8 +558,20 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     assert.ok(armyByHost(db, "nouveau-nom"));
     db.close();
     err(cli(dir, "delete-army", "--army", fac, "--yes"), /faction/);
+    // a battle it defended has a cached link preview (showing its name): deleted with the army, other battles' kept
+    db = openDb(join(dir, "minitroopers.db"));
+    const defended = Number(
+      db.prepare("INSERT INTO battles(day, attacker_id, defender_id, input, winner) VALUES ('2026-11-23', ?, ?, '{}', 0)").run(armyByHost(db, fac)!.id, armyByHost(db, "nouveau-nom")!.id).lastInsertRowid,
+    );
+    db.close();
+    mkdirSync(join(dir, "og"));
+    const planted = [`${defended}-v4-aaaaaaaaaaaa.jpg`, `${defended}-v3-bbbbbbbbbbbb.jpg.42.tmp`];
+    const other = `${defended + 1000}-v4-cccccccccccc.jpg`;
+    for (const f of [...planted, other]) writeFileSync(join(dir, "og", f), "x");
     const del = cli(dir, "delete-army", "--army", "nouveau-nom", "--yes");
     assert.equal(del.status, 0, del.stderr);
+    assert.match(del.stdout, /2 image\(s\) d'aperçu effacée\(s\)/);
+    assert.deepEqual(readdirSync(join(dir, "og")), [other]);
     db = openDb(join(dir, "minitroopers.db"));
     assert.equal(armyByHost(db, "nouveau-nom"), null);
     assert.ok(armyByHost(db, fac));

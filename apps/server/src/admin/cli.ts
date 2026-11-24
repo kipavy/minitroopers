@@ -13,6 +13,7 @@ import {
   insertArmy, levelUpTo, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, shopResets, setPassword, storedDeployOrder, troopersOf, trooperInput,
   type ArmyRow,
 } from "../repo.ts";
+import { ogDir, purgeBattleImages } from "../ogCache.ts";
 import { isValidHost } from "../urls.ts";
 import { checkArmyName } from "../validate.ts";
 import { absoluteArmyUrl, armyTitle } from "../views/army.ts";
@@ -379,8 +380,11 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
     `${a.host} (id ${a.id}) : ${f.troopers} troopers, ${f.attacked} combats lancés (supprimés), ${f.defended} combats subis ` +
     `(gardés chez leurs attaquants), ${f.recruits} recrue(s) (perdent leur recruteur), ${f.sessions} session(s) fermée(s)`;
   if (values.yes !== true) throw new DryRun(`Serait supprimée : ${what}\nRien n'a été supprimé : ajouter --yes pour confirmer.`);
+  // Its battles (attacked: deleted; defended: now "L'armée inconnue") lose their cached link preview images.
+  const battleIds = (db.prepare("SELECT id FROM battles WHERE attacker_id = ? OR defender_id = ?").all(a.id, a.id) as { id: number }[]).map((r) => r.id);
   if (!deleteArmy(db, a.id)) throw new UsageError(`${a.host} : suppression refusée`);
-  return `Armée supprimée : ${what}`;
+  const images = purgeBattleImages(ogDir(cfg), battleIds);
+  return `Armée supprimée : ${what}${images ? `, ${images} image(s) d'aperçu effacée(s)` : ""}`;
 }
 
 try {
