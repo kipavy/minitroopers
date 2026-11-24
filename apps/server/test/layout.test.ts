@@ -6,6 +6,7 @@ import { openDb } from "../src/db.ts";
 import { createApp } from "../src/app.ts";
 import { html, jsq, raw, esc } from "../src/views/html.ts";
 import { layout, tip } from "../src/views/layout.ts";
+import { create, setup } from "./helpers.ts";
 
 // sha256 of the original stylesheet (recon/assets/extra/site-elements/css/style.css of the work tree, not in the repository).
 const ORIGINAL_STYLE_SHA256 = "3ca21ce00d609ec2b18ca52ac9a289124151965fea9c7b79b9446d9165a697ac";
@@ -105,4 +106,41 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
 test("jsq: JS-escapes \\ ' and line breaks, then HTML-escapes &<>\" (safe in onmouseover=\"…('…')\")", () => {
   assert.equal(jsq("s'est").value, "s\\'est");
   assert.equal(jsq('a\\b\n<i>"&').value, "a\\\\b\\n&lt;i&gt;&quot;&amp;");
+});
+
+const SATURDAY = Date.parse("2026-11-28T10:00:00Z");
+const BANNER = 'class="event-banner"';
+async function pages(t: number, extra: Record<string, string> = {}): Promise<{ home: string; hq: string }> {
+  const env = setup("path", extra);
+  env.clock.t = t;
+  const cl = env.client();
+  const home = await (await cl.req("/", { host: "localhost" })).text();
+  await create(env, cl, "Warp");
+  const at = env.at("warp", "/hq");
+  const hq = await (await cl.req(at.url, { host: at.host })).text();
+  return { home, hq };
+}
+
+test("event banner on Saturday, on the home page and on an army HQ", async () => {
+  const p = await pages(SATURDAY);
+  for (const page of [p.home, p.hq]) {
+    assert.ok(page.includes(BANNER));
+    assert.ok(page.includes("×3 crédits dans tous les combats"));
+  }
+});
+
+test("no event banner on Monday", async () => {
+  const p = await pages(Date.parse("2026-11-23T10:00:00Z"));
+  assert.ok(!p.home.includes(BANNER));
+  assert.ok(!p.hq.includes(BANNER));
+});
+
+test("no event banner when WEEKEND_MULTIPLIER=1", async () => {
+  const p = await pages(SATURDAY, { WEEKEND_MULTIPLIER: "1" });
+  assert.ok(!p.home.includes(BANNER));
+});
+
+test("event banner follows TZ_GAME: Saturday 00:30 in Paris is still Friday in UTC", async () => {
+  const p = await pages(Date.parse("2026-11-27T23:30:00Z"));
+  assert.ok(p.home.includes(BANNER));
 });

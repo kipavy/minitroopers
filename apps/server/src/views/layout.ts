@@ -1,5 +1,7 @@
 import type { Config } from "../config.ts";
+import { requestNow } from "../requestClock.ts";
 import { armyUrl } from "../urls.ts";
+import { eventBanner } from "./event.ts";
 import { esc, html, Html, raw } from "./html.ts";
 
 /**
@@ -58,7 +60,7 @@ ${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
 ${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
 ` : ""}<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
-<link rel="stylesheet" type="text/css" href="/css/extras.css?v=1"/>
+<link rel="stylesheet" type="text/css" href="/css/extras.css?v=2"/>
 ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="${href}"/>
 `)}
 <script type="text/javascript" src="/js/jquery.min.js"></script>
@@ -76,7 +78,7 @@ ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="
 <div class="ptopleft"></div>
 <div class="pright"></div>
 <div class="frame"><div class="ptopsite"><div id="content">
-${o.content}
+${eventBanner(cfg, requestNow())}${o.content}
 </div></div></div>
 <div class="dbottom"><div class="pbottomleft"></div>
 <div class="art_mouse"></div>

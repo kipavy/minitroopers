@@ -12,3 +12,22 @@
 	opacity : 0.7;
 	margin-bottom : 4px;
 }
+
+/* Weekend event banner (views/event.ts), on top of the content of every page, in the spirit of trooperstest. */
+.event-banner {
+	margin : 0px 0px 8px 0px;
+	padding : 4px 10px 4px 8px;
+	border-radius : 3px;
+	background : rgba(58,36,14,0.85);
+	color : #fbeed0;
+	font-size : 0.85em;
+	line-height : 18px;
+}
+.event-banner img {
+	vertical-align : -3px;
+	margin-right : 4px;
+	cursor : help;
+}
+.event-banner strong {
+	color : #ffd34d;
+}
