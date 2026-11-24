@@ -152,6 +152,19 @@ for (const mode of MODES) {
     }
   });
 
+  test(`[${mode}] HQ battle box links to the training page, also when no battle is left`, async () => {
+    const env = setup(mode);
+    const { cl, a } = await army(env);
+    const base = mode === "path" ? "/a/warp" : "http://warp.lvh.me:8080";
+    const has = (h: string): boolean => h.includes(`<a href="${base}/b/train" class="train-link"`) && h.includes(">» S'entraîner (illimité)</a>");
+    assert.ok(has(plain(await (await hqOf(env, cl, "warp")).text())));
+    const ins = env.db.prepare("INSERT INTO battles(day, attacker_id, defender_id, input, winner, kind) VALUES (?,?,NULL,?,?,?)");
+    for (let i = 0; i < 5; i++) ins.run("2026-11-23", a.id, JSON.stringify({ attackerSide: 0 }), 0, "battle");
+    const done = plain(await (await hqOf(env, cl, "warp")).text());
+    assert.ok(done.includes("Tu as terminé tes batailles du jour !"));
+    assert.ok(has(done));
+  });
+
   test(`[${mode}] protected army without its session shows the password form only`, async () => {
     const env = setup(mode);
     const { cl, a } = await army(env);
@@ -165,6 +178,7 @@ for (const mode of MODES) {
     assert.ok(html.includes('type="password"'));
     assert.ok(html.includes("Cette armée est protégée. Identifie-toi sur la gauche."));
     assert.deepEqual(tilesOf(html), []);
+    assert.ok(!html.includes("/b/train"), "locked HQ: no training link");
     // fr/hq.html: the troopers grid and its script, the clear, then the password form; no menu
     assert.ok(html.includes("swf_tr_view") && html.indexOf("swf_tr_view") < html.indexOf("insertpass"));
     assert.match(html, /<\/script><\/div>\n<div class="clear"><\/div>\n\n\n\n<div class="insertpass">/);

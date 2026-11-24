@@ -69,11 +69,12 @@ function battleBox(cfg: Config, v: HqView): Html {
   const left = Math.max(0, v.battleTotal - v.battles.length);
   const tiles = Array.from({ length: count }, (_, i) => tile(cfg, v, i));
   const tipText = left === 0 ? "Tu as terminé tes batailles du jour !" : `Il te reste ${left} ${left > 1 ? "batailles" : "bataille"} aujourd'hui !`;
+  const train = html`<a href="${armyUrl(cfg, v.army.host, "/b/train")}" class="train-link" ${tip("Entraînement", "Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.")}>» S'entraîner (illimité)</a>`;
   return html`<div class="box2"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>
 <div class="box2bottom"><div class="action bcount${count}">
 
 ${tiles}
-<div class="hqtip"><img src="/img/info.png"/>
+<div class="hqtip">${train}<img src="/img/info.png"/>
 <span id="bat_tip">${tipText}</span></div>
 </div></div></div></div>`;
 }

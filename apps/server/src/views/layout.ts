@@ -84,7 +84,7 @@ ${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
 ${o.og ? ogTags(o.og) : ""}${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
 ` : ""}<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
-<link rel="stylesheet" type="text/css" href="/css/extras.css?v=8"/>
+<link rel="stylesheet" type="text/css" href="/css/extras.css?v=9"/>
 ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="${href}"/>
 `)}
 <script type="text/javascript" src="/js/jquery.min.js"></script>
