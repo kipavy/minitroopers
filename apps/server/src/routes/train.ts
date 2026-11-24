@@ -23,7 +23,7 @@ const SEED_MAX = 0x40000000;
 
 /** The replay helpers read a BattleRow: a training seen as one (never "fresh", no day, no reward). */
 const asBattle = (t: TrainingRow): BattleRow =>
-  ({ id: t.id, day: "", attackerId: t.attackerId, defenderId: t.defenderId, defenderRef: t.defenderRef, input: t.input, winner: t.winner, seen: true, kind: "training", mode: null, phase: null }) as BattleRow;
+  ({ id: t.id, day: "", attackerId: t.attackerId, defenderId: t.defenderId, defenderRef: t.defenderRef, input: t.input, winner: t.winner, seen: true, kind: "training", mode: null, phase: null, reward: null }) as BattleRow;
 
 /**
  * Training battles (/b/train): unlimited, no credits, no daily quota, nothing in any history, notice, rank or stat;
