@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { BattleInput } from "@mt/engine";
 import { openDb } from "../src/db.ts";
-import { TRAININGS_KEPT, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
+import { TRAININGS_KEPT, armyByHost, createArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
+import { create, setup, type Client, type Env } from "./helpers.ts";
 
 /** Two bare armies (A, B) in a fresh database. */
 function db2() {
@@ -42,4 +43,93 @@ test("a training never touches battles, credits or notices", () => {
   assert.equal(count("SELECT COUNT(*) AS n FROM battles"), 0);
   assert.equal(count("SELECT COUNT(*) AS n FROM notices"), 0);
   assert.deepEqual(db.prepare("SELECT credits FROM armies ORDER BY id").all().map((r) => (r as { credits: number }).credits), [50, 70]);
+});
+
+// --- the training page, its fights and replays (path mode) ---
+
+/** A stored army made directly (no client), like battle.test.ts. */
+function storedArmy(env: Env, host: string, name: string, troopers: { seed: number; name: string }[]): number {
+  const r = createArmy(env.db, { host, name, part: 0, faction: 1, credits: 0, recruiterId: null, createdIp: "9.9.9.9", createdCid: null, now: env.clock.t, trooper: troopers[0]!, maxPerIp: 999, dayOf: () => "x" });
+  if (!r.ok) throw new Error(r.reason);
+  troopers.slice(1).forEach((t, i) => env.db.prepare("INSERT INTO troopers(army_id, slot, seed, name, choices) VALUES (?,?,?,?,'[]')").run(r.army.id, i + 1, t.seed, t.name));
+  return r.army.id;
+}
+async function world() {
+  const env = setup("path");
+  const cl = env.client();
+  assert.equal((await create(env, cl, "Warp", { part: "0" })).status, 302);
+  const id = armyByHost(env.db, "warp")!.id;
+  const foeId = storedArmy(env, "foe", "Foe", [{ seed: 1234567, name: "Bob" }]);
+  return { env, cl, key: cl.key!, id, foeId };
+}
+const get = (env: Env, cl: Client, path: string, init: { method?: string; form?: Record<string, string> } = {}): Promise<Response> =>
+  cl.req(`/a/warp${path}`, { host: "localhost", ...init });
+const count = (env: Env, sql: string, ...p: (string | number)[]): number => Number((env.db.prepare(sql).get(...p) as { n: number }).n);
+const credits = (env: Env, id: number): number => count(env, "SELECT credits AS n FROM armies WHERE id = ?", id);
+const fightLinks = (page: string): string[] => [...page.matchAll(/href="\/a\/warp(\/b\/train\/fight\?opp=[^"]+)"/g)].map((m) => m[1]!.replaceAll("&amp;", "&"));
+
+test("/b/train shows 5 opponents with \"S'entraîner !\" links, the by-name form and \"Autres adversaires\"", async () => {
+  const { env, cl } = await world();
+  const res = await get(env, cl, "/b/train");
+  assert.equal(res.status, 200);
+  const page = (await res.text()).replaceAll("&#39;", "'");
+  assert.equal(fightLinks(page).length, 5);
+  assert.equal([...page.matchAll(/>S'entraîner !</g)].length, 5);
+  assert.ok(page.includes("Affronte l'armée de ton choix :") && page.includes(">Affronter !<"));
+  assert.match(page, /href="\/a\/warp\/b\/train"[^>]*>Autres adversaires</);
+  assert.ok(page.includes("Entraînement"));
+});
+
+test("a training: replay page, no credits, no battle, quota unchanged", async () => {
+  const { env, cl, key, id, foeId } = await world();
+  const before = credits(env, id);
+  const res = await get(env, cl, `/b/train/fight?opp=${foeId};chk=${key}`);
+  assert.equal(res.status, 302);
+  const m = /\/b\/tview\/(\d+)$/.exec(res.headers.get("location")!);
+  assert.ok(m, res.headers.get("location")!);
+  assert.equal(credits(env, id), before);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM battles"), 0);
+  const hq = (await (await get(env, cl, "/hq")).text()).replaceAll("&#39;", "'");
+  assert.ok(hq.includes("Il te reste 5 batailles aujourd'hui !"));
+  const replay = (await (await cl.req(`/a/warp/b/tview/${m![1]}`, { host: "localhost" })).text()).replaceAll("&#39;", "'");
+  assert.ok(replay.includes("Entraînement : L'armée de Warp VS L'armée de Foe"));
+  assert.ok(!/Ton armée gagne/.test(replay));
+  assert.ok(replay.includes(`document.location = "/a/warp/b/train";`));
+});
+
+test("training by name: another army works; itself is refused (err=self); unknown name (err=missing); nothing stored", async () => {
+  const { env, cl, key } = await world();
+  const post = (friend: string) => get(env, cl, "/b/train/fight", { method: "POST", form: { chk: key, friend } });
+  assert.match((await post("Foe")).headers.get("location")!, /\/b\/tview\/\d+$/);
+  assert.match((await post("Warp")).headers.get("location")!, /\/b\/train\?err=self$/);
+  assert.match((await post("Nobody here")).headers.get("location")!, /\/b\/train\?err=missing$/);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 1);
+  const err = await get(env, cl, "/b/train?err=self");
+  assert.equal(err.status, 400);
+});
+
+test("training without a valid chk stores nothing and goes back to /b/train", async () => {
+  const { env, cl, foeId } = await world();
+  const res = await get(env, cl, `/b/train/fight?opp=${foeId};chk=XXXXXX`);
+  assert.match(res.headers.get("location")!, /\/b\/train$/);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 0);
+});
+
+test("the defender sees nothing: no notice, nothing in its history", async () => {
+  const { env, cl, key, foeId } = await world();
+  await get(env, cl, `/b/train/fight?opp=${foeId};chk=${key}`);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM notices"), 0);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM battles WHERE defender_id = ?", foeId), 0);
+});
+
+test("/b/tview/<id> is public; after 11 trainings the oldest one answers 404; /b/train lists the recent ones", async () => {
+  const { env, cl, key, foeId } = await world();
+  const ids: string[] = [];
+  for (let i = 0; i < 11; i++) ids.push(/(\d+)$/.exec((await get(env, cl, `/b/train/fight?opp=${foeId};chk=${key}`)).headers.get("location")!)![1]!);
+  const stranger = env.client("8.8.8.8");
+  assert.equal((await stranger.req(`/b/tview/${ids[10]}`, { host: "localhost" })).status, 200);
+  assert.equal((await stranger.req(`/b/tview/${ids[0]}`, { host: "localhost" })).status, 404);
+  const page = await (await get(env, cl, "/b/train")).text();
+  assert.equal([...page.matchAll(/href="[^"]*\/b\/tview\/(\d+)"/g)].length, 10);
+  assert.ok(page.includes(`/b/tview/${ids[10]}"`) && !page.includes(`/b/tview/${ids[0]}"`));
 });

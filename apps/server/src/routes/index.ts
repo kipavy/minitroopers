@@ -7,6 +7,7 @@ import { registerLevelUp } from "./levelup.ts";
 import { registerAdd } from "./add.ts";
 import { registerOpp } from "./opp.ts";
 import { registerBattle } from "./battle.ts";
+import { registerTrain } from "./train.ts";
 import { registerMission } from "./mission.ts";
 import { registerRaid } from "./raid.ts";
 import { registerHistory } from "./history.ts";
@@ -27,6 +28,7 @@ export function mountPages(deps: Deps): (pages: Hono<Env>) => void {
     registerAdd(pages, deps);
     registerOpp(pages, deps);
     registerBattle(pages, deps);
+    registerTrain(pages, deps);
     registerMission(pages, deps);
     registerRaid(pages, deps);
     registerHistory(pages, deps);
