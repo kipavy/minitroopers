@@ -1,0 +1,14 @@
+/* Additions to the original style.css (kept byte-exact), loaded on every page right after it. */
+
+/* Trooper sheet: unowned skills show their tooltip too, and light up a little on hover. */
+.sheet ul.skills li:hover {
+	opacity : 0.45;
+}
+.sheet ul.skills li.on:hover, .sheet ul.skills li.soldier:hover {
+	opacity : 1;
+}
+.tipcontent .locked {
+	font-style : italic;
+	opacity : 0.7;
+	margin-bottom : 4px;
+}

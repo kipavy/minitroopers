@@ -31,6 +31,7 @@ test("layout keeps the original frame and wires local assets", () => {
   const out = String(layout(cfg, { title: "MiniTroopers", content: html`<p>hi</p>`, host: "nsun", pass: true }));
   for (const cls of ["ptop", "bottomsite", "ptopsite", 'id="content"', "dbottom", 'class="copy"', "pbottomleft"]) assert.ok(out.includes(cls), cls);
   assert.ok(out.includes('href="/css/style.css'));
+  assert.ok(out.indexOf('href="/css/extras.css') > out.indexOf('href="/css/style.css'), "extras.css after style.css");
   assert.ok(out.includes('src="/js/jquery.min.js"'));
   assert.ok(out.includes('src="/ruffle/ruffle.js"'));
   assert.ok(out.includes('src="/js/embed.js"'));
@@ -82,6 +83,7 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
   for (const [p, type] of [
     ["/img/bg/garden.jpg", /image\/jpeg/],
     ["/img/skills.png", /image\/png/],
+    ["/css/extras.css", /text\/css/],
     ["/swf/client_fr_play.swf", /shockwave/],
     ["/swf/mini.swf", /shockwave/],
     ["/swf/army.swf", /shockwave/],
