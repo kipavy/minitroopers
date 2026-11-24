@@ -98,25 +98,6 @@ async function launch() {
 }
 
 type Page = Awaited<ReturnType<Awaited<ReturnType<typeof launch>>["newPage"]>>;
-type Browser = Awaited<ReturnType<typeof launch>>;
-
-/**
- * A browser context for the game pages. MT_E2E_RENDERER (e.g. "wgpu-webgl") overrides Ruffle's renderer through
- * RufflePlayer.config (embed.js): the site's plain WebGL renderer has no BitmapData.draw under a GPU-less Chromium
- * (SwiftShader), and client_fr_play.swf needs it to start a battle ("Render backend does not support BitmapData.draw").
- */
-async function newContext(browser: Browser, options: Parameters<Browser["newContext"]>[0]) {
-  const ctx = await browser.newContext(options);
-  const renderer = process.env.MT_E2E_RENDERER;
-  if (renderer) {
-    await ctx.addInitScript((r) => {
-      const w = globalThis as unknown as { RufflePlayer?: { config?: Record<string, unknown> } };
-      w.RufflePlayer = w.RufflePlayer ?? {};
-      w.RufflePlayer.config = { ...w.RufflePlayer.config, preferredRenderer: r };
-    }, renderer);
-  }
-  return ctx;
-}
 
 interface Ready {
   total: number;
@@ -185,8 +166,14 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   const player = page.locator("ruffle-player#battle");
   await player.waitFor({ timeout: 30_000 });
   await playerReady(page, label);
-  await page.keyboard.press("End");
-  await until(page, () => swfState(page), (s) => s.ended || s.idx >= s.total, 120_000, `${label}: end of the battle after "Fin"`);
+  // "Fin" again if the jump stopped short (a step stuck before the end: a new seek destroys it, as the stuck warning's
+  // "Vague suivante" does)
+  let last: SwfState | undefined;
+  for (let i = 0; i < 4 && !(last && (last.ended || last.idx >= last.total)); i++) {
+    await page.keyboard.press("End");
+    last = await until(page, () => swfState(page), (s) => s.ended || s.idx >= s.total, 30_000, `${label}: end of the battle after "Fin"`).catch(() => undefined);
+  }
+  assert.ok(last, `${label}: end of the battle after "Fin"`);
   const box = (await player.boundingBox())!;
   const victory = readFileSync(join(FIXTURES, "banner-victoire.png"));
   const defeat = readFileSync(join(FIXTURES, "banner-defaite.png"));
@@ -195,6 +182,13 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   // The crop matches a reference up to PNG encoding noise (measured: 0.0002 mean channel difference, banners 10.4 apart).
   const banner = (png: Buffer): "VICTOIRE" | "DEFAITE" | null =>
     pngDistance(png, victory) < 1 ? "VICTOIRE" : pngDistance(png, defeat) < 1 ? "DEFAITE" : null;
+  // Ruffle's "hardware acceleration is disabled" notice (GPU-less Chromium) may cover the banner: closed like its × would.
+  const closeNotice = (): Promise<void> =>
+    page.evaluate(() => {
+      const el = (globalThis as unknown as { document: { getElementById(id: string): { shadowRoot?: { getElementById(id: string): { classList: { add(c: string): void } } | null } } | null } }).document.getElementById("battle");
+      el?.shadowRoot?.getElementById("hardware-acceleration-modal")?.classList.add("hidden");
+    });
+  await closeNotice();
   let shot = await page.screenshot({ clip });
   while (banner(shot) === null) {
     if (Date.now() > deadline) {
@@ -204,6 +198,7 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
       assert.fail(`${label}: no end-of-battle banner (crops saved in var/)`);
     }
     await page.waitForTimeout(1000);
+    await closeNotice();
     shot = await page.screenshot({ clip });
   }
   assert.equal(banner(shot), won ? "VICTOIRE" : "DEFAITE", `${label}: banner drawn by the SWF vs winner in the database`);
@@ -263,7 +258,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       const listed = cli(dataDir, "list");
       assert.match(listed, /sang-surs/);
       db = new DatabaseSync(join(dataDir, "minitroopers.db"), { readOnly: true });
-      const page = await (await newContext(browser, { viewport: { width: 1280, height: 1100 } })).newPage();
+      const page = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();
       page.on("dialog", (d) => void d.accept());
 
       // 1. create an army on the root site; the session must follow to the army's HQ (subdomain: cookie domain)
@@ -340,7 +335,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
     let db: DatabaseSync | undefined;
     try {
       db = new DatabaseSync(join(dataDir, "minitroopers.db"), { readOnly: true });
-      const page = await (await newContext(browser, { viewport: { width: 1280, height: 1100 }, acceptDownloads: true })).newPage();
+      const page = await (await browser.newContext({ viewport: { width: 1280, height: 1100 }, acceptDownloads: true })).newPage();
       page.on("dialog", (d) => void d.accept());
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(String(e)));
@@ -392,7 +387,8 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       // 3. forward: click on a log line ahead
       const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
       const firstWave = ready.waves[0] ?? 0;
-      const j = lines.find((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 2) ?? lines.find((i) => i > s0.idx)!;
+      // a line with another one before it (that one is highlighted once j is reached)
+      const j = lines.find((i, k) => k >= 1 && i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 2) ?? lines.find((i, k) => k >= 1 && i > s0.idx)!;
       assert.ok(j > s0.idx, `a log line ahead (${j} > ${s0.idx})`);
       await page.click(`#mtp-log li[data-i="${j}"]`);
       const s1 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx >= j, 120_000, `seek to ${j}`);
@@ -401,19 +397,16 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
       assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "current log line highlighted");
 
-      // 4. backward: wave 1 (or, without waves, the timeline at half the current index) → a new Ruffle player, then
-      // mtSeek there, still paused
+      // 4. backward: a click on the timeline at wave 1's start (or, without waves, at half the current index) → a new
+      // Ruffle player, then mtSeek there, still paused
       const back = ready.waves.length > 0 ? firstWave : Math.floor(s1.idx / 2);
       assert.ok(back < s1.idx && back > 0, `a target before the current index (${back} < ${s1.idx})`);
       await page.evaluate(() => {
         (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old = true;
       });
       const players = (await playerInfo(page)).players;
-      if (ready.waves.length > 0) await page.click('#mtp-waves button[data-wave="1"]');
-      else {
-        const box = (await page.locator("#mtp-track").boundingBox())!;
-        await page.mouse.click(box.x + ((back + 0.25) / ready.total) * box.width, box.y + box.height / 2);
-      }
+      const track = (await page.locator("#mtp-track").boundingBox())!;
+      await page.mouse.click(track.x + ((back + 0.25) / ready.total) * track.width, track.y + track.height / 2);
       await until(page, () => playerInfo(page), (p) => p.players === players + 1 && p.ready !== null && p.first !== null, 120_000, "player recreated and landed");
       assert.equal(await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old), undefined, "a new Ruffle element");
       const s2 = await until(page, () => swfState(page), (s) => !s.seeking, 60_000, "backward seek done");
@@ -428,7 +421,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.deepEqual([png.width, png.height], [720, 440]);
 
       // 6. x32, play, then "Fin": the banner shows the stored winner, its button leads to /hq?money=N
-      await page.click('#mtp-speeds button[data-speed="32"]');
+      await page.locator("#mtp-speed").fill("8"); // the speed slider's last step: x32
       await page.click("#mtp-play");
       const s3 = await until(page, () => swfState(page), (s) => !s.paused, 10_000, "play button");
       assert.equal(s3.speed, 32);
@@ -496,7 +489,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       const armyOf = (host: string) => db!.prepare("SELECT id, credits, recruiter_id, recruit_confirmed_at, password_hash FROM armies WHERE host = ?").get(host) as
         { id: number; credits: number; recruiter_id: number | null; recruit_confirmed_at: number | null; password_hash: string | null } | undefined;
       const newPage = async (): Promise<Page> => {
-        const p = await (await newContext(browser, { viewport: { width: 1280, height: 1100 } })).newPage();
+        const p = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();
         p.on("dialog", (d) => void d.accept());
         return p;
       };
@@ -590,7 +583,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
         return p === String(port) && (hostname === "localhost" || hostname === BASE_DOMAIN || hostname.endsWith(`.${BASE_DOMAIN}`));
       };
       const newPage = async (): Promise<Page> => {
-        const p = await (await newContext(browser, { viewport: { width: 1280, height: 1100 } })).newPage();
+        const p = await (await browser.newContext({ viewport: { width: 1280, height: 1100 } })).newPage();
         p.on("dialog", (d) => void d.accept());
         p.on("response", (r) => {
           if (r.status() === 404 && sameSite(r.url())) missing.push(r.url());

@@ -29,6 +29,8 @@ export interface BattleView {
   log: readonly LogLine[];
   /** `?at=`: history index the player starts at (null: from the start). */
   at: number | null;
+  /** Army and trooper names of input sides 0 and 1 (the log colours them by side). */
+  sides: readonly [readonly string[], readonly string[]];
 }
 
 /**
@@ -55,11 +57,12 @@ ${v.heading}
   const content = html`<script type="text/javascript">
 var mtLog = ${raw(jsJson(v.log))};
 var mtAt = ${raw(jsJson(v.at))};
+var mtSides = ${raw(jsJson(v.sides))};
 </script>
 <script type="text/javascript" src="/js/player.js?v=1"></script>
-<div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div></div>
+<div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
+<div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>
-<div id="mtp-bar" class="mtp-bar"></div>
 
 <script type="text/javascript">
 	function endBattle() {

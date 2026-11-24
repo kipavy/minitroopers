@@ -484,6 +484,8 @@ for (const mode of MODES) {
     assert.equal(log.length, total, "one line per history entry");
     assert.deepEqual(log.map((l) => l.i), [...log.keys()]);
     assert.equal(at, null);
+    const sides = JSON.parse(/^var mtSides = (.*);$/m.exec(page)![1]!) as string[][];
+    assert.deepEqual(sides, [["L'armée de Warp", ...input.armies[0].troopers.map((t) => t.name)], ["L'armée de Foe", "Bob"]]);
     assert.ok(log.some((l) => l.t.includes("L'armée de Warp") || l.t.includes("L'armée de Foe")), "army names in the log");
     // ?at=: a positive integer, bounded by the history length; anything else is ignored
     const atOf = async (q: string): Promise<number | null> => {

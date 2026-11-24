@@ -27,7 +27,7 @@ test("embed.js maps swfobject.embedSWF to a Ruffle player, one per call", () => 
   assert.equal(c.unmuteOverlay, "hidden");
   assert.equal(c.contextMenu, "off");
   assert.equal(c.backgroundColor, "#F2DDB8");
-  assert.equal(c.preferredRenderer, "webgl");
+  assert.equal(c.preferredRenderer, undefined, "Ruffle's default renderer (plain WebGL has no BitmapData.draw)");
   assert.equal(c.scale, "noscale");
   assert.equal(c.allowScriptAccess, true);
   assert.equal(c.wmode, "transparent");
@@ -92,17 +92,4 @@ test("embed.js: a field-less GET form (Ruffle's navigateToURL) navigates to its 
   noAction.submit();
   assert.deepEqual(native, [post, withFields, noAction]);
   assert.equal(assigned.length, 2);
-});
-
-test("embed.js: a renderer chosen in RufflePlayer.config replaces the default webgl", () => {
-  const loaded: any[] = [];
-  const el = { id: "swf_a", className: "", style: {}, parentNode: { replaceChild: () => {} }, load: (c: any) => loaded.push(c) };
-  const win: any = {
-    RufflePlayer: { config: { preferredRenderer: "wgpu-webgl" }, newest: () => ({ createPlayer: () => ({ ...el, id: undefined }) }) },
-    document: { getElementById: (i: string) => (i === "swf_a" ? el : null) },
-  };
-  win.window = win;
-  vm.runInNewContext(readFileSync(new URL("../public/js/embed.js", import.meta.url), "utf8"), win);
-  win.swfobject.embedSWF("/swf/client_fr_play.swf?v=5", "swf_a", 720, 440, "10.0.0", null, null, {}, { id: "battle" });
-  assert.equal(loaded[0].preferredRenderer, "wgpu-webgl");
 });
