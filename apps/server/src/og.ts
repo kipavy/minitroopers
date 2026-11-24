@@ -32,7 +32,7 @@ export interface Banner {
 }
 
 /** Bumped on any design change: cached files are named after it. */
-export const BANNER_VERSION = 1;
+export const BANNER_VERSION = 2;
 
 export const W = 1200;
 export const H = 630;
@@ -102,7 +102,7 @@ function outlined(text: string, x: number, y: number, size: number, fill: string
   const common = `x="${x}" y="${y}" font-family="${FONT}" font-size="${size}" text-anchor="${anchor}"`;
   return (
     `<text ${common} transform="translate(0 ${shadow.toFixed(1)})" fill="#1c0d03" fill-opacity="0.75" stroke="#1c0d03" stroke-opacity="0.75" stroke-width="${stroke}" stroke-linejoin="round">${t}</text>` +
-    `<text ${common} fill="none" stroke="#2b1506" stroke-width="${stroke}" stroke-linejoin="round">${t}</text>` +
+    `<text ${common} fill="none" stroke="#1e0e04" stroke-width="${stroke}" stroke-linejoin="round">${t}</text>` +
     `<text ${common} fill="${fill}">${t}</text>`
   );
 }
@@ -111,17 +111,49 @@ function outlined(text: string, x: number, y: number, size: number, fill: string
 function person(x: number, y: number): string {
   const body = `M${x} ${y - 17}L${x} ${y - 7}M${x - 8} ${y - 15}L${x} ${y - 12}L${x + 8} ${y - 15}M${x - 6} ${y}L${x} ${y - 7}L${x + 6} ${y}`;
   return (
-    `<g stroke-linecap="round" stroke-linejoin="round"><path d="${body}" fill="none" stroke="#2b1506" stroke-width="8"/><circle cx="${x}" cy="${y - 22}" r="6" fill="#2b1506"/>` +
-    `<path d="${body}" fill="none" stroke="#fff" stroke-width="3.6"/><circle cx="${x}" cy="${y - 22}" r="3.6" fill="#fff"/></g>`
+    `<g stroke-linecap="round" stroke-linejoin="round"><path d="${body}" transform="translate(1 2)" fill="none" stroke="#1e0e04" stroke-opacity="0.6" stroke-width="6"/><circle cx="${x + 1}" cy="${y - 20}" r="5" fill="#1e0e04" fill-opacity="0.6"/>` +
+    `<path d="${body}" fill="none" stroke="#fff" stroke-width="3.8"/><circle cx="${x}" cy="${y - 22}" r="3.8" fill="#fff"/></g>`
   );
+}
+
+/** Angle of the dark band and of the texts on it (degrees, rising to the right). */
+const TILT = -2.5;
+
+/**
+ * The "VS" mark, drawn as vector shapes (chunky cartoon letters, blocky italic S) in banner coordinates, around
+ * x 528..666, y 128..198.
+ */
+const VS_V = "M529 133L560 132L572 167L585 131L601 130L576 197L561 198Z";
+const VS_S = ((): string => {
+  const pts: [number, number][] = [
+    [5, 0], [59, 0], [64, 5], [64, 23], [46, 23], [46, 16], [26, 16], [26, 26], [58, 26], [64, 32], [64, 61], [59, 66],
+    [5, 66], [0, 61], [0, 43], [18, 43], [18, 50], [38, 50], [38, 40], [6, 40], [0, 34], [0, 5],
+  ];
+  return pts.map(([u, v], i) => `${i ? "L" : "M"}${(600 + u + (66 - v) * 0.06).toFixed(1)} ${130 + v}`).join("") + "Z";
+})();
+
+function vsMark(): string {
+  const glyph = (d: string, id: string): string =>
+    `<clipPath id="${id}"><path d="${d}"/></clipPath>` +
+    `<path d="${d}" transform="translate(3 5)" fill="#120802" fill-opacity="0.55" stroke="#120802" stroke-opacity="0.55" stroke-width="13" stroke-linejoin="round"/>` +
+    `<path d="${d}" fill="none" stroke="#2a1406" stroke-width="12" stroke-linejoin="round"/>` +
+    `<path d="${d}" fill="url(#vs)"/>` +
+    `<g clip-path="url(#${id})"><path d="${d}" transform="translate(2.5 3.5)" fill="none" stroke="#fffbe0" stroke-opacity="0.7" stroke-width="4"/>` +
+    `<path d="${d}" transform="translate(-2 -3)" fill="none" stroke="#b8410a" stroke-opacity="0.45" stroke-width="4"/></g>`;
+  return glyph(VS_V, "vsv") + glyph(VS_S, "vss");
 }
 
 /** Lightning bolt from the top edge to the bottom edge, through the centre (x, y pairs). */
 const BOLT: readonly (readonly [number, number])[] = [
-  [652, -10], [628, 52], [646, 92], [612, 150], [630, 196], [592, 246], [612, 286], [572, 330],
-  [600, 372], [566, 420], [588, 462], [556, 512], [574, 560], [548, 640],
+  [652, -10], [626, 50], [648, 92], [606, 150], [628, 196], [578, 250], [608, 284], [560, 336],
+  [600, 374], [552, 424], [588, 462], [548, 516], [574, 560], [544, 640],
 ];
 const boltPath = (dx = 0): string => BOLT.map(([x, y], i) => `${i ? "L" : "M"}${x + dx} ${y}`).join("");
+/** Thin forks of the bolt. */
+const FORKS = "M578 250L548 292L556 300L522 338M600 374L632 410L624 418L652 466M552 424L526 456L532 464L506 498M608 284L640 300";
+
+/** Origins of the light rays, along the bright part of the bolt. */
+const RAY_ORIGINS: readonly (readonly [number, number])[] = [[584, 300], [572, 356], [592, 262]];
 /** Polygon of the left half (left of the bolt). */
 const LEFT_HALF = `M-10 -10${BOLT.map(([x, y]) => `L${x} ${y}`).join("")}L-10 640Z`;
 
@@ -135,9 +167,8 @@ export function bannerSvg(b: Banner): string {
   logoUri ??= dataUri("logo.png", "image/png");
   const nameL = fitText(b.left.name.toUpperCase(), 430, 94, 52);
   const nameR = fitText(b.right.name.toUpperCase(), 430, 94, 52);
-  const cx = 588;
-  const cy = 318;
-  const rays = RAYS.map(([a, len, w]) => {
+  const rays = RAYS.map(([a, len, w], i) => {
+    const [cx, cy] = RAY_ORIGINS[i % RAY_ORIGINS.length]!;
     const r = (a * Math.PI) / 180;
     const ex = cx + Math.cos(r) * len;
     const ey = cy + Math.sin(r) * len;
@@ -147,9 +178,9 @@ export function bannerSvg(b: Banner): string {
   }).join("");
   const count = (x: number, y: number, n: number): string => {
     const t = String(n);
-    const w = (textWidth100(t) * 34) / 100;
-    const left = x - (w + 34) / 2;
-    return person(left + 11, y) + outlined(t, left + 30, y, 34, "#fff", 7, "start", 3);
+    const w = (textWidth100(t) * 31) / 100;
+    const left = x - (w + 32) / 2;
+    return person(left + 10, y) + outlined(t, left + 28, y, 31, "#fff", 7, "start", 3);
   };
   // Names: centred on (268, 166) and (932, 132) (middle of the capitals), the right one higher like the band.
   const name = (n: { text: string; size: number }, x: number, y: number, fill: string): string => {
@@ -161,45 +192,47 @@ export function bannerSvg(b: Banner): string {
   };
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <defs>
-<linearGradient id="vs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset="0.35" stop-color="#ffd23a"/><stop offset="0.7" stop-color="#ff9a17"/><stop offset="1" stop-color="#ff7a00"/></linearGradient>
+<linearGradient id="vs" gradientUnits="userSpaceOnUse" x1="0" y1="129" x2="0" y2="198"><stop offset="0" stop-color="#ffe98a"/><stop offset="0.3" stop-color="#ffd23f"/><stop offset="0.62" stop-color="#ffa424"/><stop offset="1" stop-color="#ff7c0c"/></linearGradient>
+<linearGradient id="kind" x1="0" y1="0" x2="0" y2="1"><stop offset="0.45" stop-color="#fff"/><stop offset="0.6" stop-color="#d9d9d9"/><stop offset="1" stop-color="#c4c4c4"/></linearGradient>
 <linearGradient id="nl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.55"/><stop offset="0.3" stop-color="#000" stop-opacity="0.1"/><stop offset="0.75" stop-color="#000" stop-opacity="0.05"/><stop offset="1" stop-color="#000" stop-opacity="0.8"/></linearGradient>
 <radialGradient id="vig" cx="0.5" cy="0.5" r="0.75"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.6"/></radialGradient>
-<radialGradient id="flash" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fffbe8" stop-opacity="0.85"/><stop offset="0.35" stop-color="#fff3c0" stop-opacity="0.35"/><stop offset="1" stop-color="#fff3c0" stop-opacity="0"/></radialGradient>
+<radialGradient id="flash" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fffbe8" stop-opacity="0.9"/><stop offset="0.4" stop-color="#ffe9a8" stop-opacity="0.4"/><stop offset="1" stop-color="#fff3c0" stop-opacity="0"/></radialGradient>
 <linearGradient id="band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="0.12" stop-color="#000" stop-opacity="0.5"/><stop offset="0.88" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
 <clipPath id="lh"><path d="${LEFT_HALF}"/></clipPath>
 <filter id="glow" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="9"/></filter>
 <linearGradient id="boltFade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${H}"><stop offset="0.2" stop-color="#fff" stop-opacity="0"/><stop offset="0.38" stop-color="#fff"/><stop offset="0.82" stop-color="#fff"/><stop offset="0.97" stop-color="#fff" stop-opacity="0"/></linearGradient>
 <mask id="boltMask" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#boltFade)"/></mask>
-<radialGradient id="warmL" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.left.faction)}" stop-opacity="0.6"/><stop offset="1" stop-color="${colourOf(b.left.faction)}" stop-opacity="0"/></radialGradient>
-<radialGradient id="warmR" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.right.faction)}" stop-opacity="0.45"/><stop offset="1" stop-color="${colourOf(b.right.faction)}" stop-opacity="0"/></radialGradient>
+<radialGradient id="warmL" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.left.faction)}" stop-opacity="0.7"/><stop offset="1" stop-color="${colourOf(b.left.faction)}" stop-opacity="0"/></radialGradient>
+<radialGradient id="warmR" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${colourOf(b.right.faction)}" stop-opacity="0.55"/><stop offset="1" stop-color="${colourOf(b.right.faction)}" stop-opacity="0"/></radialGradient>
 <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
 </defs>
 <image href="${bgUri(b.bg)}" x="0" y="-52" width="1200" height="734" preserveAspectRatio="xMidYMid slice"/>
-<rect width="${W}" height="${H}" fill="#000" fill-opacity="0.18"/>
+<rect width="${W}" height="${H}" fill="#000" fill-opacity="0.12"/>
 <rect width="${W}" height="${H}" fill="${colourOf(b.right.faction)}" fill-opacity="0.28"/>
-<g clip-path="url(#lh)"><rect width="${W}" height="${H}" fill="#000" fill-opacity="0.05"/><rect width="${W}" height="${H}" fill="${colourOf(b.left.faction)}" fill-opacity="0.26"/></g>
+<g clip-path="url(#lh)"><rect width="${W}" height="${H}" fill="#000" fill-opacity="0.05"/><rect width="${W}" height="${H}" fill="${colourOf(b.left.faction)}" fill-opacity="0.34"/></g>
 <rect width="${W}" height="${H}" fill="url(#top)"/>
 <rect width="${W}" height="${H}" fill="url(#vig)"/>
-<g transform="rotate(-2.8 600 160)"><rect x="-60" y="58" width="1320" height="44" fill="#fff" fill-opacity="0.07"/><rect x="-60" y="102" width="1320" height="112" fill="#000" fill-opacity="0.42"/><rect x="-60" y="214" width="1320" height="6" fill="#000" fill-opacity="0.2"/></g>
+<g transform="rotate(${TILT} 600 150)"><rect x="-60" y="56" width="1320" height="42" fill="#fff" fill-opacity="0.08"/><rect x="-60" y="98" width="1320" height="104" fill="#000" fill-opacity="0.5"/><rect x="-60" y="202" width="1320" height="5" fill="#000" fill-opacity="0.22"/></g>
 <g clip-path="url(#lh)"><ellipse cx="470" cy="340" rx="300" ry="280" fill="url(#warmL)"/></g>
 <ellipse cx="760" cy="340" rx="280" ry="260" fill="url(#warmR)"/>
-<ellipse cx="${cx}" cy="${cy + 30}" rx="200" ry="300" fill="url(#flash)"/>
-<g fill="#fff" fill-opacity="0.85" filter="url(#soft)">${rays}</g>
+<ellipse cx="582" cy="360" rx="210" ry="300" fill="url(#flash)"/>
+<ellipse cx="584" cy="330" rx="70" ry="150" fill="url(#flash)"/>
+<g fill="#fff" fill-opacity="0.8" filter="url(#soft)">${rays}</g>
 <path d="${boltPath()}" fill="none" stroke="#2a1405" stroke-width="9" stroke-linejoin="miter" stroke-opacity="0.85"/>
 <path d="${boltPath(3)}" fill="none" stroke="#e8962e" stroke-width="3" stroke-linejoin="miter"/>
 <g mask="url(#boltMask)">
-<path d="${boltPath()}" fill="none" stroke="#9fd2ff" stroke-width="30" stroke-linejoin="round" filter="url(#glow)"/>
+<path d="${boltPath()}" fill="none" stroke="#bfe0ff" stroke-width="34" stroke-linejoin="round" stroke-opacity="0.85" filter="url(#glow)"/>
+<path d="${FORKS}" fill="none" stroke="#bfe0ff" stroke-width="7" stroke-linejoin="round" stroke-opacity="0.5" filter="url(#soft)"/>
+<path d="${FORKS}" fill="none" stroke="#f2f9ff" stroke-width="2.4" stroke-linejoin="miter"/>
 <path d="${boltPath()}" fill="none" stroke="#cfe8ff" stroke-width="11" stroke-linejoin="miter"/>
 <path d="${boltPath()}" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="miter"/>
 </g>
 <image href="${logoUri}" x="503" y="4" width="194" height="75"/>
-${outlined(b.kind, 600, 106, 27, "#fff", 6, "middle", 3)}
-${name(nameL, 268, 166, colourOf(b.left.faction))}
-${name(nameR, 932, 132, colourOf(b.right.faction))}
-${count(275, 249, b.left.troopers)}
-${count(938, 214, b.right.troopers)}
-<g transform="translate(597 199) skewX(-9) scale(1.18 1)">${outlined("VS", 0, 0, 104, "url(#vs)", 12)}</g>
+<g transform="rotate(${TILT * 0.8} 600 100)">${outlined(b.kind, 600, 108, 27, "url(#kind)", 7, "middle", 3)}</g>
+<g transform="rotate(${TILT} 270 165)">${name(nameL, 270, 165, colourOf(b.left.faction))}${count(276, 248, b.left.troopers)}</g>
+<g transform="rotate(${TILT} 931 134)">${name(nameR, 931, 134, colourOf(b.right.faction))}${count(937, 214, b.right.troopers)}</g>
+${vsMark()}
 ${outlined(b.footer, 30, 612, 23, "#fff", 4, "start", 2)}
 ${outlined(b.site, 1170, 612, 23, "#fff", 4, "end", 2)}
 </svg>`;
