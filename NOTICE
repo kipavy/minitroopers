@@ -9,3 +9,7 @@ packages/engine/test/core/fixtures/ruffle-array_sort_random.output.txt is copied
 packages/engine/src/core/sort.ts transliterates Ruffle's core/src/avm2/globals/array.rs `qsort`.
 Ruffle is licensed under MIT or Apache-2.0, Copyright (c) 2018-2022 Ruffle LLC and Ruffle
 contributors. https://github.com/ruffle-rs/ruffle
+
+apps/server/fonts/LilitaOne-Regular.ttf is the Lilita One font by Juan Montoreano, licensed under the SIL Open Font
+License 1.1 (apps/server/fonts/OFL.txt), from https://github.com/google/fonts/tree/main/ofl/lilitaone
+(https://fonts.google.com/specimen/Lilita+One). It draws the link preview banners (apps/server/src/og.ts).

@@ -129,9 +129,12 @@ garde le lecteur d'origine. Détails : [conception](docs/superpowers/specs/2026-
 
 Le lien public d'un combat quotidien (`/b/fview/<id>`, celui de `/history`) collé dans Discord, WhatsApp, etc.
 s'affiche avec un aperçu (balises Open Graph et Twitter) : titre « Revoir : L'armée de X VS L'armée de Y », date
-et vainqueur du combat, et une image fixe (`apps/server/public/img/og-battle.jpg`, générée par
-`apps/server/scripts/gen-og-image.mjs` à partir des images du jeu). Les missions et les raids n'ont pas de page
-publique, donc pas d'aperçu.
+et vainqueur du combat, et une bannière propre au combat (`/og/battle/<id>.jpg`, 1200×630) : le décor du
+combat, le logo, les noms des deux armées aux couleurs de leur faction autour d'un « VS », leurs effectifs, la date
+et le numéro du combat. Elle est dessinée en SVG puis rastérisée par [resvg](https://github.com/thx/resvg-js)
+(police Lilita One, `apps/server/fonts/`) sur un thread à part, une seule fois par combat, puis servie depuis
+`DATA_DIR/og/` (`apps/server/scripts/og-samples.ts <dossier>` produit des exemples). Les missions et les raids
+n'ont pas de page publique, donc pas d'aperçu.
 
 ### Règles non vérifiables
 

@@ -3,7 +3,7 @@ import type { Config } from "../config.ts";
 import { html, raw, type Html } from "./html.ts";
 import { layout, type OgMeta } from "./layout.ts";
 import type { BattleRow } from "../repo.ts";
-import { absoluteUrl } from "../urls.ts";
+import { absoluteUrl, battleImageUrl } from "../urls.ts";
 import { jsJson, jsStr, swfEmbed } from "./swf.ts";
 
 export interface BattleView {
@@ -42,10 +42,10 @@ export interface BattleView {
 
 /**
  * Link preview of a daily battle (Discord, WhatsApp…): "Revoir : <attacker> VS <defender>", "Combat MiniTroopers du
- * DD/MM/AAAA." and the stored outcome, the fixed image public/img/og-battle.jpg. `url`: canonical public link of the
- * replay (made absolute here).
+ * DD/MM/AAAA." and the stored outcome, the battle's own banner (/og/battle/<id>.jpg, routes/og.ts). `url`: canonical
+ * public link of the replay (made absolute here).
  */
-export function battleOg(cfg: Config, b: Pick<BattleRow, "day" | "winner" | "input">, attacker: string, defender: string, url: string): OgMeta {
+export function battleOg(cfg: Config, b: Pick<BattleRow, "id" | "day" | "winner" | "input">, attacker: string, defender: string, url: string): OgMeta {
   const title = `Revoir : ${attacker} VS ${defender}`;
   const outcome = b.winner === null ? "Match nul." : `Victoire de ${b.winner === b.input.attackerSide ? attacker : defender}.`;
   const [y, m, d] = b.day.split("-");
@@ -53,8 +53,8 @@ export function battleOg(cfg: Config, b: Pick<BattleRow, "day" | "winner" | "inp
     title,
     description: `Combat MiniTroopers du ${d}/${m}/${y}. ${outcome}`,
     url: absoluteUrl(cfg, url),
-    image: `${cfg.publicUrl}/img/og-battle.jpg`,
-    imageAlt: "MiniTroopers : un combat à revoir",
+    image: battleImageUrl(cfg, b.id),
+    imageAlt: title,
   };
 }
 

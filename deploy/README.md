@@ -1,7 +1,7 @@
 # Auto-hébergement avec Docker
 
-L'image contient le serveur (`node apps/server/src/main.ts`, Node 24.12) et ses deux dépendances d'exécution
-(`hono`, `@hono/node-server`) ; ni Playwright, ni les outils du banc, ni les tests. Les données (base SQLite
+L'image contient le serveur (`node apps/server/src/main.ts`, Node 24.12) et ses dépendances d'exécution
+(`hono`, `@hono/node-server`, `@resvg/resvg-js` avec son binaire natif linux-x64/arm64 glibc, `jpeg-js`) ; ni Playwright, ni les outils du banc, ni les tests. Les données (base SQLite
 `minitroopers.db`) vont dans le volume `/data`.
 
 ## Démarrage rapide

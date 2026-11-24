@@ -15,6 +15,8 @@ export interface Foe {
   defenderRef: string | null;
   /** "L'armée de X" (plain text). */
   title: string;
+  /** The army name alone ("X"). */
+  name: string;
   faction: number;
   power: number;
   army: BattleArmyInput;
@@ -31,6 +33,7 @@ const stored = (db: DatabaseSync, id: number): Foe | null => {
     defenderId: a.id,
     defenderRef: null,
     title: armyTitle(a.name, a.part),
+    name: a.name,
     faction: a.faction,
     power: armyPower(troopers),
     army: { faction: a.faction, spawnOrder: troopers.map((t) => t.id), troopers },
@@ -44,13 +47,13 @@ export function foeOf(db: DatabaseSync, ref: string): Foe | null {
   if (fill) {
     const f = fillerArmy(fill);
     if (f.id !== ref) return null; // not canonical (e.g. power below the minimum)
-    return { defenderId: null, defenderRef: f.id, title: armyTitle(f.name, f.part), faction: f.faction, power: f.power, army: fillerBattleArmy(f) };
+    return { defenderId: null, defenderRef: f.id, title: armyTitle(f.name, f.part), name: f.name, faction: f.faction, power: f.power, army: fillerBattleArmy(f) };
   }
   const m = /^faction:([a-z0-9-]{1,40})$/.exec(ref);
   const fac = m ? FACTIONS.find((x) => x.host === m[1]) : undefined;
   if (fac) {
     const army = factionBattleArmy(fac);
-    return { defenderId: null, defenderRef: `faction:${fac.host}`, title: armyTitle(fac.name, fac.part), faction: fac.id, power: armyPower(army.troopers), army };
+    return { defenderId: null, defenderRef: `faction:${fac.host}`, title: armyTitle(fac.name, fac.part), name: fac.name, faction: fac.id, power: armyPower(army.troopers), army };
   }
   return null;
 }
@@ -63,6 +66,17 @@ export function foeByName(db: DatabaseSync, name: unknown): Foe | null {
   const a = armyByHost(db, h);
   if (a) return stored(db, a.id);
   return FACTIONS.some((f) => f.host === h) ? foeOf(db, `faction:${h}`) : null;
+}
+
+/** Name alone of the defender of a stored battle (a deleted army keeps its name in `gone:<name>`), null if unknown. */
+export function defenderName(db: DatabaseSync, b: { defenderId: number | null; defenderRef: string | null }): string | null {
+  if (b.defenderId !== null) {
+    const a = armyById(db, b.defenderId);
+    if (a) return a.name;
+  }
+  if (b.defenderRef === null) return null;
+  if (b.defenderRef.startsWith("gone:")) return b.defenderRef.slice(5);
+  return foeOf(db, b.defenderRef)?.name ?? null;
 }
 
 /** Title of the defender of a stored battle (its army, or the rebuilt filler / faction). */
