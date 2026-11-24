@@ -108,6 +108,9 @@ for (const mode of MODES) {
     const html7 = plain(await (await hqOf(env, cl, "warp")).text());
     assert.deepEqual(tilesOf(html7), new Array(7).fill("bgo2"));
     assert.ok(html7.includes('<div class="action bcount7">'));
+    // 6+ tiles fit on one row only without the whitespace between inline-block tiles (5 and less keep the original markup)
+    assert.equal([...html7.matchAll(/<\/div><\/div><div class="b /g)].length, 6);
+    assert.equal([...html.matchAll(/<\/div><\/div><div class="b /g)].length, 5);
   });
 
   test(`[${mode}] played battles of today show as win/defeat tiles linking /b/view/batN`, async () => {

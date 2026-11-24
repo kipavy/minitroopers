@@ -67,7 +67,10 @@ function battleBox(cfg: Config, v: HqView): Html {
   }
   const count = Math.max(v.battleTotal, v.battles.length);
   const left = Math.max(0, v.battleTotal - v.battles.length);
-  const tiles = Array.from({ length: count }, (_, i) => tile(cfg, v, i));
+  const all = Array.from({ length: count }, (_, i) => tile(cfg, v, i));
+  // 6 or 7 tiles (COMMANDEMENT on top of the 5 of this instance) fit on one row only without the whitespace between the
+  // inline-block tiles; up to 5 the markup stays the original one.
+  const tiles = count > 5 ? raw(all.map((t) => t.value.trimEnd()).join("")) : all;
   const tipText = left === 0 ? "Tu as terminé tes batailles du jour !" : `Il te reste ${left} ${left > 1 ? "batailles" : "bataille"} aujourd'hui !`;
   const train = html`<a href="${armyUrl(cfg, v.army.host, "/b/train")}" class="train-link" ${tip("Entraînement", "Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.")}>» S'entraîner (illimité)</a>`;
   return html`<div class="box2"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>

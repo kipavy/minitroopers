@@ -91,7 +91,13 @@ td.right > .event-banner {
 }
 .train-head .but {
 	float : right;
-	width : 200px;
+	width : 180px;
+	margin-right : 14px;
+}
+/* "S'entraîner !" is longer than "Attaquer !": smaller letters so it stays inside the 96 px button5 sprite */
+.train td.choosetd a.button5 {
+	font-size : 0.85em;
+	letter-spacing : -0.2px;
 }
 .train-recent {
 	margin : 10px 4px 0px 4px;

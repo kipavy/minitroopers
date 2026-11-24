@@ -56,10 +56,10 @@ export function trainPage(cfg: Config, v: TrainView): Html {
   const rows: Html[] = [];
   for (let i = 0; i < cells.length; i += 2) rows.push(html`<tr>
 ${cells.slice(i, i + 2)}</tr>`);
-  const right = html`<div class="train-head"><p>Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.</p>
+  const right = html`<div class="train"><div class="train-head"><p>Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.</p>
 <div class="but b3"><div class="but_right b3_right"><a class="but_bg b3_bg" href="${armyUrl(cfg, v.army.host, "/b/train")}">Autres adversaires</a></div></div></div>
 <table class="choose">${rows}</table>
-${recentList(cfg, v)}`;
+${recentList(cfg, v)}</div>`;
   return shellPage(cfg, {
     army: v.army,
     troopers: v.troopers,
