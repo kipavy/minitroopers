@@ -21,6 +21,13 @@ sont acceptés s'ils restent dans l'esprit MiniTroopers.
 - La case « Bataille » du QG affiche 6 ou 7 cases quand l'armée y a droit : `style.css` (vérifié octet pour octet) ne
   prévoit que `.bcount1`…`.bcount5`, donc `.bcount6` et `.bcount7` vont dans `extras.css`, cases aussi lisibles que
   celles de `.bcount5` (58 px) dans la même largeur de case.
+- **Mise en page validée par Killian (maquette C, 2026-11-24)** pour 7 cases : une seule ligne ; cases `.b` de 43 px ;
+  rangée centrée dans la case (`.bcount7 { padding-left : 6.5px }` → 7,5 px de vide de chaque côté, mesuré) ; les cases
+  « à jouer » (`.bgo2`) n'affichent que la partie gauche du pictogramme `bgo2.gif` (52×22 : char + « GO ! ») : image
+  recadrée à 26×22 (`object-fit : none; object-position : 0 0`), **flash du tir compris** (ne pas le couper), et
+  décalée de 3 px vers la gauche (`position : relative; left : -3px`) pour que le corps du char (pixels 8 à 24) soit
+  centré dans sa case ; victoire/défaite gardent leurs icônes 23×22 centrées. Pour 6 cases : même principe (largeur
+  et marge recalculées pour un vide égal des deux côtés), à montrer en capture avant push.
 - Les journées déjà commencées au moment du déploiement profitent tout de suite du nouveau quota (il est recalculé à
   chaque affichage, rien n'est figé en base).
 
@@ -31,8 +38,11 @@ sont acceptés s'ils restent dans l'esprit MiniTroopers.
   (armée protégée non identifiée).
 - **Page Entraînement** (nouvelle route, ex. `/b/train`), construite comme la page de choix d'adversaire (`/b/opp`,
   `views/opp.ts`) :
-  - des adversaires tirés au hasard (même tirage que `pickOpponents`, même nombre `OPPONENT_COUNT`), **nouveau tirage
-    à chaque visite**, et un bouton « Autres adversaires » qui retire ;
+  - des adversaires tirés au hasard, **nouveau tirage à chaque visite**, et un bouton « Autres adversaires » qui retire
+    (validé par Killian 2026-11-24) : tirage uniforme parmi **toutes** les vraies armées (sauf la sienne, armées non
+    vides) dont la puissance est entre la moitié et le double de la sienne, complété par des armées générées comme le
+    fait `pickOpponents` s'il en manque, `OPPONENT_COUNT` adversaires. (Le `pickOpponents` actuel prend d'abord les
+    armées les plus proches en puissance : sur une petite instance il redonnerait presque toujours les mêmes.)
   - un champ « Nom de l'armée » + bouton pour affronter une armée précise (même résolution que l'attaque ciblée
     existante, `foeByName`) ;
   - l'armée ne peut pas s'affronter elle-même ; une armée inconnue ou vide donne une erreur sur la page, comme `/b/opp`.
