@@ -19,7 +19,8 @@ combats pour une même graine, mêmes règles, mêmes pages, même économie.
 
 ## Avancement
 
-Les quatre étapes sont terminées. Le jeu complet tourne en production depuis le 2026-11-23.
+Les quatre étapes sont terminées. Le jeu complet tourne en production depuis le 2026-11-23 (`v1.0.0`).
+Après `v1.0.0`, le projet ajoute des améliorations au-delà de l'original ; la première est le lecteur de combats amélioré.
 
 | Étape | Contenu | État |
 |---|---|---|
@@ -33,6 +34,7 @@ Ajouts depuis la fin de l'étape 4 :
 - infobulles des 141 compétences et armes, tirées du texte de `client_fr.swf` (#2) ;
 - `reset-day` tire à nouveau la boutique `/add` et les adversaires `/b/opp` du jour (#3) ;
 - `set-faction` change la couleur d'uniforme d'une armée (#4) ;
+- lecteur de combats amélioré sur toutes les pages de combat (voir [Lecteur de combats amélioré](#lecteur-de-combats-amélioré)) ;
 - Ruffle utilise le rendu WebGL : animations fluides sur les GPU où le rendu par défaut (wgpu) rame (#5).
 
 ## Fonctionnalités
@@ -92,6 +94,36 @@ Toutes les fonctionnalités joueur de l'original sont présentes, avec les même
 de connexion Twinoid/Eternaltwin. Les fonctions payantes de l'original sont gratuites ou désactivées.
 Les bâtiments, territoires et événements n'ont pas été repris : ils avaient été abandonnés dans l'original et
 les archives n'en gardent aucune trace.
+
+### Lecteur de combats amélioré
+
+Actif par défaut sur toutes les pages de combat. Son interface s'inspire de BetterTrooper (voir Crédits). Il est
+intégré nativement : pas d'extension de navigateur.
+
+- Pause et reprise, vitesse de ×1/8 à ×32, bouton ×2.
+- Frise des vagues : un clic va au début de la vague ; glisser ou Maj+clic va à l'événement exact.
+- Boutons de transport : événement précédent / suivant, vague précédente / suivante, début, fin.
+- Journal du combat en français, synchronisé avec le rejeu ; un clic sur une ligne y saute.
+- Lien de partage `?at=<événement>` : la page s'ouvre à ce point du combat.
+- Capture d'écran en PNG.
+- Avertissement quand un combat reste bloqué.
+- Disposition adaptée au mobile.
+- Raccourcis (`?` affiche l'aide) :
+
+| Touche | Action |
+|---|---|
+| Espace ou `K` | pause / reprise |
+| `←` / `→` | événement précédent / suivant (Maj : saut de plusieurs événements) |
+| `P` / `N` (ou PgHaut / PgBas) | vague précédente / suivante |
+| `Début` / `Fin` | début / fin du combat |
+| `+` / `-` | vitesse supérieure / inférieure |
+| `C` | capture d'écran |
+| `?`, `Échap` | afficher / fermer l'aide |
+
+Le lecteur modifie la boucle d'affichage de `client_fr_play.swf`, jamais le calcul du combat : le résultat reste
+identique à l'original, ce que vérifie le banc oracle. `v1.0.0` (et l'image `ghcr.io/kipavy/minitroopers:1.0.0`)
+garde le lecteur d'origine. Détails : [conception](docs/superpowers/specs/2026-11-24-lecteur-ameliore-design.md),
+[recherche sur le SWF](docs/research/lecteur-swf.md).
 
 ### Règles non vérifiables
 
@@ -172,6 +204,9 @@ qu'en développement : la procédure est décrite dans `tools/oracle/instrument/
 - [Référence du jeu original](docs/research/original-game.md) : 140 compétences, 30 armes,
   véhicules, économie, modes de jeu, mécaniques de combat (wikis + archives)
 - [Règles non vérifiables](docs/game/unverified.md) : valeurs choisies faute de source, avec leur raison
+- Lecteur de combats amélioré : [conception](docs/superpowers/specs/2026-11-24-lecteur-ameliore-design.md),
+  [plan](docs/superpowers/plans/2026-11-24-lecteur-ameliore.md),
+  [recherche sur le SWF](docs/research/lecteur-swf.md)
 - Plans : [étape 1](docs/superpowers/plans/2026-11-22-etape1-banc-et-moteur.md),
   [étape 2](docs/superpowers/plans/2026-11-22-etape2-serveur-armee-combats.md),
   [étape 3](docs/superpowers/plans/2026-11-23-etape3-missions-raids-parrainage.md),
@@ -184,4 +219,6 @@ qu'en développement : la procédure est décrite dans `tools/oracle/instrument/
 - **Eternaltwin / YesLifeTechnology** — remake GitLab (MIT), dont ce projet reprend le
   sérialiseur Haxe, des règles de jeu et la table de désobfuscation.
 - **Ruffle** et **JPEXS FFDec** — exécution et décompilation des SWF.
+- **BetterTrooper** ([bettertrooper.milvintsiss.com](https://bettertrooper.milvintsiss.com)) — son développeur a
+  autorisé à recréer son interface : le lecteur amélioré s'en inspire.
 - Wikis communautaires : MiniTroopers Fandom (EN) et Twinpedia (FR).
