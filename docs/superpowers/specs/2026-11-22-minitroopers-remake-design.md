@@ -4,7 +4,7 @@ Date : 2026-11-22 · Statut : brouillon, à valider par Killian
 
 ## Intention
 
-Killian veut faire tourner sa propre instance privée de MiniTroopers (Motion-Twin, 2011),
+Killian veut faire tourner sa propre instance de MiniTroopers (Motion-Twin, 2011),
 sans attendre qu'Eternaltwin publie le code du serveur de test (`*.trooperstest.gued.es`,
 code non public). Le dépôt GitLab public `eternaltwin/minitroopers/minitroopers` (MIT) est
 inachevé : mission Epic absente, pas d'historique, de protection d'armée ni de classement
@@ -39,13 +39,11 @@ gameplay** (mêmes combats pour une même graine, mêmes règles, mêmes pages, 
 
 - Le moteur TS diverge du SWF sur un seul combat du corpus de test.
 - Le serveur de production dépend de Flash/Ruffle.
-- Des fichiers Motion-Twin (SWF, images, sons) se retrouvent dans un dépôt public.
 - Une règle de jeu inventée là où l'original est connu (si une règle est inconnue, on la
   marque `UNVERIFIED` dans le code et dans l'annexe, on ne la devine pas en silence).
 
 ## Contraintes
 
-- Dépôt GitHub **privé** `kipavy/minitroopers` (il peut donc contenir les assets Motion-Twin).
 - Machine de dev : Windows 11 ARM64, Node 24.12 installé, Bun absent.
 - Code réutilisé du dépôt GitLab sous MIT : attribution conservée (LICENSE + NOTICE).
 - Côté serveur, Ruffle ne sert qu'au banc de test différentiel (dev/CI). Côté navigateur, `ruffle.js` auto-hébergé (pas d'extension) affiche les combats — voir « Affichage des combats ».
@@ -62,7 +60,7 @@ gameplay** (mêmes combats pour une même graine, mêmes règles, mêmes pages, 
    aucun gain.
 3. Garder leur portage sans vérification : rapide mais fidélité inconnue. Rejetée.
 
-Choix de Killian : approche 1, dépôt privé, moteur TS.
+Choix de Killian : approche 1, moteur TS.
 
 ## Conception
 
@@ -78,7 +76,7 @@ packages/game     règles hors combat : génération des troopers depuis la grai
 apps/server       Hono sur Node 24, HTML rendu côté serveur, SQLite
 tools/oracle      banc différentiel : génère des BattleInput aléatoires, les passe dans
                   le SWF (ruffle_desktop) et dans packages/engine, compare
-assets/           SWF, images, CSS de l'original (dépôt privé)
+assets/           SWF, images, CSS de l'original
 ```
 
 ### Moteur et banc différentiel (le cœur du projet)
