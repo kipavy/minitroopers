@@ -1,7 +1,6 @@
 import type { LogLine } from "../battleLog.ts";
 import type { Config } from "../config.ts";
 import { html, raw, type Html } from "./html.ts";
-import { eventBanner } from "./event.ts";
 import { layout } from "./layout.ts";
 import { jsJson, jsStr, swfEmbed } from "./swf.ts";
 
@@ -61,7 +60,7 @@ var mtAt = ${raw(jsJson(v.at))};
 var mtSides = ${raw(jsJson(v.sides))};
 </script>
 <script type="text/javascript" src="/js/player.js?v=2"></script>
-<div class="game mtp-game">${eventBanner(cfg)}${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
+<div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
 <div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>
 

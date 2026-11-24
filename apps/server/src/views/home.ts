@@ -2,7 +2,6 @@ import { clientParams, trooperData, type BattleTrooperInput } from "@mt/engine";
 import type { Config } from "../config.ts";
 import { armyUrl } from "../urls.ts";
 import { html, raw, type Html } from "./html.ts";
-import { eventBanner } from "./event.ts";
 import { layout } from "./layout.ts";
 import { notification, PART_LABELS } from "./army.ts";
 import { MINI_SWF, jsStr, swfEmbed } from "./swf.ts";
@@ -50,7 +49,7 @@ export function homePage(cfg: Config, v: HomeView): Html {
   const content = html`${v.error ? notification(v.error, true) : ""}
 
 <div class="subscribe">
-${eventBanner(cfg)}<div class="cache"><img src="/img/fb/minitroopers1.png"/>
+<div class="cache"><img src="/img/fb/minitroopers1.png"/>
 <img src="/img/fb/minitroopers2.png"/>
 <img src="/img/fb/minitroopers3.png"/>
 <img src="/img/fb/minitroopers4.png"/>

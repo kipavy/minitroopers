@@ -3,7 +3,6 @@ import type { Config } from "../config.ts";
 import type { ArmyRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { esc, html, raw, type Html } from "./html.ts";
-import { eventBanner } from "./event.ts";
 import { layout, tip } from "./layout.ts";
 import { MINI_SWF, jsStr, swfEmbed } from "./swf.ts";
 
@@ -155,7 +154,7 @@ ${left}
 ${visitor !== "stranger" && v.army.pendingRecruits > 0 ? html`<ul class="history">${newChildItem(cfg, v.army.host)}
 </ul>` : ""}</td>
 <td class="right">
-${eventBanner(cfg)}
+
 ${v.right}
 
 <div class="clear"></div></td></tr></table></div>`;

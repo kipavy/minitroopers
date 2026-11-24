@@ -13,7 +13,7 @@
 	margin-bottom : 4px;
 }
 
-/* Weekend event banner (views/event.ts), at the top of the main column of the page, in the spirit of trooperstest. */
+/* Weekend event banner (views/event.ts), at the top of the HQ right column, in the spirit of trooperstest. */
 .event-banner {
 	margin : 0px 0px 8px 0px;
 	padding : 4px 10px 4px 8px;
@@ -42,18 +42,4 @@ td.right > .event-banner {
 	width : 662px;
 	box-sizing : border-box;
 }
-.mtp-game > .event-banner {
-	width : 740px;
-	box-sizing : border-box;
-	margin : 0px auto 8px;
-}
-/* home: in the 20 px above the first creation box, without moving the boxes (the page height is fixed) */
-.subscribe > .event-banner {
-	position : absolute;
-	white-space : nowrap;
-	box-sizing : border-box;
-	margin : 1px 0px 0px 345px;
-	padding : 1px 8px;
-	line-height : 16px;
-	font-size : 0.8em;
-}
+
