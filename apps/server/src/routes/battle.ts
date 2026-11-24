@@ -12,7 +12,7 @@ import { armyByHost, armyById, battleById, battleOfDay, battleOppOfDay, dayOppon
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle, missingPage } from "../views/army.ts";
-import { battlePage } from "../views/battle.ts";
+import { battleOg, battlePage } from "../views/battle.ts";
 import { ARMY_SWF } from "../views/swf.ts";
 import { ownedArmy, viewDay } from "./owner.ts";
 
@@ -166,6 +166,8 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       endUrl: fresh && attacker ? armyUrl(cfg, attacker.host, dayOver(db, attacker.id, b.day) ? "/endDay" : `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId,
+      // the public page of the battle (the owner's /b/view/batN is private)
+      og: battleOg(cfg, b, attackerTitle, defender, attacker ? armyUrl(cfg, attacker.host, `/b/fview/${b.id}`) : `/b/fview/${b.id}`),
     };
     return c.html(String(battlePage(cfg, view)));
   }

@@ -40,7 +40,33 @@ export interface LayoutOpts {
   viewport?: boolean;
   /** Extra stylesheets after style.css (local paths). */
   css?: readonly string[];
+  /** Link preview (Open Graph / Twitter card tags), battle pages only. Plain text, escaped here. */
+  og?: OgMeta;
 }
+
+export interface OgMeta {
+  title: string;
+  description: string;
+  /** Absolute canonical URL of the page. */
+  url: string;
+  /** Absolute URL of a 1200x630 JPEG. */
+  image: string;
+  imageAlt: string;
+}
+
+const ogTags = (o: OgMeta): Html => html`<meta name="theme-color" content="#d4a244"/>
+<meta property="og:site_name" content="MiniTroopers"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="${o.title}"/>
+<meta property="og:description" content="${o.description}"/>
+<meta property="og:url" content="${o.url}"/>
+<meta property="og:image" content="${o.image}"/>
+<meta property="og:image:type" content="image/jpeg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="${o.imageAlt}"/>
+<meta name="twitter:card" content="summary_large_image"/>
+`;
 
 /**
  * Common frame of every page, from $EX/html/fr/hq-levelup.html (ptop … dbottom, .copy). The Braziball promo,
@@ -56,7 +82,7 @@ ${o.title === null ? html`<title>MiniTroopers</title>` : html`<title>MiniTrooper
 -
 ${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
-${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
+${o.og ? ogTags(o.og) : ""}${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
 ` : ""}<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
 ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="${href}"/>
 `)}
