@@ -37,6 +37,7 @@ interface Calls {
   stuck: [number, number][]; // [idx, performance.now()]
   paused: boolean[]; // mtPaused(paused) calls
   sim: { events: number; complete: boolean; waves: number[]; starts: number[]; at: number }[]; // mtSim calls
+  sfx: [string, string, number][]; // mtSfx(kind, detail, x) calls
   readyAt: number;
 }
 
@@ -68,7 +69,7 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
   await page.evaluate(
     ([u, p, x, o]) => {
       const w = globalThis as any;
-      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], paused: [], sim: [], readyAt: 0 });
+      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], paused: [], sim: [], sfx: [], readyAt: 0 });
       w.mtReady = (r: Ready) => {
         c.ready.push(r);
         c.readyAt = performance.now();
@@ -77,6 +78,7 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
       w.mtEnd = () => c.end.push(performance.now());
       w.mtStuck = (idx: number) => c.stuck.push([idx, performance.now()]);
       w.mtPaused = (b: boolean) => c.paused.push(b);
+      w.mtSfx = (k: string, d: string, x: number) => c.sfx.push([k, d, x]);
       w.mtSim = (x: any) => {
         c.sim.push({ ...x, at: performance.now() });
         if (c.sim.length === 1)
@@ -876,3 +878,51 @@ test("during the simulation: native pause, trooper card, x32, resume+pause and p
     await p.close();
   }
 });
+
+// Sound cues: the display calls mtSfx(kind, detail, x) when it shows an action (README "Sons"); never during a jump
+// (restore, hidden replay) nor with the pause screen open.
+const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty", "fire", "melee", "grenade", "explosion", "jet", "heal", "skill", "charge", "carry", "hit", "crit", "miss", "block", "nodmg", "death", "end"]);
+for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.json.gz"]) {
+  test(`mtSfx: cues while playing, none during jumps nor in the pause (${id})`, { timeout: 300_000 }, async (t) => {
+    if (skip(t)) return;
+    const p = await open(id);
+    try {
+      const total = p.t.record.events.length;
+      await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+      await p.call("mtSpeed", 8);
+      const c = await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= Math.min(60, total - 5) || c.end.length > 0, 300_000, "playback");
+      const sfx = c.sfx;
+      t.diagnostic(`${sfx.length} cues: ${[...new Set(sfx.map(([k, d]) => k + (d ? ":" + d : "")))].sort().join(" ")}`);
+      assert.ok(sfx.length > 0, "cues while playing");
+      for (const [k, d, x] of sfx) {
+        assert.ok(SFX_KINDS.has(k), `kind ${k}`);
+        assert.ok(x >= 0 && x <= 1, `x ${x}`);
+        if (k === "fire" || k === "melee") assert.match(d, /^(\d|[12]\d|3[0-7])$/, `${k} weapon id ${d}`);
+      }
+      assert.ok(sfx.some(([k]) => k === "fire" || k === "melee"), "a shot or a blow");
+      const [nSwf, nPage] = await p.page.evaluate(() => { const w = globalThis as any; return [w.document.getElementById("battle").mtState().sfx, w.__calls.sfx.length]; });
+      assert.equal(nSwf, nPage, "mtState().sfx counts the calls");
+      // jumps both ways, in one JS turn: no cue
+      const during = await p.page.evaluate((n) => {
+        const w = globalThis as any;
+        const e = w.document.getElementById("battle");
+        const n0 = w.__calls.sfx.length;
+        e.mtGoto(3);
+        e.mtGoto(n);
+        e.mtGoto(Math.floor(n / 2));
+        return w.__calls.sfx.length - n0;
+      }, total - 2);
+      assert.equal(during, 0, "no cue during the jumps");
+      await seekDone(p);
+      // the pause screen open: no cue
+      await p.call("mtPause");
+      await p.page.waitForTimeout(400);
+      const n2 = (await p.calls()).sfx.length;
+      await p.page.waitForTimeout(1000);
+      assert.equal((await p.calls()).sfx.length, n2, "no cue in the pause");
+      assert.deepEqual(p.errors, []);
+    } finally {
+      await p.close();
+    }
+  });
+}

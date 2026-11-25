@@ -480,6 +480,43 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
     risquent le tampon détaché (ci-dessous). La page peut afficher son voile tant que `target >= 0` (une image ou deux).
   - Pourcentage : BetterTrooper l'estime (`events / (lignes du journal × 1,1 + 5)`, plafonné à 97 %) ; ici la page
     connaît le nombre exact d'entrées (journal du serveur) : `events / total`.
+- **Sons** (`?v=14`) : le jeu original est muet ; le SWF signale à la page les moments audibles **à l'instant où
+  l'affichage les montre** : `window.mtSfx(kind, detail, x)`, `x` dans [0, 1] (gauche → droite du terrain, 720 px ;
+  0,5 quand l'action n'a pas de trooper). Quatre insertions P-code au début de méthodes d'affichage, qui appellent un
+  helper : `PC_PLAY_SFX_APPLY` (`Game.apply(entrée)` : l'action de l'entrée est créée à cet instant ; un tir part
+  dans le même appel), `PC_PLAY_SFX_HIT` (`§3\x19/\x01§(coup, angle)` du trooper affiché : tout coup reçu, balle,
+  explosion ou corps à corps, à l'image de l'impact), `PC_PLAY_SFX_DIE` (`§\x16mf\x01§()` : sa mort),
+  `PC_PLAY_SFX_BLAST` (`§nEI(\x01§` de la carte : les débris d'une explosion). Jamais hors de l'état 2 (calcul,
+  simulation paresseuse : la logique n'appelle rien), pendant un saut (restauration, rejeu caché : `mtSfxMute`,
+  `mtSeekTo`), `mtSettle`, le pré-chauffage, ni l'écran PAUSE ouvert ; `mtState().sfx` compte les appels.
+  Contrat pour la page (kind : detail) :
+
+  | kind | detail | quand |
+  |---|---|---|
+  | `deploy` | — | entrée 1 : troupes déployées (début de vague) |
+  | `wave` | — | entrée 39 : nouvelle vague |
+  | `move` | — | entrée 11 : un trooper part vers une case |
+  | `switch` | — | entrée 25 : changement d'arme |
+  | `reload` | `start` / `load` | entrées 3 (début du rechargement) / 4 (balles remises) |
+  | `empty` | id d'arme | entrée 5 : arme à sec (en lecture, un changement d'arme suit) |
+  | `fire` | id d'arme | entrée 8 : tir (les impacts suivent dans le même appel : `hit`…) |
+  | `melee` | id d'arme | entrée 9 : coup au contact |
+  | `charge` | id d'arme | entrée 18 : course vers la cible pour la frapper (l'impact vient plus tard : `hit`) |
+  | `carry` | — | entrée 19 : un trooper en emporte un autre |
+  | `grenade` | id de compétence (`SKILL_ROWS` : grenade, flash, gaz…) | entrée 10 : lancer ; l'explosion suit (`explosion`) |
+  | `explosion` | `grenade` / `big` | débris d'explosion : grenade ou roquette (16 éclats), frappe aérienne / avion (20) |
+  | `jet` | — | entrée 21 : passage de l'avion de chasse |
+  | `heal` | — | entrées 12 (soin) et 13 (antidote) |
+  | `skill` | id de compétence | entrées 14, 16, 17 : compétence active, cri, compétence d'équipe |
+  | `hit` | type de coup (0-8) ou `vehicle` | coup qui blesse (sur un véhicule : `vehicle`) |
+  | `crit` | type de coup | coup critique (effet « localisé », texte et à-coup) |
+  | `miss` | `9` | tir manqué (MISS) |
+  | `block` | type de coup | coup paré / esquivé (texte de parade) |
+  | `nodmg` | type de coup | coup sans dégât (armure, gilet) |
+  | `death` | classe du trooper (`5E[\x1d`.`An%6`) | mort, à l'image où il tombe |
+  | `end` | camp vainqueur (`0` gauche, `1` droite) | entrée 34 : fin du combat (la page sait quel camp est le sien) |
+
+  Ids d'arme = index de l'arme (`WEAPON_ROWS` de `@mt/engine`, 0 Poings … 37 Clown, 36 Dents de Rat).
 - **Pause = la pause native** : un clic sur le terrain bascule la pause du Game (`§;y\x1a-§`) : écran de pause
   `§J\b\x17Z\x03§` (instantané du terrain en gris, « PAUSE » qui glisse, fiche d'un trooper sur un clic sur lui ; ses
   tweens dans sa propre liste), `frame()` ne fait plus que l'animer ; la reprise le fait disparaître en fondu.
