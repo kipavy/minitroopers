@@ -20,6 +20,8 @@ export interface HqView {
   /** Battles of the day already fought (oldest first) and the day's total allowance. */
   battles: DayBattle[];
   battleTotal: number;
+  /** Recharge weekend only: the reserve (ready battles, next/previous recharge, recharges still to come, base left). */
+  reserve?: { ready: number; nextAt: number | null; prevAt: number; ahead: number; baseLeft: number };
   /** Seconds until the daily reset. */
   resetIn: number;
   /** Time the page is rendered at (app clock): the weekend event banner. */

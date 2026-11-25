@@ -1,14 +1,15 @@
+import { allowanceOf, dayOverAt } from "../allowance.ts";
 import type { Context, Hono } from "hono";
 import { formBody } from "../form.ts";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
-import { battleAllowance, battleReward, dayKey, rewardMultiplier, host as hostOf, type ArmyRef } from "@mt/game";
+import { battleReward, dayKey, rewardMultiplier, host as hostOf, type ArmyRef } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildBattleInput } from "../battleInput.ts";
 import { cachedBattleLog, type LogLine } from "../battleLog.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeByName, foeOf, type Foe } from "../foes.ts";
-import { armyByHost, armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, dayOver, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
+import { armyByHost, armyById, battleById, battleOfDay, battleOppOfDay, dayOpponents, fight, markSeen, troopersOf, trooperInput, type ArmyRow, type BattleRow, type NewBattle } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle, missingPage } from "../views/army.ts";
@@ -105,7 +106,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       now: t,
       used,
       opp: oppKey,
-      allowance: () => battleAllowance(troopersOf(db, o.army.id).map(trooperInput)),
+      allowance: () => allowanceOf(db, cfg, o.army.id, troopersOf(db, o.army.id).map(trooperInput), t).allowance,
       decide: () => {
         if (byName) {
           const foe = foeByName(db, a.friend);
@@ -166,7 +167,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       // The replay takes the viewer's side (RECON4 §1.2: b_fview_262579954 seen by its defender has attackerSide 1);
       // the stored input is unchanged and the engine does not read attackerSide.
       flashvars: clientParams(battleData(viewerDefends ? { ...b.input, attackerSide: 1 - b.input.attackerSide } : b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && attacker ? armyUrl(cfg, attacker.host, dayOver(db, attacker.id, b.day) ? "/endDay" : `/hq?money=${reward}`) : hq,
+      endUrl: fresh && attacker ? armyUrl(cfg, attacker.host, dayOverAt(db, cfg, attacker.id, now()) ? "/endDay" : `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId,
       // the public page of the battle (the owner's /b/view/batN is private)

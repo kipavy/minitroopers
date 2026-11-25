@@ -1,10 +1,11 @@
+import { dayOverAt } from "../allowance.ts";
 import type { Hono } from "hono";
 import { createHash, randomInt } from "node:crypto";
 import { InvalidBattleInput, battleData, clientParams, simulateOutcome } from "@mt/engine";
 import { RAID_PER_BATTLE, RAID_REWARD, dayKey, npcArmy, raidPower, raidTrooperRange, rewardMultiplier } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { buildModeInput } from "../battleInput.ts";
-import { armyById, dayOver, fightRaid, lastRaidOfDay, markSeen, type NewModeBattle, type RaidRecruit } from "../repo.ts";
+import { armyById, fightRaid, lastRaidOfDay, markSeen, type NewModeBattle, type RaidRecruit } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
 import { armyUrl } from "../urls.ts";
 import { armyTitle } from "../views/army.ts";
@@ -98,7 +99,7 @@ export function registerRaid(pages: Hono<Env>, deps: Deps): void {
       heading: null,
       ...playerData(c, b, armyTitle(o.army.name, o.army.part), ""),
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
+      endUrl: fresh && dayOverAt(db, cfg, o.army.id, now()) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
     };

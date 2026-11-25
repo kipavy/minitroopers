@@ -27,7 +27,13 @@ if (fresh) {
   console.log(`New database: ${created.length} faction armies seeded`);
 }
 const stopJob = startDailyJob(db);
-const app = createApp({ cfg, db }, mountPages({ cfg, db }));
+// NOW (local screenshots only, tools/shots/README.md): the app clock starts at this instant and runs normally.
+const fake = process.env.NOW ? Date.parse(process.env.NOW) : null;
+if (fake !== null && Number.isNaN(fake)) throw new Error(`invalid NOW: ${JSON.stringify(process.env.NOW)}`);
+const started = Date.now();
+const clock = fake === null ? {} : { now: () => fake + (Date.now() - started) };
+if (fake !== null) console.warn(`NOW=${process.env.NOW}: horloge simulée (captures uniquement, jamais en production)`);
+const app = createApp({ cfg, db, ...clock }, mountPages({ cfg, db, ...clock }));
 const server = serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.listenHost }, (i) => {
   console.log(`MiniTroopers server on ${cfg.listenHost}:${i.port} (${cfg.urlMode} mode, ${cfg.publicUrl}, data in ${dataDir})`);
 });

@@ -1,3 +1,4 @@
+import { dayOverAt } from "../allowance.ts";
 import type { Context, Hono } from "hono";
 import type { DatabaseSync } from "node:sqlite";
 import { randomInt } from "node:crypto";
@@ -11,7 +12,7 @@ import { buildModeInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeOf, type Foe } from "../foes.ts";
 import {
-  addNotice, armyById, dayOver, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
+  addNotice, armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
   recruitLeaders, setMissionTarget, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
 } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
@@ -172,7 +173,7 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
       heading: b.mode === "infiltrate" ? `Infiltrer la base de ${defender}` : null,
       ...playerData(c, b, armyTitle(o.army.name, o.army.part), defender),
       flashvars: clientParams(battleData(b.input, ARMY_SWF), { endMsg }),
-      endUrl: fresh && dayOver(db, o.army.id, b.day) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
+      endUrl: fresh && dayOverAt(db, cfg, o.army.id, now()) ? armyUrl(cfg, o.army.host, "/endDay") : fresh && won ? armyUrl(cfg, o.army.host, `/hq?money=${reward}`) : hq,
       back: fresh ? null : hq,
       battleId: `${o.army.id}@${b.id}`,
     };

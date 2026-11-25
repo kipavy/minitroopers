@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { FACTIONS, battleAllowance, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
+import { FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
 import { Data, armyPower, choiceIndexForSkill, defaultLeftOver, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
@@ -470,6 +470,12 @@ export function freezeOpponents<T>(db: DatabaseSync, armyId: number, day: string
  */
 export function battlesUsed(db: DatabaseSync, armyId: number, day: string): number {
   return Number((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'battle'").get(armyId, day) as { n: number }).n);
+}
+
+/** `created_at` of the battles of `day` that count against the allowance (those after an admin `reset-day`), oldest first. */
+export function countedBattleTimes(db: DatabaseSync, armyId: number, day: string): number[] {
+  const rows = db.prepare("SELECT created_at FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'battle' ORDER BY id").all(armyId, day) as { created_at: number }[];
+  return rows.slice(dayResets(db, armyId, day).battles).map((r) => Number(r.created_at));
 }
 
 /** Battles of `day` that count against the allowance: `battlesUsed` minus those fought before an admin `reset-day`. */
@@ -1103,12 +1109,12 @@ export function ranking(db: DatabaseSync, armyId: number): { recruiter: RankRow;
 }
 
 /**
- * Whether `day` is finished for an army: every daily battle fought, the mission done (not unlocked, won or all its tries
+ * Whether `day` is finished for an army: no recharge still coming today (`a.rechargeAhead`), every battle of `a.allowance` fought, the mission done (not unlocked, won or all its tries
  * used) and the raid done (over, or no live recruit). Reached after the last of these actions, it sends the player to /endDay.
  * UNVERIFIED: RECON4 §4 only says "after the last battle available for the day"; mission and raid are our reading.
  */
-export function dayOver(db: DatabaseSync, armyId: number, day: string): boolean {
-  if (battlesCounted(db, armyId, day) < battleAllowance(troopersOf(db, armyId).map(trooperInput))) return false;
+export function dayOver(db: DatabaseSync, armyId: number, day: string, a: { allowance: number; rechargeAhead: boolean }): boolean {
+  if (a.rechargeAhead || battlesCounted(db, armyId, day) < a.allowance) return false;
   const army = armyById(db, armyId);
   const m = missionDay(db, armyId, day);
   if (army?.missionsUnlocked && !m.won && m.used - m.reset < MISSION_ATTEMPTS) return false;

@@ -1,9 +1,10 @@
+import { allowanceOf } from "../allowance.ts";
 import type { Context, Hono } from "hono";
 import type { Html } from "../views/html.ts";
 import { formBody } from "../form.ts";
 import { rateLimited } from "../texts.ts";
 import { armyPower } from "@mt/engine";
-import { battleAllowance, dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
+import { dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
@@ -32,14 +33,16 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
     const troopers = rows.map(trooperInput);
     const t = now();
     const day = dayKey(new Date(t), cfg.tzGame);
+    const al = allowanceOf(db, cfg, army.id, troopers, t);
     // The owner's first visit of the day draws and freezes the mission type; a stranger only sees it.
     const type = o.locked ? (missionDay(db, army.id, day).type ?? missionTypeOf(db, army.id, day)) : freezeMissionType(db, army.id, day, () => missionTypeOf(db, army.id, day));
     return {
       army,
       troopers,
       power: armyPower(troopers),
-      battles: o.locked ? [] : battlesOfDay(db, army.id, day),
-      battleTotal: battleAllowance(troopers),
+      battles: o.locked ? [] : battlesOfDay(db, army.id, day).slice(0, al.base),
+      battleTotal: al.base,
+      ...(al.regen && !o.locked ? { reserve: { ready: al.reserve, nextAt: al.nextAt, prevAt: al.prevAt, ahead: al.ahead, baseLeft: al.baseLeft } } : {}),
       now: t,
       resetIn: Math.max(0, Math.round((nextResetAt(new Date(t), cfg.tzGame).getTime() - t) / 1000)),
       pendingRecruits: pendingRecruits(db, army.id),
