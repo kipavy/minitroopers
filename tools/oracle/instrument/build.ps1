@@ -130,7 +130,10 @@ if ($Play) {
        class = $game.class; rel = $game.rel; sig = $game.sig; trait = $game.trait },
     @{ name = "PC_PLAY_FAST"; class = $game.class; rel = $game.rel
        sig = "      public function ${S}Bl{K\x01${S}() : Boolean"
-       trait = 'trait method QName(PackageNamespace(""),"Bl{K\x01")' }
+       trait = 'trait method QName(PackageNamespace(""),"Bl{K\x01")' },
+    @{ name = "PC_PLAY_TICK"; class = $game.class; rel = $game.rel
+       sig = "      public function ${S}&~\x03'${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"&~\x03\''")' }
   )
 }
 $argLines = New-Object System.Collections.Generic.List[string]

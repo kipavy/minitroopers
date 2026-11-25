@@ -249,6 +249,9 @@ ofs0081:
       public static var mtTotal:int = 0;
       public static var mtCps:Array = [];
       public static var mtWaves:Array = [];
+      // per wave: the history index of its first keyframe (after the NewWave's resolve(): the new wave deployed), where a
+      // jump needs no replay
+      public static var mtStarts:Array = [];
       // index of the Winner entry (BattleMsg 34, not always the last one): the battle has ended once it is applied
       public static var mtWinIdx:int = 0;
       public static var mtSpd:Number = 1;
@@ -468,7 +471,12 @@ ofs0081:
             "hidden":(mtGame != null && !mtGame.§\x011wD§.visible),
             "calls":mtCalls,
             "kf":mtKfs.length,
-            "banner":mtWinner(mtGame) != null
+            "banner":mtWinner(mtGame) != null,
+            "playing":(mtGame != null && int(mtGame.§)\x11\x1d\x0e§.§)-Z\x19\x01§) == 2),
+            "prof":mtProf,
+            "pool":mtPoolN,
+            "waves":mtWaves,
+            "starts":mtStarts
          };
       }
 
@@ -488,6 +496,9 @@ ofs0081:
          var _loc3_:int = 0;
          var _loc4_:int = 0;
          var _loc5_:int = 0;
+         var _loc6_:int = 0;
+         var _loc7_:int = 0;
+         var _loc8_:int = 0;
          if(_loc2_ == null || _loc2_.§w\x0b\x01o\x02§ != null)
          {
             return false;
@@ -500,42 +511,139 @@ ofs0081:
          {
             param1 = mtTotal;
          }
+         // state 1 (waiting for the background image): if it is there, start the playback state now, as the
+         // Game's next frame would
+         if(int(_loc2_.§)\x11\x1d\x0e§.§)-Z\x19\x01§) == 1 && §n#\x07\f§.§*#\x01§.§*M\x01§ != null)
+         {
+            _loc2_.§e\b(C\x03§();
+            _loc2_.§)\x11\x1d\x0e§ = §(\x1ar3§.§c8Y#\x02§;
+         }
          if(int(_loc2_.§)\x11\x1d\x0e§.§)-Z\x19\x01§) != 2)
          {
             mtPend = param1;
             return false;
          }
          mtPend = -1;
+         mtWarmHold = 20;
+         _loc6_ = getTimer();
+         mtPDraw = 0;
+         mtPAdv = 0;
+         mtProfR = [];
          _loc3_ = mtApplied(_loc2_);
          _loc4_ = mtKfs.length - 1;
-         while(_loc4_ > 0 && (int(mtKfs[_loc4_].i) > param1 || int(mtKfs[_loc4_].i) > mtWinIdx))
+         if(param1 > mtWinIdx && _loc3_ <= mtWinIdx && int(mtKfs[mtKfs.length - 1].i) == mtTotal)
          {
-            _loc4_--;
+            // past the Winner entry (the end): the final keyframe, then the Winner applied at once (its application
+            // empties the queue); the panels show the last PlayerStatus before the Winner
+            mtRestore(_loc2_,mtKfs[mtKfs.length - 1],mtWinIdx);
+            _loc2_.apply(mtCopy(mtHist[mtWinIdx]),[]);
+            _loc2_.§\x1e-\x02\x07\x01§ = [];
          }
-         if(_loc3_ > param1 || _loc3_ < int(mtKfs[_loc4_].i))
+         else
          {
-            mtRestore(_loc2_,mtKfs[_loc4_]);
+            while(_loc4_ > 0 && (int(mtKfs[_loc4_].i) > param1 || int(mtKfs[_loc4_].i) > mtWinIdx))
+            {
+               _loc4_--;
+            }
+            if(_loc3_ > param1 || _loc3_ < int(mtKfs[_loc4_].i))
+            {
+               mtRestore(_loc2_,mtKfs[_loc4_]);
+            }
          }
          mtSeekTo = param1;
          mtFast = true;
-         _loc2_.§\x011wD§.visible = false;
          _loc5_ = getTimer();
+         _loc7_ = mtApplied(_loc2_);
          while(mtApplied(_loc2_) < param1 && !mtBlocked(_loc2_) && getTimer() - _loc5_ < 250)
          {
+            if(_loc2_.§\x011wD§.visible)
+            {
+               _loc2_.§\x011wD§.visible = false;
+            }
             mtUnwait(_loc2_);
             mtHurry(_loc2_);
             _loc2_.§k\n/$\x03§();
+            _loc8_++;
          }
-         mtUnpin();
+         mtProf = [_loc5_ - _loc6_,getTimer() - _loc5_,_loc8_,mtApplied(_loc2_) - _loc7_,mtPDraw,mtPAdv].concat(mtProfR);
          if(mtApplied(_loc2_) >= param1 || mtBlocked(_loc2_))
          {
             mtSeekEnd(_loc2_);
          }
          else
          {
+            _loc2_.§\x011wD§.visible = false;
             mtRate();
          }
          return mtSeekTo < 0;
+      }
+
+      // last mtGoto: [restore ms, replay ms, frame() calls, entries replayed, ms rendering clips, ms advancing clips during
+      // the replay, then the restore's sections (mtProfR)]
+      public static var mtProf:Array = [];
+      public static var mtProfR:Array = [];
+      public static var mtPDraw:int = 0;
+      public static var mtPAdv:int = 0;
+
+      // PC_PLAY_TICK: the tick's two clip calls (render all, advance all), timed for mtProf
+      public static function mtClips() : void
+      {
+         var _loc1_:int = getTimer();
+         var _loc2_:int = 0;
+         mtKeep();
+         if(mtSeekTo >= 0 && mtGame != null && !mtGame.§\x011wD§.visible)
+         {
+            mtClipsSeek();
+            mtPDraw += getTimer() - _loc1_;
+            return;
+         }
+         §`\x0b\x01§.§\tnP+§.§;io&§.§i'\x04W\x02§();
+         _loc2_ = getTimer();
+         mtPDraw += _loc2_ - _loc1_;
+         §`\x0b\x01§.§\tnP+§.§;io&§.§?d0r\x01§();
+         mtPAdv += getTimer() - _loc2_;
+      }
+
+      // Hidden replay: the same render-all then advance-all, but the clips of idle troopers whose animation loops or is
+      // over (standing, lying, held poses) are left as they are: nothing waits on them and they are not shown; they
+      // resume with the playback. The troopers the replayed entries animate are not idle.
+      public static function mtClipsSeek() : void
+      {
+         var _loc1_:Dictionary = new Dictionary();
+         var _loc2_:Array = mtGame.§`1\x1f*\x02§;
+         var _loc3_:int = 0;
+         var _loc4_:* = null;
+         var _loc5_:* = null;
+         while(_loc3_ < _loc2_.length)
+         {
+            _loc4_ = _loc2_[_loc3_];
+            _loc3_++;
+            _loc5_ = _loc4_.§\x05\x03\x1a\x01§;
+            if(_loc5_ != null && _loc4_.§\x10\x1e\x01§ != null && (!_loc5_.§,\x0ew^\x01§ || _loc5_.§Yx\x02V\x01§) && _loc4_.§\x01|fz\x01§())
+            {
+               _loc1_[_loc4_.§\x10\x1e\x01§] = true;
+            }
+         }
+         _loc4_ = §`\x0b\x01§.§\tnP+§.§;io&§.§kwVg\x02§.§C{+N§;
+         while(_loc4_ != null)
+         {
+            _loc5_ = _loc4_.§)\x1e;\x01§;
+            _loc4_ = _loc4_.§|Icg§;
+            if(_loc1_[_loc5_] !== true)
+            {
+               _loc5_.§c+,Y§();
+            }
+         }
+         _loc4_ = §`\x0b\x01§.§\tnP+§.§;io&§.§kwVg\x02§.§C{+N§;
+         while(_loc4_ != null)
+         {
+            _loc5_ = _loc4_.§)\x1e;\x01§;
+            _loc4_ = _loc4_.§|Icg§;
+            if(_loc1_[_loc5_] !== true)
+            {
+               _loc5_.§;a/P\x03§();
+            }
+         }
       }
 
       // the Winner action (BattleMsg 34) still running, if any
@@ -638,6 +746,10 @@ ofs0081:
          param1.§\x1e-\x02\x07\x01§ = mtQueue(0);
          mtPend = -1;
          mtStop = -1;
+         mtPool = new Dictionary();
+         mtWarmP = 0;
+         mtWarmAt = 0;
+         mtWarmK = 0;
          mtCps = [];
          mtWaves = [];
          mtWinIdx = mtTotal - 1;
@@ -693,10 +805,24 @@ ofs0081:
          // state 1 waits for the background image: still no state-2 frame after 10 s -> stuck
          mtInitAt = new Date().time;
          setTimeout(mtWaitCheck,10000,param1);
+         mtShown();
+         mtStarts = [];
+         _loc3_ = 0;
+         while(_loc3_ < mtWaves.length)
+         {
+            _loc4_ = 0;
+            while(_loc4_ < mtKfs.length && int(mtKfs[_loc4_].i) <= int(mtWaves[_loc3_]))
+            {
+               _loc4_++;
+            }
+            mtStarts.push(_loc4_ < mtKfs.length ? int(mtKfs[_loc4_].i) : int(mtWaves[_loc3_]));
+            _loc3_++;
+         }
          mtOut("mtReady",[{
             "total":mtTotal,
             "checkpoints":mtCps,
-            "waves":mtWaves
+            "waves":mtWaves,
+            "starts":mtStarts
          }]);
       }
 
@@ -735,6 +861,19 @@ ofs0081:
          else if(_loc5_ > 100)
          {
             _loc5_ = 100;
+         }
+         // pre-warming: one trooper per frame while paused, one every 4 frames while playing; none for 20 frames after a
+         // jump (its frames are being drawn)
+         if(mtPend < 0 && mtSeekTo < 0 && mtWarmP < 2)
+         {
+            if(mtWarmHold > 0)
+            {
+               mtWarmHold--;
+            }
+            else if(mtPaused || ++mtWarmTick % 4 == 0)
+            {
+               mtWarm();
+            }
          }
          if(mtPend >= 0)
          {
@@ -813,7 +952,14 @@ ofs0081:
          mtSeekTo = -1;
          mtFast = mtSpd >= 8;
          mtAcc = 0;
-         param1.§\x011wD§.visible = true;
+         // mtHurry may have raised the clock's high-water mark past the clock: back to it, or the clock widget would
+         // show its catch-up colours
+         param1.§|H6s\x03§ = param1.§uN\x0ed§;
+         param1.§I\x06ax\x03§ = null;
+         if(!param1.§\x011wD§.visible)
+         {
+            param1.§\x011wD§.visible = true;
+         }
          mtRate();
          if(mtApplied(param1) <= mtWinIdx)
          {
@@ -827,7 +973,36 @@ ofs0081:
       // --- keyframes. PC_PLAY_KF: called after each Battle.resolve() of the Game's state 0. Read-only: it only reads
       // the history and the troopers (getInfos(): new objects built from their fields, no random draw, no write).
       // A keyframe every 4 entries at least (resolve() steps add several at once) and after each NewWave (39).
+      // Never throws into the Game's state 0: on an error, keyframes stop for this battle (only the empty one at 0 is
+      // kept, so jumps replay from the start) and the battle goes on as computed.
+      public static var mtKfOff:* = null;
+
       public static function mtKf(param1:§P!L/\x02§.§\x0b\x0eNO§) : void
+      {
+         if(mtKfOff === param1)
+         {
+            return;
+         }
+         try
+         {
+            mtKfBody(param1);
+         }
+         catch(_loc_e_:*)
+         {
+            mtKfOff = param1;
+            mtKfB = param1;
+            mtKfs = [{
+               "i":0,
+               "t":[],
+               "x":[],
+               "d":[],
+               "dx":[],
+               "g":[]
+            }];
+         }
+      }
+
+      public static function mtKfBody(param1:§P!L/\x02§.§\x0b\x0eNO§) : void
       {
          var _loc2_:Array = param1.§7\x13JZ\x03§;
          var _loc3_:Boolean = false;
@@ -892,7 +1067,7 @@ ofs0081:
             }
             _loc4_++;
          }
-         if(_loc2_.length - mtKfN >= 4 || _loc3_ && _loc2_.length > mtKfN)
+         if((_loc2_.length - mtKfN >= 4 || _loc3_ || param1.§\x1e1\\J\x01§ != null) && _loc2_.length > mtKfN)
          {
             mtKfN = _loc2_.length;
             mtKfs.push(mtKfTake(param1,mtKfN));
@@ -963,6 +1138,204 @@ ofs0081:
          if(_loc7_)
          {
             mtFly(param1["7\x02@d\x02"],param2,param3 + 1);
+         }
+      }
+
+      // The display keeps statuses, wounds and the "healed" flag of its own, which the logic's do not always match (a
+      // display trooper keeps the wounds of a heal and the statuses no entry removed, the logic does not; the logic can
+      // hold a status no entry showed). mtShown replays them from the history up to each keyframe, by the display's own
+      // rules, and puts them in the keyframes' extras (x and dx, fields 1-3):
+      // - statuses: added by BattleMsg 22 (its tid) and by hit effect 12, removed by 23 (its tid) and by 13 (antidote:
+      //   POISON off its target);
+      // - wounds: the body location of every hit whose damage is > 0 and type not MISS (9);
+      // - healed: BattleMsg 12 (heal: its target), 17 with skill 77 (team heal: its ids), 14 with skill 90 (its hits'
+      //   targets). A hit's effects after a weapon caught (6) or a hit passed on (5) are not applied (the display returns).
+      public static function mtShown() : void
+      {
+         var _loc1_:Dictionary = new Dictionary();
+         var _loc2_:int = 0;
+         var _loc3_:int = 0;
+         var _loc4_:* = null;
+         var _loc5_:int = 0;
+         var _loc6_:Array = null;
+         var _loc7_:Array = null;
+         var _loc8_:int = 0;
+         var _loc9_:* = null;
+         var _loc10_:* = null;
+         var _loc11_:int = 0;
+         var _loc12_:* = null;
+         while(_loc2_ <= mtHist.length)
+         {
+            while(_loc3_ < mtKfs.length && int(mtKfs[_loc3_].i) == _loc2_)
+            {
+               mtShownKf(mtKfs[_loc3_],_loc1_);
+               _loc3_++;
+            }
+            if(_loc2_ == mtHist.length)
+            {
+               break;
+            }
+            _loc4_ = mtHist[_loc2_]["An%6"];
+            _loc5_ = int(_loc4_[")-Z\x19\x01"]);
+            _loc6_ = _loc4_["7\x02@d\x02"];
+            _loc8_ = int(mtHist[_loc2_]["\x1e,d\x01"]);
+            if(_loc5_ == 22)
+            {
+               mtSt(_loc1_,_loc8_,_loc6_[0],true);
+            }
+            else if(_loc5_ == 23)
+            {
+               mtSt(_loc1_,_loc8_,_loc6_[0],false);
+            }
+            else if(_loc5_ == 13)
+            {
+               mtSt(_loc1_,int(_loc6_[0]),§q\x18\tv\x02§.§;GG(\x02§,false);
+            }
+            else if(_loc5_ == 12)
+            {
+               mtSh(_loc1_,int(_loc6_[0])).h = true;
+            }
+            else if(_loc5_ == 17 && int(_loc6_[0][")-Z\x19\x01"]) == 77)
+            {
+               _loc11_ = 0;
+               while(_loc11_ < _loc6_[1].length)
+               {
+                  mtSh(_loc1_,int(_loc6_[1][_loc11_])).h = true;
+                  _loc11_++;
+               }
+            }
+            _loc7_ = [];
+            mtHits(_loc6_,_loc7_,0);
+            _loc11_ = 0;
+            while(_loc11_ < _loc7_.length)
+            {
+               _loc9_ = _loc7_[_loc11_];
+               _loc11_++;
+               _loc12_ = mtSh(_loc1_,int(_loc9_["\x1e,d\x01"]));
+               if(_loc5_ == 14 && int(_loc6_[0][")-Z\x19\x01"]) == 90)
+               {
+                  _loc12_.h = true;
+               }
+               if(_loc9_["\x02\x127\x01"] != null && int(_loc9_["w;\t'\x02"]) > 0 && int(_loc9_["An%6"][")-Z\x19\x01"]) != 9)
+               {
+                  _loc12_.j.push(_loc9_["\x02\x127\x01"]);
+               }
+               _loc10_ = _loc9_["iE!m\x02"];
+               _loc8_ = 0;
+               while(_loc10_ != null && _loc8_ < _loc10_.length)
+               {
+                  // the display stops at a weapon caught (6) or a hit passed on (5, the nested hit counts as a hit)
+                  if(_loc10_[_loc8_] != null && (int(_loc10_[_loc8_][")-Z\x19\x01"]) == 5 || int(_loc10_[_loc8_][")-Z\x19\x01"]) == 6))
+                  {
+                     break;
+                  }
+                  if(_loc10_[_loc8_] != null && int(_loc10_[_loc8_][")-Z\x19\x01"]) == 12)
+                  {
+                     mtSt(_loc1_,int(_loc9_["\x1e,d\x01"]),_loc10_[_loc8_]["7\x02@d\x02"][0],true);
+                  }
+                  _loc8_++;
+               }
+            }
+            _loc2_++;
+         }
+      }
+
+      // display state of trooper param2: {s: statuses, j: wounds, h: healed}
+      public static function mtSh(param1:Dictionary, param2:int) : Object
+      {
+         if(param1[param2] == null)
+         {
+            param1[param2] = {
+               "s":[],
+               "j":[],
+               "h":false
+            };
+         }
+         return param1[param2];
+      }
+
+      public static function mtSt(param1:Dictionary, param2:int, param3:*, param4:Boolean) : void
+      {
+         var _loc5_:Array = mtSh(param1,param2).s;
+         var _loc6_:int = _loc5_.indexOf(param3);
+         if(param4 && _loc6_ < 0)
+         {
+            _loc5_.push(param3);
+         }
+         else if(!param4 && _loc6_ >= 0)
+         {
+            _loc5_.splice(_loc6_,1);
+         }
+      }
+
+      public static function mtShownKf(param1:Object, param2:Dictionary) : void
+      {
+         var _loc3_:int = 0;
+         var _loc4_:Object = null;
+         while(_loc3_ < param1.t.length)
+         {
+            _loc4_ = mtSh(param2,int(param1.t[_loc3_]["5E[\x1d"]["7X\x01"]));
+            param1.x[_loc3_][1] = _loc4_.s.concat();
+            param1.x[_loc3_][2] = _loc4_.j.concat();
+            param1.x[_loc3_][3] = _loc4_.h;
+            _loc3_++;
+         }
+         _loc3_ = 0;
+         while(_loc3_ < param1.d.length)
+         {
+            _loc4_ = mtSh(param2,int(param1.d[_loc3_]["5E[\x1d"]["7X\x01"]));
+            param1.dx[_loc3_][1] = _loc4_.s.concat();
+            param1.dx[_loc3_][2] = _loc4_.j.concat();
+            param1.dx[_loc3_][3] = _loc4_.h;
+            _loc3_++;
+         }
+      }
+
+      // the hits (plain objects with a tid "\x1e,d\x01" and effects "iE!m\x02") in param1, nested ones included
+      public static function mtHits(param1:*, param2:Array, param3:int) : void
+      {
+         var _loc4_:int = 0;
+         var _loc5_:* = null;
+         var _loc6_:Boolean = false;
+         if(param1 === null || param1 === undefined || param3 > 8 || param1 is String || param1 is Number || param1 is Boolean)
+         {
+            return;
+         }
+         if(param1 is Array)
+         {
+            while(_loc4_ < param1.length)
+            {
+               mtHits(param1[_loc4_],param2,param3 + 1);
+               _loc4_++;
+            }
+            return;
+         }
+         if(getQualifiedClassName(param1) == "Object")
+         {
+            if(param1["\x1e,d\x01"] != null && param1["iE!m\x02"] is Array)
+            {
+               param2.push(param1);
+            }
+            for(_loc5_ in param1)
+            {
+               if(_loc5_ != "5E[\x1d")
+               {
+                  mtHits(param1[_loc5_],param2,param3 + 1);
+               }
+            }
+            return;
+         }
+         try
+         {
+            _loc6_ = param1.__enum__ === true && param1["7\x02@d\x02"] != null;
+         }
+         catch(_loc_e_:*)
+         {
+            _loc6_ = false;
+         }
+         if(_loc6_)
+         {
+            mtHits(param1["7\x02@d\x02"],param2,param3 + 1);
          }
       }
 
@@ -1126,7 +1499,7 @@ ofs0081:
       // infos as the CheckPoint rebuild (§;`b\x1c\x02§) does for absent ones; then the extra state (statuses, wounds,
       // poses, vehicle hp), this wave's dead, weapons on the ground and the side panels (last PlayerStatus of each side
       // before the keyframe).
-      public static function mtRestore(param1:§Q\btf§, param2:Object) : void
+      public static function mtRestore(param1:§Q\btf§, param2:Object, param3:int = -1) : void
       {
          var _loc3_:Array = null;
          var _loc4_:int = 0;
@@ -1135,6 +1508,9 @@ ofs0081:
          var _loc7_:Array = null;
          var _loc8_:int = 0;
          var _loc9_:int = int(param2.i);
+         var _loc10_:int = getTimer();
+         var _loc11_:int = 0;
+         var _loc12_:Dictionary = new Dictionary();
          if(param1.§^h'l\x02§ != null)
          {
             param1.§^h'l\x02§.aGx2();
@@ -1191,14 +1567,13 @@ ofs0081:
          {
             _loc5_ = _loc3_[_loc4_];
             _loc6_ = mtInfo(param2.t,int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]));
-            if(_loc6_ != null && mtReusable(_loc5_,_loc6_))
+            if(_loc6_ != null && mtReusable(_loc5_,_loc6_) || _loc5_.§Qg}\x07§ && !_loc5_.§\x06TY0§ && _loc5_.§n*L%\x01§ == null && mtSameBody(_loc5_,mtInfo(param2.d,int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]))))
             {
                _loc7_.push(_loc5_);
             }
             else
             {
-               mtPin(_loc5_);
-               _loc5_.aGx2();
+               mtStash(_loc5_);
             }
             _loc4_++;
          }
@@ -1224,12 +1599,18 @@ ofs0081:
          }
          param1.§F;R\x12\x01§.§\x1fs\x0ev§ = _loc7_.concat();
          param1.§HUgt\x03§ = false;
-         param1.§F;R\x12\x01§.§\x011wD§.transform.colorTransform = new ColorTransform();
-         param1.§-\x05p,\x03§.alpha = 1;
+         mtCt(param1.§F;R\x12\x01§.§\x011wD§);
+         if(param1.§-\x05p,\x03§.alpha != 1)
+         {
+            param1.§-\x05p,\x03§.alpha = 1;
+         }
          _loc4_ = 0;
          while(_loc4_ < param1.§a]e\x1b\x02§.length)
          {
-            param1.§a]e\x1b\x02§[_loc4_].§$*w\x01§.alpha = 1;
+            if(param1.§a]e\x1b\x02§[_loc4_].§$*w\x01§.alpha != 1)
+            {
+               param1.§a]e\x1b\x02§[_loc4_].§$*w\x01§.alpha = 1;
+            }
             _loc4_++;
          }
          _loc4_ = _loc9_ > 0 ? int(mtHist[_loc9_ - 1]["uN\x0ed"]) : 0;
@@ -1238,6 +1619,8 @@ ofs0081:
          param1.§\x02^\x10}\x03§ = 0;
          param1.§I\x06ax\x03§ = null;
          param1.§\x1e-\x02\x07\x01§ = mtQueue(_loc9_);
+         mtProfR.push(getTimer() - _loc10_);
+         _loc10_ = getTimer();
          _loc3_ = mtCopy(param2.t);
          _loc4_ = 0;
          while(_loc4_ < _loc3_.length)
@@ -1245,24 +1628,52 @@ ofs0081:
             _loc5_ = param1.§;|^W§(int(_loc3_[_loc4_]["5E[\x1d"]["7X\x01"]));
             if(_loc5_ != null)
             {
-               mtReuse(_loc5_,_loc3_[_loc4_]);
+               mtReuse(_loc5_,_loc3_[_loc4_],param2.x[_loc4_]);
+               _loc12_[_loc5_] = true;
             }
             else
             {
-               param1.§y#;B\x01§(_loc3_[_loc4_]);
+               _loc5_ = mtUnstash(int(_loc3_[_loc4_]["5E[\x1d"]["7X\x01"]),_loc3_[_loc4_],false);
+               if(_loc5_ != null)
+               {
+                  mtReuse(_loc5_,_loc3_[_loc4_],param2.x[_loc4_]);
+                  _loc12_[_loc5_] = true;
+               }
+               else
+               {
+                  param1.§y#;B\x01§(_loc3_[_loc4_]);
+                  _loc11_++;
+               }
             }
             _loc4_++;
          }
          param1.§F;R\x12\x01§.§qp[q\x02§();
+         mtProfR.push(getTimer() - _loc10_,_loc11_,_loc3_.length - _loc11_);
+         _loc10_ = getTimer();
          _loc4_ = 0;
          while(_loc4_ < param2.x.length)
          {
-            mtExtra(param1.§;|^W§(int(param2.t[_loc4_]["5E[\x1d"]["7X\x01"])),param2.x[_loc4_]);
+            _loc5_ = param1.§;|^W§(int(param2.t[_loc4_]["5E[\x1d"]["7X\x01"]));
+            mtExtra(_loc5_,param2.x[_loc4_],true,_loc12_[_loc5_] !== true);
             _loc4_++;
          }
+         mtProfR.push(getTimer() - _loc10_);
+         _loc10_ = getTimer();
          _loc4_ = 0;
          while(_loc4_ < param2.d.length)
          {
+            if(param1.§;|^W§(int(param2.d[_loc4_]["5E[\x1d"]["7X\x01"])) != null)
+            {
+               _loc4_++;
+               continue;
+            }
+            _loc5_ = mtUnstash(int(param2.d[_loc4_]["5E[\x1d"]["7X\x01"]),param2.d[_loc4_],true);
+            if(_loc5_ != null)
+            {
+               mtExtra(_loc5_,param2.dx[_loc4_],false);
+               _loc4_++;
+               continue;
+            }
             _loc5_ = param1.§y#;B\x01§(mtCopy(param2.d[_loc4_]));
             mtExtra(_loc5_,param2.dx[_loc4_],false);
             _loc5_.§\x16mf\x01§();
@@ -1270,6 +1681,8 @@ ofs0081:
             mtFf(_loc5_);
             _loc4_++;
          }
+         mtProfR.push(getTimer() - _loc10_,param2.d.length);
+         _loc10_ = getTimer();
          _loc4_ = 0;
          while(_loc4_ < param2.g.length)
          {
@@ -1285,7 +1698,7 @@ ofs0081:
          while(_loc4_ < param1.§a]e\x1b\x02§.length)
          {
             _loc5_ = null;
-            _loc8_ = _loc9_ - 1;
+            _loc8_ = (param3 >= 0 && param3 < _loc9_ ? param3 : _loc9_) - 1;
             while(_loc8_ >= 0)
             {
                _loc6_ = mtHist[_loc8_]["An%6"];
@@ -1299,51 +1712,216 @@ ofs0081:
             mtPanel(param1.§a]e\x1b\x02§[_loc4_],_loc5_);
             _loc4_++;
          }
+         mtProfR.push(getTimer() - _loc10_);
       }
 
       // The animation clips of the troopers share pre-rendered frames by skin (§;io&§.§n6?\f\x02§, reference counted,
-      // disposed when the count falls to 0). The troopers a restore destroys hold their skins' frames (mtPin) until the
-      // end of the next jump (mtUnpin releases the previous jump's pins), so that the troopers recreated with the same
-      // skins, now or on a jump back, do not render them again: at most two scenes' skins are kept this way.
-      public static var mtPins:Array = [];
-      public static var mtPinsOld:Array = [];
-
-      public static function mtPin(param1:*) : void
+      // disposed when the count falls to 0 unless their keep flag §\x10)L\x13\x02§ is set). mtKeep sets that flag on the
+      // skin of every trooper on the field (each tick, mtClips): a skin is rendered once per battle, a restore that
+      // recreates a trooper finds its frames ready.
+      public static function mtKeep() : void
       {
-         var _loc2_:* = param1.§\x05\x03\x1a\x01§ == null ? null : param1.§\x05\x03\x1a\x01§.§=q2\x0e\x01§;
-         if(_loc2_ != null)
+         var _loc1_:Array = mtGame == null ? null : mtGame.§`1\x1f*\x02§;
+         var _loc2_:int = 0;
+         var _loc3_:* = null;
+         if(_loc1_ == null)
          {
-            _loc2_.§exe*\x02§++;
-            mtPins.push(_loc2_);
+            return;
+         }
+         while(_loc2_ < _loc1_.length)
+         {
+            _loc3_ = _loc1_[_loc2_].§\x05\x03\x1a\x01§;
+            _loc2_++;
+            if(_loc3_ != null && _loc3_.§=q2\x0e\x01§ != null)
+            {
+               _loc3_.§=q2\x0e\x01§.§\x10)L\x13\x02§ = true;
+            }
          }
       }
 
-      public static function mtUnpin() : void
+      // Pool of display troopers taken off the field by restores (id -> trooper): detached from the scene, the troopers'
+      // list, the particles and the clips the Game advances and renders, otherwise intact (skin, clips). A later restore
+      // that needs the same trooper reattaches it (mtUnstash) and resets it with mtReuse, or keeps it as a body, instead
+      // of creating one (building a skin is the costly part of a restore). Leader
+      // markers are hidden meanwhile (mtMark); fading troopers are destroyed as before.
+      public static var mtPool:Dictionary = new Dictionary();
+      // [stashed, reattached, destroyed instead of stashed, pooled but unusable]
+      public static var mtPoolN:Array = [0,0,0,0];
+
+      public static function mtStash(param1:*) : void
       {
-         var _loc1_:* = null;
-         var _loc2_:int = 0;
-         var _loc3_:Array = mtPinsOld;
-         mtPinsOld = mtPins;
-         mtPins = [];
-         while(_loc3_.length > 0)
+         var _loc2_:int = int(param1.§;\f\x01§.§5E[\x1d§["7X\x01"]);
+         var _loc3_:Array = mtPool[_loc2_];
+         if(param1.§n*L%\x01§ != null || param1.§\x06TY0§ || param1.§\x10\x1e\x01§ == null || _loc3_ != null && _loc3_.length >= 4)
          {
-            _loc1_ = _loc3_.pop();
-            _loc1_.§exe*\x02§--;
-            if(_loc1_.§exe*\x02§ > 0 || _loc1_.§\x10)L\x13\x02§)
+            mtPoolN[2]++;
+            param1.aGx2();
+            return;
+         }
+         if(_loc3_ == null)
+         {
+            _loc3_ = mtPool[_loc2_] = [];
+         }
+         mtGame.§`1\x1f*\x02§.§fl@@\x02§(param1);
+         mtGame.§F;R\x12\x01§.§\x1fs\x0ev§.§fl@@\x02§(param1);
+         if(param1.§\x011wD§.parent != null)
+         {
+            param1.§\x011wD§.parent.removeChild(param1.§\x011wD§);
+         }
+         if(param1.§\x0b\x19@@\x02§ != null && param1.§\x0b\x19@@\x02§.parent != null)
+         {
+            param1.§\x0b\x19@@\x02§.parent.removeChild(param1.§\x0b\x19@@\x02§);
+         }
+         param1.§\x10\x1e\x01§.§\x07\x03=D§(true);
+         mtMark(param1,false);
+         _loc3_.push(param1);
+         mtPoolN[0]++;
+      }
+
+      // shows or hides the leader marker of trooper param1, if it has one (§*\x17Z\x10§: one sprite per marked trooper,
+      // moved by a singleton tween that drops the destroyed troopers' ones)
+      public static function mtMark(param1:*, param2:Boolean) : void
+      {
+         var _loc3_:Array = §{DEL}\f\x01§.§*\x17Z\x10§.§\x02sF^§;
+         var _loc4_:int = 0;
+         if(!param1.§\x1c(h7\x03§ || _loc3_ == null)
+         {
+            return;
+         }
+         while(_loc4_ < _loc3_.length)
+         {
+            if(_loc3_[_loc4_]["{DEL}(\x01"] === param1)
+            {
+               _loc3_[_loc4_]["r\x01\x02"].visible = param2;
+            }
+            _loc4_++;
+         }
+      }
+
+      // a body (display trooper) is the one of keyframe info param2 if it holds the same first weapon (an id can come
+      // back in a later wave as another trooper)
+      public static function mtSameBody(param1:*, param2:Object) : Boolean
+      {
+         var _loc3_:Array = param1.§\x1dI\x02\r\x03§;
+         var _loc4_:Array = param2 == null ? null : param2["\x1dI\x02\r\x03"];
+         if(_loc4_ == null || _loc3_ == null)
+         {
+            return false;
+         }
+         if(_loc3_.length == 0 || _loc4_.length == 0)
+         {
+            return _loc3_.length == _loc4_.length;
+         }
+         return int(_loc3_[0]["7X\x01"]) == int(_loc4_[0]["7X\x01"]);
+      }
+
+      // the pooled trooper of id param1 that can stand for keyframe info param2 (mtReusable) or, param3, for a body; null
+      // if none
+      public static function mtFind(param1:int, param2:Object, param3:Boolean) : *
+      {
+         var _loc4_:Array = mtPool[param1];
+         var _loc5_:int = 0;
+         if(_loc4_ == null)
+         {
+            return null;
+         }
+         while(_loc5_ < _loc4_.length)
+         {
+            if(param3 ? _loc4_[_loc5_].§Qg}\x07§ && (param2 == null || mtSameBody(_loc4_[_loc5_],param2)) : mtReusable(_loc4_[_loc5_],param2))
+            {
+               return _loc4_[_loc5_];
+            }
+            _loc5_++;
+         }
+         return null;
+      }
+
+      // that pooled trooper back on the field, or null
+      public static function mtUnstash(param1:int, param2:Object, param3:Boolean) : *
+      {
+         var _loc4_:* = mtFind(param1,param2,param3);
+         if(_loc4_ == null)
+         {
+            if(mtPool[param1] != null)
+            {
+               mtPoolN[3]++;
+            }
+            return null;
+         }
+         mtPool[param1].§fl@@\x02§(_loc4_);
+         §n#\x07\f§.§*#\x01§.§7q\x01§.§\x10Gv\x01§(_loc4_.§\x011wD§,§n#\x07\f§.§o?G\x19§);
+         if(_loc4_.§\x0b\x19@@\x02§ != null)
+         {
+            §n#\x07\f§.§*#\x01§.§l\x04^%\x03§.addChild(_loc4_.§\x0b\x19@@\x02§);
+         }
+         mtGame.§F;R\x12\x01§.§\x1fs\x0ev§.push(_loc4_);
+         mtGame.§`1\x1f*\x02§.push(_loc4_);
+         _loc4_.§\x10\x1e\x01§.§\x07\x03=D§(false);
+         mtMark(_loc4_,true);
+         mtPoolN[1]++;
+         _loc4_.rMm8();
+         return _loc4_;
+      }
+
+      // Pre-warming (mtFrame): the troopers and bodies of the keyframes (one per (id, held weapon), one body per id, that
+      // the pool lacks), the wave starts, wave ends and the end first, created off the field and stashed in the same call (never drawn), so that a first jump finds them in
+      // the pool. mtWarmP: pass (0 troopers, 1 bodies, 2 done), mtWarmAt: keyframe, mtWarmK: index in it.
+      public static var mtWarmP:int = 0;
+      public static var mtWarmAt:int = 0;
+      public static var mtWarmK:int = 0;
+      public static var mtWarmTick:int = 0;
+      public static var mtWarmHold:int = 0;
+
+      // creates at most one trooper; false once everything is warm
+      public static function mtWarm() : Boolean
+      {
+         var _loc1_:Object = null;
+         var _loc2_:Array = null;
+         var _loc3_:Object = null;
+         var _loc5_:* = null;
+         var _loc6_:int = 0;
+         var _loc7_:Boolean = false;
+         while(mtWarmP < 2)
+         {
+            if(mtWarmAt >= mtKfs.length)
+            {
+               mtWarmP++;
+               mtWarmAt = 0;
+               mtWarmK = 0;
+               continue;
+            }
+            _loc1_ = mtKfs[mtWarmAt];
+            // pass 0: the wave starts, the keyframes just before each NewWave and the final one; pass 1: all
+            if(mtWarmK >= _loc1_.t.length + _loc1_.d.length || mtWarmP == 0 && !(mtWarmAt == mtKfs.length - 1 || mtStarts.indexOf(int(_loc1_.i)) >= 0 || mtWarmAt + 1 < mtKfs.length && mtStarts.indexOf(int(mtKfs[mtWarmAt + 1].i)) >= 0))
+            {
+               mtWarmAt++;
+               mtWarmK = 0;
+               continue;
+            }
+            _loc6_ = mtWarmK++;
+            _loc7_ = _loc6_ >= _loc1_.t.length;
+            if(_loc7_)
+            {
+               _loc6_ -= _loc1_.t.length;
+            }
+            _loc3_ = (_loc7_ ? _loc1_.d : _loc1_.t)[_loc6_];
+            _loc5_ = int(_loc3_["5E[\x1d"]["7X\x01"]);
+            if(_loc7_ ? mtFind(_loc5_,_loc3_,true) != null : mtFind(_loc5_,_loc3_,false) != null || mtGame.§;|^W§(_loc5_) != null && mtReusable(mtGame.§;|^W§(_loc5_),_loc3_))
             {
                continue;
             }
-            _loc2_ = 0;
-            while(_loc2_ < _loc1_.§\x1a\b\x116\x02§.length)
+            _loc5_ = mtGame.§y#;B\x01§(mtCopy(_loc3_));
+            if(_loc7_)
             {
-               if(_loc1_.§\x1a\b\x116\x02§[_loc2_] != null)
-               {
-                  _loc1_.§\x1a\b\x116\x02§[_loc2_].§UK\r\x01§.dispose();
-               }
-               _loc2_++;
+               mtExtra(_loc5_,_loc1_.dx[_loc6_],false);
+               _loc5_.§\x16mf\x01§();
+               _loc5_.§PNcV\x01§(int(_loc1_.dx[_loc6_][0]) == 4 ? §/U3W§.§ohzk\x03§ : §/U3W§.§?u{T\x01§);
+               mtFf(_loc5_);
             }
-            _loc1_.§\x1a\b\x116\x02§ = [];
+            mtStash(_loc5_);
+            return true;
          }
+         return false;
       }
 
       // the keyframe info of trooper id param2, if any
@@ -1369,21 +1947,26 @@ ofs0081:
          return !param1.§Qg}\x07§ && !param1.§\x06TY0§ && param1.§n*L%\x01§ == null && param1.§W\x19\x1bT\x03§ == null && param2["(\t\x01"] == null && param1.§\x10\x1e\x01§ != null && param1.§5\tmF§ != null && param1.§5\tmF§["An%6"] == param2["m\x0e\x01"] && param1.§9\x118u§ == int(param2["9\x118u"]);
       }
 
-      // A reused trooper as §y#;B\x01§(info) creates one: info fields (§\x17;!\x01§ without the skin rebuild), standing,
-      // default facing of its side, no status, wound, label, shake, speed, colour effect or effect sprite left.
-      public static function mtReuse(param1:*, param2:Object) : void
+      // A reused trooper as §y#;B\x01§(info) and mtExtra(x) leave a new one: info fields (§\x17;!\x01§ without the skin
+      // rebuild), keyframe statuses, wounds, healed, default facing of its side, standing (or its held pose: mtExtra), no
+      // label, shake, speed, colour effect or effect sprite left. Display properties are written only when they differ
+      // (a write makes Ruffle render the object and its filters again); the skin is recoloured (§)&v\x07\x03§) only when
+      // one of its inputs changed.
+      public static function mtReuse(param1:*, param2:Object, param3:Array) : void
       {
          var _loc3_:* = null;
          var _loc4_:int = 0;
+         var _loc5_:Boolean = false;
          param1.§'~i\x17\x03§();
          param1.§\x07\x15np\x02§ = false;
+         _loc5_ = param1.§(\x1f\x15F\x01§ != Boolean(param2["(\x1f\x15F\x01"]) || mtStr(param1.§\x13fT$\x03§) != mtStr(param3[1]) || mtStr(param1.§3\x12\x06c\x03§) != mtStr(param3[2]) || param1.§XEC3\x03§ != param3[3] || param1.§j^\n\x04\x01§ || param1.§\x1c\x11_F\x03§;
          param1.§(\x1f\x15F\x01§ = Boolean(param2["(\x1f\x15F\x01"]);
          param1.§\x12?g-§ = int(param2["\x12?g-"]);
          param1.§\x17\\tX§(param2["\x1dI\x02\r\x03"]);
          param1.§5\tmF§ = param1.§RH|(§(param2["m\x0e\x01"]);
-         param1.§\x13fT$\x03§ = [];
-         param1.§3\x12\x06c\x03§ = [];
-         param1.§XEC3\x03§ = false;
+         param1.§\x13fT$\x03§ = param3[1].concat();
+         param1.§3\x12\x06c\x03§ = param3[2].concat();
+         param1.§XEC3\x03§ = param3[3];
          param1.§j^\n\x04\x01§ = false;
          param1.§\x1c\x11_F\x03§ = false;
          param1.§^\x05\x01!§ = null;
@@ -1415,17 +1998,45 @@ ofs0081:
             }
             _loc4_--;
          }
-         param1.§\x011wD§.transform.colorTransform = new ColorTransform();
-         param1.§\x011wD§.alpha = 1;
-         param1.§\x011wD§.visible = true;
-         param1.§\x10\x1e\x01§.§1;\x01§.x = 0;
-         param1.§\x10\x1e\x01§.§1;\x01§.transform.colorTransform = new ColorTransform();
+         mtCt(param1.§\x011wD§);
+         if(param1.§\x011wD§.alpha != 1)
+         {
+            param1.§\x011wD§.alpha = 1;
+         }
+         if(!param1.§\x011wD§.visible)
+         {
+            param1.§\x011wD§.visible = true;
+         }
+         if(param1.§\x10\x1e\x01§.§1;\x01§.x != 0)
+         {
+            param1.§\x10\x1e\x01§.§1;\x01§.x = 0;
+         }
+         mtCt(param1.§\x10\x1e\x01§.§1;\x01§);
          param1.§}3\x01o\x02§(int(param2["9\x118u"]));
-         param1.§qlh\t\x03§(param1.§\x136@\x02\x01§);
+         if(param1.§G\x1ad@§ != param1.§\x136@\x02\x01§)
+         {
+            param1.§qlh\t\x03§(param1.§\x136@\x02\x01§);
+         }
          param1.§\x1f?\x0e\t\x03§(int(param2["v\x01"]),int(param2["l\x01"]));
-         param1.§PNcV\x01§(§/U3W§.§T$(K\x03§);
-         param1.§)&v\x07\x03§();
+         if(param1.§9(Is§ != §/U3W§.§T$(K\x03§ || param1.§5%um\x01§)
+         {
+            param1.§PNcV\x01§(§/U3W§.§T$(K\x03§);
+         }
+         if(_loc5_)
+         {
+            param1.§)&v\x07\x03§();
+         }
          param1.rMm8();
+      }
+
+      // the display object's colour transform back to identity, written only if it is not
+      public static function mtCt(param1:*) : void
+      {
+         var _loc2_:ColorTransform = param1.transform.colorTransform;
+         if(_loc2_.redMultiplier != 1 || _loc2_.greenMultiplier != 1 || _loc2_.blueMultiplier != 1 || _loc2_.alphaMultiplier != 1 || _loc2_.redOffset != 0 || _loc2_.greenOffset != 0 || _loc2_.blueOffset != 0 || _loc2_.alphaOffset != 0)
+         {
+            param1.transform.colorTransform = new ColorTransform();
+         }
       }
 
       // a side panel showing PlayerStatus data param2, or as created (boxes hidden) when null
@@ -1447,7 +2058,7 @@ ofs0081:
       }
 
       // the extra state of a keyframe trooper (mtKfX) on its display trooper; param3: also its pose (not for the dead)
-      public static function mtExtra(param1:*, param2:Array, param3:Boolean = true) : void
+      public static function mtExtra(param1:*, param2:Array, param3:Boolean = true, param4:Boolean = true) : void
       {
          if(param1 == null)
          {
@@ -1457,7 +2068,7 @@ ofs0081:
          {
             param1.§\x12?g-§ = int(param2[4]);
          }
-         if(param2[1].length > 0 || param2[2].length > 0 || param2[3])
+         if(param4 && (mtStr(param1.§\x13fT$\x03§) != mtStr(param2[1]) || mtStr(param1.§3\x12\x06c\x03§) != mtStr(param2[2]) || param1.§XEC3\x03§ != param2[3]))
          {
             param1.§\x13fT$\x03§ = param2[1].concat();
             param1.§3\x12\x06c\x03§ = param2[2].concat();
@@ -1486,15 +2097,45 @@ ofs0081:
          }
       }
 
-      // plays a display trooper's current animation (and the ones it chains to) on, at most 60 frames or until it loops
+      // Plays a display trooper's current animation (and the ones it chains to) to its end, as frames would: an animation
+      // ends on a timeline control op (stop / goto / loop: enum indexes 9, 10, 11 of the clip's frame ops) that the render
+      // runs only for the frame it shows. So the clip jumps from control op to control op (the frames in between are
+      // caught up by one render, nothing is drawn for them), at most 8 jumps, until it stops or loops.
       public static function mtFf(param1:*) : void
       {
          var _loc2_:int = 0;
          var _loc3_:* = param1.§\x05\x03\x1a\x01§;
-         while(_loc2_ < 60 && _loc3_.§,\x0ew^\x01§ && !_loc3_.§Yx\x02V\x01§)
+         var _loc4_:int = 0;
+         var _loc5_:int = 0;
+         var _loc6_:Array = null;
+         var _loc7_:int = 0;
+         while(_loc2_ < 8 && _loc3_.§,\x0ew^\x01§ && !_loc3_.§Yx\x02V\x01§)
          {
-            _loc3_.§;a/P\x03§();
             _loc2_++;
+            _loc4_ = _loc3_.§+\b8'\x01§ + 1;
+            _loc5_ = -1;
+            while(_loc5_ < 0 && _loc4_ <= _loc3_.§eo\n2§)
+            {
+               _loc6_ = _loc3_.§V9#?\x03§(_loc4_ - 1);
+               _loc7_ = 0;
+               while(_loc6_ != null && _loc7_ < _loc6_.length)
+               {
+                  if(int(_loc6_[_loc7_][")-Z\x19\x01"]) >= 9 && int(_loc6_[_loc7_][")-Z\x19\x01"]) <= 11)
+                  {
+                     _loc5_ = _loc4_;
+                     break;
+                  }
+                  _loc7_++;
+               }
+               _loc4_++;
+            }
+            if(_loc5_ < 0)
+            {
+               break;
+            }
+            _loc3_.§+\b8'\x01§ = _loc5_;
+            _loc3_.§t0!7\x01§ = _loc5_;
+            _loc3_.§c+,Y§();
          }
          _loc3_.§c+,Y§();
       }
@@ -1506,13 +2147,17 @@ ofs0081:
          mtStop = param1;
       }
 
-      // runs frame() without starting new steps until no action or tween is left (at most param1 calls), so that a dump
-      // does not depend on how far the running animations are; returns the number of calls
+      // Test support. Plays the running animations out without applying any new entry, so that two scenes reached at the
+      // same index by different paths (a plain playback stopped there, a jump) can be compared whatever their animations'
+      // progress: the step waiting for the next entry is put back at the head of the queue, the queue is set aside, and
+      // frame() runs while an action, tween, hit-stop or busy trooper is left (at most param1 calls and 8 s, under
+      // Ruffle's script time limit); the queue is put back whatever happens. Returns the number of calls (-1: an error, -2: out of time, call again).
       public static function mtSettle(param1:int) : int
       {
          var _loc2_:§Q\btf§ = mtGame;
          var _loc3_:Array = _loc2_.§\x1e-\x02\x07\x01§;
          var _loc4_:int = 0;
+         var _loc5_:int = getTimer();
          if(_loc2_.§^h'l\x02§ != null)
          {
             _loc3_.unshift(_loc2_.§^h'l\x02§.§SV\x1d\x01§);
@@ -1520,10 +2165,22 @@ ofs0081:
             _loc2_.§^h'l\x02§ = null;
          }
          _loc2_.§\x1e-\x02\x07\x01§ = [];
-         while(_loc4_ < param1 && mtBusy(_loc2_))
+         try
          {
-            _loc2_.§k\n/$\x03§();
-            _loc4_++;
+            while(_loc4_ < param1 && mtBusy(_loc2_))
+            {
+               if(getTimer() - _loc5_ >= 8000)
+               {
+                  _loc4_ = -2;
+                  break;
+               }
+               _loc2_.§k\n/$\x03§();
+               _loc4_++;
+            }
+         }
+         catch(_loc_e_:*)
+         {
+            _loc4_ = -1;
          }
          if(_loc2_.§\x1e-\x02\x07\x01§.length == 0)
          {
@@ -1617,7 +2274,7 @@ ofs0081:
 
       public static function mtWeap(param1:*) : String
       {
-         return int(param1["7X\x01"]) + "/" + mtStr(param1["An%6"]) + "/" + int(param1["\x06\x01\x02"]["+8\x19{DEL}"]) + "/" + int(param1["\x06\x01\x02"]["\x1ap\x04f"]);
+         return int(param1["7X\x01"]) + "/" + mtStr(param1["An%6"]) + "/" + int(param1["\x06\x01\x02"]["+8\x19{DEL}"]);
       }
 
       // Battle.history (param1: mtHist, the copy restores replay from), one oracle `EV time|tid|type` line per entry (as the
@@ -1797,4 +2454,12 @@ getproperty QName(PackageNamespace(""),"mtFast")
 bitor
 convert_b
 returnvalue
+//@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
+getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
+callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0
+getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
+callpropvoid QName(PackageNamespace(""),"?d0r\x01"), 0
+//@@ PC_PLAY_TICK_REPLACE  (=> `§(m]a\x02§.mtClips();`, which makes the same two calls)
+getlex QName(PackageNamespace(""),"(m]a\x02")
+callpropvoid QName(PackageNamespace(""),"mtClips"), 0
 //@@ END
