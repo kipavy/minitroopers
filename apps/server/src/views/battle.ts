@@ -31,6 +31,8 @@ export interface BattleView {
   log: readonly LogLine[];
   /** `?at=`: history index the player starts at (null: from the start). */
   at: number | null;
+  /** Day of the battle (YYYY-MM-DD, BattleRow.day): the player's title shows it as dd/mm/yyyy. */
+  day?: string;
   /** Army and trooper names of input sides 0 and 1 (the log colours them by side). */
   sides: readonly [readonly string[], readonly string[]];
   /**
@@ -84,8 +86,9 @@ var mtLog = ${raw(jsJson(v.log))};
 var mtAt = ${raw(jsJson(v.at))};
 var mtSides = ${raw(jsJson(v.sides))};
 var mtShare = ${raw(jsJson(v.og?.url ?? null))};
+var mtDate = ${raw(jsJson(v.day ?? null))};
 </script>
-<script type="text/javascript" src="/js/player.js?v=4"></script>
+<script type="text/javascript" src="/js/player.js?v=5"></script>
 <div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
 <div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>
@@ -99,5 +102,5 @@ var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=4"], ...(v.og ? { og: v.og } : {}) });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=5"], ...(v.og ? { og: v.og } : {}) });
 }

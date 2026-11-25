@@ -195,3 +195,11 @@ test("client_fr_play.swf: the TextField factory's height is 20 (14 in client_fr.
   const { CLIENT_SWF } = await import("../src/views/swf.ts");
   assert.equal(CLIENT_SWF, "/swf/client_fr_play.swf?v=9");
 });
+
+test("GET /img/mtp/*.svg: the battle player's SVG textures and icons, image/svg+xml (CSS masks need the type)", async () => {
+  const env = setup("path");
+  const res = await env.app.request("/img/mtp/chevrons-1.svg");
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "image/svg+xml");
+  assert.match(await res.text(), /^<svg /);
+});

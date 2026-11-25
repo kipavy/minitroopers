@@ -390,9 +390,9 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       });
       const gotos = (): Promise<number[]> => page.evaluate(() => (globalThis as unknown as { __gotos: number[] }).__gotos.slice());
 
-      // 1. shortcuts without any click into Ruffle: Space pauses, K resumes
-      await page.keyboard.press(" ");
-      await until(page, () => swfState(page), (s) => s.paused, 10_000, "Space pauses");
+      // 1. shortcuts without any click into Ruffle: Shift+Space pauses, K resumes (BetterTrooper's keys)
+      await page.keyboard.press("Shift+Space");
+      await until(page, () => swfState(page), (s) => s.paused, 10_000, "Shift+Space pauses");
       await page.keyboard.press("k");
       await until(page, () => swfState(page), (s) => !s.paused, 10_000, "K resumes");
       // not taken: F5, Ctrl+R, Ctrl+K, Meta+Space (default action kept, nothing done)
@@ -424,7 +424,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       const s0 = await until(page, () => swfState(page), (s) => s.paused, 10_000, "pause button");
 
       // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
-      // → goes to the next shown line the same way; the share link reopens on that line (step 7)
+      // → goes one history entry further; the share dialog's "event" link reopens there (step 7)
       const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
 
       // the log's lines as BetterTrooper's: a clock badge (turquoise "warp" when the entry's time is below the
@@ -475,14 +475,19 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
       assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "one current log line");
       assert.equal(await current(), j, "the clicked line is the highlighted one");
-      const j2 = lines[k + 1]!;
       await page.keyboard.press("ArrowRight");
-      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j2, 120_000, `→ to line ${j2}`);
-      assert.ok(landed(j2 + 1, s1b.idx), `→: idx ${s1b.idx} for line ${j2}`);
+      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > s1.idx, 120_000, "→ one entry further");
+      assert.equal(s1b.idx, s1.idx + 1, "→: one history entry");
+      const j2 = lines.filter((i) => i <= s1b.idx - 1).at(-1)!;
       assert.equal(await until(page, current, (c) => c === j2, 5_000, "highlight after →"), j2);
-      await page.click("#mtp-link");
-      const link = await page.inputValue(".mtp-linkbox");
+      // S: the share dialog (Ruffle paused under it), started at this event
+      await page.keyboard.press("s");
+      await until(page, () => page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { open: boolean } } }).document.getElementById("mtp-share").open), (o) => o, 5_000, "share dialog");
+      await page.click('#mtp-share .mtp-share__choice[data-start="event"]');
+      const message = await page.inputValue("#mtp-share textarea");
+      const link = /\]\((.*)\)$/.exec(message)![1]!;
       assert.ok(link.endsWith(`at=${s1b.idx}`), `share link ${link}`);
+      await page.keyboard.press("Escape");
       const share = await page.evaluate(() => (globalThis as unknown as { mtShare: string | null }).mtShare);
       await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
 
@@ -530,15 +535,14 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.ok(r2.idx < r1.idx);
       const r3 = await seekBy("Maj+→", () => page.keyboard.press("Shift+ArrowRight"));
       assert.equal(r3.idx, Math.min(ready.total, r2.idx + 10));
-      if (ready.waves.length > 0) {
-        // N: the start (starts[k]) of the next wave; P right on a wave's start: the one before
-        const nextK = ready.waves.findIndex((w) => w > r3.idx);
+      const r3b = await seekBy("+5", () => page.click('.mtp-transport [data-step="5"]'));
+      assert.equal(r3b.idx, Math.min(ready.total, r3.idx + 5));
+      if (r3b.wave < ready.waves.length) {
+        // N: the start (starts[k]) of the next wave; P: the start of the current wave, which is that one
         const r4 = await seekBy("N", () => page.keyboard.press("n"));
-        assert.equal(r4.idx, nextK < 0 ? ready.total : ready.starts[nextK]);
-        if (nextK >= 0) {
-          const r5 = await seekBy("P", () => page.keyboard.press("p"));
-          assert.equal(r5.idx, nextK >= 1 ? ready.starts[nextK - 1] : 0);
-        }
+        assert.equal(r4.idx, ready.starts[r3b.wave]);
+        const r5 = await seekBy("P", () => page.keyboard.press("p"));
+        assert.equal(r5.idx, r4.idx);
       }
       const r6 = await seekBy("Fin", () => page.keyboard.press("End"));
       assert.equal(r6.idx, ready.total);
@@ -547,20 +551,23 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal(r7.idx, 0);
       assert.equal(r7.ended, false, "not ended any more");
       assert.equal(r7.banner, false, "no end banner any more");
-      const r8 = await seekBy("bouton Fin", () => page.click("#mtp-end"));
+      const r8 = await seekBy("E", () => page.keyboard.press("e"));
       assert.equal(r8.idx, ready.total);
-      assert.equal((await seekBy("bouton Début", () => page.click("#mtp-start"))).idx, 0);
+      assert.equal((await seekBy("H", () => page.keyboard.press("h"))).idx, 0);
       await seekBy("back to the wave start", () => page.evaluate((n) => {
         (globalThis as unknown as { document: { querySelector(s: string): { click(): void } } }).document.querySelector(`#mtp-log li[data-i="${n}"]`).click();
       }, lines.find((i) => i >= back)!));
       assert.equal((await playerInfo(page)).players, players, "still one Ruffle player");
       assert.equal(swfLoads, loads, "still no new request of the SWF");
 
-      // 5. capture: a 720x440 PNG download
-      const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.click("#mtp-shot")]);
+      // 5. capture: the dialog, its game-only picture downloaded as a 720x440 PNG
+      await page.click("#mtp-shot");
+      await until(page, () => page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { open: boolean } } }).document.getElementById("mtp-shotdlg").open), (o) => o, 10_000, "capture dialog");
+      const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.click('#mtp-shotdlg [data-shot="game"] [data-act="download"]')]);
       assert.match(download.suggestedFilename(), /\.png$/);
       const png = decodePng(readFileSync((await download.path())!));
       assert.deepEqual([png.width, png.height], [720, 440]);
+      await page.keyboard.press("Escape");
 
       // 5b. the "?" button: hovering it shows the site's own tooltip (#tooltip of app.js, .tiptop markup like every
       // other tip) next to it, inside the window, "Raccourcis clavier" then "Souris"; leaving hides it; keyboard focus
@@ -634,7 +641,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await until(page, layout, (l) => l.log.left >= l.frame.right, 5_000, "log beside again");
 
       // 6. x32, play, then "Fin": the banner shows the stored winner, its button leads to /hq?money=N
-      await page.locator("#mtp-speed").fill("32"); // the speed slider's last notch: x32
+      await page.locator("#mtp-speed").fill("18"); // the speed slider's last notch: x32
       await page.click("#mtp-play");
       const s3 = await until(page, () => swfState(page), (s) => !s.paused, 10_000, "play button");
       assert.equal(s3.speed, 32);

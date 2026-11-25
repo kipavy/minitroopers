@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="25" viewBox="0 0 72 25">
+  <!-- Title plate of the steel panel header, used as a 3-slice border-image (18 | 36 | 18):
+       the recessed plate, and the lip hanging under the header bar. -->
+  <defs>
+    <linearGradient id="p" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#6d7da4"/>
+      <stop offset=".4" stop-color="#8fa1c5"/>
+      <stop offset="1" stop-color="#94a5c8"/>
+    </linearGradient>
+  </defs>
+  <path fill="#7586ba" d="M8.4 15.5H63.6L56 24.5H16Z"/>
+  <path fill="none" stroke="#a5b0d2" d="M16.6 23.5H55.4"/>
+  <path fill="none" stroke="#363c55" d="M8.6 15.9L16.2 24.5H55.8L63.4 15.9"/>
+  <path fill="url(#p)" stroke="#515b7e" d="M2.4 .5H69.6L54.6 19.5H17.4Z"/>
+  <path fill="none" stroke="#7887aa" d="M17.2 18.5H54.8"/>
+</svg>

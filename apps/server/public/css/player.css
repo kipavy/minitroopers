@@ -1,6 +1,8 @@
-/* Enhanced battle player (public/js/player.js): every rule is scoped to .mtp-* or body.mtp. Look after BetterTrooper's
- * viewer (bettertrooper.milvintsiss.com), recreated with its developer's permission; no asset of theirs is used. */
-.mtp-game {
+/* Enhanced battle player (public/js/player.js): every rule is scoped to .mtp-* or body.mtp. Look of BetterTrooper's
+ * viewer (bettertrooper.milvintsiss.com) and of its mt-ui kit, recreated with its developer's permission; the textures
+ * and icons of /img/mtp/ are theirs (camo, steel, brackets, chevrons, camera, share, sound, alert frames). */
+.mtp-game, .mtp-dialog, .mtp-toast {
+	--mtp-sand-50 : #fcebca;
 	--mtp-sand-100 : #f2ddb8;
 	--mtp-sand-200 : #e8cd91;
 	--mtp-sand-300 : #e2c066;
@@ -17,11 +19,59 @@
 	--mtp-muted : #8a7758;
 	--mtp-halo : -1px 0px 2px rgba(0,0,0,0.5), 0px 1px 2px rgba(0,0,0,0.5), 1px 0px 2px rgba(0,0,0,0.5);
 	--mtp-mono : Consolas, Menlo, "DejaVu Sans Mono", monospace;
-	--mtp-camo : radial-gradient(ellipse 38px 16px at 20% 30%, rgba(180,122,46,0.35), transparent 70%), radial-gradient(ellipse 30px 14px at 70% 65%, rgba(226,192,102,0.45), transparent 70%), radial-gradient(ellipse 26px 12px at 85% 20%, rgba(134,98,62,0.25), transparent 70%);
+	--mtp-sans : "Segoe UI", "Lucida Grande", "Trebuchet MS", Arial, "Lucida Sans Unicode", sans-serif;
+	--mtp-camo : url("/img/mtp/camo-sand.svg");
+}
+.mtp-game {
 	padding-top : 20px;
 }
 
-/* --- framed panel: title, stage, controls --- */
+/* --- banners above the player: the stuck warning, a player that could not load (mt-alert) --- */
+.mtp-banners {
+	box-sizing : border-box;
+	display : flex;
+	flex-direction : column;
+	gap : 6px;
+	width : 740px;
+	max-width : 100%;
+	margin : 0px auto;
+}
+.mtp-banners:empty {
+	display : none;
+}
+.mtp-alert {
+	box-sizing : border-box;
+	position : relative;
+	display : flex;
+	flex-direction : column;
+	justify-content : center;
+	gap : 5px;
+	min-height : 68px;
+	margin : 10px 0px;
+	padding : 11px 11px 11px 66px;
+	border : 0px solid transparent;
+	border-image : url("/img/mtp/alert-info.png") 25 16 fill / 25px 16px;
+	color : #fff;
+	font : 13.26px/1.35 var(--mtp-sans);
+	text-align : left;
+}
+.mtp-alert:before {
+	content : "";
+	position : absolute;
+	top : calc(50% - 23px);
+	left : 9px;
+	width : 50px;
+	height : 47px;
+	background : url("/img/winfo.png") 0px 0px / 50px 47px no-repeat;
+}
+.mtp-alert--error {
+	border-image-source : url("/img/mtp/alert-error.png");
+}
+.mtp-alert--error:before {
+	background-image : url("/img/werror.png");
+}
+
+/* --- framed panel: title, stage, controls (mt-game-frame) --- */
 .game.mtp-game .swfframe {
 	box-sizing : border-box;
 	width : 740px;
@@ -31,8 +81,7 @@
 	padding : 6px 8px 8px;
 	border : 1px solid var(--mtp-sand-900);
 	border-radius : 8px;
-	background : var(--mtp-camo), var(--mtp-sand-500);
-	background-size : 120px 60px, 150px 70px, 110px 50px, auto;
+	background : var(--mtp-camo) 0px 0px / 240px 120px, var(--mtp-sand-500);
 	box-shadow : inset 0px 1px 0px var(--mtp-sand-200), inset 1px 0px 0px #e3c284, inset -1px 0px 0px #ca8b33, inset 0px -1px 0px #c6832e;
 }
 .game.mtp-game h1.mtp-title {
@@ -42,14 +91,16 @@
 	gap : 8px;
 	box-sizing : border-box;
 	height : auto;
-	min-height : 27px;
+	min-height : 25px;
 	margin : 0px 0px 7px;
-	padding : 2px 6px 2px 12px;
+	padding : 2px 12px;
 	border : 1px solid #8f642c;
 	background : var(--mtp-sand-500);
 	box-shadow : inset 0px 0px 0px 1px #bd8d3c;
-	font-size : 1.05em;
-	line-height : 1.2;
+	color : #fff;
+	font : bold 14.28px/1.2 var(--mtp-sans);
+	text-align : center;
+	text-shadow : var(--mtp-halo);
 	white-space : normal;
 }
 .mtp-title__text {
@@ -60,7 +111,8 @@
 	grid-column : 3;
 	justify-self : end;
 	display : inline-flex;
-	gap : 4px;
+	align-items : center;
+	margin-right : -6px;
 }
 .mtp-screen {
 	position : relative;
@@ -82,18 +134,18 @@
 	flex-direction : column;
 	gap : 6px;
 	margin-top : 0px;
-	font-size : 12px;
-	color : #3a2c18;
+	font : 13.6px/1.35 var(--mtp-sans);
+	color : var(--mtp-sand-900);
 }
-.mtp-wait .mtp-transport, .mtp-wait .mtp-secondary, .mtp-wait .mtp-track {
+.mtp-wait .mtp-track {
 	opacity : 0.5;
 	pointer-events : none;
 }
-.mtp-off .mtp-bar, .mtp-off .mtp-title__actions, .mtp-off .mtp-veil, .mtp-off .mtp-stuck, .mtp-off .mtp-log, .mtp-log.mtp-nolog {
+.mtp-off .mtp-bar, .mtp-off .mtp-title__actions, .mtp-off .mtp-veil, .mtp-off .mtp-log, .mtp-log.mtp-nolog {
 	display : none;
 }
 
-/* --- overlays --- */
+/* --- seek / loading overlay --- */
 .mtp-veil {
 	position : absolute;
 	inset : 0px;
@@ -102,22 +154,21 @@
 	align-items : center;
 	justify-content : center;
 	cursor : progress;
-	line-height : 1.2;
+	line-height : 1.3;
 }
-.mtp-veil[hidden], .mtp-stuck[hidden] {
+.mtp-veil[hidden] {
 	display : none;
 }
-.mtp-veil__box, .mtp-stuck {
+.mtp-veil__box {
 	box-sizing : border-box;
-	width : min(440px, 90%);
+	width : min(80%, 440px);
 	padding : 10px 14px 12px;
-	border : 1px solid #2a1f10;
-	border-radius : 4px;
-	background : rgba(63,48,28,0.94);
-	box-shadow : 0px 2px 6px rgba(0,0,0,0.4);
+	border : 1px solid var(--mtp-sand-900);
+	border-radius : 6px;
+	background : rgba(63,48,28,0.878);
+	box-shadow : inset 0px 1px 0px var(--mtp-sand-800);
 	color : #fff;
-	font-weight : bold;
-	font-size : 13px;
+	font : bold 12px/1.3 var(--mtp-sans);
 	text-align : center;
 	text-shadow : var(--mtp-halo);
 }
@@ -125,6 +176,7 @@
 	margin-bottom : 8px;
 }
 .mtp-progress {
+	box-sizing : border-box;
 	position : relative;
 	height : 10px;
 	overflow : hidden;
@@ -150,22 +202,9 @@
 @media (prefers-reduced-motion : reduce) {
 	.mtp-progress:before { width : 100%; opacity : 0.45; animation : none; }
 }
-.mtp-stuck {
-	position : absolute;
-	top : 10px;
-	left : 50%;
-	z-index : 3;
-	transform : translateX(-50%);
-	border-color : #8e1b0e;
-	background : rgba(140,30,14,0.94);
-	line-height : 1.2;
-}
-.mtp-stuck .mtp-btn {
-	margin-left : 10px;
-}
 
 /* --- timeline (right under the stage) and info line: BetterTrooper's flat bar (dark frame, waves alternating, the
- * current one flat yellow); while dragged it grows upward over the stage --- */
+ * current one flat yellow); while dragged it grows upward over the stage, a green mark and its event --- */
 .mtp-track {
 	position : relative;
 	z-index : 3;
@@ -188,9 +227,8 @@
 }
 .mtp-segs {
 	position : absolute;
-	inset : 1px 1px 1px 1px;
+	inset : 2px 2px 2px 2px;
 	overflow : hidden;
-	border-radius : 0px 0px 3px 3px;
 }
 .mtp-seg {
 	position : absolute;
@@ -199,12 +237,12 @@
 	box-sizing : border-box;
 	overflow : hidden;
 	border-right : 1px solid #3f301c;
-	background : #b47a2e;
+	background : #cd9342;
 	color : #fff8e5;
 	white-space : nowrap;
 }
 .mtp-seg.mtp-odd {
-	background : #cd9342;
+	background : #b47a2e;
 }
 .mtp-seg.mtp-curwave {
 	background : #ffda49;
@@ -218,280 +256,816 @@
 	transform : translateY(-50%);
 	pointer-events : none;
 }
+.mtp-track__loading {
+	position : absolute;
+	left : 6px;
+	top : 50%;
+	transform : translateY(-50%);
+	color : #f2ddb8;
+	font : 12px/1 var(--mtp-mono);
+	pointer-events : none;
+}
+.mtp-track__loading[hidden] {
+	display : none;
+}
 .mtp-cursor, .mtp-ghost {
 	position : absolute;
-	top : 1px;
-	bottom : 1px;
+	top : 0px;
+	bottom : 0px;
 	width : 2px;
 	margin-left : -1px;
 	background : #fff;
 	pointer-events : none;
 }
 .mtp-ghost {
-	background : rgba(255,255,255,0.6);
+	background : #b8db00;
 }
-.mtp-ghost[hidden] {
+.mtp-bubble {
+	position : absolute;
+	top : 1px;
+	height : 14px;
+	padding : 0px 3px;
+	background : #3f301c;
+	color : #fff8e5;
+	font : 11px/14px var(--mtp-mono);
+	white-space : nowrap;
+	pointer-events : none;
+}
+.mtp-ghost[hidden], .mtp-bubble[hidden] {
 	display : none;
 }
 .mtp-meta {
 	display : flex;
 	justify-content : space-between;
+	align-items : baseline;
 	gap : 10px;
 	margin-top : -3px;
+}
+.mtp-where {
+	color : var(--mtp-muted);
 	font : 10px/1.2 var(--mtp-mono);
-	color : #6f5733;
 	font-variant-numeric : tabular-nums;
 }
-.mtp-msg {
-	color : var(--mtp-green-dark);
-	font-weight : bold;
+.mtp-fps {
+	margin-left : auto;
+	padding : 1px 4px;
+	border-radius : 3px;
+	color : var(--mtp-muted);
+	font : 11px/1.2 var(--mtp-mono);
+	font-variant-numeric : tabular-nums;
+	white-space : nowrap;
+	opacity : 0.6;
+	cursor : help;
+}
+.mtp-fps:hover, .mtp-fps:focus-visible {
+	background : var(--mtp-sand-50);
+	opacity : 1;
+}
+.mtp-fps:empty {
+	display : none;
 }
 
-/* --- buttons (camo-like) --- */
+/* --- buttons: mt-camo-button (camo, --xs, --sm, --round) --- */
 .mtp-btn {
 	--_base : #d5a44d;
-	--_hover : var(--mtp-sand-300);
+	--_base-hover : #e2c066;
 	--_light : #eac588;
+	--_light-hover : #efcf90;
 	--_dark : #a77730;
 	--_line : #7d4c19;
+	--_shadow : inset 2px 2px 0px var(--_light), inset -2px -2px 0px var(--_dark);
 	display : inline-flex;
 	align-items : center;
 	justify-content : center;
+	gap : 4px;
 	box-sizing : border-box;
-	min-width : 36px;
-	min-height : 26px;
-	padding : 0px 8px;
-	border : 1px solid var(--_line);
-	border-radius : 4px;
-	background : var(--mtp-camo), var(--_base);
-	background-size : 60px 30px, 70px 34px, 50px 26px, auto;
-	box-shadow : inset 1px 1px 0px var(--_light), inset -1px -1px 0px var(--_dark);
+	min-width : 96px;
+	min-height : 34px;
+	margin : 0px;
+	padding : 0px 14px 2px;
+	border : 2px solid var(--_line);
+	border-radius : 6px;
+	background : var(--mtp-camo) -40px -10px / 240px 120px, var(--_base);
+	box-shadow : var(--_shadow);
 	color : #fff;
-	font : bold 13px/1 "Segoe UI", "Lucida Grande", "Trebuchet MS", Arial, sans-serif;
-	font-variant-numeric : tabular-nums;
+	font : small-caps bold 14.96px/1 var(--mtp-sans);
 	text-shadow : var(--mtp-halo);
+	text-decoration : none;
 	white-space : nowrap;
+	vertical-align : middle;
 	cursor : pointer;
 	touch-action : manipulation;
 	user-select : none;
 	-webkit-user-select : none;
+	-webkit-tap-highlight-color : transparent;
+	-webkit-touch-callout : none;
 }
 .mtp-btn:hover {
-	background-color : var(--_hover);
+	background-color : var(--_base-hover);
+	--_shadow : inset 2px 2px 0px var(--_light-hover), inset -2px -2px 0px var(--_dark);
 }
 .mtp-btn:active {
-	box-shadow : inset 1px 1px 0px var(--_dark), inset -1px -1px 0px var(--_light);
+	--_shadow : inset 2px 2px 0px var(--_dark), inset -2px -2px 0px var(--_light);
+	padding-top : 2px;
+	padding-bottom : 0px;
 }
-.mtp-btn:active .mtp-icon {
-	transform : translateY(1px);
+.mtp-btn:disabled, .mtp-btn[aria-disabled="true"] {
+	opacity : 0.5;
+	cursor : default;
+	pointer-events : none;
 }
-.mtp-btn:focus-visible, .mtp-range:focus-visible, .mtp-log summary:focus-visible {
-	outline : 2px solid #283d7c;
-	outline-offset : 1px;
+.mtp-btn.mtp-sm {
+	min-width : 75px;
+	min-height : 30px;
+	padding : 0px 10px 1px;
+	border-radius : 5px;
+	font-size : 13.6px;
 }
 .mtp-btn.mtp-xs {
+	--_shadow : inset 1px 1px 0px var(--_light), inset -1px -1px 0px var(--_dark);
 	min-width : 30px;
-	min-height : 22px;
+	min-height : 26px;
+	padding : 0px 8px 1px;
+	border-width : 1px;
+	border-radius : 4px;
 	font-size : 12px;
+	font-variant : normal;
+	font-variant-numeric : tabular-nums;
 }
-.mtp-btn.mtp-green, .mtp-btn[aria-pressed="true"] {
-	--_base : var(--mtp-green);
-	--_hover : #93c702;
-	--_light : var(--mtp-green-light);
-	--_dark : #4d700a;
-	--_line : var(--mtp-green-dark);
+.mtp-btn.mtp-xs:hover {
+	--_shadow : inset 1px 1px 0px var(--_light-hover), inset -1px -1px 0px var(--_dark);
 }
-/* "?": the game's tip icon (/img/info.png, 12 px) drawn at twice its size in a light ring */
-.mtp-btn.mtp-help-btn {
-	width : 28px;
-	height : 28px;
-	min-width : 0px;
-	min-height : 0px;
-	padding : 0px;
-	border : 2px solid #f7edda;
-	border-radius : 3px;
-	background : #3b4a8a url("/img/info.png") center / 24px 24px no-repeat;
-	box-shadow : 0px 1px 2px rgba(0,0,0,0.4);
-	image-rendering : pixelated;
-}
-.mtp-btn.mtp-help-btn:hover, .mtp-btn.mtp-help-btn[aria-expanded="true"] {
-	border-color : #fff;
-	filter : brightness(1.08);
-}
-.mtp-icon {
-	display : block;
-	filter : drop-shadow(0px 1px 1px rgba(0,0,0,0.55));
-}
-/* transport: same size for every chevron button, a big round play/pause in the middle */
-.mtp-btn.mtp-tr {
-	width : 38px;
-	height : 26px;
-	min-width : 0px;
-	padding : 0px;
+.mtp-btn.mtp-xs:active {
+	--_shadow : inset 1px 1px 0px var(--_dark), inset -1px -1px 0px var(--_light);
+	padding-top : 1px;
+	padding-bottom : 0px;
 }
 .mtp-btn.mtp-play {
-	width : 54px;
-	height : 32px;
-	min-width : 0px;
-	padding : 0px;
-	border-width : 2px;
+	min-width : 52px;
+	margin : 0px 3px;
 	border-radius : 999px;
-	box-shadow : inset 2px 2px 0px var(--_light), inset -2px -2px 0px var(--_dark), 0px 1px 2px rgba(0,0,0,0.25);
 }
-.mtp-btn.mtp-play .mtp-icon {
-	width : 18px;
-	height : 18px;
+.mtp-btn:focus-visible, .mtp-helpbtn:focus-visible, .mtp-log summary:focus-visible, .mtp-fps:focus-visible, .mtp-dialog__close:focus-visible {
+	outline : 2px solid #283d7c;
+	outline-offset : 2px;
+	box-shadow : var(--_shadow, none), 0px 0px 0px 2px #ffde8b;
 }
-/* camera icon of the capture button */
-.mtp-cam {
+
+/* --- the title's buttons: mt-button--green --sm (green, blue brackets, 18 px) --- */
+.mtp-btn.mtp-green {
+	--_edge : #55a835;
+	--_lip : #b8db00;
+	--_from : #8cc600;
+	--_to : #6ab200;
+	--_shine : #8fcf00;
+	--_base : #407e28;
+	--_base-dark : #356821;
+	--_shadow : inset 1px 0px 0px var(--_base), inset -1px 0px 0px var(--_base), inset 0px 1px 0px var(--_lip), inset 0px -1px 0px var(--_shine), 0px 1px 0px var(--_base), 0px 2px 0px var(--_base-dark);
+	position : relative;
+	gap : 4px;
+	min-width : 0px;
+	min-height : 18px;
+	margin : 2px 5px 4px;
+	padding : 0px 8px 1px;
+	border : 1px solid var(--_edge);
+	border-bottom : 0px;
+	border-color : var(--_edge) var(--_base-dark);
+	border-radius : 1px;
+	background : linear-gradient(var(--_lip), var(--_shine)) left 1px top 0px / 1px 100% no-repeat, linear-gradient(var(--_lip), var(--_shine)) right 1px top 0px / 1px 100% no-repeat, linear-gradient(var(--_from), var(--_to));
+	font : bold 12px/1.15 var(--mtp-sans);
+	font-variant : normal;
+}
+.mtp-btn.mtp-green + .mtp-btn.mtp-green {
+	margin-left : 9px;
+}
+.mtp-btn.mtp-green.mtp-icononly {
+	padding : 0px 6px 1px;
+}
+.mtp-btn.mtp-green:hover {
+	--_shadow : inset 1px 0px 0px var(--_base), inset -1px 0px 0px var(--_base), inset 0px 1px 0px #bfe616, inset 0px -1px 0px #a1dd10, 0px 1px 0px var(--_base), 0px 2px 0px var(--_base-dark);
+	background-image : linear-gradient(#bfe616, #a1dd10), linear-gradient(#bfe616, #a1dd10), linear-gradient(#98d710, #76c90c);
+}
+.mtp-btn.mtp-green:hover, .mtp-btn.mtp-green:active {
+	padding-top : 1px;
+	padding-bottom : 0px;
+}
+.mtp-btn.mtp-green:active {
+	background-image : linear-gradient(var(--_lip), var(--_shine)), linear-gradient(var(--_lip), var(--_shine)), linear-gradient(var(--_to), var(--_from));
+}
+.mtp-btn.mtp-green:before, .mtp-btn.mtp-green:after {
+	content : "";
+	position : absolute;
+	top : -4px;
+	bottom : -5px;
+	width : 12px;
+	background : url("/img/mtp/bracket-sm.svg") 0px 0px / 100% 100% no-repeat;
+	pointer-events : none;
+}
+.mtp-btn.mtp-green:before {
+	left : -6px;
+}
+.mtp-btn.mtp-green:after {
+	right : -6px;
+	background-image : url("/img/mtp/bracket-sm-right.svg");
+}
+
+/* --- icons: BetterTrooper's SVG masks in white, the play / pause morph --- */
+.mtp-mask, .mtp-chev {
+	display : inline-block;
+	flex : none;
+	width : 14px;
+	height : 12px;
+	filter : drop-shadow(0px 1px 1px rgba(0,0,0,0.45)) drop-shadow(0px 0px 1px rgba(0,0,0,0.35));
+}
+.mtp-mask:before, .mtp-chev:before {
+	content : "";
+	display : block;
+	height : 100%;
+	background : currentColor;
+	-webkit-mask : url("/img/mtp/camera.svg") 50% / contain no-repeat;
+	mask : url("/img/mtp/camera.svg") 50% / contain no-repeat;
+}
+.mtp-mask--share {
+	width : 12px;
+}
+.mtp-mask--share:before {
+	-webkit-mask-image : url("/img/mtp/share.svg");
+	mask-image : url("/img/mtp/share.svg");
+}
+.mtp-mask--sound-off:before {
+	-webkit-mask-image : url("/img/mtp/sound-off.svg");
+	mask-image : url("/img/mtp/sound-off.svg");
+}
+.mtp-mask--sound-on:before {
+	-webkit-mask-image : url("/img/mtp/sound-on.svg");
+	mask-image : url("/img/mtp/sound-on.svg");
+}
+.mtp-chev {
+	height : 11px;
+}
+.mtp-chev--1 { width : 10px; }
+.mtp-chev--2 { width : 16px; }
+.mtp-chev--3 { width : 22px; }
+.mtp-chev--4 { width : 28px; }
+.mtp-chev--1:before { -webkit-mask-image : url("/img/mtp/chevrons-1.svg"); mask-image : url("/img/mtp/chevrons-1.svg"); }
+.mtp-chev--2:before { -webkit-mask-image : url("/img/mtp/chevrons-2.svg"); mask-image : url("/img/mtp/chevrons-2.svg"); }
+.mtp-chev--3:before { -webkit-mask-image : url("/img/mtp/chevrons-3.svg"); mask-image : url("/img/mtp/chevrons-3.svg"); }
+.mtp-chev--4:before { -webkit-mask-image : url("/img/mtp/chevrons-4.svg"); mask-image : url("/img/mtp/chevrons-4.svg"); }
+.mtp-chev--back:before {
+	transform : scaleX(-1);
+}
+.mtp-playicon {
 	position : relative;
 	display : inline-block;
-	width : 14px;
-	height : 10px;
-	margin-top : 2px;
-	border-radius : 2px;
-	background : #fff;
-	box-shadow : 0px 0px 2px rgba(0,0,0,0.6);
+	flex : none;
+	width : 16px;
+	height : 16px;
 	vertical-align : middle;
+	filter : drop-shadow(0px 1px 1px rgba(0,0,0,0.45)) drop-shadow(0px 0px 1px rgba(0,0,0,0.35));
 }
-.mtp-cam:before {
+.mtp-playicon:before, .mtp-playicon:after {
 	content : "";
 	position : absolute;
-	top : -3px;
-	left : 4px;
-	width : 6px;
-	height : 3px;
-	border-radius : 1px 1px 0px 0px;
-	background : #fff;
+	inset : 0px;
+	background : currentColor;
+	transition : clip-path 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
-.mtp-cam:after {
-	content : "";
-	position : absolute;
-	top : 2px;
-	left : 4px;
-	width : 6px;
-	height : 6px;
-	box-sizing : border-box;
-	border : 2px solid var(--mtp-green-dark);
-	border-radius : 50%;
+.mtp-playicon:before {
+	clip-path : polygon(1px 0px, 6px 0px, 6px 100%, 1px 100%);
+}
+.mtp-playicon:after {
+	clip-path : polygon(10px 0px, 15px 0px, 15px 100%, 10px 100%);
+}
+.mtp-playicon--paused:before {
+	clip-path : polygon(2px 0px, 9px 4.31px, 9px 11.69px, 2px 100%);
+}
+.mtp-playicon--paused:after {
+	clip-path : polygon(8px 3.69px, 15px 50%, 15px 50%, 8px 12.31px);
+}
+@media (prefers-reduced-motion : reduce) {
+	.mtp-playicon:before, .mtp-playicon:after { transition : none; }
 }
 .mtp-transport {
 	display : flex;
 	flex-wrap : wrap;
 	justify-content : center;
 	align-items : center;
-	gap : 5px;
-	margin-top : 2px;
+	gap : 3px;
 }
 
-/* --- speed: fine slider (a notch per quarter octave, a longer tick at each power of two, the x1 one marked) --- */
+/* --- speed (mt-player-bar, mt-range-scale): 19 notches, a tick each, the x1 one marked; x2 / x1; sound; help --- */
 .mtp-secondary {
 	display : flex;
+	flex-wrap : wrap;
 	align-items : center;
-	gap : 8px;
-	font-weight : bold;
+	gap : 6px 8px;
+	color : var(--mtp-sand-900);
+	font : bold 10.88px/1.2 var(--mtp-sans);
 }
-.mtp-speed__label {
-	color : #3a2c18;
+.mtp-speed {
+	display : inline-flex;
+	align-items : center;
+	gap : 6px;
+	margin : 0px 2px;
 }
 .mtp-speed__value {
-	min-width : 3.6em;
-	font : bold 12px var(--mtp-mono);
-	color : #3a2c18;
+	display : inline-block;
+	min-width : 3.4em;
+	font-variant-numeric : tabular-nums;
 }
 .mtp-scale {
+	--_knob : 18px;
+	--_height : 24px;
+	--_notches : calc((var(--_height) + var(--_knob)) / 2 + 5px);
+	--_below : max(0px, var(--_notches) - var(--_height));
 	position : relative;
 	display : inline-block;
-	width : 240px;
 	max-width : 100%;
-	height : 30px;
+	margin-top : var(--_below);
+	padding-bottom : var(--_below);
+	border-radius : 4px;
+	vertical-align : middle;
 }
-.mtp-ticks {
+.mtp-scale:after {
+	content : "";
 	position : absolute;
-	left : 9px;
-	right : 9px;
-	top : 19px;
-	height : 9px;
+	top : calc(var(--_notches) - 4px);
+	left : calc(var(--_knob) / 2 - 0.5px);
+	right : calc(var(--_knob) / 2 - 0.5px);
+	height : 4px;
+	background : repeating-linear-gradient(to right, var(--mtp-sand-800) 0px 1px, transparent 1px calc((100% - 1px) / 18));
+	opacity : 0.75;
 	pointer-events : none;
 }
-.mtp-tick {
+.mtp-scale__mark {
 	position : absolute;
-	top : 0px;
+	top : calc(var(--_notches) - 8px);
+	left : calc(var(--_knob) / 2 - 0.5px + (100% - var(--_knob)) * 5 / 18);
 	width : 1px;
-	height : 4px;
-	margin-left : -0.5px;
-	background : var(--mtp-sand-800);
-	opacity : 0.7;
-}
-.mtp-tick--major {
-	height : 7px;
-	opacity : 1;
+	height : 8px;
 	background : var(--mtp-sand-900);
+	pointer-events : none;
 }
-.mtp-tick--one {
-	width : 2px;
-	margin-left : -1px;
-	height : 9px;
+.mtp-scale:has(> .mtp-range:disabled):after, .mtp-scale:has(> .mtp-range:disabled) .mtp-scale__mark {
+	opacity : 0.4;
+}
+.mtp-scale:has(> .mtp-range:focus-visible) {
+	outline : 2px solid #283d7c;
+	outline-offset : 2px;
+	box-shadow : 0px 0px 0px 2px #ffde8b;
 }
 .mtp-range {
+	--_track : 8px;
 	position : relative;
 	z-index : 1;
 	display : block;
-	width : 100%;
-	height : 20px;
+	box-sizing : border-box;
+	width : 230px;
+	max-width : 100%;
+	height : var(--_height);
 	margin : 0px;
 	padding : 0px;
 	background : transparent;
 	-webkit-appearance : none;
 	appearance : none;
 	cursor : pointer;
+	outline : none;
+}
+.mtp-range:disabled {
+	opacity : 0.5;
+	cursor : default;
 }
 .mtp-range::-webkit-slider-runnable-track {
-	height : 8px;
+	box-sizing : border-box;
+	height : var(--_track);
 	border-radius : 999px;
-	background : linear-gradient(#d9c194, #efe0bf);
+	background : var(--mtp-sand-300);
 	box-shadow : inset 0px 0px 0px 1px var(--mtp-sand-800), inset 0px 2px 1px rgba(107,67,32,0.45);
 }
 .mtp-range::-moz-range-track {
-	height : 8px;
+	box-sizing : border-box;
+	height : var(--_track);
 	border : 1px solid var(--mtp-sand-800);
 	border-radius : 999px;
-	background : linear-gradient(#d9c194, #efe0bf);
+	background : var(--mtp-sand-300);
+	box-shadow : inset 0px 1px 1px rgba(107,67,32,0.45);
 }
 .mtp-range::-webkit-slider-thumb {
 	-webkit-appearance : none;
 	box-sizing : border-box;
-	width : 18px;
-	height : 18px;
-	margin-top : -5px;
+	width : var(--_knob);
+	height : var(--_knob);
+	margin-top : calc((var(--_track) - var(--_knob)) / 2);
 	border : 2px solid #7d4c19;
 	border-radius : 50%;
-	background : radial-gradient(circle at 35% 30%, #f1d08e, #d5a44d 60%, #b8832f);
-	box-shadow : inset 1px 1px 0px #eac588, inset -1px -1px 0px #a77730, 0px 1px 2px rgba(0,0,0,0.35);
+	background : var(--mtp-camo) -60px -20px / 240px 120px, #d5a44d;
+	box-shadow : inset 1px 1px 0px #eac588, inset -1px -1px 0px #a77730;
 }
 .mtp-range::-moz-range-thumb {
 	box-sizing : border-box;
-	width : 18px;
-	height : 18px;
+	width : var(--_knob);
+	height : var(--_knob);
 	border : 2px solid #7d4c19;
 	border-radius : 50%;
-	background : radial-gradient(circle at 35% 30%, #f1d08e, #d5a44d 60%, #b8832f);
+	background : var(--mtp-camo) -60px -20px / 240px 120px, #d5a44d;
+	box-shadow : inset 1px 1px 0px #eac588, inset -1px -1px 0px #a77730;
 }
-.mtp-help-btn {
+.mtp-range:hover:not(:disabled)::-webkit-slider-thumb {
+	background-color : var(--mtp-sand-300);
+}
+.mtp-range:hover:not(:disabled)::-moz-range-thumb {
+	background-color : var(--mtp-sand-300);
+}
+.mtp-secondary__end {
+	display : inline-flex;
+	align-items : center;
+	gap : 5px;
 	margin-left : auto;
 }
-.mtp-linkrow {
-	display : flex;
+.mtp-sound {
+	display : inline-flex;
 }
-.mtp-linkbox {
-	flex : 1;
-	min-width : 0px;
-	padding : 3px 6px;
-	border : 1px solid var(--mtp-sand-800);
+/* "?": the game's tip icon (/img/info.png, 12 px) drawn at twice its size, no frame (mt-icon-button) */
+.mtp-helpbtn {
+	display : inline-flex;
+	align-items : center;
+	justify-content : center;
+	flex : none;
+	box-sizing : border-box;
+	min-width : 26px;
+	min-height : 26px;
+	margin : 0px;
+	padding : 0px;
+	border : 0px;
 	border-radius : 4px;
+	background : transparent;
+	color : inherit;
+	line-height : 1;
+	vertical-align : middle;
+	cursor : pointer;
+	-webkit-appearance : none;
+	appearance : none;
+	-webkit-tap-highlight-color : transparent;
+	touch-action : manipulation;
+}
+@media (hover : hover) {
+	.mtp-helpbtn:hover {
+		background : #f8ecd6;
+	}
+}
+.mtp-helpicon {
+	display : inline-block;
+	width : 24px;
+	height : 24px;
+	background : url("/img/info.png") 50% / contain no-repeat;
+	image-rendering : pixelated;
+}
+.mtp-helpbtn:active > * {
+	translate : 0px 1px;
+}
+
+/* --- toasts at the bottom of the window (mt-toast) --- */
+.mtp-toast {
+	position : fixed;
+	z-index : 1001;
+	left : 16px;
+	right : 16px;
+	bottom : 22px;
+	box-sizing : border-box;
+	width : fit-content;
+	min-height : 50px;
+	margin : 0px auto;
+	padding : 16px;
+	border : 0px solid transparent;
+	border-image : url("/img/mtp/alert-info.png") 25 16 fill / 25px 16px;
+	color : #fff;
+	font : 13.26px/1.35 var(--mtp-sans);
+	text-align : center;
+	text-shadow : var(--mtp-halo);
+	pointer-events : none;
+	opacity : 0;
+	translate : 0px 12px;
+	transition : opacity 0.2s cubic-bezier(0.2, 0.7, 0.3, 1), translate 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.mtp-toast[data-shown] {
+	opacity : 1;
+	translate : none;
+}
+.mtp-toast--warning {
+	align-content : center;
+	min-height : 68px;
+	padding : 11px 16px 11px 66px;
+	text-align : start;
+}
+.mtp-toast--warning:before {
+	content : "";
+	position : absolute;
+	top : calc(50% - 23px);
+	left : 9px;
+	width : 50px;
+	height : 47px;
+	background : url("/img/winfo.png") 0px 0px / 50px 47px no-repeat;
+}
+.mtp-toast__title {
+	font-weight : bold;
+}
+.mtp-toast__note {
+	display : block;
+	margin-top : 2px;
+	color : #f8ecd6;
+	font-size : 0.8em;
+	font-style : italic;
+	line-height : 1.3;
+}
+@media (prefers-reduced-motion : reduce) {
+	.mtp-toast { translate : none; transition-property : opacity; }
+}
+
+/* --- dialogs (mt-dialog): share, capture --- */
+.mtp-dialog {
+	box-sizing : border-box;
+	width : min(682px, 100% - 24px);
+	max-width : none;
+	max-height : calc(100dvh - 48px);
+	margin : auto;
+	padding : 0px 0px 12px;
+	overflow : visible;
+	border : 8px solid rgba(0,0,0,0.7);
+	border-radius : 18px;
+	background : #fff8e5 padding-box;
+	box-shadow : inset 0px 0px 0px 1px #363c55, inset 0px 0px 0px 2px #adb7d6, inset 0px 0px 0px 3px #7d8ebf, inset 0px 0px 0px 7px #7586ba, inset 0px 0px 0px 8px #6474b0, inset 0px 0px 0px 9px #7d8dbf, inset 0px 0px 0px 10px #363c55;
+	color : #6b4320;
+	font : 13.6px/1.35 var(--mtp-sans);
+	text-align : left;
+}
+.mtp-dialog::backdrop {
+	background : rgba(0,0,0,0.6);
+}
+.mtp-dialog[open] {
+	display : flex;
+	flex-direction : column;
+}
+.mtp-dialog__header {
+	position : relative;
+	isolation : isolate;
+	display : flex;
+	justify-content : center;
+	height : 29px;
+	margin-bottom : 14px;
+}
+.mtp-dialog__header:before {
+	content : "";
+	position : absolute;
+	inset : 0px 0px auto;
+	z-index : -1;
+	box-sizing : border-box;
+	height : 29px;
+	border : 1px solid #363c55;
+	border-radius : 9px 9px 0px 0px;
+	background : url("/img/mtp/rivet-steel.svg") no-repeat left 36px top 10px / 6px 6px, url("/img/mtp/rivet-steel.svg") no-repeat left 88px top 10px / 6px 6px, url("/img/mtp/rivet-steel.svg") no-repeat right 88px top 10px / 6px 6px, url("/img/mtp/camo-steel.svg") 0px 0px / 220px 80px, #7586ba;
+	box-shadow : inset 0px 1px 0px #a4afd2, inset 0px -1px 0px #a4afd2;
+}
+.mtp-dialog .mtp-dialog__title {
+	display : flex;
+	justify-content : center;
+	align-items : center;
+	box-sizing : border-box;
+	min-width : min(62%, 100% - 150px);
+	max-width : calc(100% - 150px);
+	height : 31px;
+	margin : 7px 0px 0px;
+	padding : 0px 4px 8px;
+	border-style : solid;
+	border-width : 0px 22px;
+	border-image : url("/img/mtp/plate-steel.svg") 0 18 fill / 0px 22px;
+	background : none;
+	color : #fff;
+	font : bold 12.24px/1 var(--mtp-sans);
+	text-transform : uppercase;
+	text-shadow : var(--mtp-halo);
+	white-space : nowrap;
+}
+.mtp-dialog__header form {
+	display : contents;
+}
+.mtp-dialog__close {
+	position : absolute;
+	top : -12px;
+	right : -19px;
+	box-sizing : border-box;
+	width : 50px;
+	height : 50px;
+	margin : 0px;
+	padding : 0px;
+	border : 0px;
+	border-radius : 50%;
+	background : url("/img/close.png") 15px 14px no-repeat, url("/img/box7top.png") -624px -9px no-repeat;
+	cursor : pointer;
+	-webkit-appearance : none;
+	appearance : none;
+}
+.mtp-dialog__close:before {
+	content : "";
+	position : absolute;
+	inset : -7px;
+	z-index : -1;
+	border-radius : 50%;
+	background : rgba(0,0,0,0.7);
+	clip-path : polygon(0px 0px, 100% 0px, 100% 100%, 46px 100%, 46px 11px, 0px 11px);
+}
+.mtp-dialog__close:hover {
+	background-image : url("/img/close_over.png"), url("/img/box7top.png");
+}
+.mtp-dialog__body {
+	flex : auto;
+	min-height : 0px;
+	padding : 0px 30px 12px;
+	overflow-y : auto;
+	overscroll-behavior : contain;
+}
+.mtp-dialog__footer {
+	display : flex;
+	justify-content : center;
+	flex-wrap : wrap;
+	gap : 8px;
+	padding : 4px 30px 8px;
+}
+.mtp-dialog__footer:empty {
+	display : none;
+}
+.mtp-kbd {
+	display : inline-block;
+	box-sizing : border-box;
+	min-width : 1.6em;
+	padding : 0px 3px;
+	border : 1px solid #bc9f7b;
+	border-bottom : 2px solid #86623e;
+	border-radius : 3px;
 	background : #fff8e5;
+	box-shadow : inset 0px 1px 0px #fff;
+	color : #6b4320;
+	font : bold 12.24px/1.3 var(--mtp-sans);
+	font-variant : normal;
+	text-align : center;
+	text-shadow : none;
+	white-space : nowrap;
+}
+.mtp-kbd--button {
+	min-width : 15px;
+	font-size : 10px;
+	line-height : 13px;
+}
+.mtp-kbd--button:empty {
+	display : none;
+}
+@media (hover : none) and (pointer : coarse) {
+	.mtp-kbd--button { display : none; }
+}
+.mtp-share__start {
+	min-width : 0px;
+	margin : 0px 0px 10px;
+	padding : 0px;
+	border : 0px;
+}
+.mtp-share__legend {
+	margin : 0px 0px 6px;
+	padding : 0px;
 	color : #283d7c;
-	font : 12px var(--mtp-mono);
+	font-weight : bold;
+}
+.mtp-share__choices {
+	display : grid;
+	grid-template-columns : repeat(auto-fit, minmax(150px, 1fr));
+	gap : 8px;
+}
+.mtp-share__choice {
+	display : grid;
+	grid-template-columns : auto 1fr;
+	gap : 2px 7px;
+	align-items : baseline;
+	padding : 7px 10px 8px;
+	border : 1px solid #bc9f7b;
+	border-radius : 6px;
+	background : #fcebca;
+	cursor : pointer;
+	touch-action : manipulation;
+}
+.mtp-share__choice[hidden] {
+	display : none;
+}
+.mtp-share__choice:hover {
+	background : #f8ecd6;
+}
+.mtp-share__choice:has(:checked) {
+	border-color : #86623e;
+	background : #fff;
+	box-shadow : inset 0px 0px 0px 1px #86623e;
+}
+.mtp-share__choice:has(:focus-visible) {
+	outline : 2px solid #283d7c;
+	outline-offset : 2px;
+	box-shadow : 0px 0px 0px 2px #ffde8b;
+}
+.mtp-share__radio {
+	margin : 0px;
+	accent-color : #459717;
+}
+.mtp-share__radio:focus-visible {
+	outline : none;
+}
+.mtp-share__choice-title {
+	color : #283d7c;
+	font-weight : bold;
+}
+.mtp-share__choice-text {
+	grid-column : 2;
+	color : var(--mtp-muted);
+	font-size : 0.8em;
+	line-height : 1.3;
+}
+.mtp-field {
+	box-sizing : border-box;
+	min-height : 4.6em;
+	margin : 0px;
+	padding : 4px 6px;
+	border : 1px solid #7c8999;
+	border-top-color : #798798;
+	border-radius : 3px;
+	background : #fff;
+	box-shadow : inset 0px 1px 0px #cbcbcb, inset 0px 2px 0px #eee;
+	color : #6b4320;
+}
+.mtp-share__text {
+	display : block;
+	width : 100%;
+	resize : none;
+	font : 12px/1.4 var(--mtp-mono);
+}
+.mtp-shot.mtp-dialog {
+	width : min(1200px, 100% - 24px);
+}
+.mtp-shot__list {
+	display : grid;
+	grid-template-columns : repeat(2, minmax(0px, 1fr));
+	gap : 14px;
+}
+.mtp-shot__item {
+	display : flex;
+	flex-direction : column;
+	gap : 8px;
+	min-width : 0px;
+	padding : 9px 10px 10px;
+	border : 1px solid #bc9f7b;
+	border-radius : 6px;
+	background : #fcebca;
+	box-shadow : inset 0px 1px 0px #fff;
+}
+.mtp-dialog .mtp-shot__name {
+	margin : 0px;
+	padding : 0px;
+	background : none;
+	color : #283d7c;
+	font : bold 12.24px/1.2 var(--mtp-sans);
+	text-align : left;
+}
+.mtp-shot__bottom {
+	display : flex;
+	flex-direction : column;
+	gap : 8px;
+	margin-top : auto;
+}
+.mtp-shot__preview {
+	display : block;
+	box-sizing : border-box;
+	width : auto;
+	max-width : 100%;
+	height : auto;
+	max-height : calc(100dvh - 230px);
+	margin-inline : auto;
+}
+.mtp-shot__item[data-shot="game"] .mtp-shot__preview {
+	border : 1px solid var(--mtp-sand-900);
+	background : var(--mtp-sand-100);
+}
+.mtp-shot__actions {
+	display : flex;
+	flex-wrap : wrap;
+	gap : 6px;
+}
+.mtp-shot__actions .mtp-btn {
+	flex : 1 0 auto;
+	min-width : 0px;
+}
+.mtp-shot__actions .mtp-btn[hidden], .mtp-dialog__footer .mtp-btn[hidden] {
+	display : none;
+}
+@media (max-width : 560px) {
+	.mtp-dialog__body, .mtp-dialog__footer { padding-left : 14px; padding-right : 14px; }
+	.mtp-share__choices, .mtp-shot__list { grid-template-columns : minmax(0px, 1fr); gap : 12px; }
+}
+@media (pointer : coarse) {
+	.mtp-share__choice { box-sizing : border-box; min-height : 44px; }
+	.mtp-shot__actions .mtp-btn { min-height : 44px; }
 }
 
 /* --- battle log (disclosure under the panel) --- */
@@ -509,10 +1083,8 @@
 }
 .mtp-log summary {
 	position : relative;
-	padding : 9px 34px 8px;
-	background : var(--mtp-camo), var(--mtp-sand-500);
-	background-size : 120px 60px, 150px 70px, 110px 50px, auto;
-	box-shadow : inset 0px -2px 3px rgba(107,67,32,0.45), inset 0px 1px 0px rgba(255,240,200,0.5);
+	padding : 10px 34px 8px;
+	background : var(--mtp-camo) 0px 0px / 240px 120px, var(--mtp-sand-500);
 	color : #fff;
 	font : bold 1.1em/1.2 "Segoe UI", "Lucida Grande", "Trebuchet MS", Arial, sans-serif;
 	text-align : center;
@@ -554,19 +1126,19 @@
 .mtp-line:hover {
 	background : rgba(255,230,150,0.55);
 }
-.mtp-line.mtp-future {
-	opacity : 0.45;
-}
-.mtp-line.mtp-next {
-	opacity : 0.75;
-}
-.mtp-line.mtp-wave {
-	font-weight : bold;
+.mtp-logveil {
+	position : absolute;
+	left : 0px;
+	right : 0px;
+	padding : 0px;
+	border : 0px;
+	background : rgba(242,221,184,0.62);
+	list-style : none;
+	pointer-events : none;
 }
 .mtp-line.mtp-cur {
 	background : #ffde8b;
 	box-shadow : inset 3px 0px 0px var(--mtp-sand-700);
-	opacity : 1;
 }
 /* --- log lines (BetterTrooper's): clock badge, heads and faction colours, the game's icons, HUD. Images in /img/log/:
  * battle-clock, weapons, equipment and stat-* come from client_fr.swf (bitmaps 19, 16, 17, white keyed out as the game
@@ -837,6 +1409,10 @@
 		align-items : start;
 		column-gap : 10px;
 	}
+	.game.mtp-game.mtp-side:not(.mtp-off):not(.mtp-nolog) > .mtp-banners {
+		grid-column : 1 / -1;
+		width : 940px;
+	}
 	.game.mtp-game.mtp-side:not(.mtp-off):not(.mtp-nolog) .swfframe {
 		width : 600px;
 		margin : 0px;
@@ -868,43 +1444,234 @@
 		margin-left : 0px;
 	}
 }
-@media (max-width : 560px) {
+/* BetterTrooper's 720 px: a tighter frame, the title left, the speed slider as wide as it can, four steps (player.js) */
+@media (max-width : 720px) {
 	.game.mtp-game .swfframe {
 		padding : 5px 4px 6px;
 	}
 	.game.mtp-game h1.mtp-title {
 		display : flex;
 		justify-content : space-between;
+		margin-bottom : 5px;
+		font-size : 12.92px;
 		text-align : left;
-		font-size : 0.95em;
 	}
 	.mtp-title__text {
 		text-align : left;
 	}
-	.mtp-btn.mtp-wide, .mtp-speed__label {
-		display : none;
+	.mtp-title__actions {
+		margin-right : -3px;
+	}
+	.mtp-date {
+		white-space : nowrap;
+	}
+	.mtp-meta {
+		flex-wrap : wrap;
+		row-gap : 1px;
+	}
+	.mtp-speed {
+		flex : 1 1 auto;
+		min-width : 0px;
+		margin : 0px;
 	}
 	.mtp-scale {
 		flex : 1 1 auto;
-		width : auto;
+	}
+	.mtp-range {
+		width : 100%;
 		min-width : 90px;
+	}
+	.mtp-speed__label {
+		display : none;
 	}
 }
 @media (pointer : coarse) {
-	.mtp-btn {
-		min-width : 40px;
-		min-height : 40px;
-	}
 	.mtp-btn.mtp-xs {
-		min-width : 40px;
-		min-height : 36px;
+		min-width : 44px;
+		min-height : 44px;
+		font-size : 13px;
 	}
 	.mtp-btn.mtp-play {
 		min-width : 60px;
 		min-height : 48px;
 	}
+	.mtp-helpbtn {
+		min-width : 44px;
+		min-height : 44px;
+	}
+	.mtp-scale {
+		--_knob : 26px;
+		--_height : 36px;
+	}
 	.mtp-track {
-		height : 32px;
-		line-height : 32px;
+		height : 40px;
+		line-height : 40px;
+	}
+}
+@media (pointer : coarse) and (hover : none) {
+	.mtp-helpbtn {
+		display : none;
+	}
+}
+/* touch, narrow: a 16 px timeline whose grip reaches 14 px up over the stage; dragged, it grows to 44 px */
+@media (max-width : 720px) and (pointer : coarse) {
+	.mtp-track {
+		height : 16px;
+		margin-top : -14px;
+		padding-top : 14px;
+		background-clip : content-box;
+		line-height : 12px;
+	}
+	.mtp-track .mtp-segs {
+		top : 16px;
+	}
+	.mtp-track .mtp-cursor, .mtp-track .mtp-ghost {
+		top : 14px;
+	}
+	.mtp-track.mtp-drag {
+		height : 44px;
+		margin-top : -28px;
+		padding-top : 0px;
+	}
+	.mtp-track.mtp-drag .mtp-segs {
+		top : 2px;
+	}
+	.mtp-track.mtp-drag .mtp-cursor, .mtp-track.mtp-drag .mtp-ghost {
+		top : 0px;
+	}
+}
+/* touch screens held sideways (BetterTrooper's "fit: stage"): the stage as high as the screen (--mtp-stage-h, set by
+ * player.js), the title, transport and speed in a column on its right, the timeline under the stage, the info line
+ * under the column; full screen at the first touch (player.js) */
+@media (orientation : landscape) and (max-height : 500px) and (pointer : coarse) {
+	.game.mtp-game .swfframe {
+		--mtp-stage-h : 300px;
+		display : grid;
+		grid-template-columns : calc(var(--mtp-stage-h) * 720 / 440 + 2px) minmax(0px, 1fr);
+		grid-template-rows : auto minmax(4px, 1fr) auto auto minmax(4px, 1fr) 16px;
+		grid-template-areas : "stage title" "stage ." "stage transport" "stage secondary" "stage ." "timeline meta";
+		gap : 0px 8px;
+		width : auto;
+		max-width : none;
+		padding : 4px;
+		scroll-margin-top : 0px;
+	}
+	body.mtm .game.mtp-game .swfframe {
+		scroll-margin-top : 56px;
+	}
+	.game.mtp-game h1.mtp-title {
+		grid-area : title;
+		display : block;
+		margin : 0px;
+		font-size : 12.24px;
+		text-align : center;
+	}
+	.mtp-title__actions {
+		display : inline-flex;
+		margin : 0px 0px 0px 6px;
+		vertical-align : middle;
+	}
+	.mtp-screen {
+		grid-area : stage;
+		align-self : end;
+		width : calc(var(--mtp-stage-h) * 720 / 440);
+		max-width : none;
+	}
+	.mtp-bar {
+		display : contents;
+	}
+	.mtp-track {
+		grid-area : timeline;
+		align-self : end;
+		height : 16px;
+		margin-top : 0px;
+		padding-top : 14px;
+		background-clip : content-box;
+		line-height : 12px;
+	}
+	.mtp-track .mtp-segs {
+		top : 16px;
+	}
+	.mtp-track .mtp-cursor, .mtp-track .mtp-ghost {
+		top : 14px;
+	}
+	.mtp-track.mtp-drag .mtp-segs {
+		top : 2px;
+	}
+	.mtp-track.mtp-drag .mtp-cursor, .mtp-track.mtp-drag .mtp-ghost {
+		top : 0px;
+	}
+	.mtp-track.mtp-drag {
+		height : 44px;
+		margin-top : 0px;
+		padding-top : 0px;
+	}
+	.mtp-transport {
+		grid-area : transport;
+		display : grid;
+		grid-template-columns : repeat(4, auto);
+		justify-content : center;
+		justify-items : center;
+		gap : 6px 3px;
+	}
+	.mtp-transport .mtp-play {
+		grid-column : 1 / -1;
+		grid-row : 1;
+		margin : 0px;
+	}
+	.mtp-transport .mtp-play + .mtp-step {
+		margin-left : 7px;
+	}
+	.mtp-secondary {
+		grid-area : secondary;
+		justify-content : center;
+		margin : 8px 0px 24px;
+	}
+	.mtp-speed {
+		display : contents;
+	}
+	.mtp-scale {
+		flex : 1 0 100%;
+	}
+	.mtp-range {
+		width : 100%;
+	}
+	.mtp-speed__label {
+		display : none;
+	}
+	.mtp-speed__value {
+		text-align : center;
+	}
+	.mtp-secondary__end {
+		margin-left : 0px;
+	}
+	.mtp-meta {
+		grid-area : meta;
+		align-self : end;
+		flex-direction : column;
+		align-items : stretch;
+		gap : 0px;
+		min-width : 0px;
+		margin : 0px;
+	}
+	.mtp-where > * {
+		display : block;
+		overflow : hidden;
+		text-overflow : ellipsis;
+		white-space : nowrap;
+	}
+	.mtp-fps {
+		align-self : flex-start;
+		margin-left : -4px;
+	}
+}
+@media (orientation : landscape) and (max-height : 340px) and (pointer : coarse) {
+	.mtp-btn.mtp-xs {
+		min-width : 40px;
+		min-height : 40px;
+	}
+	.mtp-btn.mtp-play {
+		min-width : 56px;
+		min-height : 44px;
 	}
 }

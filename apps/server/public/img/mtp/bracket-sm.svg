@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="26" viewBox="0 0 12 26">
+  <!-- Left bracket of the compact command button (mt-button, compact size): b1_left.png at two thirds, drawn on whole
+       pixels, sharp at 1x. A short top arm and a long bottom arm, 3 px thick, 3 px above and below a slab of 20 px
+       (the face on rows 3 to 20, its base on rows 21 and 22) that starts at x = 5; the upright, 5 px, beside it. Its
+       corners are cut at 45 degrees through the corners of the pixels, as the site cuts them with half-transparent
+       pixels. Colours picked on b1_left.png. -->
+  <!-- ink, with the two notches of the bolt plate cut into its outer edge -->
+  <path fill="#363c55" fill-rule="evenodd" d="M2 0H10V3H6L5 4V22L6 23H12V25L11 26H1L0 25V2ZM0 12H1V13H0ZM0 17H1V18H0Z"/>
+  <path fill="#363c55" fill-opacity=".56" d="M0 12H1V13H0ZM0 17H1V18H0Z"/>
+  <!-- steel: the light top of the arms, the upright lit along the face (as on the site) -->
+  <path fill="#b0b7cf" d="M2 1H9V2H2Z"/>
+  <path fill="#6976a3" d="M1 2H2V25H1Z"/>
+  <path fill="#535e90" d="M2 2H3V25H2Z"/>
+  <path fill="#a4adc8" d="M3 2H5V3H4V23H3Z"/>
+  <path fill="#b8bed3" d="M4 23H5V24H4Z"/>
+  <path fill="#b2b9d0" d="M3 24H11V25H3Z"/>
+  <!-- the notches: a dark groove, lit underneath -->
+  <path fill="#4e5777" d="M1 12H2V13H1ZM1 17H2V18H1Z"/>
+  <path fill="#596597" d="M2 12H3V13H2ZM2 17H3V18H2Z"/>
+  <path fill="#626982" d="M3 12H4V13H3ZM3 17H4V18H3Z"/>
+  <path fill="#7782aa" d="M1 13H2V14H1ZM1 18H2V19H1Z"/>
+  <path fill="#626e9d" d="M2 13H3V14H2ZM2 18H3V19H2Z"/>
+  <path fill="#afb5cd" d="M3 13H4V14H3ZM3 18H4V19H3Z"/>
+</svg>
