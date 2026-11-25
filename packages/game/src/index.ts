@@ -20,6 +20,6 @@ export { armyComposition, npcArmy } from "./npc.ts";
 export { RAT_SKILLS, dayRats, ratArmy, ratPref } from "./rats.ts";
 export type { RatSpec } from "./rats.ts";
 export { raidPower, raidTrooperRange, epicPower } from "./raid.ts";
-export { missionOfDay, pickInfiltrationTarget } from "./missions.ts";
+export { pickInfiltrationTarget } from "./missions.ts";
 export type { MissionType } from "./missions.ts";
 export { seedsOffering } from "./seeds.ts";

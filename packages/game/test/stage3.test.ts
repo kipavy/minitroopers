@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Rand, armyPower, validateBattleInput } from "@mt/engine";
 import {
-  RAT_SKILLS, armyComposition, dayRats, missionOfDay, missionReward, npcArmy, pickInfiltrationTarget,
+  RAT_SKILLS, armyComposition, dayRats, missionReward, npcArmy, pickInfiltrationTarget,
   ratArmy, raidPower, raidTrooperRange, epicPower, seedsOffering,
 } from "../src/index.ts";
 
@@ -47,15 +47,6 @@ test("dayRats / ratArmy", () => {
   assert.equal(a.faction, 0);
 });
 
-test("missionOfDay", () => {
-  const days = Array.from({ length: 60 }, (_, i) => `2026-11-${i}`);
-  const m = (recruits: number) => days.map((day) => missionOfDay({ day, armyId: 1, recruits, salt: "s" }));
-  assert.ok(!m(9).includes("epic"));
-  assert.deepEqual(m(10), m(10));
-  assert.deepEqual(new Set(m(10)), new Set(["exterminate", "infiltrate", "epic"]));
-  assert.equal(missionReward(true), 4);
-  assert.equal(missionReward(false), 0);
-});
 
 test("pickInfiltrationTarget", () => {
   const c = [{ id: "a", power: 1 }, { id: "me", power: 1 }, { id: "b", power: 2 }];

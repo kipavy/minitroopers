@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { ModeKind } from "./battleInput.ts";
-import { FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy } from "@mt/game";
+import { EPIC_MIN_RECRUITS, FACTIONS, MISSION_ATTEMPTS, RAID_MAX_PHASE, RATS_MAX, factionBattleArmy, type MissionType } from "@mt/game";
 import { Data, armyPower, choiceIndexForSkill, defaultLeftOver, type BattleInput, type BattleTrooperInput, type TrooperPref } from "@mt/engine";
 
 /** All SQL of the game tables lives here; routes and views only see these typed rows. */
@@ -539,7 +539,7 @@ export function resetDay(db: DatabaseSync, armyId: number, day: string, what: Re
         day,
       );
     }
-    if (what.mission) db.prepare("UPDATE daily SET missions_reset = missions_used, mission_won = 0 WHERE army_id = ? AND day = ?").run(armyId, day);
+    if (what.mission) db.prepare("UPDATE mission_day SET reset = used, won = 0, target = NULL WHERE army_id = ? AND day = ?").run(armyId, day);
     const r = raidDay(db, armyId, day);
     if (what.raid && (r.phase > 1 || r.over || r.dead.length > 0)) {
       db.prepare("UPDATE daily SET raid_reset = raid_phase, raid_phase = raid_phase + 1, raid_dead = '[]', raid_over = 0 WHERE army_id = ? AND day = ?").run(armyId, day);
@@ -798,11 +798,9 @@ export function setPassword(db: DatabaseSync, armyId: number, hash: string, keep
 
 // ---- missions (and the shared shape of mode battles, used by raids too) -----------------------------------------
 
-/** Today's mission state of an army (defaults when the day has no row yet). */
+/** Today's state of one mission of an army (defaults when the day has no row yet). */
 export interface MissionDay {
-  /** Mission type frozen for the day, null before the first visit. */
-  type: string | null;
-  /** Tries made today: the counter of the try URLs (`n=`) and of `/b/view/miss<n>`, never going back. */
+  /** Tries made today at this mission: the counter of its try URLs (`n=`), never going back. */
   used: number;
   /** Tries made before an admin `reset-day`: `used - reset` count against MISSION_ATTEMPTS. */
   reset: number;
@@ -811,34 +809,31 @@ export interface MissionDay {
   target: string | null;
 }
 
-export function missionDay(db: DatabaseSync, armyId: number, day: string): MissionDay {
-  const r = db.prepare("SELECT missions_used, missions_reset, mission_won, mission_type, mission_target FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as
-    | { missions_used: number; missions_reset: number; mission_won: number; mission_type: string | null; mission_target: string | null }
+export function missionDay(db: DatabaseSync, armyId: number, day: string, type: MissionType): MissionDay {
+  const r = db.prepare("SELECT used, reset, won, target FROM mission_day WHERE army_id = ? AND day = ? AND type = ?").get(armyId, day, type) as
+    | { used: number; reset: number; won: number; target: string | null }
     | undefined;
-  return {
-    type: r?.mission_type ?? null,
-    used: Number(r?.missions_used ?? 0),
-    reset: Number(r?.missions_reset ?? 0),
-    won: r?.mission_won === 1,
-    target: r?.mission_target ?? null,
-  };
+  return { used: Number(r?.used ?? 0), reset: Number(r?.reset ?? 0), won: r?.won === 1, target: r?.target ?? null };
 }
 
-/** The day's mission type, drawn by `pick` the first time and frozen in `daily.mission_type` (the first draw wins a race). */
-export function freezeMissionType(db: DatabaseSync, armyId: number, day: string, pick: () => string): string {
-  const have = missionDay(db, armyId, day).type;
-  if (have !== null) return have;
-  db.prepare(
-    "INSERT INTO daily(army_id, day, mission_type) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET mission_type = COALESCE(daily.mission_type, excluded.mission_type)",
-  ).run(armyId, day, pick());
-  return missionDay(db, armyId, day).type!;
+/** Whether an army may play the epic mission on `day`: 10 confirmed recruits, or already played it that day. */
+export function epicAllowed(db: DatabaseSync, armyId: number, day: string): boolean {
+  return confirmedRecruitCount(db, armyId) >= EPIC_MIN_RECRUITS || missionDay(db, armyId, day, "epic").used > 0;
+}
+
+/** The missions an army may play on `day` (spec 2026-11-25-missions-quotidiennes-design.md §1), in the HQ order. */
+export function availableMissions(db: DatabaseSync, armyId: number, day: string): MissionType[] {
+  const a = armyById(db, armyId);
+  if (!a?.missionsUnlocked) return [];
+  return epicAllowed(db, armyId, day) ? ["exterminate", "infiltrate", "epic"] : ["exterminate", "infiltrate"];
 }
 
 /** Freezes the day's mission opponent (call inside the fight transaction). */
-export function setMissionTarget(db: DatabaseSync, armyId: number, day: string, target: string): void {
-  db.prepare("INSERT INTO daily(army_id, day, mission_target) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET mission_target = excluded.mission_target").run(
+export function setMissionTarget(db: DatabaseSync, armyId: number, day: string, type: MissionType, target: string): void {
+  db.prepare("INSERT INTO mission_day(army_id, day, type, target) VALUES (?, ?, ?, ?) ON CONFLICT(army_id, day, type) DO UPDATE SET target = excluded.target").run(
     armyId,
     day,
+    type,
     target,
   );
 }
@@ -900,12 +895,12 @@ function insertModeBattle(db: DatabaseSync, p: { armyId: number; day: string; no
  * battle. The battle (kind 'mission'), the reward, the daily counters and the win effects (exterminate: one more
  * rat; epic: one more epic win) are written together.
  */
-export function fightMission(db: DatabaseSync, p: { armyId: number; day: string; now: number; used: number; decide: () => NewModeBattle | string }): ModeResult {
+export function fightMission(db: DatabaseSync, p: { armyId: number; day: string; type: MissionType; now: number; used: number; decide: () => NewModeBattle | string }): ModeResult {
   let out: ModeResult = { ok: false, reason: "locked", used: 0 };
   immediate(db, () => {
     const a = armyById(db, p.armyId);
-    const m = missionDay(db, p.armyId, p.day);
-    if (!a || !a.missionsUnlocked) return (out = { ok: false, reason: "locked", used: m.used }), null;
+    const m = missionDay(db, p.armyId, p.day, p.type);
+    if (!a || !availableMissions(db, p.armyId, p.day).includes(p.type)) return (out = { ok: false, reason: "locked", used: m.used }), null;
     if (m.used !== p.used) return (out = { ok: false, reason: "stale", used: m.used }), null;
     if (m.won) return (out = { ok: false, reason: "won", used: m.used }), null;
     if (m.used - m.reset >= MISSION_ATTEMPTS) return (out = { ok: false, reason: "limit", used: m.used }), null;
@@ -917,8 +912,8 @@ export function fightMission(db: DatabaseSync, p: { armyId: number; day: string;
     if (win && d.mode === "exterminate") db.prepare("UPDATE armies SET rats = MIN(rats + 1, ?) WHERE id = ?").run(RATS_MAX, p.armyId);
     if (win && d.mode === "epic") db.prepare("UPDATE armies SET epic_wins = epic_wins + 1 WHERE id = ?").run(p.armyId);
     db.prepare(
-      "INSERT INTO daily(army_id, day, missions_used, mission_won) VALUES (?, ?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET missions_used = excluded.missions_used, mission_won = excluded.mission_won",
-    ).run(p.armyId, p.day, m.used + 1, win ? 1 : 0);
+      "INSERT INTO mission_day(army_id, day, type, used, won) VALUES (?, ?, ?, ?, ?) ON CONFLICT(army_id, day, type) DO UPDATE SET used = excluded.used, won = excluded.won",
+    ).run(p.armyId, p.day, p.type, m.used + 1, win ? 1 : 0);
     return (out = { ok: true, id, n: m.used + 1 });
   });
   return out;
@@ -932,10 +927,22 @@ export function modeBattleOfDay(db: DatabaseSync, armyId: number, day: string, k
 }
 
 /** Results of the day's mission tries since the last admin `reset-day`, oldest first, with their number of the day. */
-export function missionsOfDay(db: DatabaseSync, armyId: number, day: string): DayBattle[] {
-  const rows = db.prepare("SELECT input, winner FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'mission' ORDER BY id").all(armyId, day) as { input: string; winner: number | null }[];
-  const skip = missionDay(db, armyId, day).reset;
-  return rows.flatMap((r, i) => (i < skip ? [] : [{ n: i + 1, win: r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide }]));
+export function missionsOfDay(db: DatabaseSync, armyId: number, day: string, type: MissionType): DayBattle[] {
+  const rows = db.prepare("SELECT input, winner, mode FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'mission' ORDER BY id").all(armyId, day) as { input: string; winner: number | null; mode: string | null }[];
+  const skip = missionDay(db, armyId, day, type).reset;
+  // n = number among ALL the missions of the day (/b/view/miss<n>); tries before an admin reset-day of this type skipped
+  return rows
+    .map((r, i) => ({ r, n: i + 1 }))
+    .filter((x) => x.r.mode === type)
+    .flatMap((x, k) => (k < skip ? [] : [{ n: x.n, win: x.r.winner !== null && x.r.winner === (JSON.parse(x.r.input) as BattleInput).attackerSide }]));
+}
+
+/** Number among all the missions of the day (`/b/view/miss<n>`) of the `k`-th (1-based) try of `type`, null if none. */
+export function missionBattleIndex(db: DatabaseSync, armyId: number, day: string, type: MissionType, k: number): number | null {
+  const rows = db.prepare("SELECT mode FROM battles WHERE attacker_id = ? AND day = ? AND kind = 'mission' ORDER BY id").all(armyId, day) as { mode: string | null }[];
+  let seen = 0;
+  for (let i = 0; i < rows.length; i++) if (rows[i]!.mode === type && ++seen === k) return i + 1;
+  return null;
 }
 
 // ---- raids ------------------------------------------------------------------------------------------------------
@@ -1115,9 +1122,10 @@ export function ranking(db: DatabaseSync, armyId: number): { recruiter: RankRow;
  */
 export function dayOver(db: DatabaseSync, armyId: number, day: string, a: { allowance: number; rechargeAhead: boolean }): boolean {
   if (a.rechargeAhead || battlesCounted(db, armyId, day) < a.allowance) return false;
-  const army = armyById(db, armyId);
-  const m = missionDay(db, armyId, day);
-  if (army?.missionsUnlocked && !m.won && m.used - m.reset < MISSION_ATTEMPTS) return false;
+  for (const t of availableMissions(db, armyId, day)) {
+    const m = missionDay(db, armyId, day, t);
+    if (!m.won && m.used - m.reset < MISSION_ATTEMPTS) return false;
+  }
   return raidDay(db, armyId, day).over || raidAlive(db, armyId, day).length === 0;
 }
 

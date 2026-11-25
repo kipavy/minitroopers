@@ -4,7 +4,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { randomInt } from "node:crypto";
 import { InvalidBattleInput, armyPower, battleData, clientParams, simulateOutcome, type BattleArmyInput, type BattleTrooperInput } from "@mt/engine";
 import {
-  EPIC_NPC_MAX, EPIC_SIDE_MAX, MISSION_UNLOCK_COST, dayKey, dayRats, epicPower, fillerArmy, missionOfDay, missionReward, npcArmy, rewardMultiplier,
+  EPIC_NPC_MAX, EPIC_SIDE_MAX, MISSION_UNLOCK_COST, dayKey, dayRats, epicPower, fillerArmy, missionReward, npcArmy, rewardMultiplier,
   pickInfiltrationTarget, ratArmy, type MissionType,
 } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
@@ -12,7 +12,7 @@ import { buildModeInput } from "../battleInput.ts";
 import { battleTroopers } from "../deploy.ts";
 import { defenderTitle, foeOf, type Foe } from "../foes.ts";
 import {
-  addNotice, armyById, armyPowers, confirmedRecruitCount, fightMission, foughtArmies, freezeMissionType, markSeen, missionDay, modeBattleOfDay,
+  addNotice, armyById, armyPowers, fightMission, foughtArmies, markSeen, missionBattleIndex, missionDay, modeBattleOfDay,
   recruitLeaders, setMissionTarget, trooperInput, unlockMissions, type ArmyRow, type NewModeBattle,
 } from "../repo.ts";
 import { isSessionKey, queryParam } from "../session.ts";
@@ -29,11 +29,8 @@ const SEED_MAX = 0x40000000;
 const SALT = "missions";
 const TYPES: readonly MissionType[] = ["exterminate", "infiltrate", "epic"];
 
-export const asMissionType = (s: string | null): MissionType => (TYPES as readonly (string | null)[]).includes(s) ? (s as MissionType) : "infiltrate";
-
-/** The day's mission type of an army (before it is frozen): `missionOfDay` with its confirmed recruits. */
-export const missionTypeOf = (db: DatabaseSync, armyId: number, day: string): MissionType =>
-  missionOfDay({ day, armyId, recruits: confirmedRecruitCount(db, armyId), salt: SALT });
+/** A mission type from a query value, null when unknown. */
+export const missionTypeParam = (s: string | undefined): MissionType | null => ((TYPES as readonly (string | undefined)[]).includes(s) ? (s as MissionType) : null);
 
 /** UNVERIFIED: text of $GL ("Pas assez d'argent pour débloquer la mission"); the original refusal was never captured. */
 const POOR = "Pas assez d'argent pour débloquer la mission.";
@@ -45,9 +42,9 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
   const dayOf = (t: number): string => dayKey(new Date(t), cfg.tzGame);
   const today = (): string => dayOf(now());
 
-  /** Infiltration target, frozen for the day in `daily.mission_target` (redrawn only if it vanished). */
+  /** Infiltration target, frozen for the day in `mission_day.target` (redrawn only if it vanished). */
   function infiltrationFoe(army: ArmyRow, day: string, power: number): Foe | null {
-    const have = missionDay(db, army.id, day).target;
+    const have = missionDay(db, army.id, day, "infiltrate").target;
     const kept = have !== null ? foeOf(db, have) : null;
     if (kept && kept.defenderId !== army.id) return kept;
     const pick = pickInfiltrationTarget({
@@ -60,24 +57,23 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     // UNVERIFIED: no other army with a trooper: a generated army of the own power.
     const ref = pick?.id ?? fillerArmy({ power, seed: randomInt(1, 0x7fffffff) }).id;
     const foe = foeOf(db, ref);
-    if (foe) setMissionTarget(db, army.id, day, ref);
+    if (foe) setMissionTarget(db, army.id, day, "infiltrate", ref);
     return foe;
   }
 
   /** Epic NPC seed, frozen for the day (`npc:<seed>`), so the 3 tries face the same army. */
   function epicSeed(army: ArmyRow, day: string): number {
-    const m = /^npc:(\d{1,10})$/.exec(missionDay(db, army.id, day).target ?? "");
+    const m = /^npc:(\d{1,10})$/.exec(missionDay(db, army.id, day, "epic").target ?? "");
     if (m) return Number(m[1]);
     const seed = randomInt(1, 0x7fffffff);
-    setMissionTarget(db, army.id, day, `npc:${seed}`);
+    setMissionTarget(db, army.id, day, "epic", `npc:${seed}`);
     return seed;
   }
 
   /** Builds and resolves one try, reading the army as stored (inside the fight transaction). */
-  function decide(armyId: number, day: string): NewModeBattle | string {
+  function decide(armyId: number, day: string, mode: MissionType): NewModeBattle | string {
     const army = armyById(db, armyId);
     if (!army) return "gone";
-    const mode = asMissionType(missionDay(db, army.id, day).type);
     const mine: BattleTrooperInput[] = battleTroopers(db, army.id); // deployment order (RECON4 §3)
     if (mine.length === 0) return "invalid";
     let troopers = mine;
@@ -123,8 +119,9 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
   });
 
   /**
-   * One try of the mission of the day (`/b/mission?n=<tries made>;chk=KEY`), post/redirect/get like `/b/battle`: a
-   * replayed URL (reload, double click, concurrent requests) fights nothing and shows the try it made.
+   * One try of a mission of the day (`/b/mission?type=<exterminate|infiltrate|epic>;n=<tries made at it>;chk=KEY`),
+   * post/redirect/get like `/b/battle`: a replayed URL (reload, double click, concurrent requests) fights nothing and
+   * shows the try it made (its number among all the missions of the day).
    */
   pages.get("/b/mission", (c) => {
     const o = ownedArmy(deps, c);
@@ -133,12 +130,17 @@ export function registerMission(pages: Hono<Env>, deps: Deps): void {
     if (!isSessionKey(c, queryParam(c, "chk"))) return to("/hq");
     const n = queryParam(c, "n");
     const used = n !== undefined && /^[0-9]{1,3}$/.test(n) ? Number(n) : -1;
+    const type = missionTypeParam(queryParam(c, "type"));
+    if (type === null) return to("/hq");
     const t = now();
     const day = dayOf(t);
-    freezeMissionType(db, o.army.id, day, () => missionTypeOf(db, o.army.id, day));
-    const r = fightMission(db, { armyId: o.army.id, day, now: t, used, decide: () => decide(o.army.id, day) });
-    if (r.ok) return to(`/b/view/miss${r.n}?d=${day}`);
-    if (r.reason === "stale" && used >= 0 && used < r.used) return to(`/b/view/miss${used + 1}?d=${day}`);
+    const r = fightMission(db, { armyId: o.army.id, day, type, now: t, used, decide: () => decide(o.army.id, day, type) });
+    const view = (k: number): Response => {
+      const n = missionBattleIndex(db, o.army.id, day, type, k);
+      return n === null ? to("/hq") : to(`/b/view/miss${n}?d=${day}`);
+    };
+    if (r.ok) return view(r.n);
+    if (r.reason === "stale" && used >= 0 && used < r.used) return view(used + 1);
     return to("/hq");
   });
 

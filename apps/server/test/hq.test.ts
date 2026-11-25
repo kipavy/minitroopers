@@ -16,7 +16,7 @@ const hqOf = async (env: Env, cl: ReturnType<Env["client"]>, host: string, q = "
   return cl.req(at.url, { host: at.host });
 };
 /** Tiles of the battle box (the mission box follows it). */
-const tilesOf = (html: string): string[] => [...html.split('<h1 class="hbox">Mission :')[0]!.matchAll(/<div class="b (bgo2|bwin|bdefeat)">/g)].map((m) => m[1]!);
+const tilesOf = (html: string): string[] => [...html.split('<h1 class="hbox">Mission')[0]!.matchAll(/<div class="b (bgo2|bwin|bdefeat)">/g)].map((m) => m[1]!);
 
 /** Seed 1000 with these 15 level-ups owns COMMANDEMENT (skill 69), found by scanning choiceIndexForSkill. */
 const COMMANDER = { seed: 1000, choices: JSON.stringify(new Array(15).fill(0)) };
@@ -57,9 +57,11 @@ for (const mode of MODES) {
     assert.ok(html.includes('<div class="action bcount5">'));
     assert.ok(html.includes(`<a href="${base}/b/opp" class="b_bg bgo2_bg"`));
     assert.ok(html.includes("Il te reste 5 batailles aujourd'hui !"));
-    assert.ok(html.includes("Nouvelle mission dans") && !html.includes("Nouvelles batailles"));
+    // missions not unlocked yet (choice D): one "Missions" box whose info line replaces the chrono
+    assert.ok(html.includes("Débloque les missions : Exterminer et Infiltrer tous les jours !") && !html.includes("Nouvelles batailles"));
     assert.ok(html.includes("Protége ton armée avec un mot de passe !"));
-    assert.match(html, /<h1 class="hbox">Mission : (Infiltrer|Exterminer)<\/h1>/);
+    assert.equal(html.split('<h1 class="hbox">Missions</h1>').length, 2);
+    assert.ok(!html.includes("Mission : Infiltrer"));
     assert.ok(html.includes("Débloquer pour 5") && html.includes("<h1 class=\"hbox\">Raid</h1>"));
     assert.equal([...html.matchAll(/Bientôt disponible !/g)].length, 0);
     assert.ok(html.includes("Recrute tes amis pour lancer un raid !"));
@@ -70,7 +72,8 @@ for (const mode of MODES) {
     const link = mode === "path" ? "http://localhost:8080/a/warp/" : "http://warp.lvh.me:8080/";
     assert.ok(html.includes(`value="${link}"`));
     assert.match(html, /Ta prochaine recrue te rapportera 100/);
-    assert.match(html, /mt\.js\.Timer\.alloc\('2000-01-01 00:00:00','2000-01-01 1[0-9]:[0-9]{2}:[0-9]{2}',2,null\)/);
+    // no mission chrono before the unlock (choice D); once unlocked, each mission box has its own (mission.test)
+    assert.ok(!html.includes("mt.js.Timer.alloc"));
     assert.ok(!html.includes('id="notification"'));
     void a;
   });
@@ -276,8 +279,8 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   const a = armyByHost(env.db, "x");
   assert.equal(a, null);
   const army = { id: 1, host: "nsun", name: "nSun", part: 5, faction: 1, credits: 241, recruiterId: null, recruits: 0, pendingRecruits: 0, createdAt: 0, createdIp: null, passwordHash: null, isFaction: false, createdCid: null, missionsUnlocked: false, rats: 1, epicWins: 0 };
-  const mission = { type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" };
-  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, now: 0, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, mission, raid: { phase: 1, step: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
+  const missions = [{ type: "infiltrate" as const, unlocked: false, tries: [], next: 0, key: "ABCDEF" }];
+  const view = { army, troopers: [], power: 99, battles: [], battleTotal: 3, resetIn: 100, now: 0, nextBounty: 50, moneyDelta: 0, notice: "Félicitations ! <b>x</b>", locked: false, missions, raid: { phase: 1, step: 1, alive: 0, over: false, lastWin: false, key: "ABCDEF" } };
   const html = String(hqPage(env.cfg, view));
   assert.ok(html.includes('<div id="notification"><div class="poptop">'));
   assert.ok(html.includes("Félicitations ! &lt;b&gt;x&lt;/b&gt;"));

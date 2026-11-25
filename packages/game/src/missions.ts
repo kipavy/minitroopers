@@ -5,15 +5,6 @@ import type { ArmyRef } from "./opponents.ts";
 
 export type MissionType = "exterminate" | "infiltrate" | "epic";
 
-/**
- * Mission of the day. UNVERIFIED: the original rule is unknown (one type per day, RECON3 §4); with >= 10 recruits
- * epic one day in three, otherwise exterminate / infiltrate equally.
- */
-export function missionOfDay(p: { day: string; armyId: number; recruits: number; salt: string }): MissionType {
-  const h = fnv1a(`${p.day}|${p.armyId}|mission|${p.salt}`);
-  if (p.recruits >= EPIC_MIN_RECRUITS) return (["exterminate", "infiltrate", "epic"] as const)[h % 3]!;
-  return h % 2 === 0 ? "exterminate" : "infiltrate";
-}
 
 /**
  * Infiltration target: one time in two among the armies already fought (if any), else uniform among candidates; null if none.

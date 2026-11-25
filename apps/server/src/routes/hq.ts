@@ -4,13 +4,12 @@ import type { Html } from "../views/html.ts";
 import { formBody } from "../form.ts";
 import { rateLimited } from "../texts.ts";
 import { armyPower } from "@mt/engine";
-import { dayKey, host as hostOf, nextResetAt, referralBounty } from "@mt/game";
+import { EPIC_MIN_RECRUITS, dayKey, host as hostOf, nextResetAt, referralBounty, type MissionType } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { bindArmy, persistSession, queryParam } from "../session.ts";
 import type { PasswordLimits } from "../ratelimit.ts";
-import { asMissionType, missionTypeOf } from "./mission.ts";
 import {
-  armyByHost, armyById, battlesOfDay, defensesOf, freezeMissionType, lastRaidOfDay, missionDay, missionsOfDay, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
+  armyByHost, armyById, battlesOfDay, confirmedRecruitCount, defensesOf, epicAllowed, lastRaidOfDay, missionDay, missionsOfDay, type DayBattle, pendingRecruits, raidAlive, raidDay, recruitCount, takeNotices,
   troopersOf, trooperInput, type ArmyRow, type DefenseRow,
 } from "../repo.ts";
 import { isValidHost, armyUrl } from "../urls.ts";
@@ -28,14 +27,26 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
   const { cfg, db } = deps;
   const now = deps.now ?? Date.now;
 
+  /** The HQ mission boxes (spec 2026-11-25-missions-quotidiennes-design.md §5, choices A and D). */
+  function missionBoxes(army: ArmyRow, day: string, locked: boolean, key: string): HqView["missions"] {
+    const all: MissionType[] = ["exterminate", "infiltrate", "epic"];
+    const base = { unlocked: army.missionsUnlocked, tries: [] as DayBattle[], next: 0, key };
+    if (locked) return all.map((type) => ({ ...base, type })); // a stranger learns nothing
+    if (!army.missionsUnlocked) return [{ ...base, type: "exterminate" }];
+    const missing = Math.max(0, EPIC_MIN_RECRUITS - confirmedRecruitCount(db, army.id));
+    return all.map((type) =>
+      type === "epic" && !epicAllowed(db, army.id, day)
+        ? { ...base, type, epicMissing: missing }
+        : { ...base, type, tries: missionsOfDay(db, army.id, day, type), next: missionDay(db, army.id, day, type).used },
+    );
+  }
+
   function hqView(army: ArmyRow, o: { locked: boolean; lockError?: string; moneyDelta?: number; notice?: Html | null; key?: string }): HqView {
     const rows = troopersOf(db, army.id);
     const troopers = rows.map(trooperInput);
     const t = now();
     const day = dayKey(new Date(t), cfg.tzGame);
     const al = allowanceOf(db, cfg, army.id, troopers, t);
-    // The owner's first visit of the day draws and freezes the mission type; a stranger only sees it.
-    const type = o.locked ? (missionDay(db, army.id, day).type ?? missionTypeOf(db, army.id, day)) : freezeMissionType(db, army.id, day, () => missionTypeOf(db, army.id, day));
     return {
       army,
       troopers,
@@ -51,13 +62,7 @@ export function registerHq(pages: Hono<Env>, deps: Deps, homeError: HomeError, l
       moneyDelta: o.moneyDelta ?? 0,
       notice: o.notice ?? null,
       locked: o.locked,
-      mission: {
-        type: asMissionType(type),
-        unlocked: army.missionsUnlocked,
-        tries: o.locked ? [] : missionsOfDay(db, army.id, day),
-        next: o.locked ? 0 : missionDay(db, army.id, day).used,
-        key: o.key ?? "",
-      },
+      missions: missionBoxes(army, day, o.locked, o.key ?? ""),
       raid: raidBox(army, day, o.key ?? ""),
       ...(o.lockError ? { lockError: o.lockError } : {}),
     };

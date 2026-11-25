@@ -266,13 +266,15 @@ function dayLines(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): strin
   const al = dayKey(new Date(now), cfg.tzGame) === day ? allowanceOf(db, cfg, a.id, troopersOf(db, a.id).map(trooperInput), now) : null;
   const used = battlesUsed(db, a.id, day);
   const counted = battlesCounted(db, a.id, day);
-  const m = missionDay(db, a.id, day);
   const r = raidDay(db, a.id, day);
   const shops = shopResets(db, a.id, day);
   return [
     `Journée ${day} :`,
     `  Batailles : ${counted}/${al ? al.allowance : battleAllowance(troopersOf(db, a.id).map(trooperInput))}${used !== counted ? ` (${used} dans la journée, avant remise à zéro comprises)` : ""}${al?.regen ? ` (réserve ${al.reserve}/3, recharges à venir : ${al.ahead})` : ""}`,
-    `  Mission : ${m.type ?? "pas encore tirée"}, essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`,
+    ...(['exterminate', 'infiltrate', 'epic'] as const).map((t) => {
+      const m = missionDay(db, a.id, day, t);
+      return `  Mission ${t} : essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`;
+    }),
     `  Raid : phase ${r.phase}, terminé : ${yesNo(r.over)}, recrues tuées : ${r.dead.length}`,
     `  Boutique : ${shops === 0 ? "offres du jour" : `nouvelles offres (remise à zéro ${shops} fois)`}`,
   ];
