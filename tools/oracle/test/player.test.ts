@@ -53,7 +53,7 @@ after(() => runner.close());
 /**
  * The battle is simulated while it plays (lazy simulation): by default the page asks for 200 resolve() steps per frame
  * (mtAhead) at the first mtSim, so that the battle is complete within a few frames as before; ahead: 0 keeps the SWF's
- * default (4); pauseAtStart pauses before the first entry is applied (a plain playback from 0, for references).
+ * default (a 5 ms budget per frame); pauseAtStart pauses before the first entry is applied (a plain playback from 0, for references).
  */
 const open = async (id: string, flashvars: Record<string, string> = {}, oracleData = false, opts: { ahead?: number; pauseAtStart?: boolean } = {}) => {
   const t = golden(id);
@@ -244,7 +244,7 @@ test("mtPause freezes the applied index, mtResume restarts it; mtSpeed is clampe
     await p.call("mtSpeed", 1000);
     assert.equal((await p.call("mtState")).speed, 32);
     await p.call("mtSpeed", 0.01);
-    assert.equal((await p.call("mtState")).speed, 0.125);
+    assert.equal((await p.call("mtState")).speed, 0.0625);
     assert.deepEqual(p.errors, []);
   } finally {
     await p.close();
@@ -378,10 +378,12 @@ const HISTORY = [
   "regression/modes-1100gex90_b_view_raid.json.gz",
   "regression/modes-fr_b_view_miss2.json.gz",
 ];
-for (const id of HISTORY) {
-  test(`Battle.history equals the oracle's EV lines, before and after jumps (${id})`, { timeout: 180_000 }, async (t) => {
+// twice: 200 resolve() steps per frame (complete within a few frames), and the SWF's default 5 ms budget (complete while
+// the battle plays; the jumps below may wait for the simulation)
+for (const [ahead, id] of [200, 0].flatMap((a) => HISTORY.map((h) => [a, h] as const))) {
+  test(`Battle.history equals the oracle's EV lines, before and after jumps (${id}${ahead ? "" : ", 5 ms budget"})`, { timeout: 180_000 }, async (t) => {
     if (skip(t)) return;
-    const p = await open(id, {}, true);
+    const p = await open(id, {}, true, { ahead });
     try {
       const total = p.t.record.events.length;
       const expected = p.t.record.events.join("\n");
@@ -758,7 +760,7 @@ test("native pause (click on the battlefield) = mtPause; mtGoto during the pause
 // waits for them (seeking, target) and lands; the history is the golden's, entry for entry.
 test("lazy simulation on large/00016: playback starts before the battle is fully simulated; a jump past it waits and lands", { timeout: 300_000 }, async (t) => {
   if (skip(t)) return;
-  const p = await open("large/00016.json.gz", {}, true, { ahead: 0 });
+  const p = await open("large/00016.json.gz", {}, true, { ahead: 1 });
   try {
     const total = p.t.record.events.length;
     const c0 = await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
@@ -766,9 +768,9 @@ test("lazy simulation on large/00016: playback starts before the battle is fully
     assert.ok(c0.sim.length > 0 && !c0.sim[0]!.complete && c0.sim[0]!.events < total, `first mtSim ${JSON.stringify(c0.sim[0])}`);
     const n = total - 5;
     await p.call("mtPause"); // playback would go on past n once landed
-    const r = await p.call("mtGoto", n);
-    const s0 = await p.call("mtState");
-    if (!r && !s0.complete) assert.deepEqual({ seeking: s0.seeking, target: s0.target }, { seeking: true, target: n }, "jump waiting for the simulation");
+    // the call and the state read in the same JS turn (no frame in between)
+    const [r, s0] = await p.page.evaluate((x) => { const e = (globalThis as any).document.getElementById("battle"); const r = e.mtGoto(x); return [r, e.mtState()]; }, n);
+    assert.deepEqual({ r, complete: s0.complete, seeking: s0.seeking, target: s0.target }, { r: false, complete: false, seeking: true, target: n }, "the jump waits for the simulation");
     const s1 = await seekDone(p);
     assert.deepEqual({ idx: s1.idx, seeking: s1.seeking }, { idx: n, seeking: false }, `mtGoto(${n}) landed`);
     const c = await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
@@ -779,6 +781,96 @@ test("lazy simulation on large/00016: playback starts before the battle is fully
     assert.ok(c.sim.filter((x) => x.complete).length === 1, "complete once");
     assert.equal(await p.call("mtHistStr"), p.t.record.events.join("\n"), "history as computed");
     t.diagnostic(`${c.sim.length} mtSim calls; first mtProgress ${Math.round(c0.progress[0]![2])} ms, mtReady ${Math.round(c.readyAt)} ms after load`);
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
+});
+
+// Controls while the battle is still being simulated (mtAhead(1): one resolve() step per frame, so that it lasts): native
+// pause click (the simulation goes on under the PAUSE screen), a trooper's card (native pause with his card), x32, and
+// the two pause races: resume then pause at once (the fading screen replaced by a new one: paused), pause then a field
+// click before the next frame (the click wins: resumed, the game not frozen). The history stays the golden's.
+test("during the simulation: native pause, trooper card, x32, resume+pause and pause+click races (large/00016)", { timeout: 300_000 }, async (t) => {
+  if (skip(t)) return;
+  const p = await open("large/00016.json.gz", {}, true, { ahead: 1 });
+  try {
+    const state = () => p.call("mtState");
+    const box = (await p.page.locator("#battle").boundingBox())!;
+    const clickAt = (x: number, y: number) => p.page.mouse.click(box.x + x, box.y + y);
+    const frozenFor = async (ms: number): Promise<boolean> => {
+      const a = (await state()).idx;
+      await p.page.waitForTimeout(ms);
+      return (await state()).idx === a;
+    };
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= 2, 60_000, "idx >= 2");
+    assert.equal((await state()).complete, false, "still simulating");
+
+    // native pause (Ruffle swallows the first click on a fresh page)
+    await clickAt(360, 120);
+    await p.page.waitForTimeout(500);
+    if (!(await state()).paused) {
+      await clickAt(360, 120);
+      await p.page.waitForTimeout(500);
+    }
+    const s1 = await state();
+    assert.deepEqual({ paused: s1.paused, screen: s1.screen, complete: s1.complete }, { paused: true, screen: true, complete: false }, "native pause during the simulation");
+    assert.ok(await frozenFor(600), "frozen in the pause");
+    assert.ok((await state()).total > s1.total, "the simulation goes on under the pause screen");
+    await clickAt(360, 120);
+    for (let i = 0; i < 40 && (await state()).screen; i++) await p.page.waitForTimeout(100);
+    assert.deepEqual(await state().then((s: any) => ({ paused: s.paused, screen: s.screen })), { paused: false, screen: false }, "native resume");
+
+    // a trooper's card: a click on an alive trooper opens the native pause with his card
+    const dump = (await p.call("mtDump")) as string;
+    const m = /^T\d+ s\d @(\d+),(\d+) hp[1-9]/m.exec(dump)!;
+    await clickAt(Number(m[1]), Number(m[2]) - 20);
+    await p.page.waitForTimeout(500);
+    const s2 = await state();
+    t.diagnostic(`trooper click at ${m[1]},${Number(m[2]) - 20}: paused ${s2.paused}, screen ${s2.screen}`);
+    if (s2.paused) {
+      assert.equal(s2.screen, true, "trooper card: the pause screen");
+      assert.ok(await frozenFor(500), "frozen with the card open");
+      await p.call("mtResume");
+      for (let i = 0; i < 40 && (await state()).screen; i++) await p.page.waitForTimeout(100);
+    }
+
+    // race 1: resume, then pause again while the screen fades out
+    await p.call("mtPause");
+    await p.page.waitForTimeout(300);
+    await p.page.evaluate(() => {
+      const e = (globalThis as any).document.getElementById("battle");
+      e.mtResume();
+      e.mtPause();
+    });
+    await p.page.waitForTimeout(600);
+    const s3 = await state();
+    assert.deepEqual({ paused: s3.paused, screen: s3.screen }, { paused: true, screen: true }, "resume + pause: paused");
+    assert.ok(await frozenFor(600), "resume + pause: frozen");
+
+    // race 2: (resumed) pause, then a field click before the next frame: the click wins
+    await p.call("mtResume");
+    for (let i = 0; i < 40 && (await state()).screen; i++) await p.page.waitForTimeout(100);
+    await p.page.evaluate(() => (globalThis as any).document.getElementById("battle").mtPause());
+    await clickAt(360, 120);
+    await p.page.waitForTimeout(800);
+    const s4 = await state();
+    for (let i = 0; i < 40 && (await state()).screen !== (await state()).paused; i++) await p.page.waitForTimeout(100);
+    const s5 = await state();
+    assert.equal(s5.screen, s5.paused, `pause + click: screen and paused agree (${JSON.stringify({ paused: s4.paused, screen: s4.screen })})`);
+    // resumed: it plays, unless it has caught up with the simulation (one resolve() step per frame here)
+    if (!s5.paused && (await frozenFor(1500))) { const s = await state(); assert.equal(s.idx, s.total, `pause + click: resumed but frozen at ${s.idx}/${s.total}`); }
+
+    // x32 during the simulation
+    if ((await state()).paused) await p.call("mtResume");
+    await p.call("mtSpeed", 32);
+    const i0 = (await state()).idx;
+    await p.page.waitForTimeout(1500);
+    assert.ok((await state()).idx > i0, "x32 plays on during the simulation");
+    await p.call("mtAhead", 0);
+    const c = await p.waitFor((c) => c.ready.length > 0, 120_000, "mtReady");
+    assert.equal(c.ready[0]!.total, p.t.record.events.length);
+    assert.equal(await p.call("mtHistStr"), p.t.record.events.join("\n"), "history as computed");
     assert.deepEqual(p.errors, []);
   } finally {
     await p.close();

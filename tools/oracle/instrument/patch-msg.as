@@ -492,9 +492,18 @@ ofs0081:
             _loc2_.fillRect(_loc2_.rect,16711680);
             _loc2_.draw(§n#\x07\f§.§*#\x01§.§\x011wD§);
          }
-         else if(param1.§w\x0b\x01o\x02§ == null)
+         else
          {
-            param1.§w\x0b\x01o\x02§ = new §^\x05\x01!§.§J\b\x17Z\x03§();
+            if(param1.§w\x0b\x01o\x02§ != null && param1.§w\x0b\x01o\x02§ === mtClosing)
+            {
+               // still fading out after a resume: removed at once, then a new screen
+               mtClosing = null;
+               param1.§w\x0b\x01o\x02§.aGx2();
+            }
+            if(param1.§w\x0b\x01o\x02§ == null)
+            {
+               param1.§w\x0b\x01o\x02§ = new §^\x05\x01!§.§J\b\x17Z\x03§();
+            }
          }
       }
 
@@ -542,8 +551,21 @@ ofs0081:
             }
             return;
          }
-         if(mtPaused)
+         if(mtPaused && mtPauseWant)
          {
+            // the pause asked (mtPause) was not shown yet: the toggle has just opened a screen; the click, the latest
+            // intention, resumes: that screen removed at once
+            mtPaused = false;
+            mtPauseWant = false;
+            if(_loc2_.§w\x0b\x01o\x02§ != null)
+            {
+               _loc2_.§w\x0b\x01o\x02§.aGx2();
+            }
+            mtOut("mtPaused",[false]);
+         }
+         else if(mtPaused)
+         {
+            // the toggle has started the screen's fade-out (§fl@@\x02§)
             mtPaused = false;
             mtPauseWant = false;
             if(_loc2_.§w\x0b\x01o\x02§ != null)
@@ -598,7 +620,7 @@ ofs0081:
          {
             return;
          }
-         mtSpd = param1 < 0.125 ? 0.125 : (param1 > 32 ? 32 : param1);
+         mtSpd = param1 < 0.0625 ? 0.0625 : (param1 > 32 ? 32 : param1);
          mtFast = mtSpd >= 8 || mtSeekTo >= 0;
          mtRate();
       }
@@ -673,7 +695,7 @@ ofs0081:
          {
             param1 = 0;
          }
-         // past the entries simulated so far: done once they exist (mtSimSync), 30 resolve() steps per frame meanwhile
+         // past the entries simulated so far: the next frame resolves all the steps up to it, then jumps (mtSimFrame)
          if(param1 > mtTotal && !mtSimDone)
          {
             mtSimTarget = param1;
@@ -840,34 +862,49 @@ ofs0081:
       }
 
       // the stage's pixels, ARGB 720x440, in base64 (Ruffle's WebGL canvas cannot be read reliably by the page)
+      // mtShotBd: the 720x440 bitmap allocated once, in a frame (mtShotAlloc from mtInit), not in the page's call (see
+      // mtPause); the pixels (getPixels) and their base64 are built in the call: they are the answer
+      public static var mtShotBd:BitmapData = null;
+
+      public static function mtShotAlloc() : void
+      {
+         if(mtShotBd == null)
+         {
+            mtShotBd = new BitmapData(720,440,false,0);
+         }
+      }
+
       public static function mtShot() : String
       {
-         var _loc1_:BitmapData = null;
+         var _loc1_:* = null;
          var _loc2_:ByteArray = null;
          if(mtGame == null || mtGame.§\x011wD§.stage == null)
          {
             return "";
          }
+         mtShotAlloc();
+         _loc1_ = mtGame.§w\x0b\x01o\x02§;
+         _loc2_ = null;
+         // the pause screen hidden for the capture, shown again whatever happens
+         if(_loc1_ != null)
+         {
+            _loc1_.visible = false;
+         }
          try
          {
-            _loc1_ = new BitmapData(720,440,false,0);
-            if(mtGame.§w\x0b\x01o\x02§ != null)
-            {
-               mtGame.§w\x0b\x01o\x02§.visible = false;
-            }
-            _loc1_.draw(mtGame.§\x011wD§.stage);
-            if(mtGame.§w\x0b\x01o\x02§ != null)
-            {
-               mtGame.§w\x0b\x01o\x02§.visible = true;
-            }
-            _loc2_ = _loc1_.getPixels(_loc1_.rect);
-            _loc1_.dispose();
+            mtShotBd.fillRect(mtShotBd.rect,0);
+            mtShotBd.draw(mtGame.§\x011wD§.stage);
+            _loc2_ = mtShotBd.getPixels(mtShotBd.rect);
          }
          catch(_loc_e_:*)
          {
-            return "";
+            _loc2_ = null;
          }
-         return mtB64(_loc2_);
+         if(_loc1_ != null)
+         {
+            _loc1_.visible = true;
+         }
+         return _loc2_ == null ? "" : mtB64(_loc2_);
       }
 
       public static function mtB64(param1:ByteArray) : String
@@ -1002,6 +1039,7 @@ ofs0081:
          {
          }
          mtStartsCalc();
+         mtShotAlloc();
          mtSimSt[1] = getTimer();
          mtSimOut();
          if(mtSimDone)
@@ -1193,7 +1231,7 @@ ofs0081:
       // frame the new entries are copied to mtHist and appended to the Game's queue (unless the Winner was applied), the
       // keyframes' display state (mtShownStep), waves, checkpoints, wave starts are brought up to date, and the page gets
       // mtSim({events, complete, waves, starts, checkpoints}). mtReady comes once the battle is complete, as before.
-      // A jump past the simulated entries waits (mtSimTarget, 30 steps per frame meanwhile) and is made once they exist.
+      // A jump past the simulated entries waits (mtSimTarget): the next frame resolves up to its entry and jumps.
       // Same resolve() calls in the same order: the history is the same, entry for entry.
       public static var mtSimB:* = null;
       public static var mtSimDone:Boolean = true;
@@ -1608,6 +1646,10 @@ ofs0081:
          var _loc10_:* = null;
          var _loc11_:int = 0;
          var _loc12_:* = null;
+         if(_loc5_ == 24 && _loc6_[0] != null)
+         {
+            mtSh(param1,_loc8_).k.push(int(_loc6_[0][")-Z\x19\x01"]));
+         }
          if(_loc5_ == 22)
          {
             mtSt(param1,_loc8_,_loc6_[0],true);
@@ -1674,6 +1716,7 @@ ofs0081:
                "s":[],
                "j":[],
                "h":false,
+               "k":[],
                "w":null
             };
          }
@@ -1778,6 +1821,7 @@ ofs0081:
             param1.x[_loc3_][1] = _loc4_.s.concat();
             param1.x[_loc3_][2] = _loc4_.j.concat();
             param1.x[_loc3_][3] = _loc4_.h;
+            param1.x[_loc3_][5] = _loc4_.k.concat();
             _loc3_++;
          }
          _loc3_ = 0;
@@ -1787,6 +1831,7 @@ ofs0081:
             param1.dx[_loc3_][1] = _loc4_.s.concat();
             param1.dx[_loc3_][2] = _loc4_.j.concat();
             param1.dx[_loc3_][3] = _loc4_.h;
+            param1.dx[_loc3_][5] = _loc4_.k.concat();
             _loc3_++;
          }
       }
@@ -2468,6 +2513,36 @@ ofs0081:
          return !param1.§Qg}\x07§ && !param1.§\x06TY0§ && param1.§n*L%\x01§ == null && param1.§W\x19\x1bT\x03§ == null && param2["(\t\x01"] == null && param1.§\x10\x1e\x01§ != null && param1.§5\tmF§ != null && param1.§5\tmF§["An%6"] == param2["m\x0e\x01"] && param1.§9\x118u§ == int(param2["9\x118u"]);
       }
 
+      // The one-use skills a trooper still has (§\x1e;h\n\x01§, read by his card in the pause screen): built from his info as at
+      // his creation (§;\f\x01§.§3v]'\x02§()), minus those BattleMsg 24 used up before the keyframe (param2: their
+      // indexes, mtShown), as the display removes them (§-8rS\x03§)
+      public static function mtSkills(param1:*, param2:Array) : void
+      {
+         var _loc3_:Array = null;
+         var _loc4_:int = 0;
+         var _loc5_:int = 0;
+         if(param1.§;\f\x01§ == null)
+         {
+            return;
+         }
+         _loc3_ = param1.§;\f\x01§.§3v]'\x02§();
+         while(_loc4_ < param2.length)
+         {
+            _loc5_ = 0;
+            while(_loc5_ < _loc3_.length)
+            {
+               if(_loc3_[_loc5_] != null && int(_loc3_[_loc5_][")-Z\x19\x01"]) == int(param2[_loc4_]))
+               {
+                  _loc3_.splice(_loc5_,1);
+                  break;
+               }
+               _loc5_++;
+            }
+            _loc4_++;
+         }
+         param1.§\x1e;h\n\x01§ = _loc3_;
+      }
+
       // A reused trooper as §y#;B\x01§(info) and mtExtra(x) leave a new one: info fields (§\x17;!\x01§ without the skin
       // rebuild), keyframe statuses, wounds, healed, default facing of its side, standing (or its held pose: mtExtra), no
       // label, shake, speed, colour effect or effect sprite left. Display properties are written only when they differ
@@ -2590,6 +2665,7 @@ ofs0081:
          {
             return;
          }
+         mtSkills(param1,param2[5] is Array ? param2[5] : []);
          if(int(param2[4]) >= 0 && param1.§W\x19\x1bT\x03§ != null)
          {
             param1.§\x12?g-§ = int(param2[4]);
@@ -2777,7 +2853,7 @@ ofs0081:
                _loc8_.push(mtWeap(_loc5_.§\x1dI\x02\r\x03§[_loc7_]));
                _loc7_++;
             }
-            _loc9_ = "T" + int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]) + " s" + _loc5_.§9\x118u§ + " @" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§) + " hp" + _loc5_.§\x12?g-§ + (_loc5_.§Qg}\x07§ ? " dead" : "") + (_loc5_.§5%um\x01§ ? " down" : "") + " w" + (_loc5_.§5\tmF§ == null ? "-" : String(int(_loc5_.§5\tmF§["7X\x01"]))) + " [" + _loc8_.join(",") + "] h" + (_loc5_.§(\x1f\x15F\x01§ ? 1 : 0) + " v" + (_loc5_.§W\x19\x1bT\x03§ == null ? "-" : mtStr(_loc5_.§W\x19\x1bT\x03§["7X\x01"])) + " st" + mtStr(_loc5_.§\x13fT$\x03§) + (_loc5_.§Qg}\x07§ ? "" : " inj" + mtStr(_loc5_.§3\x12\x06c\x03§)) + (_loc5_.§XEC3\x03§ ? " healed" : "");
+            _loc9_ = "T" + int(_loc5_.§;\f\x01§.§5E[\x1d§["7X\x01"]) + " s" + _loc5_.§9\x118u§ + " @" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§) + " hp" + _loc5_.§\x12?g-§ + (_loc5_.§Qg}\x07§ ? " dead" : "") + (_loc5_.§5%um\x01§ ? " down" : "") + " w" + (_loc5_.§5\tmF§ == null ? "-" : String(int(_loc5_.§5\tmF§["7X\x01"]))) + " [" + _loc8_.join(",") + "] h" + (_loc5_.§(\x1f\x15F\x01§ ? 1 : 0) + " v" + (_loc5_.§W\x19\x1bT\x03§ == null ? "-" : mtStr(_loc5_.§W\x19\x1bT\x03§["7X\x01"])) + " st" + mtStr(_loc5_.§\x13fT$\x03§) + (_loc5_.§Qg}\x07§ ? "" : " inj" + mtStr(_loc5_.§3\x12\x06c\x03§) + " sk" + mtSkStr(_loc5_.§\x1e;h\n\x01§)) + (_loc5_.§XEC3\x03§ ? " healed" : "");
             if(param1)
             {
                _loc9_ += " a" + (_loc5_.§9(Is§ == null ? "-" : String(int(_loc5_.§9(Is§[")-Z\x19\x01"]))) + " f" + _loc5_.§G\x1ad@§ + " g" + _loc5_.§4)\x01§ + "," + _loc5_.§A\x1f\x01§ + " px" + int(_loc5_.§v\x01§) + "," + int(_loc5_.§l\x01§);
@@ -2801,6 +2877,18 @@ ofs0081:
          }
          _loc3_.push("E " + (_loc2_.§HUgt\x03§ ? 1 : 0) + (mtWinner(_loc2_) != null ? " banner" : ""));
          return _loc3_.join("\n");
+      }
+
+      public static function mtSkStr(param1:Array) : String
+      {
+         var _loc2_:Array = [];
+         var _loc3_:int = 0;
+         while(param1 != null && _loc3_ < param1.length)
+         {
+            _loc2_.push(param1[_loc3_] == null ? -1 : int(param1[_loc3_][")-Z\x19\x01"]));
+            _loc3_++;
+         }
+         return "[" + _loc2_.join(",") + "]";
       }
 
       public static function mtWeap(param1:*) : String

@@ -439,13 +439,14 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
 
 | Point | Où | Effet |
 |---|---|---|
-| `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38), `NewWave` (39) et `Winner` (34), arme la détection de blocage en état 1, appelle `mtReady` |
+| `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38), `NewWave` (39) et `Winner` (34), arme la détection de blocage en état 1, envoie `mtSim` ; `mtReady` seulement si le combat est déjà complet (sinon à la fin de la simulation paresseuse, ci-dessous) |
 | `PC_PLAY_GAME_FRAME` | même handler, état 2 : `this.frame()` | devient `mtFrame(this)` |
 | `PC_PLAY_FAST` | `§Bl{K\x01§` (isFast : `ticks >= 8`) | `(ticks >= 8) \| mtFast` (`bitor` + `convert_b`) : à vitesse ≥ 8 les mêmes effets que le mode natif 16× sont coupés |
 | `PC_PLAY_KF` (+ `PC_PLAY_KF_STACK`) | même handler, état 0 : `if (battle.resolve())` | `if (mtKfGo(battle, battle.resolve()))` (`swap` ×2 ; `maxstack` 2 → 3) : `mtKf(battle)` (images clés, en lecture seule), puis vrai si `resolve()` a fini **ou dès que l'historique a une entrée** (simulation paresseuse, ci-dessous) : le Game prend l'historique et passe à l'état 1 comme d'origine. **Seul ajout dans l'état 0** |
 | `PC_PLAY_TICK` | `tick()` du Game `§&~\x03'§` : rendu puis avance de tous les clips (`§;io&§.§i'\x04W\x02§`, `§?d0r\x01§`) | `mtClips()` : les mêmes deux appels (temps mesurés pour `mtState().prof`), précédés de `mtKeep` ; pendant un rejeu caché, `mtClipsSeek` (ci-dessous) |
 
-- SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves, starts})` une fois (`starts[k]` : index
+- SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves, starts})` une fois, quand le combat est
+  complet (`starts[k]` : index
   de la première image clé après le `NewWave` `waves[k]`, la nouvelle vague déployée : un saut de vague y va sans
   rejeu) ; `mtProgress(idx, wave)` au plus
   une fois par image, seulement si `idx` change (`idx = total − queue.length − (step ? 1 : 0)`, `wave` = nombre de
@@ -492,7 +493,7 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   combat ; liste de tweens du Game rétablie), puis remis à l'image qui suit la fin du saut avec un nouvel instantané du terrain à `n`
   (rendu des clips d'abord, fiche de trooper fermée) ; `mtSettle` fait de même. Un clic natif pendant un saut
   asynchrone bascule la pause voulue à sa fin. `mtShot()` cache l'écran de pause le temps de la capture.
-- Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
+- Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [1/16, 32]),
   `mtState()` = `{idx, wave, total, speed, paused, screen, ended, seeking, hidden, calls, kf, banner, playing, prof, pool,
   waves, starts}` (`screen` : écran de pause natif ouvert, `playing` : le Game est en état 2, `prof` : temps du dernier saut, `pool` : compteurs de la réserve ; `seeking` : saut en
   cours, `hidden` : clip du Game masqué, `calls` : appels à `frame()` de lecture, hors sauts — la vitesse effective, `kf` :
@@ -526,8 +527,9 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   tableaux des entrées 41/42 sont vidés par `shift()`, un tir manqué reçoit 0 dégât) : `mtFresh`, appelé avant chaque
   `frame()` (via `mtUnwait`), remplace les 16 premières entrées de la file encore « vierges » (dictionnaire
   `mtPristine`) par des copies (au plus un pas commence par tick, au plus 16 ticks par `frame()` : la touche native +).
-- `mtGoto(n)` (n borné à `[0, total]`) : saut **synchrone, dans les deux sens, sans recharger le lecteur**. Refusé
-  (`false`) si l'écran PAUSE natif est ouvert ; avant l'état 2 il est différé à la première image de lecture. Il
+- `mtGoto(n)` (n borné à `[0, total]`) : saut **synchrone, dans les deux sens, sans recharger le lecteur**, permis en
+  pause (l'écran PAUSE reste, ci-dessus) ; au-delà des entrées simulées il attend l'image suivante (simulation
+  paresseuse, ci-dessus) ; avant l'état 2 il est différé à la première image de lecture. Il
   prend la dernière image clé `≤ n` (et `≤` l'index du `Winner`, pour que la fin soit rejouée) ; si l'index appliqué
   courant est entre cette image et `n`, il continue simplement depuis la position courante. Au-delà du `Winner` (la
   fin) : l'image clé finale est restaurée puis l'entrée `Winner` appliquée directement (`apply`), sans rejeu. Pendant
