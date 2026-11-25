@@ -51,24 +51,42 @@ ${f.power}</li></ul></div></td>
 `;
 }
 
-function mateCell(cfg: Config, v: OppView): Html {
-  return html`<td class="choosetd mate"><div class="backchoose"><h1>Infiltre la base d'une armée de ton choix :</h1>
-<form action="${armyUrl(cfg, v.army.host, "/b/battle")}" id="friends" method="POST"><input name="chk" type="hidden" value="${v.key}"/><input name="n" type="hidden" value="${v.used}"/>
+/** The by-name form cell ("… l'armée de ton choix"), shared with /b/train: `hidden` inputs, confirmed unless `confirm` is false. */
+export function mateCell(o: { action: string; heading: Html; button: string; hidden: Html; confirm: boolean }): Html {
+  const submit = o.confirm
+    ? html`<a href="#" onclick="if( confirm('Confirmer cette action ?') ) $('#friends').submit()" class="button5">${o.button}</a>`
+    : html`<a href="#" onclick="$('#friends').submit(); return false" class="button5">${o.button}</a>`;
+  return html`<td class="choosetd mate"><div class="backchoose"><h1>${o.heading}</h1>
+<form action="${o.action}" id="friends" method="POST">${o.hidden}
 <input name="friend" class="field"/></form>
-<a href="#" onclick="if( confirm('Confirmer cette action ?') ) $('#friends').submit()" class="button5">Infiltrer !</a></div></td>
+${submit}</div></td>
 `;
+}
+
+/** The opponents table (b_opp.html), shared with /b/train: the by-name cell second, two cells per row. */
+export function chooseTable(cells: Html[], mate: Html): Html {
+  const all = [...cells];
+  all.splice(Math.min(1, all.length), 0, mate);
+  const rows: Html[] = [];
+  for (let i = 0; i < all.length; i += 2) rows.push(html`<tr>
+${all.slice(i, i + 2)}</tr>`);
+  return html`<table class="choose">${rows}</table>`;
 }
 
 /** The opponents page, from $EX/html/fr/b_opp.html: 5 opponents and the attack-by-name form, two cells per row. */
 export function oppPage(cfg: Config, v: OppView): Html {
   const cells = v.foes.map((f, i) => foeCell(f, i, armyUrl(cfg, v.army.host, `/b/battle?opp=${encodeURIComponent(f.ref)};n=${v.used};chk=${v.key}`), "Attaquer !"));
-  cells.splice(Math.min(1, cells.length), 0, mateCell(cfg, v));
-  const rows: Html[] = [];
-  for (let i = 0; i < cells.length; i += 2) rows.push(html`<tr>
-${cells.slice(i, i + 2)}</tr>`);
-  const right = html`<table class="choose">${rows}</table>
+  const mate = mateCell({
+    action: armyUrl(cfg, v.army.host, "/b/battle"),
+    heading: html`Infiltre la base d'une armée de ton choix :`,
+    button: "Infiltrer !",
+    hidden: html`<input name="chk" type="hidden" value="${v.key}"/><input name="n" type="hidden" value="${v.used}"/>`,
+    confirm: true,
+  });
+  const right = html`${chooseTable(cells, mate)}
 `;
   return shellPage(cfg, {
+    duo: true,
     army: v.army,
     troopers: v.troopers,
     power: v.power,

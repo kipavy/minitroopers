@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import type { BattleInput } from "@mt/engine";
 import { openDb } from "../src/db.ts";
 import { TRAININGS_KEPT, armyByHost, createArmy, deleteArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
@@ -182,4 +183,32 @@ test("deleteArmy: a training against the deleted army keeps its name as gone:<na
   assert.equal(deleteArmy(db, b), true);
   const t = trainingById(db, id)!;
   assert.deepEqual({ defenderId: t.defenderId, defenderRef: t.defenderRef }, { defenderId: null, defenderRef: "gone:Bbb" });
+});
+
+test("/b/opp and /b/train share one table: the by-name cell second of six, each with its own texts", async () => {
+  const { env, cl } = await world();
+  const tds = async (path: string): Promise<string[]> => {
+    const page = (await (await get(env, cl, path)).text()).replaceAll("&#39;", "'");
+    const table = /<table class="choose">([\s\S]*?)<\/table>/.exec(page)![1]!;
+    return [...table.matchAll(/<td class="([^"]+)">([\s\S]*?)<\/td>/g)].map((m) => `${m[1]}|${m[2]}`);
+  };
+  for (const [path, heading, button, confirms] of [
+    ["/b/opp", "Infiltre la base d'une armée de ton choix :", ">Infiltrer !<", true],
+    ["/b/train", "Affronte l'armée de ton choix :", ">Affronter !<", false],
+  ] as const) {
+    const cells = await tds(path);
+    assert.equal(cells.length, 6, path);
+    assert.ok(cells[1]!.startsWith("choosetd mate|"), path);
+    assert.ok(cells[1]!.includes(heading) && cells[1]!.includes(button), path);
+    assert.equal(cells[1]!.includes("confirm("), confirms, path);
+  }
+  const src = (f: string): string => readFileSync(new URL(`../src/views/${f}`, import.meta.url), "utf8");
+  assert.ok(!src("train.ts").includes("function mateCell"), "train.ts reuses the shared mateCell");
+  assert.ok(!src("train.ts").includes("i += 2"), "train.ts reuses the shared chooseTable");
+});
+
+test("only the narrow pages (Bataille, Entraînement) ask for two columns on tablets (panels duo); the sheet does not", async () => {
+  const { env, cl } = await world();
+  for (const p of ["/b/opp", "/b/train"]) assert.ok((await (await get(env, cl, p)).text()).includes('<table class="panels duo">'), p);
+  assert.ok((await (await get(env, cl, "/t/0")).text()).includes('<table class="panels">'));
 });

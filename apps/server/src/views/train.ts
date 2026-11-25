@@ -4,7 +4,7 @@ import type { ArmyRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { notification } from "./army.ts";
 import { html, type Html } from "./html.ts";
-import { foeCell, type OppFoe } from "./opp.ts";
+import { chooseTable, foeCell, mateCell, type OppFoe } from "./opp.ts";
 import { shellPage } from "./panel.ts";
 
 /** One stored training of the army, for the "recent trainings" list. */
@@ -26,14 +26,6 @@ export interface TrainView {
   error?: string;
 }
 
-function mateCell(cfg: Config, v: TrainView): Html {
-  return html`<td class="choosetd mate"><div class="backchoose"><h1>Affronte l'armée de ton choix :</h1>
-<form action="${armyUrl(cfg, v.army.host, "/b/train/fight")}" id="friends" method="POST"><input name="chk" type="hidden" value="${v.key}"/>
-<input name="friend" class="field"/></form>
-<a href="#" onclick="$('#friends').submit(); return false" class="button5">Affronter !</a></div></td>
-`;
-}
-
 function recentList(cfg: Config, v: TrainView): Html | "" {
   if (v.recent.length === 0) return "";
   const items = v.recent.map(
@@ -52,15 +44,19 @@ function recentList(cfg: Config, v: TrainView): Html | "" {
 export function trainPage(cfg: Config, v: TrainView): Html {
   const fight = (ref: string): string => armyUrl(cfg, v.army.host, `/b/train/fight?opp=${encodeURIComponent(ref)};chk=${v.key}`);
   const cells = v.foes.map((f, i) => foeCell(f, i, fight(f.ref), "S'entraîner !", false));
-  cells.splice(Math.min(1, cells.length), 0, mateCell(cfg, v));
-  const rows: Html[] = [];
-  for (let i = 0; i < cells.length; i += 2) rows.push(html`<tr>
-${cells.slice(i, i + 2)}</tr>`);
+  const mate = mateCell({
+    action: armyUrl(cfg, v.army.host, "/b/train/fight"),
+    heading: html`Affronte l'armée de ton choix :`,
+    button: "Affronter !",
+    hidden: html`<input name="chk" type="hidden" value="${v.key}"/>`,
+    confirm: false,
+  });
   const right = html`<div class="train"><div class="train-head"><p>Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.</p>
 <div class="but b3"><div class="but_right b3_right"><a class="but_bg b3_bg" href="${armyUrl(cfg, v.army.host, "/b/train")}">Autres adversaires</a></div></div></div>
-<table class="choose">${rows}</table>
+${chooseTable(cells, mate)}
 ${recentList(cfg, v)}</div>`;
   return shellPage(cfg, {
+    duo: true,
     army: v.army,
     troopers: v.troopers,
     power: v.power,

@@ -663,41 +663,13 @@
 	color : #c0392b;
 }
 
-/* --- narrow screens: the site frame shrinks to the window, the 720x440 player is scaled (player.js) --- */
+/* --- narrow screens: the 720x440 player is scaled (player.js) --- */
 @media (max-width : 979px) {
-	body.mtp .site {
-		width : auto;
-		margin : 0px;
-	}
-	body.mtp .ptop, body.mtp .sp, body.mtp .pleft, body.mtp .pright, body.mtp .arthead, body.mtp .camera, body.mtp .ptopleft, body.mtp .art_mouse, body.mtp .pbottomleft {
-		display : none;
-	}
-	body.mtp a.logo {
-		position : relative;
-		margin : 0px auto;
-		max-width : 100%;
-		height : 90px;
-		background-size : contain;
-	}
-	body.mtp .frame {
-		margin-top : 0px;
-		background : none;
-	}
-	body.mtp .ptopsite {
-		background : none;
-	}
-	body.mtp #content {
-		min-height : 0px;
-		padding : 0px 8px;
-	}
 	body.mtp .game {
 		padding-bottom : 10px;
 	}
 	body.mtp .game .button5 {
 		margin-left : 0px;
-	}
-	body.mtp .copy {
-		width : auto;
 	}
 }
 @media (max-width : 560px) {

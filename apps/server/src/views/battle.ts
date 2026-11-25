@@ -99,5 +99,5 @@ var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=2"], ...(v.og ? { og: v.og } : {}) });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=3"], ...(v.og ? { og: v.og } : {}) });
 }

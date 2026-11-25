@@ -119,3 +119,562 @@ td.right > .event-banner {
 .train-recent a {
 	color : #512f0d;
 }
+
+/* ===== Mobile (< 980 px, body.mtm set by layout() on every page): the original frame rebuilt at screen width =====
+   Validated by Killian on 2026-11-25 (spec 2026-11-25-mobile-design.md). Nothing here applies at 980 px and above.
+   Compact fixed bar (blue metal + dtop.png stripes, small logo left, credits and power right); the frame drawn with
+   border-image from its own one-pixel-high rows (bg_content.png, dbottom.png, dbg.png): only the beige middle stretches. */
+@media (max-width : 979px) {
+	body.mtm {
+		padding-top : 56px;
+	}
+	body.mtm:before {
+		content : "";
+		position : fixed;
+		z-index : 20;
+		left : 0px;
+		right : 0px;
+		top : 0px;
+		height : 41px;
+		border-bottom : 15px solid transparent;
+		background : url("/img/dtop.png") repeat-x left bottom, #515b7e;
+		box-shadow : inset 0px 1px 0px #6f7dad, 0px 2px 4px rgba(0,0,0,0.35);
+	}
+	body.mtm .site {
+		width : auto;
+		margin : 0px 6px;
+	}
+	body.mtm .ptop, body.mtm .sp, body.mtm .pleft, body.mtm .pright, body.mtm .arthead, body.mtm .camera, body.mtm .ptopleft, body.mtm .art_mouse, body.mtm .pbottomleft {
+		display : none;
+	}
+	body.mtm a.logo {
+		position : fixed;
+		z-index : 21;
+		left : 4px;
+		top : 3px;
+		margin : 0px;
+		width : 130px;
+		height : 50px;
+		background-size : contain;
+	}
+	body.mtm .home > .money, body.mtm .home > .power {
+		position : fixed;
+		z-index : 21;
+		top : 4px;
+		margin : 0px;
+	}
+	body.mtm .home > .power {
+		right : 8px;
+	}
+	body.mtm .home > .money {
+		right : 104px;
+	}
+	body.mtm .frame {
+		position : relative;
+		margin-top : 14px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 10px 0px 7px;
+		border-image : url("/img/bg_content.png") 0 10 0 7 fill stretch;
+	}
+	body.mtm .frame:before {
+		content : "";
+		position : absolute;
+		left : -7px;
+		right : -10px;
+		top : -11px;
+		height : 0px;
+		border-style : solid;
+		border-width : 0px 5px 11px 5px;
+		border-image : url("/img/dbottom.png") 0 5 11 5 fill stretch;
+		transform : scaleY(-1);
+	}
+	body.mtm .ptopsite {
+		background : none;
+	}
+	body.mtm #content {
+		min-height : 0px;
+		padding : 10px 4px 12px 4px;
+	}
+	body.mtm .dbottom {
+		background : none;
+		padding-bottom : 0px;
+		border-style : solid;
+		border-width : 0px 5px 11px 5px;
+		border-image : url("/img/dbottom.png") 0 5 11 5 fill stretch;
+	}
+	body.mtm .dbg {
+		height : 40px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 4px 0px 1px;
+		border-image : url("/img/dbg.png") 0 4 0 1 fill stretch;
+	}
+	body.mtm .indust {
+		margin-left : 0px;
+	}
+	body.mtm .copy {
+		width : auto;
+		text-align : center;
+		padding : 4px 0px 0px 0px;
+	}
+	/* title banner (title.png 479x64): scaled down with its proportions, never stretched */
+	body.mtm a.company {
+		position : static;
+		display : flex;
+		align-items : center;
+		justify-content : center;
+		box-sizing : border-box;
+		width : 100%;
+		max-width : 380px;
+		height : auto;
+		aspect-ratio : 479 / 64;
+		margin : 0px auto 12px auto;
+		padding : 0px;
+		background-size : contain;
+		background-position : center;
+	}
+}
+
+/* ===== Mobile: page body. Under 600 px one column: the page content first, then the troopers panel and its menu
+   (the HQ, table.panels.hqp, puts Bataille / Mission / Raid first, then the panel, then the recruit link).
+   600-979 px: two columns, the panel on the left as on the original, for the pages whose content fits beside it
+   (the HQ, table.panels.hqp, and Bataille / Entraînement, table.panels.duo); the wider pages stay in one column. The INFO tip area under the menu is hover-only:
+   hidden, and the bottom of the box (box1bottom.png) is closed under the menu. ===== */
+@media (max-width : 979px) {
+	body.mtm .home {
+		padding : 0px;
+	}
+	body.mtm table.panels {
+		display : block;
+		width : 100%;
+		margin : 0px;
+	}
+	body.mtm table.panels > tbody {
+		display : block;
+	}
+	body.mtm table.panels > tbody > tr {
+		display : flex;
+		flex-direction : column;
+		align-items : center;
+	}
+	body.mtm table.panels td.left, body.mtm table.panels td.right {
+		display : contents;
+	}
+	body.mtm table.panels td.right > * {
+		order : 1;
+	}
+	body.mtm table.panels td.left > * {
+		order : 2;
+		margin-left : 0px;
+	}
+	body.mtm table.panels td.left > .box1 {
+		margin-top : 6px;
+	}
+	body.mtm table.panels td.right > .box3 {
+		display : none;
+	}
+	body.mtm .box2 {
+		margin : 0px 0px 12px 0px;
+	}
+	body.mtm td.right > .event-banner {
+		width : 322px;
+	}
+	body.mtm .box1 .tipbox {
+		display : none;
+	}
+	body.mtm .box1 .box1bottom {
+		padding-bottom : 12px;
+	}
+	body.mtm table.panels.hqp td.left > .box1 {
+		margin-top : 0px;
+	}
+	body.mtm table.panels.hqp td.right > .box10 {
+		order : 3;
+		margin-top : 12px;
+	}
+}
+@media (min-width : 600px) and (max-width : 979px) {
+	body.mtm table.panels.hqp > tbody > tr, body.mtm table.panels.duo > tbody > tr {
+		flex-direction : row;
+		align-items : flex-start;
+		justify-content : center;
+		gap : 18px;
+	}
+	body.mtm table.panels.hqp td.left, body.mtm table.panels.hqp td.right, body.mtm table.panels.duo td.left, body.mtm table.panels.duo td.right {
+		display : flex;
+		flex-direction : column;
+		align-items : center;
+	}
+	body.mtm table.panels.duo td.left > .box1 {
+		margin-top : 0px;
+	}
+}
+
+/* ===== Mobile: Bataille and Entraînement (one column), the by-name cell ("… l'armée de ton choix") first ===== */
+@media (max-width : 979px) {
+	body.mtm table.choose {
+		display : flex;
+		flex-direction : column;
+		align-items : center;
+	}
+	body.mtm table.choose > tbody, body.mtm table.choose > tbody > tr {
+		display : contents;
+	}
+	body.mtm table.choose td.mate {
+		order : -1;
+	}
+	body.mtm table.choose {
+		margin : 0px auto;
+	}
+	body.mtm table.choose td.choosetd {
+		width : auto;
+		padding : 0px 0px 22px 0px;
+	}
+	body.mtm .train {
+		width : 100%;
+	}
+	body.mtm .train-head p {
+		float : none;
+		width : auto;
+		margin : 0px 6px 8px 6px;
+		text-align : center;
+	}
+	body.mtm .train-head .but {
+		float : none;
+		margin : 0px auto 6px auto;
+	}
+}
+
+/* ===== Mobile: pages whose content is wider than a phone ===== */
+@media (max-width : 979px) {
+	/* trooper sheet: the skills grid keeps its placement by category (rows), scaled down in steps below; the buttons
+	   go under it */
+	body.mtm .sheet table.tablesheet, body.mtm .sheet table.tablesheet > tbody, body.mtm .sheet table.tablesheet > tbody > tr, body.mtm .sheet table.tablesheet td {
+		display : block;
+		width : auto;
+	}
+	body.mtm .sheet table.tablesheet td.sheetright {
+		width : 240px;
+		margin : 12px auto 0px auto;
+		padding : 0px;
+	}
+	body.mtm .sheet ul.skills {
+		margin : 0px auto;
+	}
+	body.mtm .sheet ul.skills:after {
+		content : "";
+		display : block;
+		clear : both;
+	}
+	/* Flash wider than the screen ("Gérer mon armée" 630x254, recruits animation 670x240): scaled with their ratio */
+	body.mtm #client {
+		width : 100% !important;
+		height : auto !important;
+		aspect-ratio : 630 / 254;
+	}
+	body.mtm #recuits {
+		width : 100% !important;
+		height : auto !important;
+		aspect-ratio : 670 / 240;
+	}
+	body.mtm table.panels td.right > p {
+		margin : 0px 6px 8px 6px;
+	}
+	/* history: the two lists one under the other */
+	body.mtm table.log, body.mtm table.log > tbody, body.mtm table.log > tbody > tr, body.mtm table.log td {
+		display : block;
+		width : auto;
+		margin : 0px;
+	}
+	body.mtm table.log td.right {
+		padding : 12px 0px 0px 0px;
+	}
+	body.mtm table.log .history {
+		width : auto;
+		margin-left : 0px;
+	}
+	/* ranks */
+	body.mtm .ranks {
+		width : 100%;
+	}
+	body.mtm .ranks table {
+		width : 100%;
+		margin : 10px 0px 16px 0px;
+	}
+	body.mtm .ranks table th, body.mtm .ranks table td {
+		padding-left : 3px;
+		padding-right : 3px;
+		overflow-wrap : anywhere;
+	}
+	body.mtm .ranks p {
+		margin : 0px 6px;
+	}
+	body.mtm .ranks p a {
+		margin : 0px;
+	}
+	/* password page */
+	body.mtm .protect {
+		padding-right : 0px;
+		width : 100%;
+	}
+	body.mtm table.form {
+		width : 100%;
+	}
+	body.mtm table.form td {
+		padding-left : 4px;
+	}
+	/* info / confirm boxes (660 px images): same panel drawn at the screen width with the images' own colours */
+	body.mtm .warntop {
+		width : auto;
+		padding-top : 0px;
+		border-radius : 9px;
+		border : 1px solid rgb(54,60,85);
+		background : rgb(131,148,194);
+		box-shadow : inset 0px 0px 0px 2px rgb(156,170,206);
+	}
+	body.mtm .warntop.confirmtop {
+		border-color : rgb(105,155,25);
+		background : rgb(147,199,2);
+		box-shadow : inset 0px 0px 0px 2px rgb(169,210,2);
+	}
+	body.mtm .warntop .warnbottom, body.mtm .warntop .warnbg {
+		background-image : none;
+		padding-bottom : 0px;
+	}
+	body.mtm .warntop .warncontent {
+		padding : 10px 10px 10px 65px;
+	}
+}
+/* the sheet's skills grid (440 px) in steps: available width = screen - 37 px (site margins, frame, padding) */
+@media (max-width : 476px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.86;
+	}
+}
+@media (max-width : 419px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.78;
+	}
+}
+@media (max-width : 379px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.69;
+	}
+}
+@media (max-width : 339px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.64;
+	}
+}
+/* smallest phones (< 360 px): the 322 px boxes and the 285 px opponent cells are scaled down with their proportions */
+@media (max-width : 359px) {
+	body.mtm .box2, body.mtm .box10, body.mtm td.right > .event-banner, body.mtm table.choose td.choosetd {
+		zoom : 0.88;
+	}
+}
+
+/* ===== Mobile: home page (army creation), version A validated by Killian on 2026-11-25: the general's illustration
+   cropped on top, then boxes 1 and 2, Valider, and « As-tu déjà une armée ? ». Boxes 1 and 2 (595 px images) are
+   drawn with their own images by border-image: the numbered badge and the riveted uprights stay intact (slice 112 22
+   20 60), only the gradient between them stretches. ===== */
+@media (max-width : 979px) {
+	body.mtm .subscribe {
+		display : flex;
+		flex-direction : column;
+		height : auto;
+		padding : 0px;
+		background : none;
+	}
+	body.mtm .subscribe:before {
+		content : "";
+		display : block;
+		height : 230px;
+		margin : 0px 0px 12px 0px;
+		border-radius : 4px;
+		background : url("/img/art_welcome.jpg") no-repeat 0px 0px / auto 230px;
+	}
+	body.mtm .subscribe form.create {
+		order : 1;
+		display : flex;
+		flex-direction : column;
+	}
+	body.mtm .subscribe .alreadyhave {
+		order : 2;
+		margin : 0px 0px 12px 0px;
+		text-align : center;
+	}
+	body.mtm .subscribe .alreadyhave p {
+		display : flex;
+		justify-content : center;
+		align-items : center;
+		gap : 6px;
+	}
+	body.mtm .subscribe .box4, body.mtm .subscribe .box5 {
+		position : relative;
+		z-index : 0;
+		box-sizing : border-box;
+		width : auto;
+		height : auto;
+		min-height : 139px;
+		margin : 0px 0px 12px 0px;
+		padding : 14px 26px 14px 62px;
+		background : none;
+	}
+	body.mtm .subscribe .box4:before, body.mtm .subscribe .box5:before {
+		content : "";
+		position : absolute;
+		z-index : -1;
+		top : 0px;
+		right : 0px;
+		bottom : 0px;
+		left : 0px;
+		border-style : solid;
+		border-width : 112px 22px 20px 60px;
+		border-image : url("/img/box4.png") 112 22 20 60 fill stretch;
+	}
+	body.mtm .subscribe .box5:before {
+		border-image-source : url("/img/box5.png");
+	}
+	body.mtm .subscribe .box4 p, body.mtm .subscribe .box5 p {
+		margin : 0px 0px 10px 0px;
+	}
+	body.mtm .subscribe .box4 p.nameit {
+		display : flex;
+		flex-wrap : wrap;
+		align-items : center;
+		gap : 6px;
+	}
+	body.mtm .subscribe .box4 .field {
+		max-width : 100%;
+	}
+	body.mtm .subscribe .box4 input#name {
+		flex : 1 1 140px;
+		min-width : 0px;
+	}
+	body.mtm .subscribe ul.troopers {
+		display : flex;
+		flex-wrap : wrap;
+		justify-content : center;
+		gap : 4px;
+		margin : 0px;
+	}
+	body.mtm .subscribe ul.troopers li.trooper {
+		float : none;
+		margin : 0px;
+	}
+	body.mtm .subscribe .button4 {
+		display : block;
+		margin : 0px auto 14px auto;
+	}
+}
+
+/* ===== Mobile: level-up choice. The trooper and « Up ! » on top, the pipe connector hidden, the skill boxes (box8.png,
+   440 px) under it at the screen width: icon, arrow and riveted uprights from the image itself (slice 40 22 40 90). ===== */
+@media (max-width : 979px) {
+	body.mtm table.levelup, body.mtm table.levelup > tbody, body.mtm table.levelup > tbody > tr, body.mtm table.levelup td {
+		display : block;
+		width : auto;
+	}
+	body.mtm table.levelup td:first-child {
+		width : 72px;
+		margin : 0px auto 10px auto;
+	}
+	body.mtm table.levelup td:nth-child(2) {
+		display : none;
+	}
+	body.mtm table.levelup td.boxes {
+		padding-top : 0px;
+	}
+	body.mtm table.levelup .box8 {
+		position : relative;
+		z-index : 0;
+		box-sizing : border-box;
+		width : auto;
+		height : auto;
+		min-height : 90px;
+		padding-bottom : 8px;
+		background : none;
+	}
+	body.mtm table.levelup .box8:before {
+		content : "";
+		position : absolute;
+		z-index : -1;
+		top : 0px;
+		right : 0px;
+		bottom : 0px;
+		left : 0px;
+		border-style : solid;
+		border-width : 40px 22px 40px 90px;
+		border-image : url("/img/box8.png") 40 22 40 90 fill stretch;
+	}
+	body.mtm table.levelup .box8 .s {
+		height : auto;
+	}
+	/* preloaded hover images (off screen at top: -1000px) must not widen the page */
+	body.mtm .cache {
+		left : 0px;
+		width : 1px;
+		overflow : hidden;
+	}
+}
+
+/* ===== Mobile: popup (#notification, 804 px images) redrawn at the screen width and kept in view: its top (pipe,
+   icon), bars and bottom come from its own images by border-image; only the beige between them stretches. ===== */
+@media (max-width : 979px) {
+	body.mtm #notification .poptop {
+		position : fixed;
+		top : 64px;
+		left : 8px;
+		right : 8px;
+		width : auto;
+		margin : 0px;
+		padding-top : 0px;
+		background : none;
+		border-style : solid;
+		border-width : 96px 18px 0px 60px;
+		border-image : url("/img/poptop_i.png") 96 18 0 60 stretch;
+	}
+	body.mtm #notification.poperror .poptop {
+		border-image-source : url("/img/poptop_e.png");
+	}
+	body.mtm #notification .poptop .popbottom {
+		margin : 0px -18px 0px -60px;
+		padding-bottom : 0px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 20px 24px 30px;
+		border-image : url("/img/popbottom.png") 0 20 24 30 stretch;
+	}
+	body.mtm #notification .poptop .popbg {
+		margin : 0px -20px 0px -30px;
+		padding : 1px 0px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 18px 0px 22px;
+		border-image : url("/img/popbg.png") 0 18 0 22 fill stretch;
+	}
+	body.mtm #notification .popcontent {
+		width : auto;
+		min-height : 0px;
+		margin-bottom : 0px;
+		padding : 0px 12px 6px 40px;
+	}
+	body.mtm #notification .pop p {
+		text-align : center;
+	}
+	body.mtm #notification .button5 {
+		margin : 10px 0px 0px 0px;
+	}
+}
+
+/* ===== Mobile: tips above the fixed bar (app.js sets z-index 10 inline on #tooltip); form fields at 16 px so that
+   iOS does not zoom the page in when one gets the focus. ===== */
+@media (max-width : 979px) {
+	body.mtm #tooltip {
+		z-index : 30 !important;
+	}
+	body.mtm input.field, body.mtm select.field, body.mtm input[type="password"], body.mtm input[type="text"] {
+		font-size : 16px;
+	}
+}

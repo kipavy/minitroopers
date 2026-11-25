@@ -286,3 +286,13 @@ test("hqPage shows a notification popup when given one (level-up congratulations
   assert.ok(String(notification("e", true)).includes('id="notification" class="poperror"'));
   assert.ok(html.includes("Ta prochaine recrue te rapportera 50"));
 });
+
+test("the HQ panels table carries the hqp class (its own mobile order); the trooper sheet does not", async () => {
+  const env = setup("path");
+  const cl = env.client();
+  await create(env, cl, "Warp");
+  assert.ok((await (await hqOf(env, cl, "warp")).text()).includes('<table class="panels hqp">'));
+  const at = env.at("warp", "/t/0");
+  const sheet = await (await cl.req(at.url, { host: at.host })).text();
+  assert.ok(sheet.includes('<table class="panels">'));
+});
