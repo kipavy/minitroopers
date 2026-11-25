@@ -472,3 +472,98 @@ td.right > .event-banner {
 		zoom : 0.88;
 	}
 }
+
+/* ===== Mobile: home page (army creation), version A validated by Killian on 2026-11-25: the general's illustration
+   cropped on top, then boxes 1 and 2, Valider, and « As-tu déjà une armée ? ». Boxes 1 and 2 (595 px images) are
+   drawn with their own images by border-image: the numbered badge and the riveted uprights stay intact (slice 112 22
+   20 60), only the gradient between them stretches. ===== */
+@media (max-width : 979px) {
+	body.mtm .subscribe {
+		display : flex;
+		flex-direction : column;
+		height : auto;
+		padding : 0px;
+		background : none;
+	}
+	body.mtm .subscribe:before {
+		content : "";
+		display : block;
+		height : 230px;
+		margin : 0px 0px 12px 0px;
+		border-radius : 4px;
+		background : url("/img/art_welcome.jpg") no-repeat 0px 0px / auto 230px;
+	}
+	body.mtm .subscribe form.create {
+		order : 1;
+		display : flex;
+		flex-direction : column;
+	}
+	body.mtm .subscribe .alreadyhave {
+		order : 2;
+		margin : 0px 0px 12px 0px;
+		text-align : center;
+	}
+	body.mtm .subscribe .alreadyhave p {
+		display : flex;
+		justify-content : center;
+		align-items : center;
+		gap : 6px;
+	}
+	body.mtm .subscribe .box4, body.mtm .subscribe .box5 {
+		position : relative;
+		z-index : 0;
+		box-sizing : border-box;
+		width : auto;
+		height : auto;
+		min-height : 139px;
+		margin : 0px 0px 12px 0px;
+		padding : 14px 26px 14px 62px;
+		background : none;
+	}
+	body.mtm .subscribe .box4:before, body.mtm .subscribe .box5:before {
+		content : "";
+		position : absolute;
+		z-index : -1;
+		top : 0px;
+		right : 0px;
+		bottom : 0px;
+		left : 0px;
+		border-style : solid;
+		border-width : 112px 22px 20px 60px;
+		border-image : url("/img/box4.png") 112 22 20 60 fill stretch;
+	}
+	body.mtm .subscribe .box5:before {
+		border-image-source : url("/img/box5.png");
+	}
+	body.mtm .subscribe .box4 p, body.mtm .subscribe .box5 p {
+		margin : 0px 0px 10px 0px;
+	}
+	body.mtm .subscribe .box4 p.nameit {
+		display : flex;
+		flex-wrap : wrap;
+		align-items : center;
+		gap : 6px;
+	}
+	body.mtm .subscribe .box4 .field {
+		max-width : 100%;
+	}
+	body.mtm .subscribe .box4 input#name {
+		flex : 1 1 140px;
+		min-width : 0px;
+	}
+	body.mtm .subscribe ul.troopers {
+		display : flex;
+		flex-wrap : wrap;
+		justify-content : center;
+		gap : 4px;
+		margin : 0px;
+	}
+	body.mtm .subscribe ul.troopers li.trooper {
+		float : none;
+		margin : 0px;
+	}
+	body.mtm .subscribe .button4 {
+		display : block;
+		margin : 0px auto 14px auto;
+	}
+}
