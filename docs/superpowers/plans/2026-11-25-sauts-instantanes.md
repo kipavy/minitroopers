@@ -51,7 +51,7 @@
 
 **Files:** `apps/server/public/js/player.js`, `apps/server/public/css/player.css`, `apps/server/src/views/battle.ts` (`?v=` de player.js/css), `apps/server/test/e2e.test.ts`, `apps/server/test/battle.test.ts`.
 
-**Interfaces:** Consumes Task 1 (`mtGoto`).
+**Interfaces:** Consumes Task 1 (`mtGoto`; `mtReady(...).starts[k]` = première image clé après le `NewWave` `waves[k]`, nouvelle vague déployée : cible des sauts de vague et des clics de vague sur la frise, sans rejeu ; `mtState().prof` pour les diagnostics).
 
 - [ ] **Step 1: Write the failing tests** (e2e, mode chemin au minimum) : un saut arrière ne recrée pas l'élément Ruffle (même nœud `#battle`, aucune nouvelle requête de SWF) et arrive au bon `idx` ; ←/→, frise, journal, Début/Fin, `?at=` passent par `mtGoto` ; survol du « ? » → bulle visible ancrée au bouton, avec les sections Clavier/Souris ; sortie de la souris → cachée ; `?` / Ctrl+/ basculent, Échap ferme.
 - [ ] **Step 2: Run** — Expected: FAIL.

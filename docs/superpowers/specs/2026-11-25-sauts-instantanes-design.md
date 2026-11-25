@@ -77,11 +77,17 @@ Détails et noms obfusqués : rapport de mesures ci-dessus et `docs/research/lec
 - **`mtGoto(n)`** : un seul appel synchrone, dans les deux sens.
   1. Refusé si l'écran de pause natif est ouvert. Prend l'image clé ≤ n, ou continue depuis la position courante si
      elle est plus proche.
-  2. Remet à zéro l'étape, les animations, les à-coups, les particules, les tweens, les objets au sol et la fin.
-  3. Reconstruit la file : un `CheckPoint` artificiel (infos clonées) puis `mtHist.slice(kf.idx)`.
-  4. Remet l'horloge d'affichage et sa valeur haute, applique le point de reprise (reconstruction de la scène),
-     puis les corps, statuts, poses au sol et derniers panneaux latéraux.
-  5. Rejoue jusqu'à n en caché et en synchrone (≤ ~250 ms, en pratique < 100 ms), réaffiche, envoie `mtProgress`.
+  2. Remet à zéro l'étape et les animations (`ylcZ`, comme le saut natif), les à-coups, les particules, les tweens,
+     les objets au sol et la fin.
+  3. File = `mtHist.slice(kf.idx)` ; horloge et valeur haute au temps de la dernière entrée appliquée.
+  4. Scène reconstruite **sans `CheckPoint` artificiel**, avec les primitives natives de la reconstruction : un
+     trooper présent et compatible est réutilisé, un trooper d'une réserve (troopers retirés par les sauts précédents
+     ou préparés pendant les temps morts, peintures déjà rendues) est raccroché, sinon il est créé par la fonction de
+     création du `CheckPoint` ; puis statuts, blessures, poses, corps, armes au sol, panneaux.
+  5. Rejoue jusqu'à n en caché et en synchrone (≤ ~250 ms ; les troopers inactifs ne sont ni avancés ni dessinés),
+     réaffiche, envoie `mtProgress`. `mtGoto(total)` : image clé finale puis `Winner` appliqué directement.
+  6. `mtReady` donne aussi `starts` : pour chaque vague, l'index de sa première image clé (vague déployée) ; un saut
+     de vague y va sans rejeu.
 - **`mtSeek(n)`** devient un alias de `mtGoto(n)`. La page supprime `recreate()` (plus de saut arrière par
   rechargement).
 - **Vérification automatique** : pour des combats de référence, comparer l'état de chaque trooper après `mtGoto(n)` à
