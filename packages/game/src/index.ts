@@ -1,4 +1,6 @@
-export { dayKey, nextResetAt, prevDay } from "./day.ts";
+export { atLocal, dayKey, nextResetAt, prevDay } from "./day.ts";
+export { RECHARGE_EVERY_H, RESERVE_MAX, rechargeTimes, reserveState, weekendEvent } from "./weekend.ts";
+export type { ReserveState, WeekendEvent } from "./weekend.ts";
 export { haxeTrim, host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
 export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";

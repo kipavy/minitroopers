@@ -36,3 +36,12 @@ export function nextResetAt(now: Date, tz: string): Date {
   guess = wall - offsetAt(guess, tz); // refine across a DST change
   return new Date(guess);
 }
+
+/** Instant (ms) of `hour`:00 local time on `day` in `tz` (corrected across a DST change like nextResetAt). */
+export function atLocal(day: string, hour: number, tz: string): number {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  const wall = Date.UTC(y, m - 1, d, hour);
+  let guess = wall - offsetAt(wall, tz);
+  guess = wall - offsetAt(guess, tz);
+  return guess;
+}
