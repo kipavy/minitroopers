@@ -412,6 +412,8 @@ const POS_TOL_DEAD = 47;
 const POS_TOL_BLASTED = 96;
 const BLASTED: Record<string, number[]> = {
   "vehicles/00007.json.gz": [7],
+  // each hit pushes a display trooper by its damage along the shot (no entry carries it): 4 hits in a row, then death
+  "comms/00004.json.gz": [17],
 };
 interface SceneStats {
   alive: number;

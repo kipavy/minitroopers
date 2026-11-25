@@ -517,7 +517,7 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
     les rejoue depuis l'historique jusqu'à chaque image clé avec les règles de l'affichage (statuts : 22, 23, 13
     antidote, effet de tir 12 ; blessures : localisation de chaque tir de dégât > 0 hors MISS ; soigné : 12, 17 compétence
     77, 14 compétence 90 ; les effets d'un tir après un 5 ou un 6 ne sont pas appliqués), car ceux de la logique en
-    diffèrent (un soin efface les blessures côté logique, pas à l'écran ; un statut posé sans entrée) —, PV du véhicule ; poses tenues jouées jusqu'à leur dernière
+    diffèrent (un soin efface les blessures côté logique, pas à l'écran ; un statut posé sans entrée ; un id qui revient sans arme en commun est un autre soldat, parti de zéro) —, PV du véhicule ; poses tenues jouées jusqu'à leur dernière
     image (`mtFf` : de saut en saut jusqu'à la prochaine opération de contrôle de la frise — arrêt, aller à, boucle —
     que le rendu n'exécute que pour l'image qu'il montre, les images intermédiaires rattrapées par un seul rendu) : au sol (`FALLEN` → `ground_crash`), en joue (`AIM` →
     `aim`), rechargement (`RELOAD` → `reload_init`) ; ces poses rendent le trooper occupé jusqu'à leur fin, comme en

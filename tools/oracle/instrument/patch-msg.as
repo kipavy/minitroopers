@@ -1150,97 +1150,101 @@ ofs0081:
       // - wounds: the body location of every hit whose damage is > 0 and type not MISS (9);
       // - healed: BattleMsg 12 (heal: its target), 17 with skill 77 (team heal: its ids), 14 with skill 90 (its hits'
       //   targets). A hit's effects after a weapon caught (6) or a hit passed on (5) are not applied (the display returns).
+      // An id can come back as another trooper (no weapon in common, mtShownKf): that one starts from a blank state.
       public static function mtShown() : void
       {
          var _loc1_:Dictionary = new Dictionary();
          var _loc2_:int = 0;
          var _loc3_:int = 0;
-         var _loc4_:* = null;
+         var _loc4_:Array = [];
          var _loc5_:int = 0;
-         var _loc6_:Array = null;
-         var _loc7_:Array = null;
-         var _loc8_:int = 0;
-         var _loc9_:* = null;
-         var _loc10_:* = null;
-         var _loc11_:int = 0;
-         var _loc12_:* = null;
          while(_loc2_ <= mtHist.length)
          {
             while(_loc3_ < mtKfs.length && int(mtKfs[_loc3_].i) == _loc2_)
             {
-               mtShownKf(mtKfs[_loc3_],_loc1_);
+               mtShownKf(mtKfs[_loc3_],_loc1_,_loc4_,_loc5_);
+               _loc5_ = _loc2_;
                _loc3_++;
             }
             if(_loc2_ == mtHist.length)
             {
                break;
             }
-            _loc4_ = mtHist[_loc2_]["An%6"];
-            _loc5_ = int(_loc4_[")-Z\x19\x01"]);
-            _loc6_ = _loc4_["7\x02@d\x02"];
-            _loc8_ = int(mtHist[_loc2_]["\x1e,d\x01"]);
-            if(_loc5_ == 22)
-            {
-               mtSt(_loc1_,_loc8_,_loc6_[0],true);
-            }
-            else if(_loc5_ == 23)
-            {
-               mtSt(_loc1_,_loc8_,_loc6_[0],false);
-            }
-            else if(_loc5_ == 13)
-            {
-               mtSt(_loc1_,int(_loc6_[0]),§q\x18\tv\x02§.§;GG(\x02§,false);
-            }
-            else if(_loc5_ == 12)
-            {
-               mtSh(_loc1_,int(_loc6_[0])).h = true;
-            }
-            else if(_loc5_ == 17 && int(_loc6_[0][")-Z\x19\x01"]) == 77)
-            {
-               _loc11_ = 0;
-               while(_loc11_ < _loc6_[1].length)
-               {
-                  mtSh(_loc1_,int(_loc6_[1][_loc11_])).h = true;
-                  _loc11_++;
-               }
-            }
-            _loc7_ = [];
-            mtHits(_loc6_,_loc7_,0);
-            _loc11_ = 0;
-            while(_loc11_ < _loc7_.length)
-            {
-               _loc9_ = _loc7_[_loc11_];
-               _loc11_++;
-               _loc12_ = mtSh(_loc1_,int(_loc9_["\x1e,d\x01"]));
-               if(_loc5_ == 14 && int(_loc6_[0][")-Z\x19\x01"]) == 90)
-               {
-                  _loc12_.h = true;
-               }
-               if(_loc9_["\x02\x127\x01"] != null && int(_loc9_["w;\t'\x02"]) > 0 && int(_loc9_["An%6"][")-Z\x19\x01"]) != 9)
-               {
-                  _loc12_.j.push(_loc9_["\x02\x127\x01"]);
-               }
-               _loc10_ = _loc9_["iE!m\x02"];
-               _loc8_ = 0;
-               while(_loc10_ != null && _loc8_ < _loc10_.length)
-               {
-                  // the display stops at a weapon caught (6) or a hit passed on (5, the nested hit counts as a hit)
-                  if(_loc10_[_loc8_] != null && (int(_loc10_[_loc8_][")-Z\x19\x01"]) == 5 || int(_loc10_[_loc8_][")-Z\x19\x01"]) == 6))
-                  {
-                     break;
-                  }
-                  if(_loc10_[_loc8_] != null && int(_loc10_[_loc8_][")-Z\x19\x01"]) == 12)
-                  {
-                     mtSt(_loc1_,int(_loc9_["\x1e,d\x01"]),_loc10_[_loc8_]["7\x02@d\x02"][0],true);
-                  }
-                  _loc8_++;
-               }
-            }
+            mtShownE(_loc1_,mtHist[_loc2_]);
             _loc2_++;
          }
       }
 
-      // display state of trooper param2: {s: statuses, j: wounds, h: healed}
+      // history entry param2 on the display states param1
+      public static function mtShownE(param1:Dictionary, param2:Object) : void
+      {
+         var _loc4_:* = param2["An%6"];
+         var _loc5_:int = int(_loc4_[")-Z\x19\x01"]);
+         var _loc6_:Array = _loc4_["7\x02@d\x02"];
+         var _loc7_:Array = [];
+         var _loc8_:int = int(param2["\x1e,d\x01"]);
+         var _loc9_:* = null;
+         var _loc10_:* = null;
+         var _loc11_:int = 0;
+         var _loc12_:* = null;
+         if(_loc5_ == 22)
+         {
+            mtSt(param1,_loc8_,_loc6_[0],true);
+         }
+         else if(_loc5_ == 23)
+         {
+            mtSt(param1,_loc8_,_loc6_[0],false);
+         }
+         else if(_loc5_ == 13)
+         {
+            mtSt(param1,int(_loc6_[0]),§q\x18\tv\x02§.§;GG(\x02§,false);
+         }
+         else if(_loc5_ == 12)
+         {
+            mtSh(param1,int(_loc6_[0])).h = true;
+         }
+         else if(_loc5_ == 17 && int(_loc6_[0][")-Z\x19\x01"]) == 77)
+         {
+            while(_loc11_ < _loc6_[1].length)
+            {
+               mtSh(param1,int(_loc6_[1][_loc11_])).h = true;
+               _loc11_++;
+            }
+         }
+         mtHits(_loc6_,_loc7_,0);
+         _loc11_ = 0;
+         while(_loc11_ < _loc7_.length)
+         {
+            _loc9_ = _loc7_[_loc11_];
+            _loc11_++;
+            _loc12_ = mtSh(param1,int(_loc9_["\x1e,d\x01"]));
+            if(_loc5_ == 14 && int(_loc6_[0][")-Z\x19\x01"]) == 90)
+            {
+               _loc12_.h = true;
+            }
+            if(_loc9_["\x02\x127\x01"] != null && int(_loc9_["w;\t'\x02"]) > 0 && int(_loc9_["An%6"][")-Z\x19\x01"]) != 9)
+            {
+               _loc12_.j.push(_loc9_["\x02\x127\x01"]);
+            }
+            _loc10_ = _loc9_["iE!m\x02"];
+            _loc8_ = 0;
+            while(_loc10_ != null && _loc8_ < _loc10_.length)
+            {
+               // the display stops at a weapon caught (6) or a hit passed on (5, the nested hit counts as a hit)
+               if(_loc10_[_loc8_] != null && (int(_loc10_[_loc8_][")-Z\x19\x01"]) == 5 || int(_loc10_[_loc8_][")-Z\x19\x01"]) == 6))
+               {
+                  break;
+               }
+               if(_loc10_[_loc8_] != null && int(_loc10_[_loc8_][")-Z\x19\x01"]) == 12)
+               {
+                  mtSt(param1,int(_loc9_["\x1e,d\x01"]),_loc10_[_loc8_]["7\x02@d\x02"][0],true);
+               }
+               _loc8_++;
+            }
+         }
+      }
+
+      // display state of trooper param2: {s: statuses, j: wounds, h: healed, w: weapon ids of that trooper}
       public static function mtSh(param1:Dictionary, param2:int) : Object
       {
          if(param1[param2] == null)
@@ -1248,7 +1252,8 @@ ofs0081:
             param1[param2] = {
                "s":[],
                "j":[],
-               "h":false
+               "h":false,
+               "w":null
             };
          }
          return param1[param2];
@@ -1268,13 +1273,87 @@ ofs0081:
          }
       }
 
-      public static function mtShownKf(param1:Object, param2:Dictionary) : void
+      // the weapon ids of keyframe info param1
+      public static function mtWids(param1:Object) : Array
+      {
+         var _loc2_:Array = [];
+         var _loc3_:Array = param1["\x1dI\x02\r\x03"];
+         var _loc4_:int = 0;
+         while(_loc3_ != null && _loc4_ < _loc3_.length)
+         {
+            _loc2_.push(int(_loc3_[_loc4_]["7X\x01"]));
+            _loc4_++;
+         }
+         return _loc2_;
+      }
+
+      public static function mtWcommon(param1:Array, param2:Array) : Boolean
+      {
+         var _loc3_:int = 0;
+         if(param1.length == 0 && param2.length == 0)
+         {
+            return true;
+         }
+         while(_loc3_ < param1.length)
+         {
+            if(param2.indexOf(param1[_loc3_]) >= 0)
+            {
+               return true;
+            }
+            _loc3_++;
+         }
+         return false;
+      }
+
+      // the display state of the trooper of info param4 at keyframe param1: param2's for its id, unless the trooper there
+      // is another one (no weapon in common): then an earlier one put aside in param3, or a new one, replayed from the
+      // previous keyframe (history index param5), where it was not yet there
+      public static function mtShownOf(param1:Object, param2:Dictionary, param3:Array, param4:Object, param5:int) : Object
+      {
+         var _loc6_:int = int(param4["5E[\x1d"]["7X\x01"]);
+         var _loc7_:Array = mtWids(param4);
+         var _loc8_:Object = mtSh(param2,_loc6_);
+         var _loc9_:int = 0;
+         var _loc10_:Dictionary = null;
+         if(_loc8_.w == null)
+         {
+            _loc8_.w = _loc7_;
+            return _loc8_;
+         }
+         if(mtWcommon(_loc8_.w,_loc7_))
+         {
+            return _loc8_;
+         }
+         while(_loc9_ < param3.length)
+         {
+            if(int(param3[_loc9_].id) == _loc6_ && mtWcommon(param3[_loc9_].w,_loc7_))
+            {
+               return param3[_loc9_];
+            }
+            _loc9_++;
+         }
+         _loc8_.id = _loc6_;
+         param3.push(_loc8_);
+         _loc10_ = new Dictionary();
+         _loc9_ = param5;
+         while(_loc9_ < int(param1.i))
+         {
+            mtShownE(_loc10_,mtHist[_loc9_]);
+            _loc9_++;
+         }
+         _loc8_ = mtSh(_loc10_,_loc6_);
+         _loc8_.w = _loc7_;
+         param2[_loc6_] = _loc8_;
+         return _loc8_;
+      }
+
+      public static function mtShownKf(param1:Object, param2:Dictionary, param3:Array, param4:int) : void
       {
          var _loc3_:int = 0;
          var _loc4_:Object = null;
          while(_loc3_ < param1.t.length)
          {
-            _loc4_ = mtSh(param2,int(param1.t[_loc3_]["5E[\x1d"]["7X\x01"]));
+            _loc4_ = mtShownOf(param1,param2,param3,param1.t[_loc3_],param4);
             param1.x[_loc3_][1] = _loc4_.s.concat();
             param1.x[_loc3_][2] = _loc4_.j.concat();
             param1.x[_loc3_][3] = _loc4_.h;
@@ -1283,7 +1362,7 @@ ofs0081:
          _loc3_ = 0;
          while(_loc3_ < param1.d.length)
          {
-            _loc4_ = mtSh(param2,int(param1.d[_loc3_]["5E[\x1d"]["7X\x01"]));
+            _loc4_ = mtShownOf(param1,param2,param3,param1.d[_loc3_],param4);
             param1.dx[_loc3_][1] = _loc4_.s.concat();
             param1.dx[_loc3_][2] = _loc4_.j.concat();
             param1.dx[_loc3_][3] = _loc4_.h;
@@ -1662,8 +1741,14 @@ ofs0081:
          _loc4_ = 0;
          while(_loc4_ < param2.d.length)
          {
-            if(param1.§;|^W§(int(param2.d[_loc4_]["5E[\x1d"]["7X\x01"])) != null)
+            _loc5_ = param1.§;|^W§(int(param2.d[_loc4_]["5E[\x1d"]["7X\x01"]));
+            if(_loc5_ != null)
             {
+               // a body kept on the field: the statuses shown are the keyframe's (mtShown)
+               if(_loc5_.§Qg}\x07§)
+               {
+                  mtExtra(_loc5_,param2.dx[_loc4_],false);
+               }
                _loc4_++;
                continue;
             }
