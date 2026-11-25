@@ -4,6 +4,7 @@
  { "name": "hq", "path": "/a/demo/hq", "login": true, "wait": 3500 },
  { "name": "hq-locked", "path": "/a/rival1/hq", "wait": 3500 },
  { "name": "opp", "path": "/a/demo/b/opp", "login": true, "wait": 3500 },
+ { "name": "opp-notice", "path": "/a/demo/b/opp?err=missing", "login": true, "wait": 3500 },
  { "name": "train", "path": "/a/demo/b/train", "login": true, "wait": 3500, "mask": "table.choose td:not(.mate)" },
  { "name": "battle", "path": "/b/fview/1", "wait": 5000, "mask": ".mtp-screen, .mtp-bar, .mtp-log, .mtp-screen + *" },
  { "name": "trooper", "path": "/a/demo/t/0", "login": true, "wait": 3500, "mask": ".up" },

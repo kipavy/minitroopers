@@ -28,8 +28,9 @@ if (opt.compare) process.exit(compare(positionals[0], positionals[1]));
 /** Pixel comparison of the same-named 1280 px captures of two directories; exit code 1 when any differs. */
 function compare(a, b) {
   if (!a || !b) throw new Error("usage: --compare <dirA> <dirB>");
-  const names = readdirSync(a).filter((f) => f.endsWith("-1280.png") && existsSync(join(b, f)));
-  const diff = [];
+  const all = (d) => readdirSync(d).filter((f) => f.endsWith("-1280.png"));
+  const names = all(a).filter((f) => existsSync(join(b, f)));
+  const diff = [...all(a), ...all(b)].filter((f) => !existsSync(join(a, f)) || !existsSync(join(b, f))).map((f) => `${f}: missing in ${existsSync(join(a, f)) ? b : a}`);
   for (const f of names) {
     const x = decodePng(readFileSync(join(a, f)));
     const y = decodePng(readFileSync(join(b, f)));

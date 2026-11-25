@@ -618,3 +618,63 @@ td.right > .event-banner {
 		overflow : hidden;
 	}
 }
+
+/* ===== Mobile: popup (#notification, 804 px images) redrawn at the screen width and kept in view: its top (pipe,
+   icon), bars and bottom come from its own images by border-image; only the beige between them stretches. ===== */
+@media (max-width : 979px) {
+	body.mtm #notification .poptop {
+		position : fixed;
+		top : 64px;
+		left : 8px;
+		right : 8px;
+		width : auto;
+		margin : 0px;
+		padding-top : 0px;
+		background : none;
+		border-style : solid;
+		border-width : 96px 18px 0px 60px;
+		border-image : url("/img/poptop_i.png") 96 18 0 60 stretch;
+	}
+	body.mtm #notification.poperror .poptop {
+		border-image-source : url("/img/poptop_e.png");
+	}
+	body.mtm #notification .poptop .popbottom {
+		margin : 0px -18px 0px -60px;
+		padding-bottom : 0px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 20px 24px 30px;
+		border-image : url("/img/popbottom.png") 0 20 24 30 stretch;
+	}
+	body.mtm #notification .poptop .popbg {
+		margin : 0px -20px 0px -30px;
+		padding : 1px 0px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 18px 0px 22px;
+		border-image : url("/img/popbg.png") 0 18 0 22 fill stretch;
+	}
+	body.mtm #notification .popcontent {
+		width : auto;
+		min-height : 0px;
+		margin-bottom : 0px;
+		padding : 0px 12px 6px 40px;
+	}
+	body.mtm #notification .pop p {
+		text-align : center;
+	}
+	body.mtm #notification .button5 {
+		margin : 10px 0px 0px 0px;
+	}
+}
+
+/* ===== Mobile: tips above the fixed bar (app.js sets z-index 10 inline on #tooltip); form fields at 16 px so that
+   iOS does not zoom the page in when one gets the focus. ===== */
+@media (max-width : 979px) {
+	body.mtm #tooltip {
+		z-index : 30 !important;
+	}
+	body.mtm input.field, body.mtm select.field, body.mtm input[type="password"], body.mtm input[type="text"] {
+		font-size : 16px;
+	}
+}

@@ -1,18 +1,20 @@
 // Tooltips by touch (phones and tablets): the original tips (mt.js.Tip in app.js) are mouse-over only. A tap on an
-// element that has one (not a link, a button or a field: those act directly) shows its tip at the tapped point, once
+// element that has one (not a link, a button or a field, nor inside one: those act directly) shows its tip at the
+// tapped point, once
 // the browser's emulated mouse events are over; a tap elsewhere hides it. app.js keeps the tip inside the window.
 (function () {
   if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return;
-  var ACTIVE = /^(A|BUTTON|INPUT|SELECT|TEXTAREA|LABEL)$/;
+  var ACTIVE = /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/;
 
   function tipOwner(el) {
+    var owner = null;
     for (var e = el; e && e !== document.body; e = e.parentNode) {
       if (e.nodeType !== 1) continue;
       if (ACTIVE.test(e.tagName)) return null;
-      var over = e.getAttribute("onmouseover");
-      if (over && over.indexOf("mt.js.Tip.show") >= 0) return e;
+      var over = owner ? null : e.getAttribute("onmouseover");
+      if (over && over.indexOf("mt.js.Tip.show") >= 0) owner = e;
     }
-    return null;
+    return owner;
   }
 
   document.addEventListener("touchstart", function (ev) {
