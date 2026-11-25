@@ -529,43 +529,49 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       const png = decodePng(readFileSync((await download.path())!));
       assert.deepEqual([png.width, png.height], [720, 440]);
 
-      // 5b. the "?" button: hovering it shows the "Raccourcis clavier" bubble next to it, inside the window, with
-      // keycaps and a "Souris" section; leaving hides it; keyboard focus shows it; ? and Ctrl+/ toggle it, Échap closes it
+      // 5b. the "?" button: hovering it shows the site's own tooltip (#tooltip of app.js, .tiptop markup like every
+      // other tip) next to it, inside the window, "Raccourcis clavier" then "Souris"; leaving hides it; keyboard focus
+      // shows it; ? and Ctrl+/ toggle it, Échap closes it
       type Rect = { left: number; top: number; right: number; bottom: number };
-      const rects = (): Promise<{ btn: Rect; help: Rect; vw: number; vh: number }> =>
+      type HelpState = { shown: boolean; titles: string[]; btn: Rect; tip: Rect | null; vw: number; vh: number };
+      const helpState = (): Promise<HelpState> =>
         page.evaluate(() => {
-          const d = (globalThis as unknown as { document: { getElementById(id: string): { getBoundingClientRect(): Rect } }; innerWidth: number; innerHeight: number });
-          const r = (id: string): Rect => {
-            const b = d.document.getElementById(id).getBoundingClientRect();
+          type El = { style: { top: string }; getBoundingClientRect(): Rect; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<{ textContent: string }> };
+          const g = globalThis as unknown as { document: { getElementById(id: string): El | null }; innerWidth: number; innerHeight: number; mt: { js: { Tip: { lastRef: unknown } } } };
+          const box = (e: El): Rect => {
+            const b = e.getBoundingClientRect();
             return { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
           };
-          return { btn: r("mtp-helpbtn"), help: r("mtp-help"), vw: d.innerWidth, vh: d.innerHeight };
+          const btn = g.document.getElementById("mtp-helpbtn")!;
+          const t = g.document.getElementById("tooltip");
+          const top = t?.querySelector(".tiptop") ?? null;
+          const shown = !!t && t.style.top !== "-1000px" && g.mt.js.Tip.lastRef === btn;
+          return { shown, titles: top ? Array.from(top.querySelectorAll("h1"), (h) => h.textContent) : [], btn: box(btn), tip: top ? box(top) : null, vw: g.innerWidth, vh: g.innerHeight };
         });
-      const help = page.locator("#mtp-help");
-      assert.equal(await help.isVisible(), false, "help hidden at first");
+      const helpIs = (shown: boolean, what: string): Promise<HelpState> => until(page, helpState, (s) => s.shown === shown, 2_000, what);
+      assert.equal((await helpState()).shown, false, "help hidden at first");
       await page.hover("#mtp-helpbtn");
-      await help.waitFor({ state: "visible", timeout: 2_000 });
-      const text = (await help.textContent()) ?? "";
-      assert.ok(text.includes("Raccourcis clavier") && text.includes("Souris"), `help sections: ${text.slice(0, 80)}`);
-      assert.ok((await help.locator("kbd").count()) >= 10, "keys drawn as keycaps");
-      const g = await rects();
-      const gap = Math.max(g.help.left - g.btn.right, g.btn.left - g.help.right, g.help.top - g.btn.bottom, g.btn.top - g.help.bottom);
-      assert.ok(gap <= 12, `bubble anchored to the button: ${JSON.stringify(g)}`);
-      assert.ok(g.help.left >= 0 && g.help.top >= 0 && g.help.right <= g.vw && g.help.bottom <= g.vh, `bubble inside the window: ${JSON.stringify(g)}`);
+      const h1 = await helpIs(true, "tooltip on hover");
+      assert.deepEqual(h1.titles, ["Raccourcis clavier", "Souris"], "the site's tooltip, two sections");
+      const tb = h1.tip!;
+      const gap = Math.max(tb.left - h1.btn.right, h1.btn.left - tb.right, tb.top - h1.btn.bottom, h1.btn.top - tb.bottom);
+      assert.ok(gap <= 30, `tooltip next to the button: ${JSON.stringify(h1)}`);
+      assert.ok(tb.left >= 0 && tb.top >= 0 && tb.right <= h1.vw && tb.bottom <= h1.vh, `tooltip inside the window: ${JSON.stringify(h1)}`);
       await page.mouse.move(5, 5);
-      await help.waitFor({ state: "hidden", timeout: 2_000 });
+      await helpIs(false, "hidden when the mouse leaves");
       await page.focus("#mtp-helpbtn");
-      await help.waitFor({ state: "visible", timeout: 2_000 });
+      const h2 = await helpIs(true, "tooltip on keyboard focus");
+      assert.ok(h2.tip!.top >= 0 && h2.tip!.bottom <= h2.vh, `focused: inside the window ${JSON.stringify(h2)}`);
       await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
-      await help.waitFor({ state: "hidden", timeout: 2_000 });
+      await helpIs(false, "hidden on blur");
       await page.keyboard.press("?");
-      await help.waitFor({ state: "visible", timeout: 2_000 });
+      await helpIs(true, "? shows it");
       await page.keyboard.press("?");
-      await help.waitFor({ state: "hidden", timeout: 2_000 });
+      await helpIs(false, "? hides it");
       await page.keyboard.press("Control+/");
-      await help.waitFor({ state: "visible", timeout: 2_000 });
+      await helpIs(true, "Ctrl+/ shows it");
       await page.keyboard.press("Escape");
-      await help.waitFor({ state: "hidden", timeout: 2_000 });
+      await helpIs(false, "Échap hides it");
 
       // 5c. wide window: the log beside the player, same height, its own scrolling; the player scaled down (mtShot
       // above still gave 720x440); folding the log puts the player back to full size, centred
