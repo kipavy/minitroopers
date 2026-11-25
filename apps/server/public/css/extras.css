@@ -235,3 +235,77 @@ td.right > .event-banner {
 		background-position : center;
 	}
 }
+
+/* ===== Mobile: page body. Under 600 px one column: the page content first, then the troopers panel and its menu
+   (the HQ, table.panels.hqp, puts Bataille / Mission / Raid first, then the panel, then the recruit link).
+   600-979 px: two columns, the panel on the left as on the original. The INFO tip area under the menu is hover-only:
+   hidden, and the bottom of the box (box1bottom.png) is closed under the menu. ===== */
+@media (max-width : 979px) {
+	body.mtm .home {
+		padding : 0px;
+	}
+	body.mtm table.panels {
+		display : block;
+		width : 100%;
+		margin : 0px;
+	}
+	body.mtm table.panels > tbody {
+		display : block;
+	}
+	body.mtm table.panels > tbody > tr {
+		display : flex;
+		flex-direction : column;
+		align-items : center;
+	}
+	body.mtm table.panels td.left, body.mtm table.panels td.right {
+		display : contents;
+	}
+	body.mtm table.panels td.right > * {
+		order : 1;
+	}
+	body.mtm table.panels td.left > * {
+		order : 2;
+		margin-left : 0px;
+	}
+	body.mtm table.panels td.left > .box1 {
+		margin-top : 6px;
+	}
+	body.mtm table.panels td.right > .box3 {
+		display : none;
+	}
+	body.mtm .box2 {
+		margin : 0px 0px 12px 0px;
+	}
+	body.mtm td.right > .event-banner {
+		width : 322px;
+	}
+	body.mtm .box1 .tipbox {
+		display : none;
+	}
+	body.mtm .box1 .box1bottom {
+		padding-bottom : 12px;
+	}
+	body.mtm table.panels.hqp td.left > .box1 {
+		margin-top : 0px;
+	}
+	body.mtm table.panels.hqp td.right > .box10 {
+		order : 3;
+		margin-top : 12px;
+	}
+}
+@media (min-width : 600px) and (max-width : 979px) {
+	body.mtm table.panels > tbody > tr {
+		flex-direction : row;
+		align-items : flex-start;
+		justify-content : center;
+		gap : 18px;
+	}
+	body.mtm table.panels td.left, body.mtm table.panels td.right {
+		display : flex;
+		flex-direction : column;
+		align-items : center;
+	}
+	body.mtm table.panels td.left > .box1 {
+		margin-top : 0px;
+	}
+}

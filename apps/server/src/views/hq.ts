@@ -213,7 +213,7 @@ ${armyMenu(cfg, v.army, menuOf(v.army, v.troopers, v.power))}`;
 ${v.moneyDelta > 0 ? html`<script type="text/javascript">_.deltaMoney(${v.moneyDelta})</script>` : ""}
 
 <a href="${armyUrl(cfg, a.host, "/hq")}" class="company">${title}</a>
-<table class="panels"><tr><td class="left"><div class="box1 hq">
+<table class="panels hqp"><tr><td class="left"><div class="box1 hq">
 <h1 class="hbox">Mes Troopers</h1>
 <div class="box1bottom"><div class="box1bg"><div id="trhome">
 
