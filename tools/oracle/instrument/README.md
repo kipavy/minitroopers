@@ -663,11 +663,12 @@ plus rapides (réserve de soldats, pré-chauffage, rejeu caché allégé, état 
 `7e0cf56b7b17438fc0b95936d3d89c08cdf67ef9dc61184762acf61dd24efc14`, `?v=8` ; pré-chauffage seulement en pause ou après la
 fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'étiquette vidés :
 `28ca9f9cf2662158b0e56708fabc72fde86bf23fc192f3782cbe42923b62ea81`, `?v=9` ; pause = la pause native (écran PAUSE,
-sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` ; simulation paresseuse :
+`c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build.ps1 -Play -Verify`, `?v=9`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
+- Innocuité (`build.ps1 -Play -Verify`, `?v=11`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
 
 ```
 === §,7u\x1f§ (Main._rsq)
@@ -691,9 +692,11 @@ le reste du nouveau code est dans les helpers.
  …
    callproperty QName(PackageNamespace(""),"MnRZ"), 0          (état 0 : battle.resolve(), PC_PLAY_KF)
 +  getlex QName(PackageNamespace(""),"(m]a\x02")
++  swap
 +  findproperty QName(PackageNamespace(""),"S\rNK\x02")
 +  getproperty QName(PackageNamespace(""),"S\rNK\x02")
-+  callpropvoid QName(PackageNamespace(""),"mtKf"), 1
++  swap
++  callproperty QName(PackageNamespace(""),"mtKfGo"), 2
    convert_b
 -  maxstack 2
 +  maxstack 3
