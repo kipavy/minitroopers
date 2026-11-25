@@ -114,6 +114,10 @@ développeur (voir Crédits). Il est intégré nativement : pas d'extension de n
   (armes, équipement, compétences), état des réserves ; il suit le combat, un clic sur une ligne y saute.
 - **Partage** : choix du départ (début, vague, événement), message prêt pour Discord, lien `?at=<événement>`.
 - **Capture d'écran** : le jeu seul ou encadré (titre, date, frise, lien), à télécharger ou copier.
+- **Sons réalistes** (le jeu original est muet) : tirs selon la famille d'arme, impacts, coups critiques, morts,
+  grenades, explosions, rechargement, déploiement, victoire ou défaite, joués à l'image exacte de l'action et placés à
+  gauche ou à droite selon le trooper. Silence pendant un saut, en pause, sous une fenêtre ou onglet caché ; à grande
+  vitesse, les sons se raréfient au lieu de saturer. Bouton son du lecteur (actif par défaut, choix mémorisé).
 - Ligne d'état (événement, vague, images par seconde), avertissement quand un combat reste bloqué.
 - **Mobile** : quatre pas autour de la pause sous 720 px ; en paysage, scène sur toute la hauteur, commandes à
   droite et plein écran au premier toucher.
@@ -246,3 +250,38 @@ qu'en développement : la procédure est décrite dans `tools/oracle/instrument/
 - **Ruffle** et **JPEXS FFDec** — exécution et décompilation des SWF.
 - **BetterTrooper** ([bettertrooper.milvintsiss.com](https://bettertrooper.milvintsiss.com))
 - Wikis communautaires : MiniTroopers Fandom (EN) et Twinpedia (FR).
+- **Sons des combats** (`apps/server/public/sfx/`) : enregistrements de [Freesound](https://freesound.org), tous
+  sous licence [CC0](https://creativecommons.org/publicdomain/zero/1.0/) (domaine public), découpés, mixés et
+  normalisés pour le jeu (correspondance action → son en tête de `apps/server/public/js/sfx.js`) :
+
+| Fichier | Son d'origine | Auteur | Lien |
+|---|---|---|---|
+| pistol, pistol-dual | Pistol Shot | LeMudCrab | [freesound.org/s/163456](https://freesound.org/s/163456/) |
+| pistol-heavy | Desert Eagle Gunshot | elliotlp | [freesound.org/s/330634](https://freesound.org/s/330634/) |
+| rifle, rifle-double | Rifle Gun Shot 01.wav | LilMati | [freesound.org/s/433858](https://freesound.org/s/433858/) |
+| rifle-auto | An automatic rifle being shot once // punchy sounding | serøutōnin--deprivəd | [freesound.org/s/855654](https://freesound.org/s/855654/) |
+| shotgun, shotgun-dry | shotgun shoot | MrGungus | [freesound.org/s/773873](https://freesound.org/s/773873/) |
+| shotgun | SXP_SHOTGUN_RACK_01 | dasBUTCHER84 | [freesound.org/s/449614](https://freesound.org/s/449614/) |
+| assault | AK47 Shot | LeMudCrab | [freesound.org/s/163457](https://freesound.org/s/163457/) |
+| mg | Minigun Fire | Bratish | [freesound.org/s/500304](https://freesound.org/s/500304/) |
+| rocket | Rocket Launch | Jarusca | [freesound.org/s/521377](https://freesound.org/s/521377/) |
+| sniper | Sniper Shot in Field 3 (M2010 Enhanced Sniper Rifle ESR) | qubodup | [freesound.org/s/855608](https://freesound.org/s/855608/) |
+| cannon | Tank fire Mixed.wav | GaryQ | [freesound.org/s/127845](https://freesound.org/s/127845/) |
+| knife | Large Swede Stab with Whoosh.wav | minituffy | [freesound.org/s/385966](https://freesound.org/s/385966/) |
+| punch | body_hit.wav | insanity54 | [freesound.org/s/276600](https://freesound.org/s/276600/) |
+| throw | ThrowGrenadeCloth.ogg | Avreliy | [freesound.org/s/611613](https://freesound.org/s/611613/) |
+| explosion | explosion13.wav | V-ktor | [freesound.org/s/435416](https://freesound.org/s/435416/) |
+| explosion-big | Gun / Cannon / Explosion | SamsterBirdies | [freesound.org/s/580040](https://freesound.org/s/580040/) |
+| reload | Handgun_Reload.wav | ken788 | [freesound.org/s/386744](https://freesound.org/s/386744/) |
+| hit | VisceralBulletImpacts.wav | u1769092 | [freesound.org/s/423301](https://freesound.org/s/423301/) |
+| crit | Headshot.wav | Pablobd | [freesound.org/s/511194](https://freesound.org/s/511194/) |
+| miss | Real Bullet Flyby Sound | qubodup | [freesound.org/s/855248](https://freesound.org/s/855248/) |
+| death | Grunt1 - Death Pain.wav | tonsil5 | [freesound.org/s/416839](https://freesound.org/s/416839/) |
+| death-2 | Male Death Sound | Blankened | [freesound.org/s/554443](https://freesound.org/s/554443/) |
+| rat | Rat.ogg | egomassive | [freesound.org/s/536753](https://freesound.org/s/536753/) |
+| rat-2 | rat-squeak.wav | toefur | [freesound.org/s/288941](https://freesound.org/s/288941/) |
+| deploy | Walkie Talkie Beep | SoundBiterSFX | [freesound.org/s/732209](https://freesound.org/s/732209/) |
+| deploy | Heavy Walking.wav | morganpurkis | [freesound.org/s/381570](https://freesound.org/s/381570/) |
+| victory | Fanfare - Rpg | colorsCrimsonTears | [freesound.org/s/566203](https://freesound.org/s/566203/) |
+| defeat | End Game - Fail | davidbain | [freesound.org/s/135831](https://freesound.org/s/135831/) |
+

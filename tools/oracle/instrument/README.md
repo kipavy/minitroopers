@@ -480,6 +480,43 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
     risquent le tampon détaché (ci-dessous). La page peut afficher son voile tant que `target >= 0` (une image ou deux).
   - Pourcentage : BetterTrooper l'estime (`events / (lignes du journal × 1,1 + 5)`, plafonné à 97 %) ; ici la page
     connaît le nombre exact d'entrées (journal du serveur) : `events / total`.
+- **Sons** (`?v=14`) : le jeu original est muet ; le SWF signale à la page les moments audibles **à l'instant où
+  l'affichage les montre** : `window.mtSfx(kind, detail, x)`, `x` dans [0, 1] (gauche → droite du terrain, 720 px ;
+  0,5 quand l'action n'a pas de trooper). Quatre insertions P-code au début de méthodes d'affichage, qui appellent un
+  helper : `PC_PLAY_SFX_APPLY` (`Game.apply(entrée)` : l'action de l'entrée est créée à cet instant ; un tir part
+  dans le même appel), `PC_PLAY_SFX_HIT` (`§3\x19/\x01§(coup, angle)` du trooper affiché : tout coup reçu, balle,
+  explosion ou corps à corps, à l'image de l'impact), `PC_PLAY_SFX_DIE` (`§\x16mf\x01§()` : sa mort),
+  `PC_PLAY_SFX_BLAST` (`§nEI(\x01§` de la carte : les débris d'une explosion). Jamais hors de l'état 2 (calcul,
+  simulation paresseuse : la logique n'appelle rien), pendant un saut (restauration, rejeu caché : `mtSfxMute`,
+  `mtSeekTo`), `mtSettle`, le pré-chauffage, ni l'écran PAUSE ouvert ; `mtState().sfx` compte les appels.
+  Contrat pour la page (kind : detail) :
+
+  | kind | detail | quand |
+  |---|---|---|
+  | `deploy` | — | entrée 1 : troupes déployées (début de vague) |
+  | `wave` | — | entrée 39 : nouvelle vague |
+  | `move` | — | entrée 11 : un trooper part vers une case |
+  | `switch` | — | entrée 25 : changement d'arme |
+  | `reload` | `start` / `load` | entrées 3 (début du rechargement) / 4 (balles remises) |
+  | `empty` | id d'arme | entrée 5 : arme à sec (en lecture, un changement d'arme suit) |
+  | `fire` | id d'arme | entrée 8 : tir (les impacts suivent dans le même appel : `hit`…) |
+  | `melee` | id d'arme | entrée 9 : coup au contact |
+  | `charge` | id d'arme | entrée 18 : course vers la cible pour la frapper (l'impact vient plus tard : `hit`) |
+  | `carry` | — | entrée 19 : un trooper en emporte un autre |
+  | `grenade` | id de compétence (`SKILL_ROWS` : grenade, flash, gaz…) | entrée 10 : lancer ; l'explosion suit (`explosion`) |
+  | `explosion` | `grenade` / `big` | débris d'explosion : grenade ou roquette (16 éclats), frappe aérienne / avion (20) |
+  | `jet` | — | entrée 21 : passage de l'avion de chasse |
+  | `heal` | — | entrées 12 (soin) et 13 (antidote) |
+  | `skill` | id de compétence | entrées 14, 16, 17 : compétence active, cri, compétence d'équipe |
+  | `hit` | type de coup (0-8) ou `vehicle` | coup qui blesse (sur un véhicule : `vehicle`) |
+  | `crit` | type de coup | coup critique (effet « localisé », texte et à-coup) |
+  | `miss` | `9` | tir manqué (MISS) |
+  | `block` | type de coup | coup paré / esquivé (texte de parade) |
+  | `nodmg` | type de coup | coup sans dégât (armure, gilet) |
+  | `death` | classe du trooper (`5E[\x1d`.`An%6`) | mort, à l'image où il tombe |
+  | `end` | camp vainqueur (`0` gauche, `1` droite) | entrée 34 : fin du combat (la page sait quel camp est le sien) |
+
+  Ids d'arme = index de l'arme (`WEAPON_ROWS` de `@mt/engine`, 0 Poings … 37 Clown, 36 Dents de Rat).
 - **Pause = la pause native** : un clic sur le terrain bascule la pause du Game (`§;y\x1a-§`) : écran de pause
   `§J\b\x17Z\x03§` (instantané du terrain en gris, « PAUSE » qui glisse, fiche d'un trooper sur un clic sur lui ; ses
   tweens dans sa propre liste), `frame()` ne fait plus que l'animer ; la reprise le fait disparaître en fondu.
@@ -673,11 +710,15 @@ fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'éti
 sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` ; simulation paresseuse :
 `c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` ; saut en attente rattrapé dans l'image
 suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
-`?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` ; sons (`mtSfx`) :
+`5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build.ps1 -Play -Verify`, `?v=11`, P-code inchangé en `?v=12`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
+- Innocuité (`build.ps1 -Play -Verify`, `?v=14`) : 31 fichiers P-code diffèrent octet à octet, 6 hors renumérotation
+  `newfunction N` : en plus de ceux ci-dessous, `§59=F\x03§` (trooper affiché : un appel en tête de `§3\x19/\x01§` et de
+  `§\x16mf\x01§`), `§n#\x07\f§` (carte : un appel en tête de `§nEI(\x01§`) et, dans le Game, un appel en tête de
+  `apply` (sons, ci-dessus) ; `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
 
 ```
 === §,7u\x1f§ (Main._rsq)

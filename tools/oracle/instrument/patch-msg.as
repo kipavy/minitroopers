@@ -663,6 +663,7 @@ ofs0081:
             "playing":(mtGame != null && int(mtGame.§)\x11\x1d\x0e§.§)-Z\x19\x01§) == 2),
             "prof":mtProf,
             "pool":mtPoolN,
+            "sfx":mtSfxN,
             "waves":mtWaves,
             "starts":mtStarts
          };
@@ -679,6 +680,23 @@ ofs0081:
       // Winner entry. Pause and speed are kept: during the pause, the pause screen stays (set aside, then put back over the scene at n).
       // Returns true if n is reached on return; false if deferred (Game not playing yet: done at its first frame) or still replaying.
       public static function mtGoto(param1:int) : Boolean
+      {
+         var _loc2_:Boolean = false;
+         mtSfxMute++;
+         try
+         {
+            _loc2_ = mtGotoIn(param1);
+         }
+         catch(_loc_e_:*)
+         {
+            mtSfxMute--;
+            throw _loc_e_;
+         }
+         mtSfxMute--;
+         return _loc2_;
+      }
+
+      public static function mtGotoIn(param1:int) : Boolean
       {
          var _loc2_:§Q\btf§ = mtGame;
          var _loc3_:int = 0;
@@ -945,6 +963,199 @@ ofs0081:
          return _loc4_.readUTFBytes(_loc4_.length);
       }
 
+      // --- sounds. The display calls these at the moment it shows the action (P-code hooks: PC_PLAY_SFX_APPLY at the start
+      // of Game.apply(entry), PC_PLAY_SFX_HIT at the start of a display trooper's hit (§3\x19/\x01§), PC_PLAY_SFX_DIE at
+      // the start of his death (§\x16mf\x01§), PC_PLAY_SFX_BLAST at the start of the map's blast (§nEI(\x01§)); the page
+      // gets mtSfx(kind, detail, x), x in [0, 1] left to right. Never while the Game is not playing (state 0/1, the
+      // simulation), during a jump (restore, hidden replay: mtSfxMute, mtSeekTo), mtSettle, the pre-warm, or with the
+      // pause screen open. mtSfxN: calls sent (mtState().sfx).
+      public static var mtSfxN:int = 0;
+      public static var mtSfxMute:int = 0;
+
+      public static function mtSfx(param1:String, param2:String, param3:Number) : void
+      {
+         var _loc4_:§Q\btf§ = mtGame;
+         if(_loc4_ == null || mtSfxMute > 0 || mtSeekTo >= 0 || _loc4_.§w\x0b\x01o\x02§ != null || int(_loc4_.§)\x11\x1d\x0e§.§)-Z\x19\x01§) != 2 || !_loc4_.§\x011wD§.visible)
+         {
+            return;
+         }
+         if(isNaN(param3))
+         {
+            param3 = 360;
+         }
+         param3 /= 720;
+         mtSfxN++;
+         mtOut("mtSfx",[param1,param2,param3 < 0 ? 0 : (param3 > 1 ? 1 : param3)]);
+      }
+
+      // the weapon a display trooper holds (weapon id, WEAPON_ROWS), "" if none
+      public static function mtSfxWeap(param1:*) : String
+      {
+         if(param1 == null || param1.§5\tmF§ == null || param1.§5\tmF§.§An%6§ == null)
+         {
+            return "";
+         }
+         return String(int(param1.§5\tmF§.§An%6§.§)-Z\x19\x01§));
+      }
+
+      // PC_PLAY_SFX_APPLY: an entry starts (its action is created now: a shot fires at once, a throw starts...)
+      public static function mtSfxEntry(param1:§Q\btf§, param2:Object) : void
+      {
+         var _loc3_:int = 0;
+         var _loc4_:Array = null;
+         var _loc5_:* = null;
+         var _loc6_:Number = NaN;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param2 == null || param2.§An%6§ == null)
+            {
+               return;
+            }
+            _loc3_ = int(param2.§An%6§.§)-Z\x19\x01§);
+            _loc4_ = param2.§An%6§.§7\x02@d\x02§;
+            if(param2.§\x1e,d\x01§ != null)
+            {
+               _loc5_ = param1.§;|^W§(int(param2.§\x1e,d\x01§));
+            }
+            _loc6_ = _loc5_ != null ? Number(_loc5_.§v\x01§) : NaN;
+            switch(_loc3_)
+            {
+               case 1:
+                  mtSfx("deploy","",NaN);
+                  break;
+               case 3:
+                  mtSfx("reload","start",_loc6_);
+                  break;
+               case 4:
+                  mtSfx("reload","load",_loc6_);
+                  break;
+               case 5:
+                  mtSfx("empty",mtSfxWeap(_loc5_),_loc6_);
+                  break;
+               case 8:
+                  mtSfx("fire",mtSfxWeap(_loc5_),_loc6_);
+                  break;
+               case 9:
+                  mtSfx("melee",mtSfxWeap(_loc5_),_loc6_);
+                  break;
+               case 10:
+                  mtSfx("grenade",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
+                  break;
+               case 11:
+                  mtSfx("move","",_loc6_);
+                  break;
+               case 12:
+               case 13:
+                  mtSfx("heal","",_loc6_);
+                  break;
+               case 14:
+               case 16:
+               case 17:
+                  mtSfx("skill",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
+                  break;
+               case 18:
+                  mtSfx("charge",mtSfxWeap(_loc5_),_loc6_);
+                  break;
+               case 19:
+                  mtSfx("carry","",_loc6_);
+                  break;
+               case 21:
+                  mtSfx("jet","",NaN);
+                  break;
+               case 25:
+                  mtSfx("switch","",_loc6_);
+                  break;
+               case 34:
+                  mtSfx("end",_loc4_ != null ? String(int(_loc4_[0])) : "",NaN);
+                  break;
+               case 39:
+                  mtSfx("wave","",NaN);
+            }
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // an entry parameter as a number: an int, or an enum's index (a skill), "" if none
+      public static function mtSfxIdx(param1:*) : String
+      {
+         if(param1 is Number)
+         {
+            return String(int(param1));
+         }
+         if(param1 != null && param1[")-Z\x19\x01"] != null)
+         {
+            return String(int(param1[")-Z\x19\x01"]));
+         }
+         return "";
+      }
+
+      // PC_PLAY_SFX_HIT: a display trooper takes a hit (shot, blast, blow): miss, blocked, critical, hit or no damage
+      public static function mtSfxHit(param1:*, param2:Object) : void
+      {
+         var _loc3_:String = null;
+         var _loc4_:Array = null;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param2 == null)
+            {
+               return;
+            }
+            _loc4_ = param2.§iE!m\x02§;
+            if(param2.§An%6§ == §\x01\x0bB\x07§.§PY,)§)
+            {
+               _loc3_ = "miss";
+            }
+            else if(_loc4_ != null && §\x17\x12hD§.§'a|\x01§(_loc4_,§\x0fUf,\x01§.§gA #\x02§))
+            {
+               _loc3_ = "block";
+            }
+            else if(_loc4_ != null && §\x17\x12hD§.§'a|\x01§(_loc4_,§\x0fUf,\x01§.§\x1c\x04Nq\x01§))
+            {
+               _loc3_ = "crit";
+            }
+            else if(int(param2.§w;\t'\x02§) > 0)
+            {
+               _loc3_ = "hit";
+            }
+            else
+            {
+               _loc3_ = "nodmg";
+            }
+            mtSfx(_loc3_,param1.§W\x19\x1bT\x03§ != null ? "vehicle" : (param2.§An%6§ == null ? "" : String(int(param2.§An%6§.§)-Z\x19\x01§))),Number(param1.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_DIE: a display trooper dies (detail: his class index)
+      public static function mtSfxDie(param1:*) : void
+      {
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param1.§Qg}\x07§)
+            {
+               return;
+            }
+            mtSfx("death",String(int(param1.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§)),Number(param1.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_BLAST: the map's blast (debris; param3: size, param4: pieces: 16 grenade, 20 air strike / jet)
+      public static function mtSfxBlast(param1:Number, param2:Number, param3:int, param4:int) : void
+      {
+         if(mtSfxMute > 0 || mtSeekTo >= 0)
+         {
+            return;
+         }
+         mtSfx("explosion",param4 >= 20 ? "big" : "grenade",param1);
+      }
+
       // --- Game hooks
       // state 0 -> 1 (PC_PLAY_GAME_INIT): the history is complete and nothing has been applied yet
       public static function mtInit(param1:§Q\btf§) : void
@@ -1157,7 +1368,9 @@ ofs0081:
                // the troopers' tweens go to the Game's tween list, not to the pause screen's
                mtTm = §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§;
                §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = param1.§;\x1az\x01§;
+               mtSfxMute++;
                mtWarm();
+               mtSfxMute--;
                §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = mtTm;
                mtTm = null;
             }
@@ -2756,6 +2969,23 @@ ofs0081:
       // Ruffle's script time limit); the queue is put back whatever happens. Returns the number of calls (-1: an error, -2: out of time, call again).
       public static function mtSettle(param1:int) : int
       {
+         var _loc2_:int = 0;
+         mtSfxMute++;
+         try
+         {
+            _loc2_ = mtSettleIn(param1);
+         }
+         catch(_loc_e_:*)
+         {
+            mtSfxMute--;
+            throw _loc_e_;
+         }
+         mtSfxMute--;
+         return _loc2_;
+      }
+
+      public static function mtSettleIn(param1:int) : int
+      {
          var _loc2_:§Q\btf§ = mtGame;
          var _loc3_:Array = _loc2_.§\x1e-\x02\x07\x01§;
          var _loc4_:int = 0;
@@ -3075,6 +3305,59 @@ getproperty QName(PackageNamespace(""),"mtFast")
 bitor
 convert_b
 returnvalue
+//@@ PC_PLAY_SFX_APPLY_FIND  (Game.apply(entry, troopers): the start of its code)
+code
+getlocal0
+pushscope
+newactivation
+pushscope
+//@@ PC_PLAY_SFX_APPLY_REPLACE  (=> `§(m]a\x02§.mtSfxEntry(this, entry);` first)
+code
+getlocal0
+pushscope
+newactivation
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+getlocal1
+callpropvoid QName(PackageNamespace(""),"mtSfxEntry"), 2
+//@@ PC_PLAY_SFX_HIT_FIND  (display trooper §3\x19/\x01§(hit, angle): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_HIT_REPLACE  (=> `§(m]a\x02§.mtSfxHit(this, hit);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+getlocal1
+callpropvoid QName(PackageNamespace(""),"mtSfxHit"), 2
+//@@ PC_PLAY_SFX_DIE_FIND  (display trooper §\x16mf\x01§(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_DIE_REPLACE  (=> `§(m]a\x02§.mtSfxDie(this);` first, before the dead flag is set)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxDie"), 1
+//@@ PC_PLAY_SFX_BLAST_FIND  (map §nEI(\x01§(x, y, size, pieces, ...): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_BLAST_REPLACE  (=> `§(m]a\x02§.mtSfxBlast(x, y, size, pieces);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal1
+getlocal2
+getlocal3
+getlocal 4
+callpropvoid QName(PackageNamespace(""),"mtSfxBlast"), 4
 //@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
 getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
 callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0

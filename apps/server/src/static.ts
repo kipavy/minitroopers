@@ -15,6 +15,7 @@ const TYPES: Record<string, string> = {
   ".ico": "image/x-icon",
   ".swf": "application/x-shockwave-flash",
   ".wasm": "application/wasm",
+  ".mp3": "audio/mpeg",
 };
 
 /** Serves files below `root` (GET/HEAD); falls through (next) when no such file. No directory listing, no traversal. */

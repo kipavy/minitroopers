@@ -3,7 +3,8 @@
  * BetterTrooper's viewer (bettertrooper.milvintsiss.com, recreated with its developer's permission).
  * Page -> SWF (methods of the Ruffle element #battle): mtPause, mtResume, mtSpeed(x), mtGoto(n) (synchronous, both
  * directions), mtState(), mtShot(); the game paused while a dialog is open or the tab is hidden.
- * SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave), mtEnd(), mtStuck(idx), mtPaused(p).
+ * SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave), mtEnd(), mtStuck(idx), mtPaused(p),
+ * mtSfx(kind, detail, x) (sound cues, played by /js/sfx.js unless the page is silent: jump, pause, dialog, hidden tab).
  * The pause is the game's own pause screen (mtPause / mtResume, a click on the battlefield, a trooper's card): the SWF
  * reports every change through mtPaused, the page's only source for its pause state; jumps keep it.
  * Every seek of the page goes through goto(n) -> mtGoto(n); the Ruffle player is never reloaded.
@@ -49,7 +50,7 @@
    * Public state (also read by the end-to-end tests). ready: what the SWF simulated so far (mtSim), total = the entries
    * known; complete: the whole battle simulated (mtReady); known: ready.total.
    */
-  var info = (w.mtPlayer = { ready: null, complete: false, known: 0, idx: 0, wave: 0, first: null, players: 0 });
+  var info = (w.mtPlayer = { ready: null, complete: false, known: 0, idx: 0, wave: 0, first: null, players: 0, sfx: 0 });
   var notch = X1;
   var paused = false;
   var ended = false;
@@ -64,6 +65,7 @@
   // the loading veil (until the battle plays its first entry) and a jump waiting for the simulation
   var loading = { t0: Date.now() };
   var wait = null;
+  var sfx = w.MtSfx || null;
 
   w.swfobject.embedSWF = function (url, id) {
     if (id === "swf_battle") started();
@@ -160,7 +162,15 @@
 
   w.mtPaused = function (p) {
     paused = !!p;
+    if (paused && sfx) sfx.stop();
     update();
+  };
+
+  // sound cues: info.sfx counts those received
+  w.mtSfx = function (kind, detail, x) {
+    info.sfx++;
+    if (!sfx || paused || seeking || wait || d.hidden || dialogOpen()) return;
+    sfx.play(String(kind), detail === null || detail === undefined ? "" : String(detail), Number(x));
   };
 
   w.mtStuck = function (idx) {
@@ -287,6 +297,7 @@
   /** Seek veil: on until the landing mtProgress, or until mtState says the seek is over. */
   function setSeeking(v) {
     seeking = v;
+    if (v && sfx) sfx.stop();
     clearInterval(seekTimer);
     if (v) {
       var t0 = Date.now();
@@ -311,6 +322,7 @@
   function setNotch(v) {
     notch = Math.max(0, Math.min(SPEEDS.length - 1, v));
     call("mtSpeed", SPEEDS[notch]);
+    if (sfx) sfx.setSpeed(SPEEDS[notch]);
     update();
   }
   // "+" held: at least x2 while held, back to the notch before on release
@@ -1817,21 +1829,32 @@
     ui.x2.removeAttribute("aria-label");
     second.appendChild(ui.x2);
     var end = node("span", "mtp-secondary__end");
-    // the game has no sound yet: BetterTrooper's disabled button, a toast says so
+    // sound on / off (localStorage mt-sound, on by default)
     var soundBox = node("span", "mtp-sound");
     soundBox.id = "mtp-sound-box";
-    soundBox.title = "Le jeu n'a pas encore de son";
     var sound = node("button", "mtp-btn mtp-xs");
     sound.type = "button";
     sound.id = "mtp-sound";
-    sound.setAttribute("aria-pressed", "false");
-    sound.setAttribute("aria-disabled", "true");
     sound.setAttribute("aria-label", "Son");
-    sound.appendChild(maskIcon("sound-off"));
-    soundBox.appendChild(sound);
-    soundBox.addEventListener("click", function () {
-      toast("Le jeu n'a pas encore de son", { warning: true });
+    var soundState = function () {
+      var on = !!sfx && !sfx.muted;
+      sound.setAttribute("aria-pressed", on ? "true" : "false");
+      sound.title = on ? "Couper le son" : "Activer le son";
+      sound.textContent = "";
+      sound.appendChild(maskIcon(on ? "sound-on" : "sound-off"));
+    };
+    soundState();
+    sound.addEventListener("click", function (e) {
+      if (!sfx) return;
+      sfx.setMuted(!sfx.muted);
+      try {
+        w.localStorage.setItem("mt-sound", sfx.muted ? "off" : "on");
+      } catch (x) {}
+      soundState();
+      toast(sfx.muted ? "Son coupé" : "Son activé");
+      focusGame(e);
     });
+    soundBox.appendChild(sound);
     end.appendChild(soundBox);
     // the "?" of the game's tips (/img/info.png) at twice its size: hover or focus shows the shortcuts in the site's tooltip
     var help = node("button", "mtp-helpbtn");

@@ -133,7 +133,20 @@ if ($Play) {
        trait = 'trait method QName(PackageNamespace(""),"Bl{K\x01")' },
     @{ name = "PC_PLAY_TICK"; class = $game.class; rel = $game.rel
        sig = "      public function ${S}&~\x03'${S}() : void"
-       trait = 'trait method QName(PackageNamespace(""),"&~\x03\''")' }
+       trait = 'trait method QName(PackageNamespace(""),"&~\x03\''")' },
+    # sounds (mtSfx): Game.apply, the display trooper's hit and death, the map's blast
+    @{ name = "PC_PLAY_SFX_APPLY"; class = $game.class; rel = $game.rel
+       sig = "      public function apply(param1:Object, param2:Array) : void"
+       trait = 'trait method QName(PackageNamespace(""),"apply")' },
+    @{ name = "PC_PLAY_SFX_HIT"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+       sig = "      public function ${S}3\x19/\x01${S}(param1:Object, param2:Object = undefined) : void"
+       trait = 'trait method QName(PackageNamespace(""),"3\x19/\x01")' },
+    @{ name = "PC_PLAY_SFX_DIE"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+       sig = "      public function ${S}\x16mf\x01${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"\x16mf\x01")' },
+    @{ name = "PC_PLAY_SFX_BLAST"; class = "${S}n#\x07\f${S}"; rel = "scripts\${S}n#%5Cx07%5Cf${S}"
+       sig = "      public function ${S}nEI(\x01${S}(param1:Number, param2:Number, param3:int = 50, param4:int = 10, param5:Number = 0.1, param6:Number = 0.2, param7:Object = undefined) : void"
+       trait = 'trait method QName(PackageNamespace(""),"nEI(\x01")' }
   )
 }
 $argLines = New-Object System.Collections.Generic.List[string]

@@ -92,6 +92,8 @@ test("static: bg images, swfs, ruffle wasm, no traversal, no cookies", async () 
     ["/js/jquery.min.js", /javascript/],
     ["/js/app.js", /javascript/],
     ["/ruffle/ruffle.js", /javascript/],
+    ["/js/sfx.js", /javascript/],
+    ["/sfx/explosion.mp3", /^audio\/mpeg$/],
   ] as const) {
     const r = await app.request(p);
     assert.equal(r.status, 200, p);

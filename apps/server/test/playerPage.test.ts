@@ -95,11 +95,12 @@ window.swfobject = { embedSWF: function (url, id) {
 var mtLog = ${JSON.stringify(LOG)};
 var mtAt = null;
 var mtSides = [["A"], ["B"]];
+var mtSide = 0;
 var mtShare = "http://mt.example/b/fview/7";
 var mtDate = "2026-11-25";
 battleID = "7";
 </script>
-<script src="/js/player.js"></script></head><body class="mtp">
+<script src="/js/sfx.js"></script><script src="/js/player.js"></script></head><body class="mtp">
 <div class="game mtp-game"><div class="swfframe nam "><h1>
 L'armée de A
 VS
@@ -111,7 +112,7 @@ L'armée de B
 <script>swfobject.embedSWF("/x.swf", "swf_battle", 720, 440);</script>
 </div></body></html>`;
 
-const TYPES: Record<string, string> = { ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".gif": "image/gif", ".jpg": "image/jpeg" };
+const TYPES: Record<string, string> = { ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".gif": "image/gif", ".jpg": "image/jpeg", ".mp3": "audio/mpeg" };
 let server: Server;
 let base = "";
 let browser: Awaited<ReturnType<typeof launch>>;
@@ -142,14 +143,20 @@ after(async () => {
 });
 
 type Page = Awaited<ReturnType<typeof browser.newPage>>;
-type Opts = { width?: number; height?: number; touch?: boolean };
+type Opts = { width?: number; height?: number; touch?: boolean; spy?: boolean };
 
 /** The test page, the stand-in SWF ready (mtReady), the battle playing at idx `at`. */
 async function open(o: Opts = {}, at = 5): Promise<Page> {
   const ctx = await browser.newContext({ viewport: { width: o.width ?? 1280, height: o.height ?? 1000 }, acceptDownloads: true, hasTouch: !!o.touch, isMobile: !!o.touch });
+  if (o.spy) await ctx.addInitScript(SPY);
   const page = await ctx.newPage();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(String(e)));
+  const consoleMsgs: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error" || m.type() === "warning") consoleMsgs.push(m.text());
+  });
+  (page as unknown as { console: string[] }).console = consoleMsgs;
   (page as unknown as { errors: string[] }).errors = errors;
   await page.goto(`${base}/test.html`);
   await page.evaluate(([r, n]) => {
@@ -393,14 +400,13 @@ test("capture dialog: framed and game-only pictures, Download gives the 720x440 
     const [framed] = await Promise.all([page.waitForEvent("download"), page.click('#mtp-shotdlg [data-shot="framed"] [data-act="download"]')]);
     assert.equal(framed.suggestedFilename(), "minitroopers-7-encadre.png");
     await page.keyboard.press("Escape");
-    await page.click("#mtp-sound-box");
+    await page.click("#mtp-sound");
     const toast = await page.waitForSelector(".mtp-toast[data-shown]");
-    assert.equal(await toast.textContent(), "Le jeu n'a pas encore de son");
-    assert.match((await toast.getAttribute("class"))!, /mtp-toast--warning/);
+    assert.equal(await toast.textContent(), "Son coupé");
+    assert.doesNotMatch((await toast.getAttribute("class"))!, /mtp-toast--warning/);
     await page.waitForTimeout(400); // its 0.2 s slide up
     const r = await toast.boundingBox();
     assert.ok(r && Math.abs(1000 - (r.y + r.height) - 22) <= 1, `22 px above the bottom: ${JSON.stringify(r)}`);
-    assert.equal(await page.getAttribute("#mtp-sound", "aria-disabled"), "true");
   } finally {
     await close(page);
   }
@@ -652,6 +658,203 @@ test("while loading: a click on the timeline does nothing", async (t) => {
     const tr = (await page.locator("#mtp-track").boundingBox())!;
     await page.mouse.click(tr.x + 10, tr.y + 10);
     assert.deepEqual(await gotos(page), []);
+  } finally {
+    await close(page);
+  }
+});
+
+// --- sounds (public/js/sfx.js): the stand-in SWF's cues are sent by hand (window.mtSfx); Web Audio spied on ---
+
+/** Counts AudioContexts, started / stopped sources and keeps the stereo panners (pan of each sound). */
+const SPY = `(() => {
+  const log = (window.audioLog = { ctx: 0, started: 0, stopped: 0, panners: [] });
+  const AC = window.AudioContext;
+  window.AudioContext = class extends AC { constructor(o) { super(o); log.ctx++; } };
+  const P = AudioBufferSourceNode.prototype;
+  const start = P.start, stop = P.stop;
+  P.start = function (...a) { log.started++; return start.apply(this, a); };
+  P.stop = function (...a) { log.stopped++; return stop.apply(this, a); };
+  const cp = BaseAudioContext.prototype.createStereoPanner;
+  BaseAudioContext.prototype.createStereoPanner = function () { const n = cp.call(this); log.panners.push(n); return n; };
+})();`;
+type Audio = { ctx: number; started: number; stopped: number; pans: number[] };
+const audio = (page: Page): Promise<Audio> =>
+  page.evaluate(() => {
+    const l = (window as unknown as { audioLog: { ctx: number; started: number; stopped: number; panners: StereoPannerNode[] } }).audioLog;
+    return { ctx: l.ctx, started: l.started, stopped: l.stopped, pans: l.panners.map((p) => p.pan.value) };
+  });
+/** A first gesture (a click beside the player), then every sound decoded. */
+async function unlock(page: Page): Promise<void> {
+  await page.mouse.click(5, 5);
+  await page.waitForFunction(() => (window as unknown as { MtSfx?: { ready: boolean } }).MtSfx?.ready === true, null, { timeout: 10000 });
+}
+const cue = (page: Page, list: [string, string, number][], gapMs = 0): Promise<void> =>
+  page.evaluate(
+    async ([l, gap]) => {
+      for (const [k, d, x] of l as [string, string, number][]) {
+        (window as unknown as { mtSfx(k: string, d: string, x: number): void }).mtSfx(k, d, x);
+        if (gap) await new Promise((ok) => setTimeout(ok, gap as number));
+      }
+    },
+    [list, gapMs] as const,
+  );
+
+test("sound: the button is on by default; a click mutes it (sound-off icon, « Son coupé », mt-sound=off kept after a reload)", async (t) => {
+  if (skip(t)) return;
+  const page = await open({});
+  try {
+    const state = () =>
+      page.evaluate(() => {
+        const b = document.getElementById("mtp-sound")!;
+        return { pressed: b.getAttribute("aria-pressed"), disabled: b.getAttribute("aria-disabled"), on: !!b.querySelector(".mtp-mask--sound-on"), off: !!b.querySelector(".mtp-mask--sound-off"), store: localStorage.getItem("mt-sound"), label: b.getAttribute("aria-label") };
+      });
+    assert.deepEqual(await state(), { pressed: "true", disabled: null, on: true, off: false, store: null, label: "Son" });
+    await page.click("#mtp-sound");
+    assert.deepEqual(await state(), { pressed: "false", disabled: null, on: false, off: true, store: "off", label: "Son" });
+    assert.equal(await page.textContent(".mtp-toast"), "Son coupé");
+    await page.reload();
+    await page.waitForSelector("#mtp-sound");
+    assert.equal((await state()).pressed, "false", "kept after a reload");
+    await page.click("#mtp-sound");
+    assert.deepEqual(await state(), { pressed: "true", disabled: null, on: true, off: false, store: "on", label: "Son" });
+    assert.equal(await page.textContent(".mtp-toast"), "Son activé");
+  } finally {
+    await close(page);
+  }
+});
+
+test("sound: no AudioContext nor console error before a gesture; after one, a cue plays one sound panned by x", async (t) => {
+  if (skip(t)) return;
+  const page = await open({ spy: true });
+  try {
+    await cue(page, [["fire", "13", 0.2]]);
+    await page.waitForTimeout(200);
+    assert.equal((await audio(page)).ctx, 0, "no AudioContext before a gesture");
+    assert.deepEqual((page as unknown as { console: string[] }).console, []);
+    await unlock(page);
+    await cue(page, [["fire", "13", 0.2]]);
+    let a = await audio(page);
+    assert.equal(a.ctx, 1);
+    assert.equal(a.started, 1);
+    assert.ok(a.pans.at(-1)! < -0.3 && a.pans.at(-1)! >= -0.6, `left: ${a.pans.at(-1)}`);
+    await cue(page, [["explosion", "big", 1]]);
+    a = await audio(page);
+    assert.equal(a.started, 2);
+    assert.ok(Math.abs(a.pans.at(-1)! - 0.6) < 1e-6, `right, at most 0.6: ${a.pans.at(-1)}`);
+    await cue(page, [["deploy", "", NaN]]);
+    a = await audio(page);
+    assert.equal(a.started, 3);
+    assert.equal(a.pans.at(-1), 0, "no trooper: centred");
+    await cue(page, [["move", "", 0.5], ["carry", "", 0.5], ["charge", "30", 0.5]]);
+    assert.equal((await audio(page)).started, 3, "moves are silent");
+    assert.deepEqual((page as unknown as { console: string[] }).console, []);
+    assert.deepEqual((page as unknown as { errors: string[] }).errors, []);
+  } finally {
+    await close(page);
+  }
+});
+
+test("sound: the cue -> sound map (one fire cue per bullet; weapons by family, projectiles (grenades, rockets, shells), explosions, deaths, the viewer's victory or defeat)", async (t) => {
+  if (skip(t)) return;
+  const page = await open({});
+  try {
+    const m = await page.evaluate(() => {
+      const S = (window as unknown as { MtSfx: { sounds(k: string, d: string): string[] } }).MtSfx;
+      const q: [string, string][] = [
+        ["fire", "1"], ["fire", "2"], ["fire", "3"], ["fire", "5"], ["fire", "6"], ["fire", "7"], ["fire", "8"], ["fire", "9"], ["fire", "10"],
+        ["fire", "11"], ["fire", "13"], ["fire", "15"], ["fire", "17"], ["fire", "20"], ["fire", "21"], ["fire", "24"], ["fire", "25"], ["fire", "29"],
+        ["fire", "31"], ["fire", "32"], ["fire", "33"], ["fire", "35"], ["fire", "37"],
+        ["melee", "0"], ["melee", "30"], ["melee", "36"], ["grenade", "82"], ["grenade", "17"], ["grenade", "18"], ["grenade", "31"], ["grenade", "33"], ["skill", "83"], ["explosion", "grenade"], ["explosion", "big"],
+        ["reload", "start"], ["reload", "load"], ["hit", "0"], ["hit", "1"], ["hit", "3"], ["hit", "4"], ["hit", "6"], ["hit", "vehicle"], ["crit", "0"], ["miss", "9"], ["block", "0"],
+        ["death", "0"], ["death", "2"], ["deploy", ""], ["wave", ""], ["end", "0"], ["end", "1"], ["move", ""], ["switch", ""],
+      ];
+      return Object.fromEntries(q.map(([k, d]) => [k + ":" + d, S.sounds(k, d).join(",")]));
+    });
+    assert.deepEqual(m, {
+      "fire:1": "pistol", "fire:2": "pistol-heavy", "fire:3": "pistol-heavy", "fire:5": "pistol-dual", "fire:6": "rifle", "fire:7": "rifle-auto",
+      "fire:8": "rifle-double", "fire:9": "shotgun", "fire:10": "shotgun-dry", "fire:11": "assault", "fire:13": "assault", "fire:15": "rifle-auto",
+      "fire:17": "rocket", "fire:20": "rocket", "fire:21": "mg", "fire:24": "mg", "fire:25": "sniper", "fire:29": "sniper", "fire:31": "cannon",
+      "fire:32": "mg", "fire:33": "cannon", "fire:35": "mg", "fire:37": "",
+      "melee:0": "punch", "melee:30": "knife", "melee:36": "rat,rat-2", "grenade:82": "throw", "grenade:17": "rocket", "grenade:18": "rocket", "grenade:31": "cannon", "grenade:33": "cannon", "skill:83": "", "explosion:grenade": "explosion", "explosion:big": "explosion-big",
+      "reload:start": "", "reload:load": "reload", "hit:0": "hit", "hit:1": "", "hit:3": "hit", "hit:4": "", "hit:6": "punch", "hit:vehicle": "", "crit:0": "crit", "miss:9": "miss", "block:0": "",
+      "death:0": "death,death-2", "death:2": "rat,rat-2", "deploy:": "deploy", "wave:": "deploy", "end:0": "victory", "end:1": "defeat", "move:": "", "switch:": "",
+    });
+  } finally {
+    await close(page);
+  }
+});
+
+test("sound: silent when muted, paused, under a dialog or in a hidden tab; a jump or the pause cuts the sounds playing", async (t) => {
+  if (skip(t)) return;
+  const page = await open({ spy: true });
+  try {
+    await unlock(page);
+    await cue(page, [["explosion", "big", 0.5]]);
+    assert.equal((await audio(page)).started, 1);
+    // a jump (→: one entry on) cuts it
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(50);
+    assert.ok((await audio(page)).stopped >= 1, "cut by the jump");
+    // pause: the sound playing cut, nothing while paused
+    await cue(page, [["explosion", "grenade", 0.5]]);
+    const before = await audio(page);
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => (document.getElementById("battle") as unknown as { mtState(): { paused: boolean } }).mtState().paused);
+    assert.ok((await audio(page)).stopped > before.stopped, "cut by the pause");
+    await cue(page, [["fire", "1", 0.5]]);
+    assert.equal((await audio(page)).started, before.started, "nothing while paused");
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => !(document.getElementById("battle") as unknown as { mtState(): { paused: boolean } }).mtState().paused);
+    await cue(page, [["fire", "1", 0.5]]);
+    assert.equal((await audio(page)).started, before.started + 1, "again once resumed");
+    // muted
+    await page.click("#mtp-sound");
+    await page.waitForTimeout(60);
+    await cue(page, [["fire", "2", 0.5]]);
+    assert.equal((await audio(page)).started, before.started + 1, "nothing muted");
+    await page.click("#mtp-sound");
+    // a dialog open
+    await page.click("#mtp-link");
+    await cue(page, [["fire", "3", 0.5]]);
+    assert.equal((await audio(page)).started, before.started + 1, "nothing under a dialog");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(100);
+    // a hidden tab
+    await page.evaluate(() => {
+      Object.defineProperty(document, "hidden", { value: true, configurable: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await cue(page, [["fire", "4", 0.5]]);
+    assert.equal((await audio(page)).started, before.started + 1, "nothing in a hidden tab");
+  } finally {
+    await close(page);
+  }
+});
+
+test("sound: at most 8 voices for 50 cues at once; at ×8 a repeated sound is spaced out", async (t) => {
+  if (skip(t)) return;
+  const page = await open({ spy: true });
+  try {
+    await unlock(page);
+    const many: [string, string, number][] = [];
+    for (let i = 0; i < 50; i++) many.push(i % 5 === 0 ? ["explosion", "grenade", i / 50] : i % 5 === 1 ? ["hit", "0", i / 50] : ["fire", String(1 + (i % 29)), i / 50]);
+    await cue(page, many);
+    const a = await audio(page);
+    assert.ok(a.started >= 6 && a.started - a.stopped <= 8, `voices: ${JSON.stringify(a)}`);
+    await page.waitForTimeout(1500);
+    // ×1: hits 60 ms apart all heard
+    const s1 = (await audio(page)).started;
+    await cue(page, Array.from({ length: 6 }, () => ["hit", "0", 0.5] as [string, string, number]), 60);
+    assert.equal((await audio(page)).started - s1, 6, "×1: every hit");
+    await page.evaluate(() => {
+      const r = document.getElementById("mtp-speed") as HTMLInputElement;
+      r.value = "14";
+      r.dispatchEvent(new Event("input"));
+    });
+    await page.waitForTimeout(300);
+    const s8 = (await audio(page)).started;
+    await cue(page, Array.from({ length: 6 }, () => ["hit", "0", 0.5] as [string, string, number]), 60);
+    assert.ok((await audio(page)).started - s8 <= 2, "×8: spaced out");
   } finally {
     await close(page);
   }

@@ -27,14 +27,16 @@ export function atParam(c: Context<Env>, total: number): number | null {
 
 /**
  * Data of the enhanced player for a stored battle: its French log (army names in input order: the viewer's swap of
- * `attackerSide` only concerns the flashvars) and the `?at=` start.
+ * `attackerSide` only concerns the flashvars), the viewer's input side (`viewerDefends`: the defender's) and the
+ * `?at=` start.
  */
 export function playerData(
   c: Context<Env>,
   b: BattleRow,
   attacker: string,
   defender: string,
-): { log: LogLine[]; at: number | null; sides: [string[], string[]]; day: string } {
+  viewerDefends = false,
+): { log: LogLine[]; at: number | null; sides: [string[], string[]]; side: number; day: string } {
   const other = defender || "L'adversaire";
   const names: [string, string] = b.input.attackerSide === 0 ? [attacker, other] : [other, attacker];
   let log: LogLine[] = [];
@@ -44,7 +46,7 @@ export function playerData(
     console.error("battleLog failed for battle", b.id, e);
   }
   const side = (s: 0 | 1): string[] => [names[s], ...b.input.armies[s].troopers.map((t) => t.name).filter((n) => typeof n === "string" && n.trim() !== "")];
-  return { log, at: atParam(c, log.length), sides: [side(0), side(1)], day: b.day };
+  return { log, at: atParam(c, log.length), sides: [side(0), side(1)], side: viewerDefends ? 1 - b.input.attackerSide : b.input.attackerSide, day: b.day };
 }
 
 // UNVERIFIED: the original battle seed range is unknown; archived seeds are all below 2^25. Any int32 replays the same.
@@ -163,7 +165,7 @@ export function registerBattle(pages: Hono<Env>, deps: Deps): void {
       pass: host !== null && (armyByHost(db, host)?.passwordHash ?? null) !== null,
       attacker: attackerTitle,
       defender,
-      ...playerData(c, b, attackerTitle, defender),
+      ...playerData(c, b, attackerTitle, defender, viewerDefends),
       // The replay takes the viewer's side (RECON4 §1.2: b_fview_262579954 seen by its defender has attackerSide 1);
       // the stored input is unchanged and the engine does not read attackerSide.
       flashvars: clientParams(battleData(viewerDefends ? { ...b.input, attackerSide: 1 - b.input.attackerSide } : b.input, ARMY_SWF), { endMsg }),

@@ -121,7 +121,7 @@ export function registerTrain(pages: Hono<Env>, deps: Deps): void {
       attacker: attackerTitle,
       defender,
       heading: `Entraînement : ${attackerTitle} VS ${defender}`,
-      ...playerData(c, b, attackerTitle, defender),
+      ...playerData(c, b, attackerTitle, defender, viewerDefends),
       flashvars: clientParams(battleData(viewerDefends ? { ...t.input, attackerSide: 1 - t.input.attackerSide } : t.input, ARMY_SWF), { endMsg }),
       endUrl: back,
       back,
