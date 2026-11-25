@@ -808,3 +808,13 @@ table.choose a.fac:hover {
 .action .b.bblock {
 	vertical-align : top;
 }
+/* its icon and text centred vertically in the tile (Killian, 2026-11-25) */
+.action .bblock .b_bg {
+	display : flex;
+	align-items : center;
+	justify-content : center;
+	gap : 4px;
+	height : 26px;
+	padding : 0px;
+	box-sizing : border-box;
+}
