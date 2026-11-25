@@ -405,15 +405,16 @@ const rng = (seed: number) => () => {
 // Positions (pixels) are compared within POS_TOL: a keyframe holds the logic's squares; the display adds offsets of its
 // own that no history entry carries (hit knock-backs, a melee attacker stopping by its victim's drawn position), which
 // a plain playback keeps until the trooper next moves. Squares are 48 px: every tolerance stays under one square, but
-// for the bodies listed in BLASTED (a blast pushed them after their death, before the keyframe: an offset no entry
-// carries), allowed up to POS_TOL_BLASTED. The largest offsets seen are reported per kind.
+// for the bodies listed in BLASTED, from the history index of the pushes on (each hit pushes a display trooper by its
+// damage along the shot, a blast pushes a body after its death: offsets no entry carries), allowed up to POS_TOL_BLASTED. The largest offsets seen are reported per kind.
 const POS_TOL = 40;
 const POS_TOL_DEAD = 47;
 const POS_TOL_BLASTED = 96;
-const BLASTED: Record<string, number[]> = {
-  "vehicles/00007.json.gz": [7],
-  // each hit pushes a display trooper by its damage along the shot (no entry carries it): 4 hits in a row, then death
-  "comms/00004.json.gz": [17],
+const BLASTED: Record<string, { tid: number; from: number }[]> = {
+  // hits 147-151 (the last one a blast), dead at 151
+  "vehicles/00007.json.gz": [{ tid: 7, from: 147 }],
+  // 4 hits in a row (200-203), dead at 203
+  "comms/00004.json.gz": [{ tid: 17, from: 200 }],
 };
 interface SceneStats {
   alive: number;
@@ -421,7 +422,7 @@ interface SceneStats {
   ground: number;
 }
 /** mtDump lines equal, positions ("@x,y", pixels) within their tolerance; stats gets the largest offsets. */
-const sameScene = (a: string, b: string, id: string, stats: SceneStats): boolean => {
+const sameScene = (a: string, b: string, id: string, at: number, stats: SceneStats): boolean => {
   const la = a.split("\n");
   const lb = b.split("\n");
   if (la.length !== lb.length) return false;
@@ -434,7 +435,7 @@ const sameScene = (a: string, b: string, id: string, stats: SceneStats): boolean
     const kind: keyof SceneStats = l.startsWith("G ") ? "ground" : l.includes(" dead") ? "dead" : "alive";
     stats[kind] = Math.max(stats[kind], d);
     const tid = Number(/^T(\d+)/.exec(l)?.[1] ?? -1);
-    const tol = kind === "alive" ? POS_TOL : kind === "dead" && (BLASTED[id] ?? []).includes(tid) ? POS_TOL_BLASTED : POS_TOL_DEAD;
+    const tol = kind === "alive" ? POS_TOL : kind === "dead" && (BLASTED[id] ?? []).some((x) => x.tid === tid && at >= x.from) ? POS_TOL_BLASTED : POS_TOL_DEAD;
     return l.replace(pos, "@") === lb[i]!.replace(pos, "@") && d <= tol;
   });
 };
@@ -500,7 +501,7 @@ for (const [k, id] of EQUIV.entries()) {
         assert.deepEqual(await b.call("mtState").then((s: any) => ({ idx: s.idx, seeking: s.seeking })), { idx: n, seeking: false }, `mtGoto(${n})`);
         const got = await dumps(b);
         const want = ref.get(n)!;
-        if (!sameScene(got, want, id, stats)) {
+        if (!sameScene(got, want, id, n, stats)) {
           const g = got.split("\n");
           const w = want.split("\n");
           bad.push(`n=${n}:\n  want ${w.filter((l) => !g.includes(l)).join("\n       ")}\n  got  ${g.filter((l) => !w.includes(l)).join("\n       ")}`);

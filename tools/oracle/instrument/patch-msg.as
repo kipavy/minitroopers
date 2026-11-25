@@ -805,7 +805,14 @@ ofs0081:
          // state 1 waits for the background image: still no state-2 frame after 10 s -> stuck
          mtInitAt = new Date().time;
          setTimeout(mtWaitCheck,10000,param1);
-         mtShown();
+         // never lose mtReady: on an error, the keyframes not reached yet keep the logic's extras (mtKfX)
+         try
+         {
+            mtShown();
+         }
+         catch(_loc_e_:*)
+         {
+         }
          mtStarts = [];
          _loc3_ = 0;
          while(_loc3_ < mtWaves.length)
@@ -862,19 +869,6 @@ ofs0081:
          {
             _loc5_ = 100;
          }
-         // pre-warming: one trooper per frame while paused, one every 4 frames while playing; none for 20 frames after a
-         // jump (its frames are being drawn)
-         if(mtPend < 0 && mtSeekTo < 0 && mtWarmP < 2)
-         {
-            if(mtWarmHold > 0)
-            {
-               mtWarmHold--;
-            }
-            else if(mtPaused || ++mtWarmTick % 4 == 0)
-            {
-               mtWarm();
-            }
-         }
          if(mtPend >= 0)
          {
             mtGoto(mtPend);
@@ -918,6 +912,19 @@ ofs0081:
          {
             mtStuckOn = param1.§^h'l\x02§;
             mtOut("mtStuck",[mtApplied(param1)]);
+         }
+         // pre-warming, after this frame's work: never during playback (it would take its frame time); one trooper per frame while paused or once
+         // the battle is over, none for 20 frames after a jump (its frames are being drawn)
+         if(mtPend < 0 && mtSeekTo < 0 && mtWarmP < 2 && (mtPaused || param1.§HUgt\x03§))
+         {
+            if(mtWarmHold > 0)
+            {
+               mtWarmHold--;
+            }
+            else
+            {
+               mtWarm();
+            }
          }
       }
 
@@ -1837,7 +1844,17 @@ ofs0081:
       {
          var _loc2_:int = int(param1.§;\f\x01§.§5E[\x1d§["7X\x01"]);
          var _loc3_:Array = mtPool[_loc2_];
-         if(param1.§n*L%\x01§ != null || param1.§\x06TY0§ || param1.§\x10\x1e\x01§ == null || _loc3_ != null && _loc3_.length >= 4)
+         // the vehicle's hover tween (§''R?§, type 3) points at the trooper: never left running
+         if(param1.§''R?§ != null)
+         {
+            param1.§''R?§.aGx2();
+            param1.§''R?§ = null;
+         }
+         if(param1.§\x05\x03\x1a\x01§ != null)
+         {
+            param1.§\x05\x03\x1a\x01§.§;x\x19\x07\x02§();
+         }
+         if(param1.§n*L%\x01§ != null || param1.§\x06TY0§ || param1.§\x10\x1e\x01§ == null || param1.§W\x19\x1bT\x03§ != null || _loc3_ != null && _loc3_.length >= 4)
          {
             mtPoolN[2]++;
             param1.aGx2();
@@ -1945,6 +1962,10 @@ ofs0081:
          mtMark(_loc4_,true);
          mtPoolN[1]++;
          _loc4_.rMm8();
+         if(_loc4_.§\x05\x03\x1a\x01§ != null)
+         {
+            _loc4_.§\x05\x03\x1a\x01§.§;x\x19\x07\x02§();
+         }
          return _loc4_;
       }
 
@@ -1954,7 +1975,6 @@ ofs0081:
       public static var mtWarmP:int = 0;
       public static var mtWarmAt:int = 0;
       public static var mtWarmK:int = 0;
-      public static var mtWarmTick:int = 0;
       public static var mtWarmHold:int = 0;
 
       // creates at most one trooper; false once everything is warm
@@ -1991,7 +2011,8 @@ ofs0081:
             }
             _loc3_ = (_loc7_ ? _loc1_.d : _loc1_.t)[_loc6_];
             _loc5_ = int(_loc3_["5E[\x1d"]["7X\x01"]);
-            if(_loc7_ ? mtFind(_loc5_,_loc3_,true) != null : mtFind(_loc5_,_loc3_,false) != null || mtGame.§;|^W§(_loc5_) != null && mtReusable(mtGame.§;|^W§(_loc5_),_loc3_))
+            // a trooper with a vehicle is never reusable (mtReusable) nor pooled (mtStash): not pre-warmed
+            if(_loc3_["(\t\x01"] != null || (_loc7_ ? mtFind(_loc5_,_loc3_,true) != null : mtFind(_loc5_,_loc3_,false) != null || mtGame.§;|^W§(_loc5_) != null && mtReusable(mtGame.§;|^W§(_loc5_),_loc3_)))
             {
                continue;
             }
@@ -2043,6 +2064,11 @@ ofs0081:
          var _loc4_:int = 0;
          var _loc5_:Boolean = false;
          param1.§'~i\x17\x03§();
+         // a label callback of the animation that was playing (e.g. "hit" during an approach) must not fire later
+         if(param1.§\x05\x03\x1a\x01§ != null)
+         {
+            param1.§\x05\x03\x1a\x01§.§;x\x19\x07\x02§();
+         }
          param1.§\x07\x15np\x02§ = false;
          _loc5_ = param1.§(\x1f\x15F\x01§ != Boolean(param2["(\x1f\x15F\x01"]) || mtStr(param1.§\x13fT$\x03§) != mtStr(param3[1]) || mtStr(param1.§3\x12\x06c\x03§) != mtStr(param3[2]) || param1.§XEC3\x03§ != param3[3] || param1.§j^\n\x04\x01§ || param1.§\x1c\x11_F\x03§;
          param1.§(\x1f\x15F\x01§ = Boolean(param2["(\x1f\x15F\x01"]);
