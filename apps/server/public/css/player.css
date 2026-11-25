@@ -535,7 +535,7 @@
 	font : 13px/1.55 var(--mtp-mono);
 }
 .mtp-line {
-	padding : 1px 2px;
+	padding : 1px 0px;
 	border-bottom : 1px dotted rgba(150,130,95,0.25);
 	cursor : pointer;
 	touch-action : manipulation;
@@ -553,31 +553,242 @@
 	font-weight : bold;
 }
 .mtp-line.mtp-cur {
-	background : var(--mtp-yellow);
+	background : #ffde8b;
+	box-shadow : inset 3px 0px 0px var(--mtp-sand-700);
 	opacity : 1;
 }
-.mtp-num {
+/* --- log lines (after BetterTrooper's): clock badge, heads and faction colours, icons, HUD --- */
+.mtp-time {
 	display : inline-block;
 	box-sizing : border-box;
-	min-width : 30px;
-	margin-right : 8px;
-	padding : 0px 4px;
+	min-width : 25px;
+	margin-right : 10px;
+	padding : 0px 4px 0px 13px;
 	border-radius : 4px;
-	background : var(--mtp-dark);
+	background : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'><circle cx='3.5' cy='3.5' r='3' fill='none' stroke='%23fff000' stroke-width='1'/><path d='M3.5 1.7v1.8h1.4' fill='none' stroke='%23fff000' stroke-width='.9'/></svg>") 3px center / 7px 7px no-repeat, var(--mtp-dark);
 	color : #fff000;
 	font-size : 11px;
 	font-weight : bold;
 	text-align : right;
 	font-variant-numeric : tabular-nums;
 }
-.mtp-name {
+/* an entry played before the clock reached it (its time is below the clock): the SWF's catch-up colours */
+.mtp-time--warp {
+	animation : mtp-warp 0.21s step-end infinite;
+}
+@keyframes mtp-warp {
+	0% { color : #00ffff; }
+	33.3% { color : #ff00ff; }
+	66.6% { color : #00ff00; }
+}
+.mtp-still .mtp-time--warp {
+	color : #00ffff;
+	animation : none;
+}
+@media (prefers-reduced-motion : reduce) {
+	.mtp-time--warp { color : #00ffff; animation : none; }
+}
+.mtp-lname, .mtp-lside {
+	color : var(--_faction-text, #c0392b);
 	font-weight : bold;
 }
-.mtp-side0 {
-	color : #1f5fa8;
+.mtp-lname:before {
+	content : "";
+	display : inline-block;
+	width : 14px;
+	height : 14px;
+	margin-right : 1px;
+	background : var(--_head) center / contain no-repeat;
+	vertical-align : -2px;
 }
-.mtp-side1 {
-	color : #c0392b;
+.mtp-lines [data-faction="0"] {
+	--_faction-text : #c0392b;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%23E87D5F' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lines [data-faction="1"] {
+	--_faction-text : #d35400;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%23FFAA27' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lines [data-faction="2"] {
+	--_faction-text : #b8860b;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%23FFDB7F' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lines [data-faction="3"] {
+	--_faction-text : #4f6b22;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%2396B732' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lines [data-faction="4"] {
+	--_faction-text : #2456b8;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%239EADEF' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lines [data-faction="5"] {
+	--_faction-text : #7d3c98;
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><ellipse cx='7' cy='9' rx='4.3' ry='4.3' fill='%23f3c08f' stroke='%233f301c' stroke-width='.9'/><path d='M2 8.2C2 4.4 4.3 1.6 7 1.6s5 2.8 5 6.6z' fill='%23A55DC6' stroke='%233f301c' stroke-width='.9'/><path d='M1.4 8.2h11.2' stroke='%233f301c' stroke-width='1.2' stroke-linecap='round'/><path d='M4.2 4.2c.8-1 1.8-1.5 2.8-1.5' stroke='%23fff' stroke-opacity='.6' stroke-width='.9' fill='none' stroke-linecap='round'/><circle cx='5.5' cy='10.1' r='.7' fill='%233f301c'/><circle cx='8.5' cy='10.1' r='.7' fill='%233f301c'/></svg>");
+}
+.mtp-lname[data-unit="rat"] {
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><circle cx='3.6' cy='4.2' r='2.4' fill='%23d9a3a3' stroke='%233f301c' stroke-width='.8'/><circle cx='10.4' cy='4.2' r='2.4' fill='%23d9a3a3' stroke='%233f301c' stroke-width='.8'/><ellipse cx='7' cy='8.4' rx='4.6' ry='4.2' fill='%238d7d8f' stroke='%233f301c' stroke-width='.9'/><circle cx='5.3' cy='7.6' r='.7' fill='%233f301c'/><circle cx='8.7' cy='7.6' r='.7' fill='%233f301c'/><circle cx='7' cy='10.6' r='1' fill='%23e58da0'/></svg>");
+}
+.mtp-lname[data-unit="clown"] {
+	--_head : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><circle cx='2.8' cy='6.5' r='2.2' fill='%23e8442c'/><circle cx='11.2' cy='6.5' r='2.2' fill='%23e8442c'/><ellipse cx='7' cy='8.2' rx='4.4' ry='4.6' fill='%23fff' stroke='%233f301c' stroke-width='.9'/><circle cx='7' cy='9' r='1.3' fill='%23e8442c'/><circle cx='5.3' cy='7' r='.6' fill='%233f301c'/><circle cx='8.7' cy='7' r='.6' fill='%233f301c'/></svg>");
+}
+.mtp-weapon {
+	color : #0a6b6b;
+	font-weight : bold;
+}
+.mtp-skill {
+	color : #8e44ad;
+	font-weight : bold;
+}
+.mtp-vehicle {
+	color : #2c6e8f;
+	font-weight : bold;
+}
+.mtp-poison {
+	color : #4e9a2e;
+	font-weight : bold;
+}
+.mtp-dmg {
+	color : #b03030;
+	font-weight : bold;
+}
+.mtp-coord {
+	color : var(--mtp-muted);
+}
+.mtp-kill {
+	color : #7a1414;
+	font-weight : bold;
+}
+.mtp-fatal {
+	color : #d11414;
+	font-weight : bold;
+	text-transform : uppercase;
+}
+/* weapon, skill and equipment icons: the cells of /img/skills.png (30 px) at 16 px */
+.mtp-wicon, .mtp-sicon {
+	display : inline-block;
+	width : 16px;
+	height : 16px;
+	margin-right : 2px;
+	background-image : url("/img/skills.png");
+	background-repeat : no-repeat;
+	background-size : 320px 112px;
+	vertical-align : -4px;
+}
+.mtp-hud {
+	display : inline-flex;
+	align-items : center;
+	gap : 4px;
+	padding : 1px 4px;
+	border-radius : 4px;
+	background : var(--mtp-dark);
+	line-height : 1;
+	vertical-align : middle;
+}
+.mtp-stat {
+	display : inline-flex;
+	align-items : center;
+	gap : 2px;
+	color : #fff;
+	font-size : 11px;
+	font-weight : bold;
+}
+.mtp-stat:before {
+	content : "";
+	width : 15px;
+	height : 15px;
+	background : currentColor;
+	-webkit-mask : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><circle cx='8.6' cy='2.4' r='1.9'/><path d='M7.4 4.6 4.6 6.3 3.4 8.8l1.3.6 1-2 1.3-.7-1 4.1-2.9 2.3.9 1.1 3.2-2.4.5-1.8 1.7 1.8.3 3h1.5l-.4-3.6-2-2.2.6-2.6.8 1.3 2.5.6.3-1.4-1.9-.5-1.4-2.3z'/></svg>") center / contain no-repeat;
+	mask : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><circle cx='8.6' cy='2.4' r='1.9'/><path d='M7.4 4.6 4.6 6.3 3.4 8.8l1.3.6 1-2 1.3-.7-1 4.1-2.9 2.3.9 1.1 3.2-2.4.5-1.8 1.7 1.8.3 3h1.5l-.4-3.6-2-2.2.6-2.6.8 1.3 2.5.6.3-1.4-1.9-.5-1.4-2.3z'/></svg>") center / contain no-repeat;
+}
+.mtp-stat--dep:before {
+	-webkit-mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><path d='M1.5 5.2h6.5V1.8l6 5.7-6 5.7V9.8H1.5z'/></svg>");
+	mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><path d='M1.5 5.2h6.5V1.8l6 5.7-6 5.7V9.8H1.5z'/></svg>");
+}
+.mtp-stat--com {
+	color : #00ffff;
+}
+.mtp-stat--com:before {
+	-webkit-mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'><circle cx='7.5' cy='7.5' r='1.4' fill='%23000' stroke='none'/><path d='M5 10a3.5 3.5 0 0 1 0-5M10 5a3.5 3.5 0 0 1 0 5M2.9 12.1a6.5 6.5 0 0 1 0-9.2M12.1 2.9a6.5 6.5 0 0 1 0 9.2'/></svg>");
+	mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'><circle cx='7.5' cy='7.5' r='1.4' fill='%23000' stroke='none'/><path d='M5 10a3.5 3.5 0 0 1 0-5M10 5a3.5 3.5 0 0 1 0 5M2.9 12.1a6.5 6.5 0 0 1 0-9.2M12.1 2.9a6.5 6.5 0 0 1 0 9.2'/></svg>");
+}
+.mtp-stat--sab {
+	color : #44ff00;
+}
+.mtp-stat--sab:before {
+	-webkit-mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><path d='M13.6 3.3 11.4 5.5 9.5 5.5 9.5 3.6 11.7 1.4A4 4 0 0 0 7.2 6.3L1.6 11.9a1.4 1.4 0 0 0 2 2l5.6-5.6a4 4 0 0 0 4.4-5z'/></svg>");
+	mask-image : url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 15'><path d='M13.6 3.3 11.4 5.5 9.5 5.5 9.5 3.6 11.7 1.4A4 4 0 0 0 7.2 6.3L1.6 11.9a1.4 1.4 0 0 0 2 2l5.6-5.6a4 4 0 0 0 4.4-5z'/></svg>");
+}
+
+/* --- the "?" help in the site's tooltip (#tooltip of app.js, class mtp-tip): BetterTrooper's list of shortcuts;
+ * mtp-tip--wide: the same frame 120 px wider (tip*-wide.png: the originals with one straight column repeated) --- */
+#tooltip.mtp-tip--wide .tiptop {
+	width : 389px;
+	background-image : url("/img/tiptop-wide.png");
+}
+#tooltip.mtp-tip--wide .tipbg {
+	width : 358px;
+	background-image : url("/img/tipbg-wide.png");
+}
+#tooltip.mtp-tip--wide .tipbottom {
+	background-image : url("/img/tipbottom-wide.png");
+}
+#tooltip.mtp-tip--wide .tiptop h1 {
+	width : 358px;
+}
+#tooltip.mtp-tip .tiptop h1 + table {
+	margin-top : 3px;
+}
+#tooltip.mtp-tip table {
+	width : 100%;
+	margin-bottom : 6px;
+	border-collapse : separate;
+	border-spacing : 0px;
+	line-height : 1.5;
+}
+#tooltip.mtp-tip th, #tooltip.mtp-tip td {
+	padding : 2px 4px;
+	text-align : left;
+	vertical-align : baseline;
+	font-weight : normal;
+}
+#tooltip.mtp-tip .mtp-keys th, #tooltip.mtp-tip .mtp-mouse th, #tooltip.mtp-tip .mtp-mouse td:not(:last-child) {
+	width : 1%;
+	padding-right : 10px;
+	white-space : nowrap;
+}
+#tooltip.mtp-tip .mtp-keys th {
+	border-radius : 3px 0px 0px 3px;
+}
+#tooltip.mtp-tip .mtp-keys td {
+	border-radius : 0px 3px 3px 0px;
+}
+#tooltip.mtp-tip .mtp-keys tr:nth-child(even) > *, #tooltip.mtp-tip .mtp-mouse tbody:nth-of-type(even) > tr > * {
+	background : #f2ddb8;
+}
+#tooltip.mtp-tip .mtp-mouse th {
+	font-weight : bold;
+}
+#tooltip.mtp-tip .mtp-mouse tr + tr > td {
+	border-top : 1px dotted #bc9f7b;
+}
+#tooltip.mtp-tip .mtp-or {
+	margin : 0px 1px;
+	font-weight : bold;
+}
+#tooltip.mtp-tip kbd {
+	display : inline-block;
+	box-sizing : border-box;
+	min-width : 1.6em;
+	padding : 0px 3px;
+	border : 1px solid #86623e;
+	border-bottom-width : 2px;
+	border-radius : 3px;
+	background : #fff8e5;
+	box-shadow : inset 0px 1px 0px #fff;
+	color : #6b4320;
+	font : bold 0.95em/1.3 "Segoe UI", "Lucida Grande", "Trebuchet MS", Arial, sans-serif;
+	text-align : center;
+	white-space : nowrap;
 }
 
 /* --- wide screens: the log beside the player (mtp-side: log open, player.js), as high as it, scrolling inside;

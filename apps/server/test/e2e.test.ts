@@ -426,6 +426,35 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
       // → goes to the next shown line the same way; the share link reopens on that line (step 7)
       const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
+
+      // the log's lines as BetterTrooper's: a clock badge (turquoise "warp" when the entry's time is below the
+      // clock), faction-coloured names with a head, weapon icons, HUD lines, deploy lines
+      const drawn = await page.evaluate(() => {
+        type El = { textContent: string; className: string; getAttribute(a: string): string | null; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<El> };
+        const g = globalThis as unknown as { document: { querySelectorAll(s: string): ArrayLike<El> }; mtLog: { i: number; t: string; c: number; x?: number }[]; getComputedStyle(e: El, p?: string): { backgroundImage: string } };
+        const lis = Array.from(g.document.querySelectorAll("#mtp-log li[data-i]"));
+        const byI = new Map(g.mtLog.map((l) => [l.i, l]));
+        const bad: string[] = [];
+        for (const li of lis) {
+          const l = byI.get(Number(li.getAttribute("data-i")))!;
+          const time = li.querySelector(".mtp-time");
+          if (!time || time.textContent !== String(l.c)) bad.push(`clock of ${l.i}`);
+          if (!!time && time.className.includes("mtp-time--warp") !== (l.x === 1)) bad.push(`warp of ${l.i}`);
+          if (!li.textContent.endsWith(l.t)) bad.push(`text of ${l.i}`);
+        }
+        const name = g.document.querySelectorAll("#mtp-log .mtp-lname[data-faction]")[0];
+        return {
+          bad,
+          names: g.document.querySelectorAll("#mtp-log .mtp-lname[data-faction]").length,
+          head: name ? g.getComputedStyle(name, "::before").backgroundImage : "",
+          huds: g.document.querySelectorAll("#mtp-log .mtp-hud .mtp-stat").length,
+          deploys: lis.filter((li) => li.textContent.includes(" déploie : ")).length,
+          wicons: g.document.querySelectorAll("#mtp-log .mtp-wicon").length,
+        };
+      });
+      assert.deepEqual(drawn.bad, [], "every line: clock badge, warp colour, text");
+      assert.ok(drawn.names > 0 && /url\(/.test(drawn.head), `names with a head: ${JSON.stringify(drawn)}`);
+      assert.ok(drawn.huds > 0 && drawn.deploys > 0 && drawn.wicons > 0, `HUD, deploy lines, weapon icons: ${JSON.stringify(drawn)}`);
       const firstWave = ready.starts[0] ?? 0;
       const k = lines.findIndex((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 3);
       assert.ok(k >= 0 && k + 1 < lines.length, "a log line ahead, and one after it");
@@ -533,7 +562,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       // other tip) next to it, inside the window, "Raccourcis clavier" then "Souris"; leaving hides it; keyboard focus
       // shows it; ? and Ctrl+/ toggle it, Échap closes it
       type Rect = { left: number; top: number; right: number; bottom: number };
-      type HelpState = { shown: boolean; titles: string[]; btn: Rect; tip: Rect | null; vw: number; vh: number };
+      type HelpState = { shown: boolean; titles: string[]; kbd: number; rows: number; btn: Rect; tip: Rect | null; vw: number; vh: number };
       const helpState = (): Promise<HelpState> =>
         page.evaluate(() => {
           type El = { style: { top: string }; getBoundingClientRect(): Rect; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<{ textContent: string }> };
@@ -546,13 +575,14 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
           const t = g.document.getElementById("tooltip");
           const top = t?.querySelector(".tiptop") ?? null;
           const shown = !!t && t.style.top !== "-1000px" && g.mt.js.Tip.lastRef === btn;
-          return { shown, titles: top ? Array.from(top.querySelectorAll("h1"), (h) => h.textContent) : [], btn: box(btn), tip: top ? box(top) : null, vw: g.innerWidth, vh: g.innerHeight };
+          return { shown, titles: top ? Array.from(top.querySelectorAll("h1"), (h) => h.textContent) : [], kbd: top ? top.querySelectorAll("kbd").length : 0, rows: top ? top.querySelectorAll("tr").length : 0, btn: box(btn), tip: top ? box(top) : null, vw: g.innerWidth, vh: g.innerHeight };
         });
       const helpIs = (shown: boolean, what: string): Promise<HelpState> => until(page, helpState, (s) => s.shown === shown, 2_000, what);
       assert.equal((await helpState()).shown, false, "help hidden at first");
       await page.hover("#mtp-helpbtn");
       const h1 = await helpIs(true, "tooltip on hover");
       assert.deepEqual(h1.titles, ["Raccourcis clavier", "Souris"], "the site's tooltip, two sections");
+      assert.ok(h1.kbd >= 15 && h1.rows >= 14, `keys as keycaps, key | action and place | gesture | effect tables: ${JSON.stringify(h1)}`);
       const tb = h1.tip!;
       const gap = Math.max(tb.left - h1.btn.right, h1.btn.left - tb.right, tb.top - h1.btn.bottom, h1.btn.top - tb.bottom);
       assert.ok(gap <= 30, `tooltip next to the button: ${JSON.stringify(h1)}`);

@@ -3,8 +3,8 @@
  * Page -> SWF (methods of the Ruffle element #battle): mtPause, mtResume, mtSpeed(x), mtGoto(n) (synchronous, both
  * directions), mtState(), mtShot(). SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave),
  * mtEnd(), mtStuck(idx). Every seek of the page goes through goto(n) -> mtGoto(n); the Ruffle player is never reloaded.
- * Page data: mtLog (one {i, w, t} per history entry, t = "" for technical ones), mtAt (?at=, or null) and mtSides
- * (army and trooper names of input sides 0 and 1, coloured in the log).
+ * Page data: mtLog (one line of battleLog.ts per history entry: {i, w, t, c, x, s}, t = "" for technical ones) and
+ * mtAt (?at=, or null).
  * Loaded before the battle embed: it wraps swfobject.embedSWF to start the readiness timer.
  * Calls into the SWF are never made from inside one of its callbacks (deferred with setTimeout).
  * The look lives in /css/player.css (.mtp-* classes only).
@@ -31,7 +31,6 @@
   var READY_MS = 10000;
   var JUMP = 10;
   var log = w.mtLog || [];
-  var sides = w.mtSides || [[], []];
   var events = []; // history indexes of the log lines shown (non-empty text)
   for (var k = 0; k < log.length; k++) if (log[k].t) events.push(log[k].i);
 
@@ -383,23 +382,43 @@
   // --- help: the site's own tooltip (mt.js.Tip of app.js, #tooltip, same markup as tip() in views/layout.ts), shown
   // while the "?" button is hovered or focused; ? and Ctrl+/ toggle it, Échap closes it
 
-  var HELP_HTML =
-    "<div class='tiptop'><div class='tipbottom'><div class='tipbg'><div class='tipcontent'>" +
-    "<img src='/img/pixel.gif' class='pixel' /><h1>Raccourcis clavier</h1><div class='s'>" +
-    "<strong>Espace</strong> ou <strong>K</strong> : pause, reprise<br/>" +
-    "<strong>N</strong> ou <strong>Pg suiv.</strong> : vague suivante<br/>" +
-    "<strong>P</strong> ou <strong>Pg préc.</strong> : début de la vague (à son tout début : la précédente)<br/>" +
-    "<strong>←</strong> <strong>→</strong> : un événement en arrière, en avant<br/>" +
-    "<strong>Maj</strong> + <strong>←</strong> <strong>→</strong> : dix événements<br/>" +
-    "<strong>Début</strong> <strong>Fin</strong> : début, fin du combat<br/>" +
-    "<strong>&lt;</strong> <strong>&gt;</strong> ou <strong>-</strong> <strong>+</strong> : plus lent, plus vite<br/>" +
-    "<strong>C</strong> : capture d'écran<br/>" +
-    "<strong>Ctrl</strong> + <strong>/</strong> ou <strong>?</strong> : cette aide (<strong>Échap</strong> la ferme)" +
-    "</div><h1>Souris</h1><div class='s'>" +
-    "<i>Terrain</i> : clic, pause ou reprise ; clic sur un soldat, sa fiche<br/>" +
-    "<i>Frise</i> : clic, début de la vague ; glisser ou <strong>Maj</strong> + clic, cet événement<br/>" +
-    "<i>Journal</i> : clic sur une ligne, y aller" +
-    "</div></div></div></div></div>";
+  // BetterTrooper's list inside the site's tooltip frame: keys drawn as keycaps, key | action rows alternating, then
+  // the mouse as place | gesture | effect
+  var HELP_HTML = (function () {
+    var k = function (key) {
+      return "<kbd>" + key + "</kbd>";
+    };
+    var or = " <b class='mtp-or'>ou</b> ";
+    var keys = [
+      [k("K") + or + k("Espace"), "Pause, reprise"],
+      [k("N") + or + k("Pg suiv."), "Vague suivante"],
+      [k("←") + " " + k("→"), "Un événement en arrière, en avant"],
+      [k("Maj") + " + " + k("←") + " " + k("→"), "Dix événements"],
+      [k("Pg préc.") + or + k("P"), "Début de la vague (à son tout début : la précédente)"],
+      [k("Début") + " " + k("Fin"), "Début, fin du combat"],
+      [k("&lt;") + " " + k("&gt;") + or + k("-") + " " + k("+"), "Plus lent, plus vite (un cran)"],
+      [k("C"), "Capture d'écran"],
+      [k("Ctrl") + " + " + k("/") + or + k("?"), "Cette liste (de nouveau, ou " + k("Échap") + " : la ferme)"]
+    ];
+    var mouse = [
+      ["Terrain", [["Clic", "Pause, reprise"], ["Clic sur un soldat", "Sa fiche"]]],
+      ["Frise", [["Clic", "Début de cette vague"], ["Glisser", "Cet événement précis"], [k("Maj") + " + clic", "Cet événement précis"]]],
+      ["Journal", [["Clic sur une ligne", "Y aller"]]]
+    ];
+    var html = "<div class='tiptop'><div class='tipbottom'><div class='tipbg'><div class='tipcontent'>" +
+      "<img src='/img/pixel.gif' class='pixel' /><h1>Raccourcis clavier</h1><table class='mtp-keys'>";
+    for (var i = 0; i < keys.length; i++) html += "<tr><th>" + keys[i][0] + "</th><td>" + keys[i][1] + "</td></tr>";
+    html += "</table><h1>Souris</h1><table class='mtp-mouse'>";
+    for (var m = 0; m < mouse.length; m++) {
+      var rows = mouse[m][1];
+      html += "<tbody>";
+      for (var r = 0; r < rows.length; r++) {
+        html += "<tr>" + (r ? "" : "<th rowspan='" + rows.length + "'>" + mouse[m][0] + "</th>") + "<td>" + rows[r][0] + "</td><td>" + rows[r][1] + "</td></tr>";
+      }
+      html += "</tbody>";
+    }
+    return html + "</table></div></div></div></div>";
+  })();
 
   function tipApi() {
     var t = w.mt && w.mt.js && w.mt.js.Tip;
@@ -417,7 +436,7 @@
       var r = ui.helpBtn.getBoundingClientRect();
       t.init();
       t.mousePos = at || { x: r.left + r.width / 2 + w.pageXOffset, y: r.top + r.height / 2 + w.pageYOffset };
-      t.show(ui.helpBtn, HELP_HTML);
+      t.show(ui.helpBtn, HELP_HTML, "normalTip mtp-tip" + (d.documentElement.clientWidth >= 480 ? " mtp-tip--wide" : ""));
     } else if (helpOpen()) t.hide();
     ui.helpBtn.setAttribute("aria-expanded", helpOpen() ? "true" : "false");
   }
@@ -504,6 +523,8 @@
     var idx = Math.min(info.idx, t);
     var waves = ready ? info.ready.waves.length : 0;
     var shape = ended ? "again" : paused ? "play" : "pause";
+    // the clock badges of entries played in advance flash only while the battle plays (BetterTrooper's --still)
+    if (ui.list) toggleClass(ui.list, "mtp-still", !ready || paused || ended);
     if (ui.play.getAttribute("data-shape") !== shape) {
       ui.play.setAttribute("data-shape", shape);
       ui.play.innerHTML = "";
@@ -567,38 +588,71 @@
     ui.list.style.height = beside ? Math.max(0, ui.log.clientHeight - ui.summary.offsetHeight) + "px" : "";
   }
 
-  /** A log line, the army and trooper names coloured by side. */
-  var nameRe = null;
-  var nameSide = {};
-  (function () {
-    var all = [];
-    for (var s = 0; s < 2; s++) {
-      for (var i = 0; sides[s] && i < sides[s].length; i++) {
-        var n = String(sides[s][i]);
-        if (n && !(n in nameSide)) {
-          nameSide[n] = s;
-          all.push(n);
-        }
-      }
+  /**
+   * A log line as BetterTrooper's: the clock badge, then the line's segments (battleLog.ts `Seg`): names with their
+   * head and faction colour, weapons and skills with their icon (cells of /img/skills.png), vehicles, coordinates,
+   * damage, deaths, statuses and the HUD of an army.
+   */
+  var ICON = 16;
+  var ICON_COLS = 20;
+  function icon16(cls, i) {
+    var s = node("span", cls);
+    s.setAttribute("aria-hidden", "true");
+    s.style.backgroundPosition = -(i % ICON_COLS) * ICON + "px " + -Math.floor(i / ICON_COLS) * ICON + "px";
+    return s;
+  }
+  var two = function (n) {
+    return (n < 10 ? "0" : "") + Math.max(0, n);
+  };
+  function hud(h) {
+    var box = node("span", "mtp-hud");
+    var stat = function (kind, text) {
+      if (box.firstChild) box.appendChild(d.createTextNode(" "));
+      box.appendChild(node("span", "mtp-stat mtp-stat--" + kind, text));
+    };
+    if (h[0] > 0) {
+      stat("pool", two(h[0]));
+      stat("dep", "+" + two(h[1]));
     }
-    all.sort(function (a, b) {
-      return b.length - a.length;
-    });
-    // whole names only, never inside a longer word ("Rat" in "Rate")
-    var alts = all.map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|");
-    // lookbehind: Safari < 16.4 throws on it, no colouring then
-    if (all.length) try { nameRe = new RegExp("(?<![\\p{L}\\p{N}])(?:" + alts + ")(?![\\p{L}\\p{N}])", "gu"); } catch (e) { nameRe = null; }
-  })();
-  function fillLine(li, text) {
-    if (!nameRe) return void li.appendChild(d.createTextNode(text));
-    var last = 0;
-    text.replace(nameRe, function (m, at) {
-      if (at > last) li.appendChild(d.createTextNode(text.slice(last, at)));
-      li.appendChild(node("span", "mtp-name mtp-side" + nameSide[m], m));
-      last = at + m.length;
-      return m;
-    });
-    if (last < text.length) li.appendChild(d.createTextNode(text.slice(last)));
+    if (h[2] > 0) stat("com", String(h[2]));
+    stat("sab", h[3] + "%");
+    return box;
+  }
+  function segment(s) {
+    if (typeof s === "string") return d.createTextNode(s);
+    var e;
+    if ("n" in s) {
+      e = node("span", "mtp-lname", s.n);
+      e.setAttribute("data-faction", String(s.f));
+      if (s.u) e.setAttribute("data-unit", s.u);
+      return e;
+    }
+    if ("a" in s) {
+      e = node("span", "mtp-lside", s.a);
+      e.setAttribute("data-faction", String(s.f));
+      return e;
+    }
+    if ("w" in s || "k" in s) {
+      var weapon = "w" in s;
+      var frag = d.createDocumentFragment();
+      if (typeof s.i === "number") frag.appendChild(icon16(weapon ? "mtp-wicon" : "mtp-sicon", s.i));
+      frag.appendChild(node("span", weapon ? "mtp-weapon" : "mtp-skill", weapon ? s.w : s.k));
+      return frag;
+    }
+    if ("v" in s) return node("span", "mtp-vehicle", s.v);
+    if ("xy" in s) return node("span", "mtp-coord", "(" + s.xy[0] + ", " + s.xy[1] + ")");
+    if ("d" in s) return node("span", "mtp-dmg", String(s.d));
+    if ("f" in s) return node("span", "mtp-fatal", s.f);
+    if ("p" in s) return node("span", "mtp-poison", s.p);
+    if ("x" in s) return node("span", "mtp-kill", s.x);
+    if ("h" in s) return hud(s.h);
+    return d.createTextNode("");
+  }
+  function fillLine(li, l) {
+    var time = node("time", "mtp-time" + (l.x ? " mtp-time--warp" : ""), String(l.c | 0));
+    li.appendChild(time);
+    if (!l.s) return void li.appendChild(d.createTextNode(l.t));
+    for (var k = 0; k < l.s.length; k++) li.appendChild(segment(l.s[k]));
   }
 
   var SVG = "http://www.w3.org/2000/svg";
@@ -842,8 +896,7 @@
       if (!log[i].t) continue;
       var li = node("li", "mtp-line");
       li.setAttribute("data-i", String(log[i].i));
-      li.appendChild(node("span", "mtp-num", String(log[i].i)));
-      fillLine(li, log[i].t);
+      fillLine(li, log[i]);
       if (log[i].w !== lastWave) li.setAttribute("data-wave", String(log[i].w));
       lastWave = log[i].w;
       list.appendChild(li);
