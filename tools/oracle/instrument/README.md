@@ -666,11 +666,13 @@ plus rapides (réserve de soldats, pré-chauffage, rejeu caché allégé, état 
 fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'étiquette vidés :
 `28ca9f9cf2662158b0e56708fabc72fde86bf23fc192f3782cbe42923b62ea81`, `?v=9` ; pause = la pause native (écran PAUSE,
 sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` ; simulation paresseuse :
-`c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` ; saut en attente rattrapé dans l'image
+suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
+`?v=12` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build.ps1 -Play -Verify`, `?v=11`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
+- Innocuité (`build.ps1 -Play -Verify`, `?v=11`, P-code inchangé en `?v=12`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
 
 ```
 === §,7u\x1f§ (Main._rsq)
