@@ -230,6 +230,5 @@ qu'en développement : la procédure est décrite dans `tools/oracle/instrument/
 - **Eternaltwin / YesLifeTechnology** — remake GitLab (MIT), dont ce projet reprend le
   sérialiseur Haxe, des règles de jeu et la table de désobfuscation.
 - **Ruffle** et **JPEXS FFDec** — exécution et décompilation des SWF.
-- **BetterTrooper** ([bettertrooper.milvintsiss.com](https://bettertrooper.milvintsiss.com)) — son développeur a
-  autorisé à recréer son interface : le lecteur amélioré s'en inspire.
+- **BetterTrooper** ([bettertrooper.milvintsiss.com](https://bettertrooper.milvintsiss.com))
 - Wikis communautaires : MiniTroopers Fandom (EN) et Twinpedia (FR).
