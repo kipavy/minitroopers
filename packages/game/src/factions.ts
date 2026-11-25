@@ -1,6 +1,9 @@
 import type { BattleArmyInput } from "@mt/engine";
 import data from "../data/factions.json" with { type: "json" };
 
+/** Faction colours of the site's style.css (.faction0 … .faction5), by faction id. */
+export const FACTION_COLOURS = ["#E87D5F", "#FFAA27", "#FFDB7F", "#96B732", "#9EADEF", "#A55DC6"] as const;
+
 export type FactionTrooper = { id: number; name: string; seed: number; level: number };
 export type Faction = {
   id: number;

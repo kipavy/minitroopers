@@ -734,3 +734,26 @@ test("a battle stored before migration 010 (reward NULL) shows the reward comput
   const view = await (await get(env, cl, "/b/view/bat1")).text();
   assert.equal(decodeBattleFlashvars(battleFlashvars(view)).vars.endMsg, msgFor(win, win ? 4 : 2));
 });
+
+const FACTION_HOSTS = ["sang-surs", "soleil-rugissant", "gecko-nevrose", "torses-velus", "fol-ecume", "groin-celeste"];
+
+test("/b/opp: « Défie une faction » box with the 6 factions in order; a button fights the faction as a daily battle", async () => {
+  const env = setup("path");
+  const { cl, key, id } = await warp(env);
+  const page = (await (await get(env, cl, "/b/opp")).text()).replaceAll("&#39;", "'");
+  assert.ok(page.includes("<h1>Défie une faction :</h1>"));
+  const links = [...page.matchAll(/<a class="fac" href="([^"]+)" title="([^"]+)" style="background:(#[0-9A-F]{6})"[^>]*>([^<]+)<\/a>/g)];
+  assert.deepEqual(
+    links.map((m) => m[1]),
+    FACTION_HOSTS.map((h) => `/a/warp/b/battle?friend=${h};n=0;chk=${key}`),
+  );
+  assert.deepEqual(links.map((m) => m[3]), ["#E87D5F", "#FFAA27", "#FFDB7F", "#96B732", "#9EADEF", "#A55DC6"]);
+  assert.deepEqual(links.map((m) => m[4]), ["Sang-surs", "Soleil rugissant", "Gecko nevrosé", "Torses velus", "Fol-ecume", "Groin céleste"]);
+  assert.equal(links[1]![2], "L'armée du Soleil rugissant");
+  assert.ok(links.every((m) => m[0].includes(`onclick="return confirm('Confirmer cette action ?')"`)), "/b/opp keeps its confirmations");
+  const res = await get(env, cl, links[0]![1]!.replace("/a/warp", ""));
+  assert.match(res.headers.get("location")!, /\/a\/warp\/b\/fview\/\d+$/);
+  const rows = battles(env, id);
+  assert.equal(rows.length, 1);
+  assert.equal((env.db.prepare("SELECT opp FROM battles WHERE id = ?").get(rows[0]!.id) as { opp: string }).opp, "friend:sang-surs");
+});

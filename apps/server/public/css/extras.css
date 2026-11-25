@@ -120,6 +120,46 @@ td.right > .event-banner {
 	color : #512f0d;
 }
 
+/* « Défie une faction » (Bataille, Entraînement), under the by-name box: version C validated by Killian on 2026-11-25
+   (spec 2026-11-25-adversaires-niveau-design.md). The factions are never drawn as opponents: one button each, in its
+   uniform colour. */
+table.choose .mate .facbox {
+	width : 283px;
+	box-sizing : border-box;
+	margin-top : 12px;
+	padding : 4px 6px 6px 6px;
+	background-color : #e2c066;
+	border : 1px solid #86623e;
+	border-radius : 5px;
+}
+table.choose .mate .facbox h1 {
+	margin : 0px 0px 4px 0px;
+}
+table.choose .facs {
+	display : grid;
+	grid-template-columns : 1fr 1fr 1fr;
+	gap : 5px;
+}
+table.choose a.fac {
+	display : flex;
+	align-items : center;
+	justify-content : center;
+	height : 34px;
+	border : 1px solid #86623e;
+	border-radius : 5px;
+	box-shadow : inset 0px -3px 0px rgba(0, 0, 0, 0.18), inset 0px 2px 0px rgba(255, 255, 255, 0.35);
+	color : #2b1d0c;
+	font-weight : bold;
+	font-size : 0.8em;
+	font-variant : small-caps;
+	line-height : 1.05em;
+	text-align : center;
+	text-decoration : none;
+}
+table.choose a.fac:hover {
+	filter : brightness(1.08);
+}
+
 /* ===== Mobile (< 980 px, body.mtm set by layout() on every page): the original frame rebuilt at screen width =====
    Validated by Killian on 2026-11-25 (spec 2026-11-25-mobile-design.md). Nothing here applies at 980 px and above.
    Compact fixed bar (blue metal + dtop.png stripes, small logo left, credits and power right); the frame drawn with

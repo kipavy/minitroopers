@@ -4,7 +4,7 @@ export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";
 export { trooperName } from "./names.ts";
 export { battleAllowance, battlesPerDay, battleReward, isWeekend, referralBounty, rewardMultiplier, STARTING_CREDITS } from "./economy.ts";
-export { FACTIONS, factionBattleArmy } from "./factions.ts";
+export { FACTIONS, FACTION_COLOURS, factionBattleArmy } from "./factions.ts";
 export type { Faction, FactionTrooper } from "./factions.ts";
 export { fillerArmy, fillerBattleArmy, fillerId, parseFillerId } from "./fillers.ts";
 export type { FillerArmy, FillerTrooper } from "./fillers.ts";

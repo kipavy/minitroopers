@@ -212,3 +212,16 @@ test("only the narrow pages (Bataille, Entraînement) ask for two columns on tab
   for (const p of ["/b/opp", "/b/train"]) assert.ok((await (await get(env, cl, p)).text()).includes('<table class="panels duo">'), p);
   assert.ok((await (await get(env, cl, "/t/0")).text()).includes('<table class="panels">'));
 });
+
+test("/b/train: « Défie une faction » box, 6 fight links without confirmation; a button stores a training", async () => {
+  const { env, cl, key } = await world();
+  const page = (await (await get(env, cl, "/b/train")).text()).replaceAll("&#39;", "'");
+  assert.ok(page.includes("<h1>Défie une faction :</h1>"));
+  const hrefs = [...page.matchAll(/<a class="fac" href="([^"]+)"/g)].map((m) => m[1]);
+  const hosts = ["sang-surs", "soleil-rugissant", "gecko-nevrose", "torses-velus", "fol-ecume", "groin-celeste"];
+  assert.deepEqual(hrefs, hosts.map((h) => `/a/warp/b/train/fight?friend=${h};chk=${key}`));
+  assert.ok(!page.includes("confirm("));
+  const res = await get(env, cl, `/b/train/fight?friend=fol-ecume;chk=${key}`);
+  assert.match(res.headers.get("location")!, /\/b\/tview\/\d+$/);
+  assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 1);
+});
