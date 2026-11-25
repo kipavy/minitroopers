@@ -1,6 +1,6 @@
 [
  { "name": "home", "path": "/", "mask": "li.trooper, form.create .box4 > p:first-child" },
- { "name": "404", "path": "/a/demo/nope" },
+ { "name": "404", "path": "/b/tview/999999" },
  { "name": "hq", "path": "/a/demo/hq", "login": true, "wait": 3500 },
  { "name": "hq-locked", "path": "/a/rival1/hq", "wait": 3500 },
  { "name": "opp", "path": "/a/demo/b/opp", "login": true, "wait": 3500 },

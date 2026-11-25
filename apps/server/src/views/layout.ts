@@ -36,7 +36,7 @@ export interface LayoutOpts {
   pass?: boolean;
   /** Extra class on <body> (the original uses e.g. "hideSwf"). */
   bodyClass?: string;
-  /** Mobile viewport meta (the battle pages, whose layout adapts to narrow screens). */
+  /** Mobile viewport meta and the `mtm` body class of the narrow-screen rules (extras.css). Default true. */
   viewport?: boolean;
   /** Extra stylesheets after style.css (local paths). */
   css?: readonly string[];
@@ -74,7 +74,9 @@ const ogTags = (o: OgMeta): Html => html`<meta name="theme-color" content="#d4a2
  * swfobject.js is replaced by embed.js (Ruffle) so the original inline scripts keep calling swfobject.embedSWF.
  */
 export function layout(cfg: Config, o: LayoutOpts): Html {
-  const bodyAttr = o.bodyClass ? raw(` class="${esc(o.bodyClass)}"`) : "";
+  const viewport = o.viewport ?? true;
+  const cls = [o.bodyClass, viewport ? "mtm" : ""].filter(Boolean).join(" ");
+  const bodyAttr = cls ? raw(` class="${esc(cls)}"`) : "";
   const protect = o.host && o.pass ? html`<a href="${armyUrl(cfg, o.host, "/protect")}">Modifier mon pass</a> · ` : "";
   return html`<!DOCTYPE html>
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
@@ -82,7 +84,7 @@ ${o.title === null ? html`<title>MiniTroopers</title>` : html`<title>MiniTrooper
 -
 ${o.title}</title>`}
 <meta name="description" content="Ils sont petits, ils sont brutaux, ils sont nombreux, et ...ils sont sous tes ordres ! Constitue l'armée la plus puissante avec tes potes ! Choisis les sets d'armes et de compétences les plus détonantes ! Et surtout... Montre au monde entier qui commande ici !"/>
-${o.og ? ogTags(o.og) : ""}${o.viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
+${o.og ? ogTags(o.og) : ""}${viewport ? html`<meta name="viewport" content="width=device-width, initial-scale=1"/>
 ` : ""}<link rel="stylesheet" type="text/css" href="/css/style.css?v=5"/>
 <link rel="stylesheet" type="text/css" href="/css/extras.css?v=10"/>
 ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="${href}"/>

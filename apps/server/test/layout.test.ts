@@ -145,3 +145,28 @@ test("no event banner when WEEKEND_MULTIPLIER=1", async () => {
 test("event banner follows TZ_GAME: Saturday 00:30 in Paris is still Friday in UTC", async () => {
   assert.ok((await pages(Date.parse("2026-11-27T23:30:00Z"))).hq.includes(BANNER));
 });
+
+const VIEWPORT = '<meta name="viewport" content="width=device-width, initial-scale=1"/>';
+
+test("every page has the mobile viewport and the mtm body class", async () => {
+  const env = setup("path");
+  const cl = env.client();
+  const home = await (await cl.req("/", { host: "localhost" })).text();
+  await create(env, cl, "Warp");
+  const page = async (path: string): Promise<string> => {
+    const at = env.at("warp", path);
+    return (await cl.req(at.url, { host: at.host })).text();
+  };
+  const pages = { home, hq: await page("/hq"), sheet: await page("/t/0"), missing: await (await cl.req("/b/tview/999999", { host: "localhost" })).text() };
+  for (const [name, out] of Object.entries(pages)) {
+    assert.ok(out.includes(VIEWPORT), `${name}: viewport`);
+    assert.match(out, /<body class="mtm">/, `${name}: mtm`);
+  }
+});
+
+test("layout keeps bodyClass and adds mtm; viewport: false drops both", () => {
+  const out = String(layout(cfg, { title: "x", content: html``, bodyClass: "mtp" }));
+  assert.ok(out.includes('<body class="mtp mtm">'));
+  const off = String(layout(cfg, { title: "x", content: html``, viewport: false }));
+  assert.ok(!off.includes('name="viewport"') && off.includes("<body>"));
+});
