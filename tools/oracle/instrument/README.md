@@ -561,7 +561,9 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
     les rejoue depuis l'historique jusqu'à chaque image clé avec les règles de l'affichage (statuts : 22, 23, 13
     antidote, effet de tir 12 ; blessures : localisation de chaque tir de dégât > 0 hors MISS ; soigné : 12, 17 compétence
     77, 14 compétence 90 ; les effets d'un tir après un 5 ou un 6 ne sont pas appliqués), car ceux de la logique en
-    diffèrent (un soin efface les blessures côté logique, pas à l'écran ; un statut posé sans entrée ; un id qui revient sans arme en commun est un autre soldat, parti de zéro) —, PV du véhicule ; poses tenues jouées jusqu'à leur dernière
+    diffèrent (un soin efface les blessures côté logique, pas à l'écran ; un statut posé sans entrée ; un id qui revient sans arme en commun est un autre soldat, parti de zéro) —, compétences à usage unique
+    restantes (liste lue par la fiche du trooper en pause : celle que son info donne à sa création, moins celles que les
+    entrées 24 ont consommées avant l'image clé, `mtSkills`), PV du véhicule ; poses tenues jouées jusqu'à leur dernière
     image (`mtFf` : de saut en saut jusqu'à la prochaine opération de contrôle de la frise — arrêt, aller à, boucle —
     que le rendu n'exécute que pour l'image qu'il montre, les images intermédiaires rattrapées par un seul rendu) : au sol (`FALLEN` → `ground_crash`), en joue (`AIM` →
     `aim`), rechargement (`RELOAD` → `reload_init`) ; ces poses rendent le trooper occupé jusqu'à leur fin, comme en
@@ -589,7 +591,8 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   d'armes de la fiche) : l'affichage la compte à sa façon (rechargements 4/6, changements d'arme 25), l'image clé donne
   celle de la logique (le test d'équivalence ne compare que le chargeur) ; les compétences à usage unique déjà consommées (liste de la fiche du
   trooper, `§\x1e;h\n\x01§`).
-- Pour les tests : `mtDump()` (une ligne par trooper à l'écran : id, côté, position en pixels, PV, mort, au sol, arme en
+- Pour les tests : `mtDump()` (une ligne par trooper à l'écran — vivants : `sk[...]`, index des compétences à usage
+  unique restantes : id, côté, position en pixels, PV, mort, au sol, arme en
   main, armes `id/type/munitions/réserve`, casque, véhicule, statuts, blessures des vivants, soigné ; armes au sol ;
   panneaux ; fin et bannière), `mtHistStr(copie)` (`Battle.history`, ou `mtHist`), `mtStopAt(n)` (la lecture se met en
   pause dès que `n` est appliqué), `mtSettle(max)` (`frame()` sans nouvelle étape jusqu'à ce qu'aucune action, tween,
@@ -670,7 +673,7 @@ fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'éti
 sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` ; simulation paresseuse :
 `c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` ; saut en attente rattrapé dans l'image
 suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
-`?v=12` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
