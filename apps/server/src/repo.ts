@@ -439,13 +439,13 @@ export function reequipTrooper(db: DatabaseSync, armyId: number, slot: number, d
 /** Power of a group of `troopers` rows, in SQL: Σ (5 + choices), like `armyPower`. */
 const POWER_SQL = "SUM(5 + json_array_length(choices))";
 
-/** Power of every army that has at least one trooper. */
-export function armyPowers(db: DatabaseSync): { id: number; power: number }[] {
+/** Power of every army that has at least one trooper, and whether it is a faction army. */
+export function armyPowers(db: DatabaseSync): { id: number; power: number; isFaction: boolean }[] {
   return (
     db
-      .prepare(`SELECT army_id AS id, ${POWER_SQL} AS power FROM troopers GROUP BY army_id ORDER BY army_id`)
-      .all() as { id: number; power: number }[]
-  ).map((r) => ({ id: Number(r.id), power: Number(r.power) }));
+      .prepare(`SELECT t.army_id AS id, ${POWER_SQL} AS power, MAX(a.is_faction) AS fac FROM troopers t JOIN armies a ON a.id = t.army_id GROUP BY t.army_id ORDER BY t.army_id`)
+      .all() as { id: number; power: number; fac: number }[]
+  ).map((r) => ({ id: Number(r.id), power: Number(r.power), isFaction: Number(r.fac) === 1 }));
 }
 
 /** Today's opponent list of an army, null when not drawn yet. */
