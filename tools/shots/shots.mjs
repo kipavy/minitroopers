@@ -3,10 +3,11 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { decodePng } from "../../apps/server/test/png.ts";
 
-const HERE = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
+const HERE = dirname(fileURLToPath(import.meta.url)); // decoded (spaces, accents in the path)
 const REPO = resolve(HERE, "../..");
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
@@ -47,21 +48,30 @@ function compare(a, b) {
 }
 
 const BROWSER = process.env.SHOTS_BROWSER || join(process.env.LOCALAPPDATA ?? "", "BraveSoftware/Brave-Browser/Application/brave.exe");
-const FREEZE_CSS = "ruffle-player, ruffle-object, object, embed { visibility : hidden !important; } [id^="miss_tip"], #raid_tip { visibility : hidden !important; }";
+const FREEZE_CSS = "ruffle-player, ruffle-object, object, embed { visibility : hidden !important; } [id^='miss_tip'], #raid_tip { visibility : hidden !important; }";
 
 /** One headless browser on `profile`; returns a small CDP driver. */
 async function openBrowser(profile) {
-  const port = 9400 + Math.floor(Math.random() * 500);
-  const proc = spawn(BROWSER, ["--headless=new", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, "--no-first-run", "--hide-scrollbars", "about:blank"], { stdio: "ignore" });
+  if (!existsSync(BROWSER)) throw new Error(`browser not found: ${BROWSER} (set SHOTS_BROWSER to a Chrome or Brave executable)`);
+  // port 0: the browser picks a free port and writes it to <profile>/DevToolsActivePort (no clash with a busy port)
+  const portFile = join(profile, "DevToolsActivePort");
+  rmSync(portFile, { force: true });
+  const proc = spawn(BROWSER, ["--headless=new", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "--no-first-run", "--hide-scrollbars", "about:blank"], { stdio: "ignore" });
+  let spawnError = null;
+  proc.on("error", (e) => (spawnError = e));
   let list;
-  for (let i = 0; i < 60 && !list; i++) {
+  for (let i = 0; i < 100 && !list && !spawnError; i++) {
     try {
+      const port = Number(readFileSync(portFile, "utf8").split("\n")[0]);
       list = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
     } catch {
       await sleep(200);
     }
   }
-  if (!list) throw new Error(`no CDP endpoint (browser: ${BROWSER})`);
+  if (!list) {
+    proc.kill();
+    throw new Error(`no CDP endpoint (browser: ${BROWSER})${spawnError ? `: ${spawnError.message}` : ""}`);
+  }
   const ws = new WebSocket(list.find((x) => x.type === "page").webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener("open", r));
   let seq = 0;
@@ -75,10 +85,15 @@ async function openBrowser(profile) {
       d.error ? p.rej(new Error(JSON.stringify(d.error))) : p.res(d.result);
     } else if (d.method) events.push(d);
   });
+  // every command answers within 60 s or fails: a hung browser never blocks the run forever
   const send = (method, params = {}) =>
     new Promise((res, rej) => {
       const id = ++seq;
-      pending.set(id, { res, rej });
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        rej(new Error(`CDP ${method}: no answer in 60 s`));
+      }, 60_000);
+      pending.set(id, { res: (v) => (clearTimeout(timer), res(v)), rej: (e) => (clearTimeout(timer), rej(e)) });
       ws.send(JSON.stringify({ id, method, params }));
     });
   const evalJs = async (expression) => (await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true })).result?.value;

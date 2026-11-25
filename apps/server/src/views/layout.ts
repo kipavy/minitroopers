@@ -93,7 +93,7 @@ ${(o.css ?? []).map((href) => html`<link rel="stylesheet" type="text/css" href="
 <script type="text/javascript" src="/ruffle/ruffle.js"></script>
 <script type="text/javascript" src="/js/embed.js"></script>
 <script type="text/javascript" src="/js/app.js?v=2"></script>
-<script type="text/javascript" src="/js/touch.js?v=2"></script>
+<script type="text/javascript" src="/js/touch.js?v=3"></script>
 </head>
 <body${bodyAttr}>
 <div class="ptop"></div>

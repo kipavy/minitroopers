@@ -83,10 +83,11 @@ test("/b/train shows 5 opponents with \"S'entraîner !\" links, the by-name form
   const { env, cl } = await world();
   const res = await get(env, cl, "/b/train");
   assert.equal(res.status, 200);
-  const page = (await res.text()).replaceAll("&#39;", "'");
+  // raw HTML: the apostrophes must stay escaped (a regression of the escaping would show here)
+  const page = await res.text();
   assert.equal(fightLinks(page).length, 5);
-  assert.equal([...page.matchAll(/>S'entraîner !</g)].length, 5);
-  assert.ok(page.includes("Affronte l'armée de ton choix :") && page.includes(">Affronter !<"));
+  assert.equal([...page.matchAll(/>S&#39;entraîner !</g)].length, 5);
+  assert.ok(page.includes("Affronte l'armée de ton choix :") && page.includes(">Affronter !<")); // fixed template text, not interpolated
   assert.match(page, /href="\/a\/warp\/b\/train"[^>]*>Autres adversaires</);
   assert.ok(page.includes("Entraînement"));
   assert.ok(!page.includes("confirm("), "a free training never asks for a confirmation (Killian, 2026-11-25)");
