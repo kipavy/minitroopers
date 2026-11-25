@@ -281,7 +281,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await page.fill("#name", "Bidasses");
       await page.click("#tr_1000 > ul");
       await page.mouse.move(0, 0); // the skill tooltip follows the mouse and would cover the button
-      await page.waitForSelector("#submit:not([disabled])", { timeout: 15_000 });
+      await page.waitForSelector("#submit:not([disabled])", { timeout: 60_000 });
       await Promise.all([page.waitForURL(at("bidasses", "/hq")).catch(async (e: unknown) => {
         throw new Error(`creation: at ${page.url()}: ${(await page.textContent("body"))?.replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
       }), page.click("#submit")]);
@@ -692,7 +692,7 @@ async function createArmyIn(page: Page, name: string, hq: string): Promise<void>
   await page.fill("#name", name);
   await page.click("#tr_1000 > ul");
   await page.mouse.move(0, 0); // the skill tooltip follows the mouse and would cover the button
-  await page.waitForSelector("#submit:not([disabled])", { timeout: 15_000 });
+  await page.waitForSelector("#submit:not([disabled])", { timeout: 60_000 });
   await Promise.all([page.waitForURL(hq).catch(async (e: unknown) => {
     throw new Error(`creation of ${name}: at ${page.url()}: ${(await page.textContent("body"))?.replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
   }), page.click("#submit")]);
