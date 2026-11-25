@@ -802,3 +802,9 @@ table.choose a.fac:hover {
 .action .reserve-row .recharging:hover .bgo2_bg, .action .reserve-row .empty:hover .bgo2_bg {
 	background-image : url("/img/buttons/bgo_bg.png");
 }
+
+/* Missions every day (spec 2026-11-25-missions-quotidiennes-design.md): the blue "blocked" tile of the epic box
+   ("Encore N recrues", choice A) aligned like the other tiles, so its info line sits where the original's does. */
+.action .b.bblock {
+	vertical-align : top;
+}
