@@ -86,10 +86,15 @@ test("battleLog: deploys, HUD, moves, weapons, factions and heads as segments", 
   // moves with coordinates
   assert.ok(all.some(({ log }) => log.some((l) => /se déplace en \(\d+, \d+\)/.test(l.t))), "moves");
   assert.ok(kinds("xy").length > 0, "coordinates");
-  // shots name the weapon, with its skill icon (skills.png cell) when it has one
-  const weapons = kinds("w") as { w: string; i?: number }[];
-  assert.ok(weapons.some((w) => w.w === "FAMAS" || w.i !== undefined), "weapons with icons");
-  for (const w of weapons) if (w.i !== undefined) assert.ok(w.i >= 0 && w.i < 140, `icon ${w.i}`);
+  // shots name the weapon, with its cell of the game's weapon sheet (8 columns of 7 rows); fists have none
+  const weapons = kinds("w") as { w: string; g?: [number, number] }[];
+  assert.ok(weapons.some((w) => w.g !== undefined), "weapons with icons");
+  for (const w of weapons) if (w.g) assert.ok(w.g[0] >= 0 && w.g[0] < 8 && w.g[1] >= 0 && w.g[1] < 7, `icon of ${w.w}`);
+  assert.ok(weapons.filter((w) => w.w === "Poings").every((w) => w.g === undefined), "no icon for fists");
+  // equipment shows its equipment icon, other skills their skill icon
+  const skills = kinds("k") as { k: string; e?: number; i?: number }[];
+  assert.ok(skills.some((k) => k.e !== undefined), "equipment icons");
+  for (const k of skills) if (k.e !== undefined) assert.ok(k.e >= 0 && k.e < 50 && k.i === undefined);
   // names carry their army's faction; rats are marked
   const names = kinds("n") as { n: string; f: number; u?: string }[];
   for (const n of names) assert.ok(n.f >= 0 && n.f <= 5, `faction of ${n.n}`);

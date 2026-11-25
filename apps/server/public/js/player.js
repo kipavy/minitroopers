@@ -590,15 +590,17 @@
 
   /**
    * A log line as BetterTrooper's: the clock badge, then the line's segments (battleLog.ts `Seg`): names with their
-   * head and faction colour, weapons and skills with their icon (cells of /img/skills.png), vehicles, coordinates,
-   * damage, deaths, statuses and the HUD of an army.
+   * head and faction colour, weapons and equipment with the game's own icons (client_fr.swf sheets, /img/log/),
+   * other skills with theirs (/img/skills.png), vehicles, coordinates, damage, deaths, statuses and an army's HUD.
    */
-  var ICON = 16;
-  var ICON_COLS = 20;
-  function icon16(cls, i) {
+  // the weapon sheet's columns (client_fr.swf: 8 columns of 7 rows, 18 px high), and the 16 px grids
+  var WEAPON_X = [0, 34, 68, 102, 152, 202, 252, 286];
+  var WEAPON_W = [34, 34, 34, 50, 50, 50, 34, 50];
+  function sheetIcon(cls, x, y, width) {
     var s = node("span", cls);
     s.setAttribute("aria-hidden", "true");
-    s.style.backgroundPosition = -(i % ICON_COLS) * ICON + "px " + -Math.floor(i / ICON_COLS) * ICON + "px";
+    if (width) s.style.width = width + "px";
+    s.style.backgroundPosition = -x + "px " + -y + "px";
     return s;
   }
   var two = function (n) {
@@ -633,10 +635,15 @@
       return e;
     }
     if ("w" in s || "k" in s) {
-      var weapon = "w" in s;
       var frag = d.createDocumentFragment();
-      if (typeof s.i === "number") frag.appendChild(icon16(weapon ? "mtp-wicon" : "mtp-sicon", s.i));
-      frag.appendChild(node("span", weapon ? "mtp-weapon" : "mtp-skill", weapon ? s.w : s.k));
+      if ("w" in s) {
+        if (s.g) frag.appendChild(sheetIcon("mtp-wicon", WEAPON_X[s.g[0]], s.g[1] * 18, WEAPON_W[s.g[0]]));
+        frag.appendChild(node("span", "mtp-weapon", s.w));
+      } else {
+        if (typeof s.e === "number") frag.appendChild(sheetIcon("mtp-eqicon", (s.e % 10) * 16, Math.floor(s.e / 10) * 16));
+        else if (typeof s.i === "number") frag.appendChild(sheetIcon("mtp-sicon", (s.i % 20) * 16, Math.floor(s.i / 20) * 16));
+        frag.appendChild(node("span", "mtp-skill", s.k));
+      }
       return frag;
     }
     if ("v" in s) return node("span", "mtp-vehicle", s.v);
@@ -644,6 +651,7 @@
     if ("d" in s) return node("span", "mtp-dmg", String(s.d));
     if ("f" in s) return node("span", "mtp-fatal", s.f);
     if ("p" in s) return node("span", "mtp-poison", s.p);
+    if ("st" in s) return node("span", "mtp-status", s.st);
     if ("x" in s) return node("span", "mtp-kill", s.x);
     if ("h" in s) return hud(s.h);
     return d.createTextNode("");
@@ -762,7 +770,10 @@
     });
     track.addEventListener("pointermove", function (e) {
       if (!drag) return;
-      if (Math.abs(e.clientX - drag.x) > 3) drag.moved = true;
+      if (!drag.moved && Math.abs(e.clientX - drag.x) > 3) {
+        drag.moved = true;
+        toggleClass(track, "mtp-drag", true);
+      }
       if (drag.moved) {
         var n = at(e);
         ui.ghost.hidden = false;
@@ -774,6 +785,7 @@
       if (!drag) return;
       var exact = drag.moved || drag.shift || e.shiftKey;
       drag = null;
+      toggleClass(track, "mtp-drag", false);
       ui.ghost.hidden = true;
       if (e.type === "pointerup") {
         var n = at(e);

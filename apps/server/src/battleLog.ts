@@ -6,22 +6,25 @@ import { Battle } from "@mt/engine/internal";
  * A styled piece of a log line (drawn by public/js/player.js): plain text, or
  * - `n`: a trooper's name, `f` its army's faction (0..5), `u` "rat" or "clown" for those units (head icon);
  * - `a`: an army's name, `f` its faction;
- * - `w`: a weapon, `i` its icon (cell of /img/skills.png) when it has one;
- * - `k`: a skill or an order, `i` its icon;
- * - `v`: a vehicle; `xy`: board coordinates; `d`: a damage amount; `f`: a critical hit; `p`: a status;
+ * - `w`: a weapon, `g` its icon in the game's weapon sheet (/img/log/weapons.png): [column, row] (Weapon fr, pfr);
+ * - `k`: a skill or an order, `e` its equipment icon (/img/log/equipment.png, Skill eid), else `i` its skill icon
+ *   (/img/skills.png);
+ * - `v`: a vehicle; `xy`: board coordinates; `d`: a damage amount; `f`: a critical hit; `p`: poison;
+ * - `st`: another status;
  * - `x`: a death; `h`: the HUD of an army [troopers left, troopers per wave, radio range, sabotage %].
  */
 export type Seg =
   | string
   | { n: string; f: number; u?: "rat" | "clown" }
   | { a: string; f: number }
-  | { w: string; i?: number }
-  | { k: string; i?: number }
+  | { w: string; g?: [number, number] }
+  | { k: string; e?: number; i?: number }
   | { v: string }
   | { xy: [number, number] }
   | { d: number }
   | { f: string }
   | { p: string }
+  | { st: string }
   | { x: string }
   | { h: [number, number, number, number] };
 
@@ -52,6 +55,7 @@ export function segPlain(s: Seg): string {
   if ("d" in s) return String(s.d);
   if ("f" in s) return s.f;
   if ("p" in s) return s.p;
+  if ("st" in s) return s.st;
   if ("x" in s) return s.x;
   const [pool, dep, com, sab] = s.h;
   return hudText(pool, dep, com, sab);
@@ -80,10 +84,8 @@ const DAMAGE_MISS = 9;
 const TROOPER_PUPPET = 1;
 const TROOPER_RAT = 2;
 const CRITICAL = HitEvent.CRITICAL.index;
-/** Weapons 2..30 are the skills REVOLVER (9)..KNIFE (37): their icon is that skill's cell of /img/skills.png. */
-const WEAPON_SKILL_FIRST = 2;
-const WEAPON_SKILL_LAST = 30;
-const WEAPON_SKILL_OFFSET = 7;
+/** Fists, rat teeth and the clown: no icon in the weapon sheet, as BetterTrooper. */
+const NO_WEAPON_ICON = new Set([0, 36, 37]);
 /** French vehicle names (Data.VEHICULE has none; 2, 3, 4 and 7 are those of their skills). */
 const VEHICLES = ["Moto", "Jeep", "Tank léger", "Hélicoptère", "Tank lourd", "Artillerie", "Lance-missiles", "Avion de chasse"];
 
@@ -98,19 +100,22 @@ const dmgUnit = (n: number): string => ` dégât${n > 1 ? "s" : ""}`;
 const skillRow = (id: unknown) => Data.SKILL.find((s) => s.id === id);
 const skillSeg = (id: unknown): Seg => {
   const row = skillRow(id);
-  return row ? { k: row.name, i: row.id } : { k: "une compétence" };
+  if (!row) return { k: "une compétence" };
+  return row.eid !== null ? { k: row.name, e: row.eid } : { k: row.name, i: row.id };
 };
 const weaponSeg = (id: unknown): Seg | null => {
   const n = num(id);
   const row = n === null ? undefined : Data.WEAPON.find((w) => w.id === n);
   if (!row) return null;
-  return row.id >= WEAPON_SKILL_FIRST && row.id <= WEAPON_SKILL_LAST ? { w: row.name, i: row.id + WEAPON_SKILL_OFFSET } : { w: row.name };
+  return NO_WEAPON_ICON.has(row.id) ? { w: row.name } : { w: row.name, g: [row.fr, row.pfr] };
 };
 const vehicleSeg = (id: unknown): Seg | null => {
   const n = num(id);
   return n !== null && VEHICLES[n] ? { v: VEHICLES[n]! } : null;
 };
 const statusName = (id: unknown): string => Data.STATUS.find((s) => s.id === id)?.name ?? "affecté";
+const STATUS_POISON = 1;
+const statusSeg = (id: unknown): Seg => (id === STATUS_POISON ? { p: statusName(id) } : { st: statusName(id) });
 const comName = (id: unknown): string => Data.COMS.find((c) => c.id === id)?.name ?? "ordre";
 
 /** Hits on one target merged: total damage, or a miss when every hit missed. */
@@ -297,9 +302,9 @@ export function battleLog(input: BattleInput, armyNames?: readonly [string, stri
       case 21:
         return area(["Frappe aérienne"], hitList(p[3]));
       case 22:
-        return [who, " est ", { p: statusName(p[0]) }];
+        return [who, " est ", statusSeg(p[0])];
       case 23:
-        return [who, " n'est plus ", { p: statusName(p[0]) }];
+        return [who, " n'est plus ", statusSeg(p[0])];
       case 24:
         return [who, " utilise sa dernière ", skillSeg(p[0])];
       case 25: {

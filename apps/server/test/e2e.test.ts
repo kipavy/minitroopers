@@ -431,7 +431,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       // clock), faction-coloured names with a head, weapon icons, HUD lines, deploy lines
       const drawn = await page.evaluate(() => {
         type El = { textContent: string; className: string; getAttribute(a: string): string | null; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<El> };
-        const g = globalThis as unknown as { document: { querySelectorAll(s: string): ArrayLike<El> }; mtLog: { i: number; t: string; c: number; x?: number }[]; getComputedStyle(e: El, p?: string): { backgroundImage: string } };
+        const g = globalThis as unknown as { document: { querySelectorAll(s: string): ArrayLike<El>; querySelector(s: string): El | null }; mtLog: { i: number; t: string; c: number; x?: number }[]; getComputedStyle(e: El, p?: string): { backgroundImage: string; backgroundColor: string } };
         const lis = Array.from(g.document.querySelectorAll("#mtp-log li[data-i]"));
         const byI = new Map(g.mtLog.map((l) => [l.i, l]));
         const bad: string[] = [];
@@ -450,10 +450,14 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
           huds: g.document.querySelectorAll("#mtp-log .mtp-hud .mtp-stat").length,
           deploys: lis.filter((li) => li.textContent.includes(" déploie : ")).length,
           wicons: g.document.querySelectorAll("#mtp-log .mtp-wicon").length,
+          clock: lis[0] ? g.getComputedStyle(lis[0].querySelector(".mtp-time")!).backgroundImage : "",
+          wave: ((e: El | null) => (e ? [g.getComputedStyle(e).backgroundImage, g.getComputedStyle(e).backgroundColor] : []))(g.document.querySelector("#mtp-track .mtp-curwave")),
         };
       });
       assert.deepEqual(drawn.bad, [], "every line: clock badge, warp colour, text");
-      assert.ok(drawn.names > 0 && /url\(/.test(drawn.head), `names with a head: ${JSON.stringify(drawn)}`);
+      assert.ok(drawn.names > 0 && /\/img\/log\/(trooper-[0-5]|rat|clown)\.png/.test(drawn.head), `names with a head: ${JSON.stringify(drawn)}`);
+      assert.match(drawn.clock, /\/img\/log\/battle-clock\.png/, "the game's clock in the badge");
+      assert.deepEqual(drawn.wave, ["none", "rgb(255, 218, 73)"], "current wave: flat yellow, no gradient");
       assert.ok(drawn.huds > 0 && drawn.deploys > 0 && drawn.wicons > 0, `HUD, deploy lines, weapon icons: ${JSON.stringify(drawn)}`);
       const firstWave = ready.starts[0] ?? 0;
       const k = lines.findIndex((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 3);
