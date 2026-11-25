@@ -176,6 +176,10 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   const player = page.locator("ruffle-player#battle");
   await player.waitFor({ timeout: 30_000 });
   await playerReady(page, label);
+  // sounds: the button on (not the old disabled one), and the SWF's cues reach the page (window.mtSfx)
+  assert.equal(await page.getAttribute("#mtp-sound", "aria-pressed"), "true", `${label}: sound on by default`);
+  assert.equal(await page.getAttribute("#mtp-sound", "aria-disabled"), null, `${label}: sound button active`);
+  await until(page, () => page.evaluate(() => (globalThis as unknown as { mtPlayer: { sfx: number } }).mtPlayer.sfx), (n) => n > 0, 120_000, `${label}: sound cues from the SWF`);
   // "Fin" again if the jump stopped short (a step stuck before the end: a new seek destroys it, as the stuck warning's
   // "Vague suivante" does)
   let last: SwfState | undefined;

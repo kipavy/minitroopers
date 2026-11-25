@@ -492,9 +492,11 @@ for (const mode of MODES) {
     const input = JSON.parse(row.input) as BattleInput;
     const total = simulateBattle(input).events.length;
     const page = await (await get(env, cl, "/b/view/bat1")).text();
-    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=5"></script>'));
+    assert.ok(page.includes('<script type="text/javascript" src="/js/sfx.js?v=1"></script>\n<script type="text/javascript" src="/js/player.js?v=6"></script>'));
+    // the viewer's side (input side): its victory or defeat sound at the end (public/js/sfx.js)
+    assert.equal(JSON.parse(/^var mtSide = (.*);$/m.exec(page)![1]!), input.attackerSide);
     assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
-    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=5"/>'));
+    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=6"/>'));
     // the battle's day, shown in the title (dd/mm/yyyy)
     assert.equal(JSON.parse(/^var mtDate = (.*);$/m.exec(page)![1]!), row.day);
     const { log, at } = playerVars(page);
@@ -557,10 +559,12 @@ test("playerData: a log that cannot be built gives an empty log, not an exceptio
     assert.deepEqual(d.log, []);
     assert.equal(d.at, null);
     assert.equal(d.sides.length, 2);
+    assert.equal(d.side, input.attackerSide, "the viewer's side: the attacker's");
+    assert.equal(playerData(c, row, "A", "B", true).side, 1 - input.attackerSide, "a defender sees its own side");
   } finally {
     console.error = err;
   }
-  assert.equal(seen.length, 1, "the failure is logged once");
+  assert.equal(seen.length, 2, "the failure is logged once per call");
 });
 
 /** One fresh battle at clock `t` (path mode): credits gained, the first-view message and the end URL. */
