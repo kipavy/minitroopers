@@ -187,11 +187,11 @@ function factoryHeights(swf: Buffer): number[] {
 // Ruffle masks a text field's first line to the field's height (Flash let it overflow): the 14 px fields of the factory
 // cut the bottom of the 16 px battle counters (bottom left) and of "PAUSE". client_fr_play.swf makes them 20 px high
 // (tools/oracle/instrument/patch-play-textfields.mjs); the served URL carries a new ?v= so browsers reload it.
-test("client_fr_play.swf: the TextField factory's height is 20 (14 in client_fr.swf), the embed URL is ?v=8", async () => {
+test("client_fr_play.swf: the TextField factory's height is 20 (14 in client_fr.swf), the embed URL is ?v=9", async () => {
   const play = readFileSync(join(PUBLIC, "swf/client_fr_play.swf"));
   assert.ok(play.equals(readFileSync(resolve(import.meta.dirname, "../../../assets/swf/client_fr_play.swf"))));
   assert.deepEqual(factoryHeights(play), [20]);
   assert.deepEqual(factoryHeights(readFileSync(resolve(import.meta.dirname, "../../../assets/swf/client_fr.swf"))), [14]);
   const { CLIENT_SWF } = await import("../src/views/swf.ts");
-  assert.equal(CLIENT_SWF, "/swf/client_fr_play.swf?v=8");
+  assert.equal(CLIENT_SWF, "/swf/client_fr_play.swf?v=9");
 });

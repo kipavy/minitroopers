@@ -1,7 +1,7 @@
 import { raw, type Html } from "./html.ts";
 
 /** Local SWF files. The shipped client_fr_play.swf has the original `chk` check bypassed (recon §3.2). */
-export const CLIENT_SWF = "/swf/client_fr_play.swf?v=8";
+export const CLIENT_SWF = "/swf/client_fr_play.swf?v=9";
 export const MINI_SWF = "/swf/mini.swf?v=2";
 /** `gfx` of the battle data (ClientMode 0), like the original `…/swf/army.swf?v=2`. */
 export const ARMY_SWF = "/swf/army.swf?v=2";

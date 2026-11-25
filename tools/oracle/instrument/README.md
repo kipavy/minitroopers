@@ -510,8 +510,10 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
     corps ≈ 40 ms natif) ; réutiliser ou raccrocher : 1 à 3 ms. Les images pré-rendues des peintures (cache
     `§;io&§.§n6?\f\x02§`, compté par référence, vidé à 0) reçoivent leur drapeau « garder » `§\x10)L\x13\x02§` (`mtKeep`,
     à chaque tick) : une peinture n'est rendue qu'une fois par combat ;
-  - **pré-chauffage** (`mtWarm`, depuis `mtFrame`) : en pause un trooper par image, en lecture un toutes les 4
-    images, rien pendant les 20 images qui suivent un saut : les troopers et corps des images clés (débuts et fins de
+  - **pré-chauffage** (`mtWarm`, depuis `mtFrame`) : un trooper par image, **seulement en pause ou combat fini**, après le
+    travail de l'image (jamais pendant la lecture : elle reste celle de `?v=6`), rien pendant les 20 images qui suivent
+    un saut ; jamais un trooper à véhicule (ni réutilisable ni mis en réserve ; `mtStash` arrête son tween de flottement
+    `§''R?§` et vide les rappels d'étiquette de son animation, comme `mtReuse` et `mtUnstash`) : les troopers et corps des images clés (débuts et fins de
     vague et fin d'abord, puis toutes) sont créés hors champ et mis en réserve dans le même appel (jamais dessinés) ;
   - état en plus (`mtExtra`) : statuts, blessures, soigné — **tels que l'affichage les tient** : `mtShown` (à `mtInit`)
     les rejoue depuis l'historique jusqu'à chaque image clé avec les règles de l'affichage (statuts : 22, 23, 13
@@ -539,7 +541,7 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   ajoutés par l'affichage (recul à l'impact, attaquant au corps à corps arrêté contre la position *dessinée* de sa
   victime) — conservés en lecture jusqu'au prochain déplacement du trooper, absents après un saut (le test d'équivalence
   compare les positions à 40 px près, celles des corps à 47 px — moins d'une case —, et à 96 px pour les corps
-  qu'une explosion a déplacés après leur mort, listés dans `BLASTED`) ; l'orientation
+  listés dans `BLASTED`, à partir de l'index des coups qui les ont poussés) ; l'orientation
   (gauche/droite) d'un trooper qui n'a pas bougé depuis l'image clé ; les blessures portées par un corps après sa mort ;
   l'image exacte de l'animation des corps ; la réserve de munitions des armes (`§\x1ap\x04f§`, dessinée dans le panneau
   d'armes de la fiche) : l'affichage la compte à sa façon (rechargements 4/6, changements d'arme 25), l'image clé donne
@@ -617,12 +619,16 @@ Avec l'API de lecture (tâche « lecteur amélioré ») : pause/vitesse/progress
 blocage et capture, SHA-256 `1e54abf53911950cae99bcc819721b4eb7f5842b7c186cdbc9130ff6a50a5b4a` (deux builds dans
 deux dossiers de travail : même SHA-256), `CLIENT_SWF` en `?v=5` ; avec `mtUnwait`, SHA-256
 `dd1519e16f986931b696624d2159d3f0294577c7cd8c0d2059a252d3108c1c45` (deux builds : même SHA-256), `?v=6`. Le `pushbyte 14` du correctif ci-dessus est alors
-à l'octet 302920 du corps décompressé (la classe des helpers a grandi ; un peu plus loin avec `mtUnwait`, `patch-play-textfields.mjs` le retrouve). Les insertions P-code dans le Game sont
-inchangées (ci-dessous) : tout le nouveau code est dans les helpers.
+à l'octet 302920 du corps décompressé (la classe des helpers a grandi ; un peu plus loin avec `mtUnwait`, `patch-play-textfields.mjs` le retrouve).
+Avec les sauts instantanés (images clés) : SHA-256 `58e072e1d23e740452e4ba59e6eada186f39f3f03c488574d5879b5078bea466`, `?v=7` ;
+plus rapides (réserve de soldats, pré-chauffage, rejeu caché allégé, état d'affichage rejoué) :
+`7e0cf56b7b17438fc0b95936d3d89c08cdf67ef9dc61184762acf61dd24efc14`, `?v=8` ; pré-chauffage seulement en pause ou après la
+fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'étiquette vidés :
+`28ca9f9cf2662158b0e56708fabc72fde86bf23fc192f3782cbe42923b62ea81`, `?v=9` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
+le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build-play.ps1 -Verify`) : 29 fichiers P-code diffèrent octet à octet sur 290, 4 hors renumérotation
-  `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation
-  des labels de saut :
+- Innocuité (`build.ps1 -Play -Verify`, `?v=9`) : 29 fichiers P-code diffèrent octet à octet, 4 hors renumérotation `newfunction N` : `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
 
 ```
 === §,7u\x1f§ (Main._rsq)
@@ -643,6 +649,23 @@ inchangées (ci-dessous) : tout le nouveau code est dans les helpers.
 +  getlex QName(PackageNamespace(""),"(m]a\x02")
 +  getlocal0
 +  callpropvoid QName(PackageNamespace(""),"mtFrame"), 1
+ …
+   callproperty QName(PackageNamespace(""),"MnRZ"), 0          (état 0 : battle.resolve(), PC_PLAY_KF)
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  findproperty QName(PackageNamespace(""),"S\rNK\x02")
++  getproperty QName(PackageNamespace(""),"S\rNK\x02")
++  callpropvoid QName(PackageNamespace(""),"mtKf"), 1
+   convert_b
+-  maxstack 2
++  maxstack 3
+
+=== §Q\btf§ (Game, tick() §&~\x03'§, PC_PLAY_TICK)
+-  getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
+-  callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0
+-  getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
+-  callpropvoid QName(PackageNamespace(""),"?d0r\x01"), 0
++  getlex QName(PackageNamespace(""),"(m]a\x02")
++  callpropvoid QName(PackageNamespace(""),"mtClips"), 0
 
 === §Q\btf§ (Game, §Bl{K\x01§)
    pushbyte 8
