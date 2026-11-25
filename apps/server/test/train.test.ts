@@ -5,6 +5,7 @@ import type { BattleInput } from "@mt/engine";
 import { openDb } from "../src/db.ts";
 import { TRAININGS_KEPT, armyByHost, createArmy, deleteArmy, insertTraining, recentTrainings, trainingById } from "../src/repo.ts";
 import { create, setup, type Client, type Env } from "./helpers.ts";
+import { seedFactions } from "../src/admin/factions.ts";
 import { decodeBattleFlashvars } from "./hxdecode.ts";
 
 /** endMsg and attackerSide of the battle embed of a page. */
@@ -224,4 +225,18 @@ test("/b/train: « Défie une faction » box, 6 fight links without confirmation
   const res = await get(env, cl, `/b/train/fight?friend=fol-ecume;chk=${key}`);
   assert.match(res.headers.get("location")!, /\/b\/tview\/\d+$/);
   assert.equal(count(env, "SELECT COUNT(*) AS n FROM trainings"), 1);
+});
+
+test("/b/train never draws the factions, even at their power; the faction box still reaches them", async () => {
+  const { env, cl, key, id } = await world();
+  seedFactions(env.db, env.clock.t);
+  env.db.prepare("UPDATE troopers SET choices = ? WHERE army_id = ?").run(JSON.stringify(new Array(108).fill(0)), id); // power 114
+  const factionIds = env.db.prepare("SELECT id FROM armies WHERE is_faction = 1").all().map((r) => String(r.id));
+  for (let i = 0; i < 5; i++) {
+    const refs = fightLinks((await (await get(env, cl, "/b/train")).text()).replaceAll("&#39;", "'")).map((l) => /opp=([^;]+)/.exec(l)![1]!);
+    assert.equal(refs.length, 5);
+    assert.ok(!refs.some((r) => factionIds.includes(r)), "no faction drawn");
+  }
+  const res = await get(env, cl, `/b/train/fight?friend=groin-celeste;chk=${key}`);
+  assert.match(res.headers.get("location")!, /\/b\/tview\/\d+$/);
 });

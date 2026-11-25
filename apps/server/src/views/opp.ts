@@ -52,7 +52,6 @@ ${f.power}</li></ul></div></td>
 `;
 }
 
-/** The by-name form cell ("… l'armée de ton choix"), shared with /b/train: `hidden` inputs, confirmed unless `confirm` is false. */
 /**
  * The "Défie une faction" box (not in the original): one button per faction army, in faction order and colour, since the
  * factions are never drawn as opponents and nobody knows their names. `link(host)` = the by-name fight URL.
@@ -65,7 +64,10 @@ export function factionBox(link: (host: string) => string, confirm: boolean): Ht
   return html`<div class="facbox"><h1>Défie une faction :</h1><div class="facs">${buttons}</div></div>`;
 }
 
-/** The attack-by-name cell, then `extra` (the faction box) in the same cell. */
+/**
+ * The by-name form cell ("… l'armée de ton choix"), shared with /b/train: `hidden` inputs, confirmed unless `confirm` is
+ * false, then `extra` (the faction box) in the same cell.
+ */
 export function mateCell(o: { action: string; heading: Html; button: string; hidden: Html; confirm: boolean; extra?: Html }): Html {
   const submit = o.confirm
     ? html`<a href="#" onclick="if( confirm('Confirmer cette action ?') ) $('#friends').submit()" class="button5">${o.button}</a>`

@@ -739,6 +739,7 @@ const FACTION_HOSTS = ["sang-surs", "soleil-rugissant", "gecko-nevrose", "torses
 
 test("/b/opp: « Défie une faction » box with the 6 factions in order; a button fights the faction as a daily battle", async () => {
   const env = setup("path");
+  seedFactions(env.db, env.clock.t); // stored factions, as in production
   const { cl, key, id } = await warp(env);
   const page = (await (await get(env, cl, "/b/opp")).text()).replaceAll("&#39;", "'");
   assert.ok(page.includes("<h1>Défie une faction :</h1>"));
@@ -756,4 +757,5 @@ test("/b/opp: « Défie une faction » box with the 6 factions in order; a butto
   const rows = battles(env, id);
   assert.equal(rows.length, 1);
   assert.equal((env.db.prepare("SELECT opp FROM battles WHERE id = ?").get(rows[0]!.id) as { opp: string }).opp, "friend:sang-surs");
+  assert.equal(rows[0]!.defender_id, armyByHost(env.db, "sang-surs")!.id, "the stored faction army is the defender");
 });

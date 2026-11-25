@@ -124,7 +124,7 @@ td.right > .event-banner {
    (spec 2026-11-25-adversaires-niveau-design.md). The factions are never drawn as opponents: one button each, in its
    uniform colour. */
 table.choose .mate .facbox {
-	width : 283px;
+	width : 285px; /* = .backchoose: 283 px + its 1 px borders */
 	box-sizing : border-box;
 	margin-top : 12px;
 	padding : 4px 6px 6px 6px;
