@@ -483,18 +483,15 @@ export function battlesCounted(db: DatabaseSync, armyId: number, day: string): n
   return Math.max(0, battlesUsed(db, armyId, day) - dayResets(db, armyId, day).battles);
 }
 
-/** What was used before the last admin `reset-day` of `day` (migration 007; zeros without a reset). */
+/** What was used before the last admin `reset-day` of `day` (migration 007; zeros without a reset). Missions: `mission_day.reset`. */
 interface DayResets {
   battles: number;
-  missions: number;
   raid: number;
 }
 
 function dayResets(db: DatabaseSync, armyId: number, day: string): DayResets {
-  const r = db.prepare("SELECT battles_reset, missions_reset, raid_reset FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as
-    | { battles_reset: number; missions_reset: number; raid_reset: number }
-    | undefined;
-  return { battles: Number(r?.battles_reset ?? 0), missions: Number(r?.missions_reset ?? 0), raid: Number(r?.raid_reset ?? 0) };
+  const r = db.prepare("SELECT battles_reset, raid_reset FROM daily WHERE army_id = ? AND day = ?").get(armyId, day) as { battles_reset: number; raid_reset: number } | undefined;
+  return { battles: Number(r?.battles_reset ?? 0), raid: Number(r?.raid_reset ?? 0) };
 }
 
 export interface ResetWhat {

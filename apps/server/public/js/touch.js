@@ -27,6 +27,15 @@
       return;
     }
     var pos = { x: t.pageX, y: t.pageY };
+    // The tip is shown from here, at the tapped point. Browsers also fire an emulated mouseover after the tap, which
+    // would run the owner's handler a second time: swallowed (capture phase, before the inline handler) for a moment.
+    var swallow = function (e) {
+      if (owner.contains(e.target)) e.stopPropagation();
+    };
+    document.addEventListener("mouseover", swallow, true);
+    setTimeout(function () {
+      document.removeEventListener("mouseover", swallow, true);
+    }, 800);
     setTimeout(function () {
       Tip.init();
       Tip.mousePos = pos;

@@ -13,6 +13,7 @@ import {
   addCredits, armyByHost, armyById, armyFootprint, armySummaries, battlesCounted, battlesUsed, confirmRecruits, confirmedRecruitCount, deleteArmy, grantLevelUp,
   insertArmy, levelUpTo, missionDay, pendingRecruits, raidDay, renameArmy, resetDay, setArmyField, shopResets, setPassword, storedDeployOrder, troopersOf, trooperInput,
   type ArmyRow,
+  availableMissions,
 } from "../repo.ts";
 import { ogDir, purgeBattleImages } from "../ogCache.ts";
 import { isValidHost } from "../urls.ts";
@@ -260,6 +261,16 @@ function dayArg(cfg: Config, v: string | undefined): string {
   return v;
 }
 
+/** One line per mission the army may play on `day` (spec 2026-11-25-missions-quotidiennes-design.md), or "not unlocked". */
+function missionLines(db: DatabaseSync, a: ArmyRow, day: string): string[] {
+  const types = availableMissions(db, a.id, day);
+  if (types.length === 0) return ["  Missions : non débloquées"];
+  return types.map((t) => {
+    const m = missionDay(db, a.id, day, t);
+    return `  Mission ${t} : essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`;
+  });
+}
+
 /** The day's quotas of an army, as `show` and `reset-day` print them. */
 function dayLines(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): string[] {
   const now = Date.now();
@@ -271,10 +282,7 @@ function dayLines(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): strin
   return [
     `Journée ${day} :`,
     `  Batailles : ${counted}/${al ? al.allowance : battleAllowance(troopersOf(db, a.id).map(trooperInput))}${used !== counted ? ` (${used} dans la journée, avant remise à zéro comprises)` : ""}${al?.regen ? ` (réserve ${al.reserve}/3, recharges à venir : ${al.ahead})` : ""}`,
-    ...(['exterminate', 'infiltrate', 'epic'] as const).map((t) => {
-      const m = missionDay(db, a.id, day, t);
-      return `  Mission ${t} : essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`;
-    }),
+    ...missionLines(db, a, day),
     `  Raid : phase ${r.phase}, terminé : ${yesNo(r.over)}, recrues tuées : ${r.dead.length}`,
     `  Boutique : ${shops === 0 ? "offres du jour" : `nouvelles offres (remise à zéro ${shops} fois)`}`,
   ];

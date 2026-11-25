@@ -497,7 +497,12 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     assert.equal(armyByHost(d0, fac)!.faction, FACTIONS[0]!.id); // a faction army keeps its own
     d0.close();
 
+    assert.ok(cli(dir, "show", "--army", "rats-morts").stdout.includes("  Missions : non débloquées\n"));
     assert.match(cli(dir, "unlock-missions", "--army", "rats-morts").stdout, /missions débloquées/);
+    const shown = cli(dir, "show", "--army", "rats-morts").stdout;
+    assert.ok(shown.includes("Mission exterminate : essais 0/3"));
+    assert.ok(shown.includes("Mission infiltrate : essais 0/3"));
+    assert.ok(!shown.includes("Mission epic") && !shown.includes("non débloquées"), "no epic under 10 recruits");
     let db = openDb(join(dir, "minitroopers.db"));
     const a = armyByHost(db, "rats-morts")!;
     assert.deepEqual([a.credits, a.rats, a.missionsUnlocked], [42, 50, true]);
@@ -532,6 +537,7 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     err(cli(dir, "reset-day", "--army", "rats-morts", "--what", "tout"), /--what/);
     err(cli(dir, "reset-day", "--army", "rats-morts", "--day", "2026-02-30"), /--day/);
     err(cli(dir, "reset-day", "--army", fac), /faction/);
+    cli(dir, "unlock-missions", "--army", "rats-morts"); // its missions are listed again (locked above)
     const rd = cli(dir, "reset-day", "--army", "rats-morts", "--day", today, "--what", "battles");
     assert.equal(rd.status, 0, rd.stderr);
     assert.match(rd.stdout, /Batailles : 0\//);
