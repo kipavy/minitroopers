@@ -75,7 +75,7 @@ Détails et noms obfusqués : rapport de mesures ci-dessus et `docs/research/lec
     au sol si c'est faisable.
   - Coût estimé : 1–1,5 Mo par combat.
 - **`mtGoto(n)`** : un seul appel synchrone, dans les deux sens.
-  1. Refusé si l'écran de pause natif est ouvert. Prend l'image clé ≤ n, ou continue depuis la position courante si
+  1. Permis en pause (native ou bouton, c'est la même) : l'écran de pause est mis de côté puis remis sur la scène à n, la pause reste. Prend l'image clé ≤ n, ou continue depuis la position courante si
      elle est plus proche.
   2. Remet à zéro l'étape et les animations (`ylcZ`, comme le saut natif), les à-coups, les particules, les tweens,
      les objets au sol et la fin.

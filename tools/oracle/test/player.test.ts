@@ -35,6 +35,7 @@ interface Calls {
   progress: [number, number, number][]; // [idx, wave, performance.now()]
   end: number[]; // performance.now()
   stuck: [number, number][]; // [idx, performance.now()]
+  paused: boolean[]; // mtPaused(paused) calls
   readyAt: number;
 }
 
@@ -61,7 +62,7 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
   await page.evaluate(
     ([u, p, x]) => {
       const w = globalThis as any;
-      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], readyAt: 0 });
+      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], paused: [], readyAt: 0 });
       w.mtReady = (r: Ready) => {
         c.ready.push(r);
         c.readyAt = performance.now();
@@ -69,6 +70,7 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
       w.mtProgress = (idx: number, wave: number) => c.progress.push([idx, wave, performance.now()]);
       w.mtEnd = () => c.end.push(performance.now());
       w.mtStuck = (idx: number) => c.stuck.push([idx, performance.now()]);
+      w.mtPaused = (b: boolean) => c.paused.push(b);
       w.__mtLoad(u, p, x);
       w.document.querySelector("#c > *").id = "battle";
     },
@@ -650,3 +652,85 @@ for (const [id, cp] of [["basic/00047.json.gz", 36], ["fixture:raid-seek-stuck.j
     }
   });
 }
+
+// The pause is the Game's own (a click on the battlefield opens its pause screen: grey snapshot, "PAUSE"): mtPause opens
+// that same screen, a native click is reported (mtState().paused, mtPaused(paused)), and jumps keep the pause: the
+// screen comes back over the scene at n (as a plain playback stopped at n shows it), the index does not move, resuming
+// plays on from n.
+test("native pause (click on the battlefield) = mtPause; mtGoto during the pause keeps it, shows n; resume plays on", { timeout: 300_000 }, async (t) => {
+  if (skip(t)) return;
+  const id = "basic/00028.json.gz";
+  const n = 40;
+  const a = await open(id);
+  let want = "";
+  try {
+    await a.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+    await a.call("mtPause");
+    await a.call("mtSpeed", 32);
+    await a.call("mtStopAt", n);
+    await a.call("mtResume");
+    await a.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= n, 300_000, `playback to ${n}`);
+    await a.page.waitForTimeout(100);
+    for (let i = 0; i < 5 && (await a.call("mtSettle", 800)) === -2; i++);
+    want = await a.call("mtDump");
+  } finally {
+    await a.close();
+  }
+  const p = await open(id);
+  try {
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= 3, 60_000, "idx >= 3");
+    const box = (await p.page.locator("#battle").boundingBox())!;
+    const click = () => p.page.mouse.click(box.x + 360, box.y + 120);
+    // Ruffle swallows the first click on a fresh page (focus)
+    await click();
+    await p.page.waitForTimeout(500);
+    if (!(await p.call("mtState")).paused) {
+      await click();
+      await p.page.waitForTimeout(500);
+    }
+    const s0 = await p.call("mtState");
+    assert.deepEqual({ paused: s0.paused, screen: s0.screen }, { paused: true, screen: true }, "native click: paused, pause screen open");
+    assert.deepEqual((await p.calls()).paused, [true]);
+    await p.page.waitForTimeout(800);
+    assert.equal((await p.call("mtState")).idx, s0.idx, "idx frozen in the native pause");
+
+    // a jump during the native pause: still paused, screen back, scene at n
+    await p.call("mtGoto", n);
+    const s1 = await seekDone(p);
+    assert.deepEqual({ idx: s1.idx, paused: s1.paused, screen: s1.screen }, { idx: n, paused: true, screen: true }, "mtGoto in the pause");
+    await p.page.waitForTimeout(800);
+    assert.equal((await p.call("mtState")).idx, n, "still frozen at n");
+    for (let i = 0; i < 5 && (await p.call("mtSettle", 800)) === -2; i++);
+    const got = await p.call("mtDump");
+    const stats: SceneStats = { alive: 0, dead: 0, ground: 0 };
+    assert.ok(sameScene(got, want, id, n, stats), `scene at ${n} in the pause\n${got}\n--- want\n${want}`);
+    assert.equal((await p.call("mtState")).screen, true, "mtSettle keeps the pause screen");
+
+    // a native click resumes: playback goes on from n
+    await click();
+    await p.page.waitForTimeout(300);
+    assert.equal((await p.call("mtState")).paused, false);
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) > n, 30_000, "idx > n after the resume");
+    for (let i = 0; i < 40 && (await p.call("mtState")).screen; i++) await p.page.waitForTimeout(100);
+    assert.equal((await p.call("mtState")).screen, false, "pause screen faded out");
+
+    // the button pause is the same pause: same screen, same frozen index, jumps keep it, mtResume plays on
+    await p.call("mtPause");
+    assert.equal((await p.call("mtState")).paused, true, "mtPause: paused at once");
+    await p.page.waitForTimeout(300); // the screen opens at the next frame
+    const s2 = await p.call("mtState");
+    assert.deepEqual({ paused: s2.paused, screen: s2.screen }, { paused: true, screen: true }, "mtPause: the pause screen");
+    await p.page.waitForTimeout(800);
+    assert.equal((await p.call("mtState")).idx, s2.idx, "idx frozen by mtPause");
+    await p.call("mtGoto", s2.idx - 2);
+    const s3 = await seekDone(p);
+    assert.deepEqual({ idx: s3.idx, paused: s3.paused, screen: s3.screen }, { idx: s2.idx - 2, paused: true, screen: true }, "step back in the pause");
+    await p.call("mtResume");
+    assert.equal((await p.call("mtState")).paused, false);
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) > s3.idx, 30_000, "idx increases after mtResume");
+    assert.deepEqual((await p.calls()).paused, [true, false, true, false]);
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
+});

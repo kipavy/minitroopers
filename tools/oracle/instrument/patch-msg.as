@@ -235,6 +235,7 @@ ifeq ofs0081
 ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
    import flash.display.BitmapData;
+   import flash.events.MouseEvent;
    import flash.external.ExternalInterface;
    import flash.geom.ColorTransform;
    import flash.utils.ByteArray;
@@ -421,14 +422,173 @@ ofs0081:
       }
 
       // --- page -> SWF (registered by mtInit on the Ruffle element)
+      // Pause is the Game's own (§;y\x1a-§, a click on the battlefield): its pause screen §w\x0b\x01o\x02§ (a grey snapshot of the
+      // field, "PAUSE", a trooper's card on a click on him) is open and frame() only ticks it. mtPause / mtResume open
+      // and close that same screen; a native click or a trooper click is followed (mtOnClick, mtPauseSync), and the page
+      // hears of every change (mtPaused(paused)). A jump or mtSettle sets the open screen aside (mtPauseOff: frame() has
+      // to run the battle; the screen stays shown) and puts it back with a new snapshot (mtPauseOn): the pause stays.
+      // mtScreen: the screen set aside; mtClosing: the screen fading out after a resume; mtPauseWant: pause asked before
+      // the battle plays (opened at its first frame); mtClickOn: the background sprite mtOnClick listens to.
+      public static var mtScreen:* = null;
+      public static var mtClosing:* = null;
+      public static var mtPauseWant:Boolean = false;
+      public static var mtClickOn:* = null;
+
       public static function mtPause() : void
       {
+         var _loc1_:§Q\btf§ = mtGame;
+         if(mtPaused)
+         {
+            return;
+         }
          mtPaused = true;
+         // the screen opens at the next frame (mtPauseSync): its 720x440 snapshot is not allocated inside the page's
+         // call (Ruffle web: a memory growth during an ExternalInterface call detaches the page's buffer); no entry is
+         // applied meanwhile (mtFrame plays nothing while paused)
+         mtPauseWant = true;
+         mtOut("mtPaused",[true]);
       }
 
       public static function mtResume() : void
       {
+         var _loc1_:§Q\btf§ = mtGame;
+         var _loc2_:* = null;
+         if(!mtPaused)
+         {
+            return;
+         }
          mtPaused = false;
+         mtPauseWant = false;
+         if(mtScreen != null)
+         {
+            _loc2_ = mtScreen;
+            mtScreen = null;
+            _loc2_.aGx2();
+         }
+         else if(_loc1_ != null && _loc1_.§w\x0b\x01o\x02§ != null && _loc1_.§w\x0b\x01o\x02§ !== mtClosing)
+         {
+            // as the native toggle: the screen fades out (§fl@@\x02§), frame() ticks it until it is gone
+            mtClosing = _loc1_.§w\x0b\x01o\x02§;
+            mtClosing.§fl@@\x02§();
+         }
+         mtOut("mtPaused",[false]);
+      }
+
+      // opens the pause screen, or puts back the one set aside (closing its trooper card, new snapshot of the field)
+      public static function mtPauseOn(param1:§Q\btf§) : void
+      {
+         var _loc2_:BitmapData = null;
+         mtPauseWant = false;
+         if(mtScreen != null)
+         {
+            param1.§w\x0b\x01o\x02§ = mtScreen;
+            §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = mtScreen.§;\x1az\x01§;
+            mtScreen = null;
+            param1.§w\x0b\x01o\x02§.§XiN4\x03§();
+            // the clips' bitmaps are brought to their current frame first (a restore sets them without a tick)
+            §`\x0b\x01§.§\tnP+§.§;io&§.§i'\x04W\x02§();
+            _loc2_ = param1.§w\x0b\x01o\x02§.§UK\r\x01§.bitmapData;
+            _loc2_.fillRect(_loc2_.rect,16711680);
+            _loc2_.draw(§n#\x07\f§.§*#\x01§.§\x011wD§);
+         }
+         else if(param1.§w\x0b\x01o\x02§ == null)
+         {
+            param1.§w\x0b\x01o\x02§ = new §^\x05\x01!§.§J\b\x17Z\x03§();
+         }
+      }
+
+      // before a jump or mtSettle: the open screen set aside, a fading one removed at once
+      public static function mtPauseOff(param1:§Q\btf§) : void
+      {
+         if(param1.§w\x0b\x01o\x02§ == null)
+         {
+            return;
+         }
+         if(!mtPaused || param1.§w\x0b\x01o\x02§ === mtClosing)
+         {
+            mtClosing = null;
+            param1.§w\x0b\x01o\x02§.aGx2();
+            return;
+         }
+         mtScreen = param1.§w\x0b\x01o\x02§;
+         param1.§w\x0b\x01o\x02§ = null;
+         §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = param1.§;\x1az\x01§;
+      }
+
+      // MOUSE_DOWN on the battlefield, after the Game's own listener (registered later) has toggled its pause
+      public static function mtOnClick(param1:*) : void
+      {
+         var _loc2_:§Q\btf§ = mtGame;
+         if(_loc2_ == null)
+         {
+            return;
+         }
+         if(mtSeekTo >= 0 || mtScreen != null)
+         {
+            // a jump is running (its screen set aside): the toggle opened a new screen over a battle being replayed;
+            // removed, the click toggles the pause wanted at the jump's end
+            if(_loc2_.§w\x0b\x01o\x02§ != null)
+            {
+               _loc2_.§w\x0b\x01o\x02§.aGx2();
+            }
+            if(mtPaused)
+            {
+               mtResume();
+            }
+            else
+            {
+               mtPause();
+            }
+            return;
+         }
+         if(mtPaused)
+         {
+            mtPaused = false;
+            mtPauseWant = false;
+            if(_loc2_.§w\x0b\x01o\x02§ != null)
+            {
+               mtClosing = _loc2_.§w\x0b\x01o\x02§;
+            }
+            mtOut("mtPaused",[false]);
+         }
+         else if(_loc2_.§w\x0b\x01o\x02§ != null && _loc2_.§w\x0b\x01o\x02§ !== mtClosing)
+         {
+            mtPaused = true;
+            mtOut("mtPaused",[true]);
+         }
+      }
+
+      // each frame of state 2 out of a jump: listener in place; a screen opened by the Game (trooper click) or gone
+      public static function mtPauseSync(param1:§Q\btf§) : void
+      {
+         var _loc2_:* = §n#\x07\f§.§*#\x01§.§*M\x01§;
+         if(_loc2_ != null && mtClickOn !== _loc2_)
+         {
+            _loc2_.addEventListener(MouseEvent.MOUSE_DOWN,mtOnClick);
+            mtClickOn = _loc2_;
+         }
+         if(mtClosing != null && param1.§w\x0b\x01o\x02§ !== mtClosing)
+         {
+            mtClosing = null;
+         }
+         if(mtPauseWant)
+         {
+            if(mtPaused)
+            {
+               mtPauseOn(param1);
+            }
+            mtPauseWant = false;
+         }
+         else if(param1.§w\x0b\x01o\x02§ != null && param1.§w\x0b\x01o\x02§ !== mtClosing && !mtPaused)
+         {
+            mtPaused = true;
+            mtOut("mtPaused",[true]);
+         }
+         else if(mtPaused && mtScreen == null && param1.§w\x0b\x01o\x02§ == null)
+         {
+            mtPaused = false;
+            mtOut("mtPaused",[false]);
+         }
       }
 
       public static function mtSpeed(param1:Number) : void
@@ -466,6 +626,7 @@ ofs0081:
             "total":mtTotal,
             "speed":mtSpd,
             "paused":mtPaused,
+            "screen":mtGame != null && (mtGame.§w\x0b\x01o\x02§ != null || mtScreen != null),
             "ended":mtEnded,
             "seeking":mtSeekTo >= 0,
             "hidden":(mtGame != null && !mtGame.§\x011wD§.visible),
@@ -488,8 +649,8 @@ ofs0081:
       // Instant seek, both ways (n clamped to [0, total]): restores the last keyframe at or before n (unless the current
       // position is closer), then replays up to n hidden and synchronously, for at most 250 ms; the rest, if any, is
       // replayed over the next frames (mtSeekStep). mtProgress is sent once n is reached; mtEnd again if n is past the
-      // Winner entry. Pause and speed are kept. Returns true if n is reached on return; false if refused (native pause
-      // screen open), deferred (Game not playing yet: done at its first frame) or still replaying.
+      // Winner entry. Pause and speed are kept: during the pause, the pause screen stays (set aside, then put back over the scene at n).
+      // Returns true if n is reached on return; false if deferred (Game not playing yet: done at its first frame) or still replaying.
       public static function mtGoto(param1:int) : Boolean
       {
          var _loc2_:§Q\btf§ = mtGame;
@@ -499,7 +660,7 @@ ofs0081:
          var _loc6_:int = 0;
          var _loc7_:int = 0;
          var _loc8_:int = 0;
-         if(_loc2_ == null || _loc2_.§w\x0b\x01o\x02§ != null)
+         if(_loc2_ == null)
          {
             return false;
          }
@@ -525,6 +686,7 @@ ofs0081:
          }
          mtPend = -1;
          mtWarmHold = 20;
+         mtPauseOff(_loc2_);
          _loc6_ = getTimer();
          mtPDraw = 0;
          mtPAdv = 0;
@@ -677,7 +839,15 @@ ofs0081:
          try
          {
             _loc1_ = new BitmapData(720,440,false,0);
+            if(mtGame.§w\x0b\x01o\x02§ != null)
+            {
+               mtGame.§w\x0b\x01o\x02§.visible = false;
+            }
             _loc1_.draw(mtGame.§\x011wD§.stage);
+            if(mtGame.§w\x0b\x01o\x02§ != null)
+            {
+               mtGame.§w\x0b\x01o\x02§.visible = true;
+            }
             _loc2_ = _loc1_.getPixels(_loc1_.rect);
             _loc1_.dispose();
          }
@@ -756,6 +926,9 @@ ofs0081:
          mtSpd = 1;
          mtAcc = 0;
          mtPaused = false;
+         mtScreen = null;
+         mtClosing = null;
+         mtPauseWant = false;
          mtEnded = false;
          mtFast = false;
          mtIdx = -1;
@@ -869,6 +1042,10 @@ ofs0081:
          {
             _loc5_ = 100;
          }
+         if(mtPend < 0 && mtSeekTo < 0)
+         {
+            mtPauseSync(param1);
+         }
          if(mtPend >= 0)
          {
             mtGoto(mtPend);
@@ -876,6 +1053,11 @@ ofs0081:
          else if(mtSeekTo >= 0)
          {
             mtSeekStep(param1,_loc4_,_loc5_);
+         }
+         else if(param1.§w\x0b\x01o\x02§ != null)
+         {
+            // the pause screen (or its fade-out): one frame() per frame ticks it, as natively
+            param1.§k\n/$\x03§();
          }
          else if(!mtPaused)
          {
@@ -896,6 +1078,8 @@ ofs0081:
                {
                   mtStop = -1;
                   mtPaused = true;
+                  mtPauseOn(param1);
+                  mtOut("mtPaused",[true]);
                   break;
                }
                if(getTimer() - _loc4_ >= _loc5_)
@@ -923,7 +1107,12 @@ ofs0081:
             }
             else
             {
+               // the troopers' tweens go to the Game's tween list, not to the pause screen's
+               mtTm = §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§;
+               §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = param1.§;\x1az\x01§;
                mtWarm();
+               §`\x0b\x01§.§{DEL}\f\x01§.§5\x1f\x01§.§\x1bxD1\x03§ = mtTm;
+               mtTm = null;
             }
          }
       }
@@ -974,6 +1163,10 @@ ofs0081:
          }
          mtWave = 0;
          mtIdx = -2;
+         if(mtPaused)
+         {
+            mtPauseWant = true;
+         }
          mtReport(param1);
       }
 
@@ -1976,6 +2169,7 @@ ofs0081:
       public static var mtWarmAt:int = 0;
       public static var mtWarmK:int = 0;
       public static var mtWarmHold:int = 0;
+      public static var mtTm:* = null;
 
       // creates at most one trooper; false once everything is warm
       public static function mtWarm() : Boolean
@@ -2269,6 +2463,7 @@ ofs0081:
          var _loc3_:Array = _loc2_.§\x1e-\x02\x07\x01§;
          var _loc4_:int = 0;
          var _loc5_:int = getTimer();
+         mtPauseOff(_loc2_);
          if(_loc2_.§^h'l\x02§ != null)
          {
             _loc3_.unshift(_loc2_.§^h'l\x02§.§SV\x1d\x01§);
@@ -2296,6 +2491,10 @@ ofs0081:
          if(_loc2_.§\x1e-\x02\x07\x01§.length == 0)
          {
             _loc2_.§\x1e-\x02\x07\x01§ = _loc3_;
+         }
+         if(mtPaused)
+         {
+            mtPauseWant = true;
          }
          return _loc4_;
       }

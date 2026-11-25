@@ -451,16 +451,30 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   une fois par image, seulement si `idx` change (`idx = total − queue.length − (step ? 1 : 0)`, `wave` = nombre de
   `NewWave` appliqués) ; `mtEnd()` une fois, quand l'entrée `Winner` est appliquée (son index est relevé par `mtInit` :
   elle n'est pas toujours la dernière ; son application vide la file, donc `idx = total`) ; `mtStuck(idx)` une fois par
-  blocage (ci-dessous).
+  blocage (ci-dessous) ; `mtPaused(paused)` à chaque changement de pause, quelle qu'en soit l'origine (bouton de la
+  page, clic sur le terrain, clic sur un trooper, `mtStopAt`).
+- **Pause = la pause native** : un clic sur le terrain bascule la pause du Game (`§;y\x1a-§`) : écran de pause
+  `§J\b\x17Z\x03§` (instantané du terrain en gris, « PAUSE » qui glisse, fiche d'un trooper sur un clic sur lui ; ses
+  tweens dans sa propre liste), `frame()` ne fait plus que l'animer ; la reprise le fait disparaître en fondu.
+  `mtPause()` ouvre ce même écran à l'image suivante (`new §J\b\x17Z\x03§`, comme le natif ; aussi après la fin, où le
+  natif refuse ; pas dans l'appel de la page : sous Ruffle web, une croissance de la mémoire pendant un appel
+  ExternalInterface détache le tampon de la page ; `paused` est vrai tout de suite et aucune entrée n'est jouée),
+  `mtResume()` le ferme comme le natif (`§fl@@\x02§`, fondu). Le clic natif est suivi par un écouteur MOUSE_DOWN
+  posé après celui du Game sur le même sprite (`mtOnClick`), le clic sur un trooper par `mtPauseSync` (chaque image) :
+  `paused` et `mtPaused(...)` suivent. En pause, une image = un `frame()` (l'écran s'anime), aucune entrée. **Un saut
+  en pause est permis et la pause reste** : l'écran ouvert est mis de côté (toujours affiché, `frame()` rejoue le
+  combat ; liste de tweens du Game rétablie), puis remis à l'image qui suit la fin du saut avec un nouvel instantané du terrain à `n`
+  (rendu des clips d'abord, fiche de trooper fermée) ; `mtSettle` fait de même. Un clic natif pendant un saut
+  asynchrone bascule la pause voulue à sa fin. `mtShot()` cache l'écran de pause le temps de la capture.
 - Page → SWF (méthodes de l'élément Ruffle) : `mtPause()`, `mtResume()`, `mtSpeed(x)` (borné à [0.125, 32]),
-  `mtState()` = `{idx, wave, total, speed, paused, ended, seeking, hidden, calls, kf, banner, playing, prof, pool,
-  waves, starts}` (`playing` : le Game est en état 2, `prof` : temps du dernier saut, `pool` : compteurs de la réserve ; `seeking` : saut en
+  `mtState()` = `{idx, wave, total, speed, paused, screen, ended, seeking, hidden, calls, kf, banner, playing, prof, pool,
+  waves, starts}` (`screen` : écran de pause natif ouvert, `playing` : le Game est en état 2, `prof` : temps du dernier saut, `pool` : compteurs de la réserve ; `seeking` : saut en
   cours, `hidden` : clip du Game masqué, `calls` : appels à `frame()` de lecture, hors sauts — la vitesse effective, `kf` :
   nombre d'images clés, `banner` : l'action `Winner` et sa bannière sont à l'écran), `mtGoto(n)` (`mtSeek(n)` : alias),
   `mtShot()`. Pour les tests seulement : `mtDump()`, `mtHistStr()`, `mtStopAt(n)`, `mtSettle(max)`, `mtKfSize()`
   (ci-dessous).
-- `mtFrame` : en pause aucun appel ; sinon `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
-  à-coups compris, consommés par appel), 1 seul si l'écran PAUSE natif est ouvert ; sous ×1, `stage.frameRate = 40 × speed`
+- `mtFrame` : écran de pause ouvert (ou en fondu) : un appel (il l'anime) ; sinon, hors pause, `acc += max(speed, 1)`, `n = floor(acc)` appels à `frame()` (exact au tick,
+  à-coups compris, consommés par appel) ; sous ×1, `stage.frameRate = 40 × speed`
   (au-delà, 40). Budget de temps : 10 ms, ou la moitié de l'intervalle entre les deux dernières images si elles sont plus
   lentes (plafond 100 ms), au moins un appel ; l'intervalle de référence part de la première image de l'état 2 (pas de
   `mtInit`, sinon l'attente de l'image de fond compterait). Sur une machine rapide c'est 10 ms ; sous le Chromium x64
@@ -624,7 +638,8 @@ Avec les sauts instantanés (images clés) : SHA-256 `58e072e1d23e740452e4ba59e6
 plus rapides (réserve de soldats, pré-chauffage, rejeu caché allégé, état d'affichage rejoué) :
 `7e0cf56b7b17438fc0b95936d3d89c08cdf67ef9dc61184762acf61dd24efc14`, `?v=8` ; pré-chauffage seulement en pause ou après la
 fin (la lecture ne change pas), sans véhicule ni tween orphelin, rappels d'étiquette vidés :
-`28ca9f9cf2662158b0e56708fabc72fde86bf23fc192f3782cbe42923b62ea81`, `?v=9` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`28ca9f9cf2662158b0e56708fabc72fde86bf23fc192f3782cbe42923b62ea81`, `?v=9` ; pause = la pause native (écran PAUSE,
+sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0cfa1b96202d`, `?v=10` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
