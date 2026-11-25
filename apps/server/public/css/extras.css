@@ -119,3 +119,119 @@ td.right > .event-banner {
 .train-recent a {
 	color : #512f0d;
 }
+
+/* ===== Mobile (< 980 px, body.mtm set by layout() on every page): the original frame rebuilt at screen width =====
+   Validated by Killian on 2026-11-25 (spec 2026-11-25-mobile-design.md). Nothing here applies at 980 px and above.
+   Compact fixed bar (blue metal + dtop.png stripes, small logo left, credits and power right); the frame drawn with
+   border-image from its own one-pixel-high rows (bg_content.png, dbottom.png, dbg.png): only the beige middle stretches. */
+@media (max-width : 979px) {
+	body.mtm {
+		padding-top : 56px;
+	}
+	body.mtm:before {
+		content : "";
+		position : fixed;
+		z-index : 20;
+		left : 0px;
+		right : 0px;
+		top : 0px;
+		height : 41px;
+		border-bottom : 15px solid transparent;
+		background : url("/img/dtop.png") repeat-x left bottom, #515b7e;
+		box-shadow : inset 0px 1px 0px #6f7dad, 0px 2px 4px rgba(0,0,0,0.35);
+	}
+	body.mtm .site {
+		width : auto;
+		margin : 0px 6px;
+	}
+	body.mtm .ptop, body.mtm .sp, body.mtm .pleft, body.mtm .pright, body.mtm .arthead, body.mtm .camera, body.mtm .ptopleft, body.mtm .art_mouse, body.mtm .pbottomleft {
+		display : none;
+	}
+	body.mtm a.logo {
+		position : fixed;
+		z-index : 21;
+		left : 6px;
+		top : 1px;
+		margin : 0px;
+		width : 106px;
+		height : 40px;
+		background-size : contain;
+	}
+	body.mtm .home > .money, body.mtm .home > .power {
+		position : fixed;
+		z-index : 21;
+		top : 1px;
+		margin : 0px;
+	}
+	body.mtm .home > .power {
+		right : 8px;
+	}
+	body.mtm .home > .money {
+		right : 104px;
+	}
+	body.mtm .frame {
+		position : relative;
+		margin-top : 14px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 10px 0px 7px;
+		border-image : url("/img/bg_content.png") 0 10 0 7 fill stretch;
+	}
+	body.mtm .frame:before {
+		content : "";
+		position : absolute;
+		left : -7px;
+		right : -10px;
+		top : -11px;
+		height : 0px;
+		border-style : solid;
+		border-width : 0px 5px 11px 5px;
+		border-image : url("/img/dbottom.png") 0 5 11 5 fill stretch;
+		transform : scaleY(-1);
+	}
+	body.mtm .ptopsite {
+		background : none;
+	}
+	body.mtm #content {
+		min-height : 0px;
+		padding : 10px 4px 12px 4px;
+	}
+	body.mtm .dbottom {
+		background : none;
+		padding-bottom : 0px;
+		border-style : solid;
+		border-width : 0px 5px 11px 5px;
+		border-image : url("/img/dbottom.png") 0 5 11 5 fill stretch;
+	}
+	body.mtm .dbg {
+		height : 40px;
+		background : none;
+		border-style : solid;
+		border-width : 0px 4px 0px 1px;
+		border-image : url("/img/dbg.png") 0 4 0 1 fill stretch;
+	}
+	body.mtm .indust {
+		margin-left : 0px;
+	}
+	body.mtm .copy {
+		width : auto;
+		text-align : center;
+		padding : 4px 0px 0px 0px;
+	}
+	/* title banner (title.png 479x64): scaled down with its proportions, never stretched */
+	body.mtm a.company {
+		position : static;
+		display : flex;
+		align-items : center;
+		justify-content : center;
+		box-sizing : border-box;
+		width : 100%;
+		max-width : 380px;
+		height : auto;
+		aspect-ratio : 479 / 64;
+		margin : 0px auto 12px auto;
+		padding : 0px;
+		background-size : contain;
+		background-position : center;
+	}
+}
