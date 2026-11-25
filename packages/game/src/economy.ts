@@ -1,3 +1,4 @@
+import { weekendEvent } from "./weekend.ts";
 import { describeTrooper, type BattleTrooperInput } from "@mt/engine";
 
 /** Starting credits. UNVERIFIED: no evidence of a starting grant (original tooltip "Credits: You win these in combat"; $GL uses 100). */
@@ -61,7 +62,7 @@ export function isWeekend(day: string): boolean {
   return wd === 0 || wd === 6;
 }
 
-/** Credits multiplier of a reward won on game day `day`: `weekend` on Saturdays and Sundays, 1 otherwise. */
+/** Credits multiplier of a reward won on game day `day`: `weekend` when the weekend's drawn formula has the ×3, 1 otherwise. */
 export function rewardMultiplier(day: string, weekend: number): number {
-  return isWeekend(day) ? weekend : 1;
+  return weekendEvent(day, weekend).x3 ? weekend : 1;
 }

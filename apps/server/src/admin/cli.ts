@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import type { DatabaseSync } from "node:sqlite";
 import { Rand, SKILLS, armyPower, describeTrooper, levelUpOptions } from "@mt/engine";
+import { allowanceOf } from "../allowance.ts";
 import { FACTIONS, MISSION_ATTEMPTS, RATS_MAX, battleAllowance, dayKey, host as hostOf, referralBounty, seedsOffering, trooperName } from "@mt/game";
 import { loadConfig, resolveDataDir, type Config } from "../config.ts";
 import { openDb } from "../db.ts";
@@ -260,7 +261,9 @@ function dayArg(cfg: Config, v: string | undefined): string {
 }
 
 /** The day's quotas of an army, as `show` and `reset-day` print them. */
-function dayLines(db: DatabaseSync, a: ArmyRow, day: string): string[] {
+function dayLines(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): string[] {
+  const now = Date.now();
+  const al = dayKey(new Date(now), cfg.tzGame) === day ? allowanceOf(db, cfg, a.id, troopersOf(db, a.id).map(trooperInput), now) : null;
   const used = battlesUsed(db, a.id, day);
   const counted = battlesCounted(db, a.id, day);
   const m = missionDay(db, a.id, day);
@@ -268,7 +271,7 @@ function dayLines(db: DatabaseSync, a: ArmyRow, day: string): string[] {
   const shops = shopResets(db, a.id, day);
   return [
     `Journée ${day} :`,
-    `  Batailles : ${counted}/${battleAllowance(troopersOf(db, a.id).map(trooperInput))}${used !== counted ? ` (${used} dans la journée, avant remise à zéro comprises)` : ""}`,
+    `  Batailles : ${counted}/${al ? al.allowance : battleAllowance(troopersOf(db, a.id).map(trooperInput))}${used !== counted ? ` (${used} dans la journée, avant remise à zéro comprises)` : ""}${al?.regen ? ` (réserve ${al.reserve}/3, recharges à venir : ${al.ahead})` : ""}`,
     `  Mission : ${m.type ?? "pas encore tirée"}, essais ${m.used - m.reset}/${MISSION_ATTEMPTS}, gagnée : ${yesNo(m.won)}`,
     `  Raid : phase ${r.phase}, terminé : ${yesNo(r.over)}, recrues tuées : ${r.dead.length}`,
     `  Boutique : ${shops === 0 ? "offres du jour" : `nouvelles offres (remise à zéro ${shops} fois)`}`,
@@ -297,7 +300,7 @@ function show(db: DatabaseSync, cfg: Config, a: ArmyRow, day: string): string {
       const d = describeTrooper(trooperInput(t));
       return `  ${t.slot}\t${t.name}\tniveau ${d.level}\t${d.skills.map(label).join(", ")}${t.pendingLevelup !== null ? "\t(montée de niveau payée, compétence à choisir)" : ""}`;
     }),
-    ...dayLines(db, a, day),
+    ...dayLines(db, cfg, a, day),
   ].join("\n");
 }
 
@@ -314,7 +317,7 @@ function edit(db: DatabaseSync, cfg: Config, cmd: string, values: Values): strin
     if (!["battles", "mission", "raid", "shop", "all"].includes(what)) throw new UsageError("--what : battles, mission, raid, shop ou all");
     const all = what === "all";
     resetDay(db, a.id, day, { battles: all || what === "battles", mission: all || what === "mission", raid: all || what === "raid", shop: all || what === "shop" });
-    return [`${a.host} : journée ${day} rendue (${what})`, ...dayLines(db, a, day)].join("\n");
+    return [`${a.host} : journée ${day} rendue (${what})`, ...dayLines(db, cfg, a, day)].join("\n");
   }
 
   if (cmd === "set-credits") {

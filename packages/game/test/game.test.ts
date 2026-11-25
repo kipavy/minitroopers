@@ -124,12 +124,12 @@ test("dayKey / nextResetAt Europe/Paris", () => {
   assert.equal(nextResetAt(new Date("2026-10-25T12:00:00Z"), tz).toISOString(), "2026-10-25T23:00:00.000Z");
 });
 
-test("rewardMultiplier: weekend days only", () => {
-  assert.equal(rewardMultiplier("2026-11-28", 3), 3); // samedi
-  assert.equal(rewardMultiplier("2026-11-29", 3), 3); // dimanche
-  assert.equal(rewardMultiplier("2026-11-27", 3), 1); // vendredi
-  assert.equal(rewardMultiplier("2026-11-30", 3), 1); // lundi
-  assert.equal(rewardMultiplier("2026-11-28", 1), 1);
+test("rewardMultiplier: weekend days of a ×3 weekend only", () => {
+  assert.equal(rewardMultiplier("2026-12-12", 3), 3); // samedi, week-end ×3 seul
+  assert.equal(rewardMultiplier("2026-12-13", 3), 3); // dimanche
+  assert.equal(rewardMultiplier("2026-12-11", 3), 1); // vendredi
+  assert.equal(rewardMultiplier("2026-12-14", 3), 1); // lundi
+  assert.equal(rewardMultiplier("2026-12-12", 1), 1);
   assert.equal(isWeekend("2027-01-02"), true); // samedi, autre année
   assert.equal(isWeekend("2027-01-04"), false);
 });

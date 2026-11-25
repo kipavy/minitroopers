@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { dayKey } from "@mt/game";
-import { armyByHost, createArmy, dayOver } from "../src/repo.ts";
+import { armyByHost, createArmy } from "../src/repo.ts";
+import { dayOverAt } from "../src/allowance.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
 
 const MODES: Mode[] = ["path", "subdomain"];
@@ -53,7 +54,7 @@ for (const mode of MODES) {
     const env = setup(mode);
     const { cl, id } = await warp(env);
     const v1 = await fight(env, cl);
-    assert.equal(dayOver(env.db, id, today(env)), false);
+    assert.equal(dayOverAt(env.db, env.cfg, id, env.clock.t), false);
     assert.ok(toHq(await view(env, cl, v1)));
     await fight(env, cl);
     await fight(env, cl);
@@ -61,7 +62,7 @@ for (const mode of MODES) {
     const p4 = await view(env, cl, v4);
     assert.ok(toHq(p4) && !endsAt(p4, mode));
     const v5 = await fight(env, cl);
-    assert.equal(dayOver(env.db, id, today(env)), true);
+    assert.equal(dayOverAt(env.db, env.cfg, id, env.clock.t), true);
     const p5 = await view(env, cl, v5);
     assert.ok(endsAt(p5, mode), "5th view ends the day");
     // single shot: the replay is a plain replay
@@ -84,7 +85,7 @@ for (const mode of MODES) {
     env.db.prepare("UPDATE armies SET missions_unlocked = 1 WHERE id = ?").run(id);
     for (let n = 0; n < 4; n++) await fight(env, cl);
     const v5 = await fight(env, cl);
-    assert.equal(dayOver(env.db, id, today(env)), false);
+    assert.equal(dayOverAt(env.db, env.cfg, id, env.clock.t), false);
     assert.ok(toHq(await view(env, cl, v5)));
     assert.equal((await get(env, cl, "/endDay")).status, 302);
     assert.equal((await get(env, cl, "/endDay")).headers.get("location"), loc(mode, "/hq"));
@@ -106,13 +107,13 @@ for (const mode of MODES) {
     env.db.prepare("UPDATE armies SET recruit_confirmed_at = ? WHERE id = ?").run(env.clock.t, r.army.id);
     for (let n = 0; n < 4; n++) await fight(env, cl);
     const v5 = await fight(env, cl);
-    assert.equal(dayOver(env.db, id, today(env)), false);
+    assert.equal(dayOverAt(env.db, env.cfg, id, env.clock.t), false);
     assert.ok(toHq(await view(env, cl, v5)));
     assert.equal((await get(env, cl, "/endDay")).status, 302);
     // the raid is lost: its first view ends the day
     copyAs(env, id, "raid", "raid", 1, "loss");
     env.db.prepare("INSERT INTO daily(army_id, day, raid_over) VALUES (?, ?, 1) ON CONFLICT(army_id, day) DO UPDATE SET raid_over = 1").run(id, today(env));
-    assert.equal(dayOver(env.db, id, today(env)), true);
+    assert.equal(dayOverAt(env.db, env.cfg, id, env.clock.t), true);
     assert.ok(endsAt(await view(env, cl, `/b/view/raid?d=${today(env)}`), mode));
   });
 

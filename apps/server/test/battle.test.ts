@@ -582,7 +582,7 @@ async function fightAt(t: number, extra: Record<string, string> = {}) {
 const msgFor = (win: boolean, n: number): string => `${win ? "Tu as remporté cette bataille !" : "Tu as perdu cette bataille !"} Ton armée gagne +${n} [T]`;
 
 test("battle on a weekend day pays ×3 (credits, end message, money animation)", async () => {
-  const r = await fightAt(Date.parse("2026-11-28T10:00:00Z")); // samedi
+  const r = await fightAt(Date.parse("2026-12-12T10:00:00Z")); // samedi
   const n = r.win ? 6 : 3;
   assert.equal(r.gained, n);
   assert.equal(r.endMsg, msgFor(r.win, n));
@@ -590,17 +590,17 @@ test("battle on a weekend day pays ×3 (credits, end message, money animation)",
 });
 
 test("WEEKEND_MULTIPLIER=1 pays ×1 on Saturday", async () => {
-  const r = await fightAt(Date.parse("2026-11-28T10:00:00Z"), { WEEKEND_MULTIPLIER: "1" });
+  const r = await fightAt(Date.parse("2026-12-12T10:00:00Z"), { WEEKEND_MULTIPLIER: "1" });
   assert.equal(r.gained, r.win ? 2 : 1);
   assert.equal(r.endMsg, msgFor(r.win, r.win ? 2 : 1));
 });
 
 test("the weekend follows the game day (Europe/Paris), not UTC", async () => {
-  const sat = await fightAt(Date.parse("2026-11-28T22:30:00Z")); // samedi 23:30 à Paris
+  const sat = await fightAt(Date.parse("2026-12-12T22:30:00Z")); // samedi 23:30 à Paris
   assert.equal(sat.gained, sat.win ? 6 : 3);
-  const mon = await fightAt(Date.parse("2026-11-29T23:30:00Z")); // lundi 00:30 à Paris
+  const mon = await fightAt(Date.parse("2026-12-13T23:30:00Z")); // lundi 00:30 à Paris
   assert.equal(mon.gained, mon.win ? 2 : 1);
-  const satEarly = await fightAt(Date.parse("2026-11-27T23:30:00Z")); // samedi 00:30 à Paris, vendredi en UTC
+  const satEarly = await fightAt(Date.parse("2026-12-11T23:30:00Z")); // samedi 00:30 à Paris, vendredi en UTC
   assert.equal(satEarly.gained, satEarly.win ? 6 : 3);
 });
 
@@ -696,7 +696,7 @@ test("link previews: battleOg names the stored winner (attacker or defender), a 
 
 test("the first view shows the reward actually paid, even if the config changed since the battle", async () => {
   const env = setup("path");
-  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  env.clock.t = Date.parse("2026-12-12T10:00:00Z"); // samedi
   const { cl, id } = await warp(env);
   const foeId = foe(env, "foe", "Foe", [
     { seed: 1234567, name: "Bob" },
@@ -717,7 +717,7 @@ test("the first view shows the reward actually paid, even if the config changed 
 
 test("a battle stored before migration 010 (reward NULL) shows the reward computed from the config", async () => {
   const env = setup("path");
-  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  env.clock.t = Date.parse("2026-12-12T10:00:00Z"); // samedi
   const { cl, id } = await warp(env);
   const foeId = foe(env, "foe", "Foe", [
     { seed: 1234567, name: "Bob" },
@@ -758,4 +758,10 @@ test("/b/opp: « Défie une faction » box with the 6 factions in order; a butto
   assert.equal(rows.length, 1);
   assert.equal((env.db.prepare("SELECT opp FROM battles WHERE id = ?").get(rows[0]!.id) as { opp: string }).opp, "friend:sang-surs");
   assert.equal(rows[0]!.defender_id, armyByHost(env.db, "sang-surs")!.id, "the stored faction army is the defender");
+});
+
+test("a « recharge seule » weekend (2026-11-28) pays ×1", async () => {
+  const r = await fightAt(Date.parse("2026-11-28T10:00:00Z"));
+  assert.equal(r.gained, r.win ? 2 : 1);
+  assert.equal(r.endMsg, msgFor(r.win, r.win ? 2 : 1));
 });

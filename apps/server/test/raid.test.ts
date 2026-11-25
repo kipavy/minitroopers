@@ -365,7 +365,7 @@ test("HQ raid box: won out (20 phases) and protected views", async () => {
 
 test("raid phase won on a weekend day pays ×3: +12, message and money animation", async () => {
   const env = setup("path", {}, { battleSeed: () => 4242 });
-  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  env.clock.t = Date.parse("2026-12-12T10:00:00Z"); // samedi
   const { cl, key, id } = await warp(env);
   recruit(env, id, "weak", 1, 7);
   recruit(env, id, "hero", STRONG, 1_000_000);
@@ -378,9 +378,21 @@ test("raid phase won on a weekend day pays ×3: +12, message and money animation
   assert.ok(page.includes(`document.location = ${JSON.stringify(loc("path", "/hq?money=12"))};`));
 });
 
+test("raid phase won on a « recharge seule » weekend (2026-11-28) pays ×1: +4", async () => {
+  const env = setup("path", {}, { battleSeed: () => 4242 });
+  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi, recharge seule
+  const { cl, key, id } = await warp(env);
+  recruit(env, id, "weak", 1, 7);
+  recruit(env, id, "hero", STRONG, 1_000_000);
+  recruit(env, id, "hera", STRONG, 1_007_919);
+  await get(env, cl, `/b/raid?phase=1;chk=${key}`);
+  assert.ok(won(raids(env, id)[0]!));
+  assert.equal(credits(env, id), 104);
+});
+
 test("a raid phase's first view shows the reward actually paid, even if the config changed since", async () => {
   const env = setup("path", {}, { battleSeed: () => 4242 });
-  env.clock.t = Date.parse("2026-11-28T10:00:00Z"); // samedi
+  env.clock.t = Date.parse("2026-12-12T10:00:00Z"); // samedi
   const { cl, key, id } = await warp(env);
   recruit(env, id, "weak", 1, 7);
   recruit(env, id, "hero", STRONG, 1_000_000);
