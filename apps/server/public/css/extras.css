@@ -727,7 +727,7 @@ table.choose a.fac:hover {
 	background-image : url("/img/box2bottom-reserve.png");
 }
 .box2.reserve .action {
-	height : 83px;
+	height : 82px;
 }
 .reserve-row {
 	margin-top : 5px;
@@ -736,6 +736,7 @@ table.choose a.fac:hover {
 .reserve-row .b {
 	width : 101px;
 	margin-left : 3px;
+	vertical-align : top;
 }
 .reserve-row .b:first-child {
 	margin-left : 1px;
