@@ -206,3 +206,9 @@ test("/b/opp and /b/train share one table: the by-name cell second of six, each 
   assert.ok(!src("train.ts").includes("function mateCell"), "train.ts reuses the shared mateCell");
   assert.ok(!src("train.ts").includes("i += 2"), "train.ts reuses the shared chooseTable");
 });
+
+test("only the narrow pages (Bataille, Entraînement) ask for two columns on tablets (panels duo); the sheet does not", async () => {
+  const { env, cl } = await world();
+  for (const p of ["/b/opp", "/b/train"]) assert.ok((await (await get(env, cl, p)).text()).includes('<table class="panels duo">'), p);
+  assert.ok((await (await get(env, cl, "/t/0")).text()).includes('<table class="panels">'));
+});

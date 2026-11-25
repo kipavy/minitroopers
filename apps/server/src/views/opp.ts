@@ -86,6 +86,7 @@ export function oppPage(cfg: Config, v: OppView): Html {
   const right = html`${chooseTable(cells, mate)}
 `;
   return shellPage(cfg, {
+    duo: true,
     army: v.army,
     troopers: v.troopers,
     power: v.power,

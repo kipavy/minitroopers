@@ -56,6 +56,7 @@ export function trainPage(cfg: Config, v: TrainView): Html {
 ${chooseTable(cells, mate)}
 ${recentList(cfg, v)}</div>`;
   return shellPage(cfg, {
+    duo: true,
     army: v.army,
     troopers: v.troopers,
     power: v.power,

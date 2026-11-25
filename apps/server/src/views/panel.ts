@@ -109,6 +109,8 @@ export interface ShellView {
    * password form, no menu: fr/ranks.html) or of an open one (troopers panel without menu).
    */
   visitor?: "owner" | "locked" | "stranger";
+  /** Narrow right column: two columns on tablets too (extras.css, 600-979 px). */
+  duo?: boolean;
 }
 
 /** Frame shared by the trooper sheet, level-up and add pages: money, power, left troopers panel and a right column. */
@@ -143,7 +145,7 @@ ${v.army.credits}
 <div class="power" ${tip("Puissance", "Représente la puissance totale de l'armée")}>${v.power}</div>
 
 <a href="${armyUrl(cfg, v.army.host, "/hq")}" class="company">${v.title}</a>
-<table class="panels"><tr><td class="left"><div class="box1 hq">
+<table class="panels${v.duo ? " duo" : ""}"><tr><td class="left"><div class="box1 hq">
 <h1 class="hbox">Mes Troopers</h1>
 <div class="box1bottom"><div class="box1bg"><div id="trhome">
 

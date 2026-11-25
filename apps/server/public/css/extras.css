@@ -238,7 +238,8 @@ td.right > .event-banner {
 
 /* ===== Mobile: page body. Under 600 px one column: the page content first, then the troopers panel and its menu
    (the HQ, table.panels.hqp, puts Bataille / Mission / Raid first, then the panel, then the recruit link).
-   600-979 px: two columns, the panel on the left as on the original. The INFO tip area under the menu is hover-only:
+   600-979 px: two columns, the panel on the left as on the original, for the pages whose content fits beside it
+   (the HQ, table.panels.hqp, and Bataille / Entraînement, table.panels.duo); the wider pages stay in one column. The INFO tip area under the menu is hover-only:
    hidden, and the bottom of the box (box1bottom.png) is closed under the menu. ===== */
 @media (max-width : 979px) {
 	body.mtm .home {
@@ -294,18 +295,18 @@ td.right > .event-banner {
 	}
 }
 @media (min-width : 600px) and (max-width : 979px) {
-	body.mtm table.panels > tbody > tr {
+	body.mtm table.panels.hqp > tbody > tr, body.mtm table.panels.duo > tbody > tr {
 		flex-direction : row;
 		align-items : flex-start;
 		justify-content : center;
 		gap : 18px;
 	}
-	body.mtm table.panels td.left, body.mtm table.panels td.right {
+	body.mtm table.panels.hqp td.left, body.mtm table.panels.hqp td.right, body.mtm table.panels.duo td.left, body.mtm table.panels.duo td.right {
 		display : flex;
 		flex-direction : column;
 		align-items : center;
 	}
-	body.mtm table.panels td.left > .box1 {
+	body.mtm table.panels.duo td.left > .box1 {
 		margin-top : 0px;
 	}
 }
@@ -342,5 +343,132 @@ td.right > .event-banner {
 	body.mtm .train-head .but {
 		float : none;
 		margin : 0px auto 6px auto;
+	}
+}
+
+/* ===== Mobile: pages whose content is wider than a phone ===== */
+@media (max-width : 979px) {
+	/* trooper sheet: the skills grid keeps its placement by category (rows), scaled down in steps below; the buttons
+	   go under it */
+	body.mtm .sheet table.tablesheet, body.mtm .sheet table.tablesheet > tbody, body.mtm .sheet table.tablesheet > tbody > tr, body.mtm .sheet table.tablesheet td {
+		display : block;
+		width : auto;
+	}
+	body.mtm .sheet table.tablesheet td.sheetright {
+		width : 240px;
+		margin : 12px auto 0px auto;
+		padding : 0px;
+	}
+	body.mtm .sheet ul.skills {
+		margin : 0px auto;
+	}
+	body.mtm .sheet ul.skills:after {
+		content : "";
+		display : block;
+		clear : both;
+	}
+	/* Flash wider than the screen ("Gérer mon armée" 630x254, recruits animation 670x240): scaled with their ratio */
+	body.mtm #client {
+		width : 100% !important;
+		height : auto !important;
+		aspect-ratio : 630 / 254;
+	}
+	body.mtm #recuits {
+		width : 100% !important;
+		height : auto !important;
+		aspect-ratio : 670 / 240;
+	}
+	body.mtm table.panels td.right > p {
+		margin : 0px 6px 8px 6px;
+	}
+	/* history: the two lists one under the other */
+	body.mtm table.log, body.mtm table.log > tbody, body.mtm table.log > tbody > tr, body.mtm table.log td {
+		display : block;
+		width : auto;
+		margin : 0px;
+	}
+	body.mtm table.log td.right {
+		padding : 12px 0px 0px 0px;
+	}
+	body.mtm table.log .history {
+		width : auto;
+		margin-left : 0px;
+	}
+	/* ranks */
+	body.mtm .ranks {
+		width : 100%;
+	}
+	body.mtm .ranks table {
+		width : 100%;
+		margin : 10px 0px 16px 0px;
+	}
+	body.mtm .ranks table th, body.mtm .ranks table td {
+		padding-left : 3px;
+		padding-right : 3px;
+	}
+	body.mtm .ranks p {
+		margin : 0px 6px;
+	}
+	body.mtm .ranks p a {
+		margin : 0px;
+	}
+	/* password page */
+	body.mtm .protect {
+		padding-right : 0px;
+		width : 100%;
+	}
+	body.mtm table.form {
+		width : 100%;
+	}
+	body.mtm table.form td {
+		padding-left : 4px;
+	}
+	/* info / confirm boxes (660 px images): same panel drawn at the screen width with the images' own colours */
+	body.mtm .warntop {
+		width : auto;
+		padding-top : 0px;
+		border-radius : 9px;
+		border : 1px solid rgb(54,60,85);
+		background : rgb(131,148,194);
+		box-shadow : inset 0px 0px 0px 2px rgb(156,170,206);
+	}
+	body.mtm .warntop.confirmtop {
+		border-color : rgb(105,155,25);
+		background : rgb(147,199,2);
+		box-shadow : inset 0px 0px 0px 2px rgb(169,210,2);
+	}
+	body.mtm .warntop .warnbottom, body.mtm .warntop .warnbg {
+		background-image : none;
+		padding-bottom : 0px;
+	}
+	body.mtm .warntop .warncontent {
+		padding : 10px 10px 10px 65px;
+	}
+}
+/* the sheet's skills grid (440 px) in steps: available width = screen - 37 px (site margins, frame, padding) */
+@media (max-width : 476px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.86;
+	}
+}
+@media (max-width : 419px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.78;
+	}
+}
+@media (max-width : 379px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.69;
+	}
+}
+@media (max-width : 339px) {
+	body.mtm .sheet ul.skills {
+		zoom : 0.64;
+	}
+}
+/* smallest phones (< 360 px): the 322 px boxes and the 285 px opponent cells are scaled down with their proportions */
+@media (max-width : 359px) {
+	body.mtm .box2, body.mtm .box10, body.mtm td.right > .event-banner, body.mtm table.choose td.choosetd {
+		zoom : 0.88;
 	}
 }
