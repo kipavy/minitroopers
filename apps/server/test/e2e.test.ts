@@ -121,6 +121,8 @@ interface SwfState {
   total: number;
   speed: number;
   paused: boolean;
+  /** The game's own pause screen is open. */
+  screen: boolean;
   ended: boolean;
   seeking: boolean;
   hidden: boolean;
@@ -419,9 +421,27 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).paused, false, "keys typed into a field ignored");
       await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("probe").remove());
 
-      // 2. pause button (the seeks below run paused: they land exactly where asked)
+      // 1b. a click on the battlefield: the game's own pause (its PAUSE screen); the page follows through mtPaused, the
+      // play button shows "play" without toggling again; a second click resumes
+      const iconPaused = (): Promise<boolean> => page.evaluate(() => (globalThis as unknown as { document: { querySelector(s: string): { className: string } } }).document.querySelector("#mtp-play .mtp-playicon").className.includes("--paused"));
+      const field = (await page.locator("ruffle-player#battle").boundingBox())!;
+      const clickField = (): Promise<void> => page.mouse.click(field.x + field.width / 2, field.y + field.height * 0.6);
+      await clickField();
+      await page.waitForTimeout(600);
+      if (!(await swfState(page)).paused) await clickField(); // Ruffle may swallow the first click (focus)
+      const f0 = await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "field click: the PAUSE screen");
+      assert.equal(await until(page, iconPaused, (p) => p, 5_000, "play icon after the field click"), true);
+      await page.waitForTimeout(500);
+      assert.equal((await swfState(page)).paused, true, "no second toggle by the page");
+      void f0;
+      await clickField();
+      await until(page, () => swfState(page), (s) => !s.paused, 10_000, "field click: resumed");
+      assert.equal(await until(page, iconPaused, (p) => !p, 5_000, "pause icon after resuming"), false);
+
+      // 2. pause button: the same PAUSE screen (the seeks below run paused: they land exactly where asked, paused)
       await page.click("#mtp-play");
-      const s0 = await until(page, () => swfState(page), (s) => s.paused, 10_000, "pause button");
+      const s0 = await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "pause button: the PAUSE screen");
+      assert.equal(await until(page, iconPaused, (p) => p, 5_000, "play icon"), true);
 
       // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
       // → goes one history entry further; the share dialog's "event" link reopens there (step 7)
@@ -527,6 +547,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
         const s = await until(page, () => swfState(page), (s) => !s.seeking && s.idx === n, 10_000, `${what}: landed on ${n}`);
         assert.equal(calls.length, before + 1, `${what}: one mtGoto`);
         assert.equal(s.paused, true, `${what}: still paused`);
+        assert.equal(s.screen, true, `${what}: the PAUSE screen still there`);
         return s;
       };
       const r1 = await seekBy("→", () => page.keyboard.press("ArrowRight"));

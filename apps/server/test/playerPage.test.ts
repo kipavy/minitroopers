@@ -40,8 +40,11 @@ window.swfobject = { embedSWF: function (url, id) {
   el.play = function () { calls.push(["play"]); el.isPlaying = true; };
   el.mtState = function () { return Object.assign({}, s); };
   el.mtGoto = function (n) { calls.push(["goto", n]); s.idx = n; s.wave = waveOf(n); s.ended = n >= 40; window.mtProgress(n, s.wave); if (s.ended) window.mtEnd(); return true; };
-  el.mtPause = function () { calls.push(["mtPause"]); s.paused = true; };
-  el.mtResume = function () { calls.push(["mtResume"]); s.paused = false; };
+  // the game's own pause screen: it opens at the next frame, and the SWF tells the page (mtPaused) whatever the origin
+  var tell = function (p) { setTimeout(function () { s.paused = p; window.mtPaused(p); }, window.frameMs || 20); };
+  el.mtPause = function () { calls.push(["mtPause"]); if (!s.paused) tell(true); };
+  el.mtResume = function () { calls.push(["mtResume"]); if (s.paused) tell(false); };
+  el.clickField = function () { tell(!s.paused); };
   el.mtSpeed = function (x) { calls.push(["speed", x]); s.speed = x; };
   el.mtShot = function () { var b = ""; for (var i = 0; i < 720 * 440; i++) b += "\\xff\\x40\\x80\\xc0"; return btoa(b); };
   at.parentNode.replaceChild(el, at);
@@ -168,12 +171,22 @@ test("transport: a held step repeats after 500 ms, faster and faster; the pause 
     const n = g.length;
     await page.waitForTimeout(200);
     assert.equal((await gotos(page)).length, n, "stops on release");
+    await page.evaluate(() => ((window as unknown as { frameMs: number }).frameMs = 400));
     await page.click("#mtp-play");
+    assert.equal(await page.getAttribute("#mtp-play", "aria-label"), "Pause", "nothing before the SWF says so (mtPaused)");
+    await page.waitForFunction(() => document.getElementById("mtp-play")!.getAttribute("aria-label") === "Reprendre");
     assert.equal((await swf(page)).paused, true);
-    assert.equal(await page.getAttribute("#mtp-play", "aria-label"), "Reprendre");
     assert.match((await page.getAttribute("#mtp-play .mtp-playicon", "class"))!, /mtp-playicon--paused/);
     await page.click("#mtp-play");
+    await page.waitForFunction(() => document.getElementById("mtp-play")!.getAttribute("aria-label") === "Pause");
     assert.equal((await swf(page)).paused, false);
+    // a click on the battlefield: the SWF's own toggle, the page follows (mtPaused) without toggling again
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => document.getElementById("mtp-play")!.getAttribute("aria-label") === "Reprendre");
+    assert.equal(await page.getAttribute("#mtp-play .mtp-playicon", "class"), "mtp-playicon mtp-playicon--paused");
+    assert.deepEqual((await calls(page)).filter((c) => c[0] === "mtPause" || c[0] === "mtResume").length, 2, "no page toggle for the field click");
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => document.getElementById("mtp-play")!.getAttribute("aria-label") === "Pause");
     await page.click('.mtp-transport [data-step="50"]');
     await page.waitForTimeout(100);
     assert.equal(await page.getAttribute("#mtp-play", "aria-label"), "Pause", "still « Pause » at the end");
@@ -190,11 +203,13 @@ test("keyboard: Space next wave, Shift+Space or K pause, arrows ±1/±10, H E, P
     await page.keyboard.press(" ");
     assert.deepEqual(await gotos(page), [12], "Space: start of the next wave");
     await page.keyboard.press("Shift+Space");
+    await page.waitForTimeout(100);
     assert.equal((await swf(page)).paused, true, "Shift+Space pauses");
     await page.keyboard.press(" ");
     assert.equal((await gotos(page)).at(-1), 27, "Space paused: the next wave, pause kept");
     assert.equal((await swf(page)).paused, true);
     await page.keyboard.press("k");
+    await page.waitForTimeout(100);
     assert.equal((await swf(page)).paused, false, "K resumes");
     await page.keyboard.press(" ");
     assert.equal((await gotos(page)).length, 2, "Space on the last wave: nothing");
@@ -294,14 +309,23 @@ test("share dialog: start at the beginning, the wave or the event, a Discord mes
     assert.deepEqual(d.choices, ["Le début", "Vague 3", "Événement 30"]);
     assert.equal(d.text, "⚔️ **L'armée de A VS L'armée de B**\n[**mt.example/b/fview/7**](http://mt.example/b/fview/7)");
     assert.deepEqual(d.buttons, ["Copier pour Discord1", "Copier le lien2"]);
-    assert.equal(await page.evaluate(() => (document.getElementById("battle") as unknown as { isPlaying: boolean }).isPlaying), false, "Ruffle paused while the dialog is open");
+    await page.waitForTimeout(100);
+    assert.equal((await swf(page)).paused, true, "the game paused (its own pause) while the dialog is open");
     await page.click('.mtp-share__choice[data-start="wave"]');
     assert.equal(await page.inputValue("#mtp-share textarea"), "⚔️ **L'armée de A VS L'armée de B** (vague 3)\n[**mt.example/b/fview/7?at=27**](http://mt.example/b/fview/7?at=27)");
     await page.click('.mtp-share__choice[data-start="event"]');
     assert.match(await page.inputValue("#mtp-share textarea"), /\(événement 30\)\n\[\*\*mt\.example\/b\/fview\/7\?at=30\*\*\]\(http:\/\/mt\.example\/b\/fview\/7\?at=30\)$/);
     await page.click("#mtp-share .mtp-dialog__close");
     assert.equal(await page.$eval("#mtp-share", (d) => (d as HTMLDialogElement).open), false);
-    assert.equal(await page.evaluate(() => (document.getElementById("battle") as unknown as { isPlaying: boolean }).isPlaying), true, "playing again once closed");
+    await page.waitForTimeout(100);
+    assert.equal((await swf(page)).paused, false, "playing again once closed");
+    // paused before: still paused after the dialog
+    await page.click("#mtp-play");
+    await page.waitForTimeout(100);
+    await page.keyboard.press("s");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(100);
+    assert.equal((await swf(page)).paused, true, "paused before the dialog: still paused");
   } finally {
     await close(page);
   }

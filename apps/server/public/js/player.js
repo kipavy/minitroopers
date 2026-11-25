@@ -2,8 +2,10 @@
  * Enhanced battle player: controls, synced log and keyboard shortcuts over the replay API of client_fr_play.swf, after
  * BetterTrooper's viewer (bettertrooper.milvintsiss.com, recreated with its developer's permission).
  * Page -> SWF (methods of the Ruffle element #battle): mtPause, mtResume, mtSpeed(x), mtGoto(n) (synchronous, both
- * directions), mtState(), mtShot(); Ruffle's own pause()/play() while a dialog is open or the tab is hidden.
- * SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave), mtEnd(), mtStuck(idx).
+ * directions), mtState(), mtShot(); the game paused while a dialog is open or the tab is hidden.
+ * SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave), mtEnd(), mtStuck(idx), mtPaused(p).
+ * The pause is the game's own pause screen (mtPause / mtResume, a click on the battlefield, a trooper's card): the SWF
+ * reports every change through mtPaused, the page's only source for its pause state; jumps keep it.
  * Every seek of the page goes through goto(n) -> mtGoto(n); the Ruffle player is never reloaded.
  * Page data: mtLog (one line of battleLog.ts per history entry: {i, w, t, c, x, s}, t = "" for technical ones), mtAt
  * (?at=, or null), mtShare (the battle's public page, or null), mtDate (YYYY-MM-DD of the battle, or null).
@@ -131,6 +133,11 @@
     update();
   };
 
+  w.mtPaused = function (p) {
+    paused = !!p;
+    update();
+  };
+
   w.mtStuck = function (idx) {
     stuck(typeof idx === "number" ? idx : info.idx);
   };
@@ -182,12 +189,10 @@
     veil();
   }
 
+  // the SWF answers with mtPaused (the pause screen opens at its next frame)
   function togglePause() {
-    var s = state();
-    if (!s) return;
-    call(s.paused ? "mtResume" : "mtPause");
-    paused = !s.paused;
-    update();
+    if (!info.ready) return;
+    call(paused ? "mtResume" : "mtPause");
   }
 
   function setNotch(v) {
@@ -239,40 +244,27 @@
     goto(waveStart(k));
   }
 
-  // --- Ruffle paused (not the game) while a dialog is open or the tab is hidden ---
+  // --- the game paused while a dialog is open or the tab is hidden; resumed after, unless it was paused before ---
 
   var holds = {};
-  var resumeRuffle = false;
+  var resumeAfter = false;
   function holdRuffle(why, on) {
-    var e = el();
     var any = function () {
       for (var key in holds) if (holds[key]) return true;
       return false;
     };
     if (on) {
       if (holds[why]) return;
-      if (!any() && e && typeof e.pause === "function") {
-        resumeRuffle = !!e.isPlaying;
-        if (resumeRuffle) {
-          try {
-            e.pause();
-          } catch (x) {
-            resumeRuffle = false;
-          }
-        }
+      if (!any() && info.ready) {
+        resumeAfter = !paused;
+        if (resumeAfter) call("mtPause");
       }
       holds[why] = true;
     } else {
       if (!holds[why]) return;
       holds[why] = false;
-      if (!any() && resumeRuffle && e && typeof e.play === "function") {
-        try {
-          e.play();
-        } catch (x) {
-          /* nothing to resume */
-        }
-        resumeRuffle = false;
-      }
+      if (!any() && resumeAfter) call("mtResume");
+      if (!any()) resumeAfter = false;
     }
   }
   d.addEventListener("visibilitychange", function () {
@@ -1136,8 +1128,6 @@
   function update() {
     if (!ui) return;
     var ready = !!info.ready;
-    var s = state();
-    if (s) paused = !!s.paused;
     toggleClass(ui.bar, "mtp-wait", !ready);
     steps();
     var btns = ui.transport.querySelectorAll(".mtp-step");
@@ -1420,20 +1410,17 @@
     title.className = "mtp-title";
     title.appendChild(text);
     var actions = node("span", "mtp-title__actions");
-    var shot = button("", "mtp-green mtp-icononly", "", function () {
+    // the site's own green camo buttons (Killian's choice over BetterTrooper's bracketed ones)
+    var shot = button("", "mtp-hbtn", "Capture d'écran du combat (C)", function () {
       if (capture) capture();
     }, "mtp-shot");
-    shot.removeAttribute("title");
-    shot.title = "Capture d'écran du combat (C)";
     shot.setAttribute("aria-label", "Capture d'écran");
-    shot.appendChild(maskIcon("camera"));
+    shot.appendChild(node("span", "mtp-cam"));
     actions.appendChild(shot);
-    var link = button("", "mtp-green", "", function () {
+    var link = button("Partager", "mtp-hbtn", "Partager ce combat (S)", function () {
       if (share) share();
     }, "mtp-link");
-    link.title = "Partager ce combat (S)";
-    link.appendChild(maskIcon("share"));
-    link.appendChild(d.createTextNode("Partager"));
+    link.removeAttribute("aria-label");
     actions.appendChild(link);
     title.appendChild(actions);
 

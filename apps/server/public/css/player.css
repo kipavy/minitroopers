@@ -91,9 +91,9 @@
 	gap : 8px;
 	box-sizing : border-box;
 	height : auto;
-	min-height : 25px;
+	min-height : 27px;
 	margin : 0px 0px 7px;
-	padding : 2px 12px;
+	padding : 2px 6px 2px 12px;
 	border : 1px solid #8f642c;
 	background : var(--mtp-sand-500);
 	box-shadow : inset 0px 0px 0px 1px #bd8d3c;
@@ -111,8 +111,7 @@
 	grid-column : 3;
 	justify-self : end;
 	display : inline-flex;
-	align-items : center;
-	margin-right : -6px;
+	gap : 4px;
 }
 .mtp-screen {
 	position : relative;
@@ -411,62 +410,60 @@
 	box-shadow : var(--_shadow, none), 0px 0px 0px 2px #ffde8b;
 }
 
-/* --- the title's buttons: mt-button--green --sm (green, blue brackets, 18 px) --- */
-.mtp-btn.mtp-green {
-	--_edge : #55a835;
-	--_lip : #b8db00;
-	--_from : #8cc600;
-	--_to : #6ab200;
-	--_shine : #8fcf00;
-	--_base : #407e28;
-	--_base-dark : #356821;
-	--_shadow : inset 1px 0px 0px var(--_base), inset -1px 0px 0px var(--_base), inset 0px 1px 0px var(--_lip), inset 0px -1px 0px var(--_shine), 0px 1px 0px var(--_base), 0px 2px 0px var(--_base-dark);
-	position : relative;
-	gap : 4px;
-	min-width : 0px;
-	min-height : 18px;
-	margin : 2px 5px 4px;
-	padding : 0px 8px 1px;
-	border : 1px solid var(--_edge);
-	border-bottom : 0px;
-	border-color : var(--_edge) var(--_base-dark);
-	border-radius : 1px;
-	background : linear-gradient(var(--_lip), var(--_shine)) left 1px top 0px / 1px 100% no-repeat, linear-gradient(var(--_lip), var(--_shine)) right 1px top 0px / 1px 100% no-repeat, linear-gradient(var(--_from), var(--_to));
-	font : bold 12px/1.15 var(--mtp-sans);
+/* --- the title's buttons: the site's green camo ones (as before BetterTrooper's look, Killian's choice) --- */
+.mtp-btn.mtp-hbtn {
+	--_shadow : inset 1px 1px 0px var(--mtp-green-light), inset -1px -1px 0px #4d700a;
+	min-width : 30px;
+	min-height : 22px;
+	padding : 0px 8px;
+	border : 1px solid var(--mtp-green-dark);
+	border-radius : 4px;
+	background : radial-gradient(ellipse 38px 16px at 20% 30%, rgba(180,122,46,0.35), transparent 70%) 0px 0px / 60px 30px, radial-gradient(ellipse 30px 14px at 70% 65%, rgba(226,192,102,0.45), transparent 70%) 0px 0px / 70px 34px, radial-gradient(ellipse 26px 12px at 85% 20%, rgba(134,98,62,0.25), transparent 70%) 0px 0px / 50px 26px, var(--mtp-green);
+	font : bold 12px/1 var(--mtp-sans);
 	font-variant : normal;
 }
-.mtp-btn.mtp-green + .mtp-btn.mtp-green {
-	margin-left : 9px;
+.mtp-btn.mtp-hbtn:hover {
+	background-color : #93c702;
 }
-.mtp-btn.mtp-green.mtp-icononly {
-	padding : 0px 6px 1px;
+.mtp-btn.mtp-hbtn:active {
+	--_shadow : inset 1px 1px 0px #4d700a, inset -1px -1px 0px var(--mtp-green-light);
+	padding : 0px 8px;
 }
-.mtp-btn.mtp-green:hover {
-	--_shadow : inset 1px 0px 0px var(--_base), inset -1px 0px 0px var(--_base), inset 0px 1px 0px #bfe616, inset 0px -1px 0px #a1dd10, 0px 1px 0px var(--_base), 0px 2px 0px var(--_base-dark);
-	background-image : linear-gradient(#bfe616, #a1dd10), linear-gradient(#bfe616, #a1dd10), linear-gradient(#98d710, #76c90c);
+/* camera icon of the capture button */
+.mtp-cam {
+	position : relative;
+	display : inline-block;
+	width : 14px;
+	height : 10px;
+	margin-top : 2px;
+	border-radius : 2px;
+	background : #fff;
+	box-shadow : 0px 0px 2px rgba(0,0,0,0.6);
+	vertical-align : middle;
 }
-.mtp-btn.mtp-green:hover, .mtp-btn.mtp-green:active {
-	padding-top : 1px;
-	padding-bottom : 0px;
-}
-.mtp-btn.mtp-green:active {
-	background-image : linear-gradient(var(--_lip), var(--_shine)), linear-gradient(var(--_lip), var(--_shine)), linear-gradient(var(--_to), var(--_from));
-}
-.mtp-btn.mtp-green:before, .mtp-btn.mtp-green:after {
+.mtp-cam:before {
 	content : "";
 	position : absolute;
-	top : -4px;
-	bottom : -5px;
-	width : 12px;
-	background : url("/img/mtp/bracket-sm.svg") 0px 0px / 100% 100% no-repeat;
-	pointer-events : none;
+	top : -3px;
+	left : 4px;
+	width : 6px;
+	height : 3px;
+	border-radius : 1px 1px 0px 0px;
+	background : #fff;
 }
-.mtp-btn.mtp-green:before {
-	left : -6px;
+.mtp-cam:after {
+	content : "";
+	position : absolute;
+	top : 2px;
+	left : 4px;
+	width : 6px;
+	height : 6px;
+	box-sizing : border-box;
+	border : 2px solid var(--mtp-green-dark);
+	border-radius : 50%;
 }
-.mtp-btn.mtp-green:after {
-	right : -6px;
-	background-image : url("/img/mtp/bracket-sm-right.svg");
+.mtp-btn.mtp-hbtn:active .mtp-cam {
+	transform : translateY(1px);
 }
 
 /* --- icons: BetterTrooper's SVG masks in white, the play / pause morph --- */
@@ -482,15 +479,8 @@
 	display : block;
 	height : 100%;
 	background : currentColor;
-	-webkit-mask : url("/img/mtp/camera.svg") 50% / contain no-repeat;
-	mask : url("/img/mtp/camera.svg") 50% / contain no-repeat;
-}
-.mtp-mask--share {
-	width : 12px;
-}
-.mtp-mask--share:before {
-	-webkit-mask-image : url("/img/mtp/share.svg");
-	mask-image : url("/img/mtp/share.svg");
+	-webkit-mask : url("/img/mtp/sound-off.svg") 50% / contain no-repeat;
+	mask : url("/img/mtp/sound-off.svg") 50% / contain no-repeat;
 }
 .mtp-mask--sound-off:before {
 	-webkit-mask-image : url("/img/mtp/sound-off.svg");
@@ -1459,9 +1449,6 @@
 	.mtp-title__text {
 		text-align : left;
 	}
-	.mtp-title__actions {
-		margin-right : -3px;
-	}
 	.mtp-date {
 		white-space : nowrap;
 	}
@@ -1486,6 +1473,10 @@
 	}
 }
 @media (pointer : coarse) {
+	.mtp-btn.mtp-hbtn {
+		min-width : 40px;
+		min-height : 36px;
+	}
 	.mtp-btn.mtp-xs {
 		min-width : 44px;
 		min-height : 44px;
