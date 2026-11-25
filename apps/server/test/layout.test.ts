@@ -170,3 +170,12 @@ test("layout keeps bodyClass and adds mtm; viewport: false drops both", () => {
   const off = String(layout(cfg, { title: "x", content: html``, viewport: false }));
   assert.ok(!off.includes('name="viewport"') && off.includes("<body>"));
 });
+
+test("every page loads touch.js after app.js, served as JavaScript", async () => {
+  const out = String(layout(cfg, { title: "x", content: html`` }));
+  const touch = out.indexOf('src="/js/touch.js');
+  assert.ok(touch > out.indexOf('src="/js/app.js'), "touch.js after app.js");
+  const res = await setup("path").app.request("/js/touch.js");
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type") ?? "", /javascript/);
+});
