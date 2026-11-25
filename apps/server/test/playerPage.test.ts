@@ -39,7 +39,47 @@ window.swfobject = { embedSWF: function (url, id) {
   el.pause = function () { calls.push(["pause"]); el.isPlaying = false; };
   el.play = function () { calls.push(["play"]); el.isPlaying = true; };
   el.mtState = function () { return Object.assign({}, s); };
-  el.mtGoto = function (n) { calls.push(["goto", n]); s.idx = n; s.wave = waveOf(n); s.ended = n >= 40; window.mtProgress(n, s.wave); if (s.ended) window.mtEnd(); return true; };
+  // simulated so far (the whole battle unless ?lazy: then 10 entries every 150 ms, held at ?stop=N until window.simGo)
+  var lazy = /lazy/.test(location.search);
+  var stop = Number((location.search.match(/stop=(\\d+)/) || [])[1] || 0);
+  var events = lazy ? 0 : 40;
+  s.target = -1;
+  s.complete = !lazy;
+  var land = function (n) { s.idx = n; s.wave = waveOf(n); s.ended = n >= 40; window.mtProgress(n, s.wave); if (s.ended) window.mtEnd(); };
+  el.mtGoto = function (n) {
+    calls.push(["goto", n]);
+    if (n > events && !s.complete) { s.target = n; s.seeking = true; return false; }
+    s.target = -1;
+    s.seeking = false;
+    land(n);
+    return true;
+  };
+  el.mtAhead = function (n) { calls.push(["ahead", n]); };
+  var READY = { waves: [10, 25], starts: [12, 27] };
+  var sim = function () {
+    var known = function (a) { return a.filter(function (w, i) { return READY.waves[i] < events; }); };
+    s.total = events;
+    window.mtSim({ events: events, complete: s.complete, waves: known(READY.waves), starts: known(READY.starts), checkpoints: [0] });
+  };
+  el.readyState = lazy ? 0 : 2;
+  if (lazy) {
+    s.total = 0;
+
+    setTimeout(function () { el.readyState = 2; }, 1000);
+    setTimeout(function () {
+      api.forEach(function (a) { el[a[0]] = a[1]; });
+      sim();
+      var t = setInterval(function () {
+        if (window.simHold || (stop && events >= stop && !window.simGo)) return;
+        events = Math.min(40, events + 10);
+        if (events >= 40) { s.complete = true; clearInterval(t); }
+        sim();
+        if (s.target >= 0 && events >= s.target) { var n = s.target; s.target = -1; s.seeking = false; land(n); }
+        if (s.complete) window.mtReady({ total: 40, checkpoints: [0, 12, 27], waves: READY.waves, starts: READY.starts });
+      }, 150);
+      setTimeout(function () { land(1); }, 300);
+    }, 1500);
+  }
   // the game's own pause screen: it opens at the next frame, and the SWF tells the page (mtPaused) whatever the origin
   var tell = function (p) { setTimeout(function () { s.paused = p; window.mtPaused(p); }, window.frameMs || 20); };
   el.mtPause = function () { calls.push(["mtPause"]); if (!s.paused) tell(true); };
@@ -47,6 +87,8 @@ window.swfobject = { embedSWF: function (url, id) {
   el.clickField = function () { tell(!s.paused); };
   el.mtSpeed = function (x) { calls.push(["speed", x]); s.speed = x; };
   el.mtShot = function () { var b = ""; for (var i = 0; i < 720 * 440; i++) b += "\\xff\\x40\\x80\\xc0"; return btoa(b); };
+  var api = [];
+  if (lazy) ["mtState", "mtGoto", "mtAhead", "mtPause", "mtResume", "mtSpeed", "mtShot"].forEach(function (k) { api.push([k, el[k]]); delete el[k]; });
   at.parentNode.replaceChild(el, at);
 } };
 var mtLog = ${JSON.stringify(LOG)};
@@ -115,6 +157,8 @@ async function open(o: Opts = {}, at = 5): Promise<Page> {
     (w.document.getElementById("battle") as unknown as { mtGoto(n: number): boolean }).mtGoto(n as number);
     (window as unknown as { calls: unknown[] }).calls.length = 0;
   }, [READY, at] as const);
+  await page.waitForFunction(() => (document.querySelector(".mtp-veil") as HTMLElement).hidden, null, { timeout: 5000 });
+  await page.waitForTimeout(450); // keys wait 400 ms more after the veil
   return page;
 }
 const calls = (page: Page): Promise<[string, number?][]> => page.evaluate(() => (window as unknown as { calls: [string, number?][] }).calls.slice());
@@ -155,15 +199,15 @@ test("transport: BetterTrooper's eight steps -50 -10 -5 -1 ‖ +1 +5 +10 +50 eve
 
 test("transport: a held step repeats after 500 ms, faster and faster; the pause button toggles, no « Revoir » at the end", async (t) => {
   if (skip(t)) return;
-  const page = await open({}, 0);
+  const page = await open({}, 1);
   try {
     const b = (await page.$('.mtp-transport [data-step="1"]'))!.boundingBox();
     const box = (await b)!;
     await page.mouse.move(box.x + 10, box.y + 10);
     await page.mouse.down();
-    await page.waitForTimeout(400);
-    assert.deepEqual(await gotos(page), [1], "one step at once, nothing more before 500 ms");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
+    assert.deepEqual(await gotos(page), [2], "one step at once, nothing more before 500 ms");
+    await page.waitForTimeout(650);
     await page.mouse.up();
     await page.waitForTimeout(100); // the steps added up for the next frame land with it
     const g = await gotos(page);
@@ -464,6 +508,108 @@ test("mobile landscape: the stage as high as the screen, the controls in a colum
     assert.ok(Math.abs(l.screen.width / l.screen.height - 720 / 440) < 0.03, "720:440");
     assert.ok(l.track.top >= l.screen.bottom - 15 && Math.abs(l.track.width - l.screen.width) <= 3, `timeline under the stage: ${JSON.stringify(l)}`);
     assert.ok(l.scroll <= l.client);
+  } finally {
+    await close(page);
+  }
+});
+
+/** The lazy page: the stand-in SWF loads in steps and simulates 10 entries every 150 ms (?stop=N: held there until window.simGo). */
+async function openLazy(o: Opts = {}, q = ""): Promise<Page> {
+  const ctx = await browser.newContext({ viewport: { width: o.width ?? 1280, height: o.height ?? 1000 } });
+  const page = await ctx.newPage();
+  await page.goto(`${base}/test.html?lazy${q}`);
+  return page;
+}
+const veilText = (page: Page): Promise<string | null> =>
+  page.evaluate(() => {
+    const v = document.querySelector(".mtp-veil") as HTMLElement;
+    return v.hidden ? null : v.querySelector(".mtp-veil__text")!.textContent;
+  });
+const knownOf = (page: Page): Promise<number> => page.evaluate(() => (window as unknown as { mtPlayer: { known: number } }).mtPlayer.known);
+/** Simulation held once 20 of the 40 entries are known, the loading veil gone. */
+async function heldAt20(page: Page): Promise<void> {
+  await page.waitForFunction(() => (window as unknown as { mtPlayer: { known: number } }).mtPlayer.known >= 20);
+  await page.waitForFunction(() => (document.querySelector(".mtp-veil") as HTMLElement).hidden);
+  await page.waitForTimeout(500);
+}
+
+test("loading: BetterTrooper's three steps under a veil over the greyed stage, gone once the battle plays", async (t) => {
+  if (skip(t)) return;
+  const page = await openLazy();
+  try {
+    const seen: string[] = [];
+    let busy = false;
+    for (let i = 0; i < 60; i++) {
+      const v = await veilText(page);
+      if (v && seen.at(-1) !== v) seen.push(v);
+      if (v) busy = busy || (await page.$eval(".mtp-stage", (e) => e.classList.contains("mtp-busy")));
+      if (v === null && seen.length) break;
+      await page.waitForTimeout(50);
+    }
+    assert.deepEqual(seen, ["Chargement du lecteur et du jeu… (1/3)", "Démarrage du jeu… (2/3)", "Préparation du combat… (3/3)"]);
+    assert.ok(busy, "the stage greyed under the veil");
+    assert.equal(await page.$eval(".mtp-stage", (e) => e.classList.contains("mtp-busy")), false);
+    assert.ok((await calls(page)).some((c) => c[0] === "ahead" && c[1] === 4), "mtAhead(4)");
+  } finally {
+    await close(page);
+  }
+});
+
+test("simulation: the timeline's unknown part hatched with « simulation NN % », the log waiting, a jump beyond waits", async (t) => {
+  if (skip(t)) return;
+  const page = await openLazy({}, "&stop=20");
+  try {
+    await heldAt20(page);
+    const known = await knownOf(page);
+    const tl = await page.evaluate(() => {
+      const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+      const u = document.querySelector(".mtp-unknown") as HTMLElement;
+      return { track: r("#mtp-track"), unknown: r(".mtp-unknown"), bg: getComputedStyle(u).backgroundImage, label: document.querySelector(".mtp-unknown__label")!.textContent, where: document.querySelector(".mtp-where")!.textContent };
+    });
+    const pct = Math.min(99, Math.floor((100 * known) / 40));
+    assert.equal(tl.label, `simulation ${pct} %`);
+    assert.ok(Math.abs(tl.unknown.left - (tl.track.left + 2 + (known / 40) * (tl.track.width - 4))) <= 2, JSON.stringify(tl));
+    assert.match(tl.bg, /repeating-linear-gradient\(135deg, rgb\(122, 100, 67\)/);
+    assert.match(tl.where!, new RegExp(`· événement \\d+ / ${known}\\+ · vague \\d / \\d\\+$`));
+    assert.equal(await page.textContent(".mtp-logwait .mtp-veil__text"), `Simulation du combat : ${Math.round(100 * Math.min(0.97, known / 40))} % (${known} événements)`);
+    // the unknown part: no seek on a click, its own tip
+    const x = tl.unknown.left + tl.unknown.width / 2;
+    await page.mouse.move(x, tl.track.top + 10);
+    assert.equal(await page.getAttribute("#mtp-track", "title"), "Pas encore simulé");
+    const before = (await gotos(page)).length;
+    await page.mouse.click(x, tl.track.top + 10);
+    assert.equal((await gotos(page)).length, before, "a click past the simulated part does nothing");
+    // E: the end is not simulated yet: the game pauses, a determined veil waits for it
+    await page.mouse.move(5, 5);
+    await page.keyboard.press("e");
+    await page.waitForTimeout(250);
+    assert.equal(await veilText(page), `Simulation jusqu'à la fin : ${known} / 40 événements`);
+    assert.equal(await page.$eval(".mtp-veil .mtp-progress", (e) => e.getAttribute("aria-valuenow")), String(Math.round((100 * known) / 40)));
+    assert.ok((await calls(page)).some((c) => c[0] === "mtPause"), "paused while waiting");
+    await page.evaluate(() => ((window as unknown as { simGo: boolean }).simGo = true));
+    await page.waitForFunction(() => (document.querySelector(".mtp-veil") as HTMLElement).hidden, null, { timeout: 5000 });
+    assert.equal((await swf(page)).idx, 40, "landed at the end");
+    await page.waitForTimeout(200);
+    assert.ok((await calls(page)).some((c) => c[0] === "mtResume"), "resumed once landed");
+    assert.equal(await page.$(".mtp-logwait"), null, "the log no longer waits");
+    assert.equal(await page.$(".mtp-unknown:not([hidden])"), null, "no unknown part once complete");
+  } finally {
+    await close(page);
+  }
+});
+
+test("simulation: Space past the last known wave waits for that wave (« Simulation jusqu'à la vague 3 »)", async (t) => {
+  if (skip(t)) return;
+  const page = await openLazy({}, "&stop=20");
+  try {
+    await heldAt20(page);
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { mtGoto(n: number): void }).mtGoto(14));
+    await page.keyboard.press(" ");
+    await page.waitForTimeout(250);
+    assert.equal(await veilText(page), "Simulation jusqu'à la vague 3 : 2 / 3 vagues");
+    await page.evaluate(() => ((window as unknown as { simGo: boolean }).simGo = true));
+    await page.waitForFunction(() => (document.querySelector(".mtp-veil") as HTMLElement).hidden, null, { timeout: 5000 });
+    assert.equal((await gotos(page)).at(-1), 27, "the start of wave 3 once known");
   } finally {
     await close(page);
   }

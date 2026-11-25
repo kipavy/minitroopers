@@ -34,7 +34,7 @@
   var HOLD_MS = 500;
   var REPEAT_MS = 33;
   var AGAIN_MS = 700;
-  var READY_MS = 10000;
+  var READY_MS = 60000;
   var log = w.mtLog || [];
   var events = []; // history indexes of the log lines shown (non-empty text)
   for (var k = 0; k < log.length; k++) if (log[k].t) events.push(log[k].i);
@@ -45,8 +45,11 @@
   var landscape = mm(LANDSCAPE);
   var coarse = mm("(pointer: coarse)");
 
-  /** Public state (also read by the end-to-end tests). */
-  var info = (w.mtPlayer = { ready: null, idx: 0, wave: 0, first: null, players: 0 });
+  /**
+   * Public state (also read by the end-to-end tests). ready: what the SWF simulated so far (mtSim), total = the entries
+   * known; complete: the whole battle simulated (mtReady); known: ready.total.
+   */
+  var info = (w.mtPlayer = { ready: null, complete: false, known: 0, idx: 0, wave: 0, first: null, players: 0 });
   var notch = X1;
   var paused = false;
   var ended = false;
@@ -56,6 +59,14 @@
   var readyTimer = null;
   var seekTimer = null;
   var ui = null;
+  // the exact number of entries: the server's log has one line per entry
+  var EXACT = log.length;
+  // BetterTrooper's simulation lead (labNavAhead): 4 entries, 2 on touch screens
+  var AHEAD = coarse.matches ? 2 : 4;
+  // the loading veil (until the battle plays its first entry) and a jump waiting for the simulation
+  var loading = { t0: Date.now() };
+  var wait = null;
+  var aheadSet = false;
 
   w.swfobject.embedSWF = function (url, id) {
     if (id === "swf_battle") started();
@@ -65,8 +76,11 @@
   function started() {
     info.players++;
     info.ready = null;
+    info.complete = false;
+    info.known = 0;
     info.first = null;
     ended = false;
+    loading = { t0: Date.now() };
     clearTimeout(readyTimer);
     readyTimer = setTimeout(function () {
       if (!info.ready) setOff(true);
@@ -93,29 +107,43 @@
 
   // --- SWF callbacks ---
 
-  w.mtReady = function (r) {
-    var list = function (a) {
-      var out = [];
-      for (var i = 0; a && i < a.length; i++) out.push(a[i] | 0);
-      return out;
-    };
+  var list = function (a) {
+    var out = [];
+    for (var i = 0; a && i < a.length; i++) out.push(a[i] | 0);
+    return out;
+  };
+  /**
+   * What the SWF simulated so far: sent at the start, on each frame that brought new entries, and once more complete.
+   * The page starts on the first one: the battle plays while the rest is simulated.
+   */
+  w.mtSim = function (r) {
     var waves = list(r.waves);
     var starts = list(r.starts);
+    var first = !info.ready;
     // starts[k]: first keyframe after the NewWave waves[k], where wave seeks land without a replay
-    info.ready = { total: r.total | 0, checkpoints: list(r.checkpoints), waves: waves, starts: starts.length === waves.length ? starts : waves.slice() };
-    info.idx = 0;
-    info.wave = 0;
+    info.ready = { total: r.events | 0, checkpoints: list(r.checkpoints), waves: waves, starts: starts.length === waves.length ? starts : waves.slice() };
+    info.known = info.ready.total;
+    var was = info.complete;
+    info.complete = !!r.complete;
     clearTimeout(readyTimer);
-    setOff(false);
-    if (ui) checkLog();
-    var at = pendingAt;
-    pendingAt = 0;
-    if (at > 0) {
-      setTimeout(function () {
-        goto(at);
-      }, 0);
+    if (off) setOff(false);
+    if (ui) {
+      if (info.complete && !was) checkLog();
+      else drawSegs();
+    }
+    if (first) {
+      var at = pendingAt;
+      pendingAt = 0;
+      if (at > 0) {
+        setTimeout(function () {
+          goto(at);
+        }, 0);
+      }
     }
     update();
+  };
+  w.mtReady = function (r) {
+    w.mtSim({ events: r.total, complete: true, waves: r.waves, starts: r.starts, checkpoints: r.checkpoints });
   };
 
   w.mtProgress = function (idx, wave) {
@@ -144,8 +172,16 @@
 
   // --- actions ---
 
+  /** The battle's entries: all of them once simulated (else the server's exact count, or the known ones). */
   function total() {
-    return info.ready ? info.ready.total : 0;
+    if (!info.ready) return 0;
+    return info.complete ? info.ready.total : Math.max(info.ready.total, EXACT);
+  }
+  /** What the timeline spans: the whole battle; while simulating, the exact count (BetterTrooper: an estimate). */
+  function span() {
+    if (!info.ready) return 1;
+    if (info.complete) return Math.max(1, info.ready.total);
+    return Math.max(1, EXACT || 0, Math.ceil(info.ready.total * (EXACT ? 1.03 : 1.25)));
   }
   function currentIdx() {
     var s = state();
@@ -162,18 +198,87 @@
   function waveCount() {
     return info.ready ? info.ready.waves.length + 1 : 0;
   }
+  /** Keys and controls wait while loading or while a jump waits for the simulation. */
+  function isBusy() {
+    return !info.ready || !!loading || !!wait;
+  }
 
   /**
    * Goes to history index n, in either direction, through mtGoto (pause and speed kept). It lands within the call,
    * reporting mtProgress (and mtEnd at the end) synchronously; a long replay ends on the next frames, under the veil.
+   * Past the entries simulated so far, mtGoto answers false: the SWF simulates faster and jumps once n exists, the
+   * page waits under BetterTrooper's determined veil (`end`: the jump to the end).
    */
-  function goto(n) {
-    if (!info.ready) return;
+  function goto(n, end) {
+    if (!info.ready || wait) return;
     n = Math.max(0, Math.min(total(), Math.floor(n)));
     ended = false;
     setSeeking(true);
-    if (call("mtGoto", n) === true) setSeeking(false);
+    var r = call("mtGoto", n);
+    if (r === true) setSeeking(false);
+    else {
+      var s = state();
+      if (s && s.target >= 0) startWait({ kind: end ? "end" : "event", n: n });
+    }
     update();
+  }
+  /** Wave k: its start, or, not simulated yet, a wait for it. */
+  function gotoWave(k) {
+    if (!info.ready || wait) return;
+    if (k < waveCount()) return goto(waveStart(k));
+    if (info.complete) return void toast("Il n'y a pas de vague " + (k + 1) + " dans ce combat.", { warning: true });
+    startWait({ kind: "wave", k: k });
+  }
+
+  // --- a jump waiting for the simulation: the game paused meanwhile, BetterTrooper's determined veil ---
+
+  function startWait(x) {
+    x.t0 = Date.now();
+    x.paused = !paused;
+    if (x.paused) call("mtPause");
+    wait = x;
+    stopHold();
+    veil();
+    update();
+  }
+  function endWait(text) {
+    var x = wait;
+    wait = null;
+    if (x && x.paused) call("mtResume");
+    if (text) toast(text, { warning: true });
+    veil();
+    update();
+  }
+  function waitTick() {
+    if (!wait) return;
+    if (Date.now() - wait.t0 > 120000) {
+      if (wait.kind !== "wave") call("mtGoto", currentIdx());
+      setSeeking(false);
+      return endWait("La simulation a pris trop de temps : saut annulé.");
+    }
+    if (wait.kind === "wave") {
+      if (wait.k < waveCount()) {
+        var k = wait.k;
+        endWait();
+        return goto(waveStart(k));
+      }
+      if (info.complete) return endWait("Il n'y a pas de vague " + (wait.k + 1) + " dans ce combat.");
+      return;
+    }
+    var s = state();
+    if (s && !(s.target >= 0)) {
+      endWait();
+      return;
+    }
+  }
+  /** The waiting veil's text and share, as BetterTrooper's. */
+  function waitText() {
+    var x = wait;
+    var known = info.known;
+    if (x.kind === "wave") return { f: waveCount() / (x.k + 1), text: "Simulation jusqu'à la vague " + (x.k + 1) + " : " + waveCount() + " / " + (x.k + 1) + " vagues" };
+    var of = x.kind === "end" ? total() : x.n + 1;
+    var what = x.kind === "end" ? "la fin" : "l'événement " + x.n;
+    return { f: known / of, text: "Simulation jusqu'à " + what + " : " + known + " / " + of + " événements" };
   }
 
   /** Seek veil: on until the landing mtProgress, or until mtState says the seek is over. */
@@ -191,7 +296,7 @@
 
   // the SWF answers with mtPaused (the pause screen opens at its next frame)
   function togglePause() {
-    if (!info.ready) return;
+    if (isBusy()) return;
     call(paused ? "mtResume" : "mtPause");
   }
 
@@ -232,7 +337,8 @@
   }
   function nextWave() {
     var k = currentWave() + 1;
-    if (info.ready && k < waveCount()) goto(waveStart(k));
+    // the last wave of a fully simulated battle: nothing (BetterTrooper's nextWave)
+    if (info.ready && !(info.complete && k >= waveCount())) gotoWave(k);
   }
   // P: the start of the current wave; again within 700 ms: the wave before that one
   var lastRestart = null;
@@ -243,6 +349,7 @@
     lastRestart = { wave: k, t: now };
     goto(waveStart(k));
   }
+
 
   // --- the game paused while a dialog is open or the tab is hidden; resumed after, unless it was paused before ---
 
@@ -701,7 +808,7 @@
     };
     capture = function () {
       if (busy || dlg.el.open) return;
-      if (!info.ready || seeking) return void toast("Attendez que le combat soit chargé, puis faites la capture.", { warning: true });
+      if (isBusy() || seeking) return void toast("Attendez que le combat soit chargé, puis faites la capture.", { warning: true });
       var game = gameCanvas();
       if (!game) return void toast("Pas de jeu à capturer.", { warning: true });
       busy = true;
@@ -823,7 +930,7 @@
     if (off || e.defaultPrevented || own(e.target)) return;
     var mod = e.ctrlKey || e.metaKey || e.altKey;
     // while loading or seeking, the keys wait
-    if (!info.ready || seeking || Date.now() < swallowUntil) {
+    if (isBusy() || seeking || Date.now() < swallowUntil) {
       if (!mod && !/^F([1-9]|1\d|2[0-4])$/.test(e.key || "")) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -851,7 +958,7 @@
       };
       repeatable = true;
     } else if (key === "Home" || key === "h" || key === "H") act = function () { goto(0); };
-    else if (key === "End" || key === "e" || key === "E") act = function () { goto(total()); };
+    else if (key === "End" || key === "e" || key === "E") act = function () { goto(total(), true); };
     else if (key === "PageUp" || key === "p" || key === "P") act = restartWave;
     else if (key === "n" || key === "N") act = nextWave;
     else if (key === "<" || key === "[") {
@@ -902,12 +1009,107 @@
     if (n.classList) n.classList.toggle(cls, !!on);
   }
 
-  /** Loading / seeking overlay over the stage. */
+  /**
+   * The overlay over the stage, BetterTrooper's: while loading its three steps (Ruffle loading the SWF, the replay API
+   * not registered yet, the battle's first entry not played yet), the stage greyed, the bar indeterminate; a jump
+   * waiting for the simulation (determined bar); a long seek. It fades out in 400 ms; the keys wait 400 ms more.
+   */
   function veil() {
     if (!ui) return;
-    var text = off ? "" : !info.ready ? "Préparation du combat…" : seeking ? "Recherche de ce moment…" : "";
-    ui.veil.hidden = !text;
-    ui.veilText.textContent = text;
+    var text = "";
+    var f = null;
+    var kind = "";
+    if (off) text = "";
+    else if (loading) {
+      var e = el();
+      kind = "load";
+      text = !e || e.readyState !== 2 ? "Chargement du lecteur et du jeu… (1/3)" : typeof e.mtState !== "function" ? "Démarrage du jeu… (2/3)" : "Préparation du combat… (3/3)";
+    } else if (wait) {
+      kind = "wait";
+      var x = waitText();
+      text = x.text;
+      f = Math.max(0, Math.min(1, x.f));
+    } else if (seeking) text = "Recherche de ce moment…";
+    toggleClass(ui.stage, "mtp-busy", !!loading && !off);
+    var bar = ui.veil.querySelector(".mtp-progress");
+    if (f === null) {
+      bar.removeAttribute("aria-valuenow");
+      bar.style.removeProperty("--mtp-progress");
+    } else {
+      bar.setAttribute("aria-valuenow", String(Math.round(100 * f)));
+      bar.style.setProperty("--mtp-progress", String(f));
+    }
+    var e2 = el();
+    if (e2 && "inert" in e2) e2.inert = !!text;
+    if (text) {
+      ui.veilKind = kind;
+      clearTimeout(ui.veilGone);
+      ui.veilGone = 0;
+      toggleClass(ui.veil, "mtp-gone", false);
+      ui.veil.hidden = false;
+      ui.veilText.textContent = text;
+    } else if (!ui.veil.hidden && !ui.veilKind) {
+      // a seek's veil: gone at once
+      ui.veil.hidden = true;
+    } else if (!ui.veil.hidden && !ui.veilGone) {
+      ui.veilKind = "";
+      toggleClass(ui.veil, "mtp-gone", true);
+      swallowUntil = Date.now() + 400;
+      ui.veilGone = setTimeout(function () {
+        ui.veilGone = 0;
+        ui.veil.hidden = true;
+        toggleClass(ui.veil, "mtp-gone", false);
+      }, 400);
+    }
+  }
+  /** Every 100 ms: the loading steps, the simulation lead, a waiting jump. */
+  function tick() {
+    var e = el();
+    if (!aheadSet && e && typeof e.mtAhead === "function") {
+      call("mtAhead", AHEAD);
+      aheadSet = true;
+    }
+    if (loading && ((info.ready && info.idx > 0) || (info.complete && info.known === 0) || Date.now() - loading.t0 > 60000)) {
+      // two frames: the first entry drawn under the veil
+      w.requestAnimationFrame(function () {
+        w.requestAnimationFrame(function () {
+          loading = null;
+          veil();
+          update();
+        });
+      });
+    }
+    waitTick();
+    if (loading || wait) veil();
+    logWait();
+  }
+  setInterval(tick, 100);
+
+  /** The log's own veil while the battle is simulated (BetterTrooper's, without its matching phase). */
+  function logWait() {
+    if (!ui || !ui.logWait) return;
+    if (info.complete) {
+      ui.logWait.remove();
+      ui.logWait = null;
+      toggleClass(ui.log, "mtp-log--waiting", false);
+      ui.list.title = "Cliquez sur une ligne pour y aller";
+      shownIdx = -1;
+      update();
+      return;
+    }
+    var text = "Chargement du combat…";
+    var f = null;
+    if (info.ready) {
+      var c = Math.min(0.97, info.known / (EXACT || Math.max(1, info.known * 1.25)));
+      f = 0.9 * c;
+      text = "Simulation du combat : " + Math.round(100 * c) + " % (" + info.known + " événements)";
+    }
+    ui.logWaitText.textContent = text;
+    if (f === null) ui.logWaitBar.removeAttribute("aria-valuenow");
+    else {
+      ui.logWaitBar.setAttribute("aria-valuenow", String(Math.round(100 * f)));
+      ui.logWaitBar.style.setProperty("--mtp-progress", String(f));
+    }
   }
 
   // --- help: the site's own tooltip (mt.js.Tip of app.js, #tooltip, same markup as tip() in views/layout.ts), shown
@@ -1022,12 +1224,14 @@
   }
 
   function drawSegs() {
-    var t = total();
-    ui.segs.innerHTML = "";
+    var t = span();
+    var known = info.known;
+    var old = ui.segs.querySelectorAll(".mtp-seg");
+    for (var o = 0; o < old.length; o++) old[o].remove();
     ui.segList = [];
-    for (var k = 0; k < waveCount() && t > 0; k++) {
+    for (var k = 0; k < waveCount() && known > 0; k++) {
       var from = waveStart(k);
-      var to = k + 1 < waveCount() ? waveStart(k + 1) : t;
+      var to = k + 1 < waveCount() ? waveStart(k + 1) : known;
       if (to <= from) continue;
       var seg = node("span", "mtp-seg" + (k % 2 ? " mtp-odd" : ""));
       // numbered like the waves people see: the opening deployment is wave 1, each NewWave starts the next one
@@ -1035,7 +1239,7 @@
       seg.style.left = (from / t) * 100 + "%";
       seg.style.width = ((to - from) / t) * 100 + "%";
       seg.setAttribute("data-wave", String(k));
-      ui.segs.appendChild(seg);
+      ui.segs.insertBefore(seg, ui.unknown);
       ui.segList.push(seg);
     }
   }
@@ -1130,10 +1334,12 @@
     var ready = !!info.ready;
     toggleClass(ui.bar, "mtp-wait", !ready);
     steps();
+    var off2 = isBusy();
     var btns = ui.transport.querySelectorAll(".mtp-step");
-    for (var i = 0; i < btns.length; i++) btns[i].disabled = !ready;
-    ui.play.disabled = ui.range.disabled = ui.x2.disabled = !ready;
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = off2;
+    ui.play.disabled = ui.range.disabled = ui.x2.disabled = off2;
     var t = total();
+    var sp = span();
     var idx = Math.min(info.idx, t);
     // the clock badges of entries played in advance flash only while the battle plays (BetterTrooper's --still)
     if (ui.list) toggleClass(ui.list, "mtp-still", !ready || paused || ended);
@@ -1145,11 +1351,20 @@
     ui.range.setAttribute("aria-valuetext", ui.speedValue.textContent);
     ui.x2.textContent = notch === X1 ? "×2" : "×1";
     ui.x2.title = notch === X1 ? "Vitesse ×2" : "Vitesse normale";
-    ui.cursor.style.left = (t > 0 ? (idx / t) * 100 : 0) + "%";
+    ui.cursor.style.left = "calc(2px + (100% - 4px) * " + Math.min(1, idx / sp) + ")";
+    // the part not simulated yet: hatched, « simulation NN % » (NN of the server's exact count)
+    var unknown = ready && !info.complete;
+    ui.unknown.hidden = !unknown;
+    if (unknown) {
+      ui.unknown.style.left = (100 * info.known) / sp + "%";
+      ui.unknownLabel.textContent = "simulation " + Math.min(99, Math.floor((100 * info.known) / sp)) + " %";
+      ui.unknownLabel.hidden = ui.track.classList.contains("mtp-drag") || ui.unknown.offsetWidth < ui.unknownLabel.offsetWidth + 12;
+    }
     for (var j = 0; ui.segList && j < ui.segList.length; j++) {
       toggleClass(ui.segList[j], "mtp-curwave", Number(ui.segList[j].getAttribute("data-wave")) === info.wave);
     }
-    ui.wherePos.textContent = ready ? " · événement " + idx + " / " + t + " · vague " + (info.wave + 1) + " / " + waveCount() : "";
+    var plus = info.complete ? "" : "+";
+    ui.wherePos.textContent = ready ? " · événement " + idx + " / " + (info.complete ? t : info.known + plus) + " · vague " + (info.wave + 1) + " / " + waveCount() + plus : "";
     ui.trackLoading.hidden = ready;
     if (idx !== shownIdx) {
       shownIdx = idx;
@@ -1252,7 +1467,7 @@
     var allFrames = 0;
     var allMs = 0;
     var playing = function () {
-      return !!info.ready && !paused && !ended && !seeking && !d.hidden && !dialogOpen();
+      return !!info.ready && !loading && !wait && !paused && !ended && !seeking && !d.hidden && !dialogOpen();
     };
     var tick = function (now) {
       var dt = now - last;
@@ -1445,6 +1660,12 @@
     ui.bubble = node("span", "mtp-bubble");
     ui.bubble.hidden = true;
     ui.trackLoading = node("span", "mtp-track__loading", "chargement du combat…");
+    ui.unknown = node("span", "mtp-unknown");
+    ui.unknown.hidden = true;
+    ui.unknownLabel = node("span", "mtp-unknown__label");
+    ui.unknown.appendChild(ui.unknownLabel);
+    ui.segs.appendChild(ui.unknown);
+    ui.track = track;
     track.appendChild(ui.segs);
     track.appendChild(ui.trackLoading);
     track.appendChild(ui.ghost);
@@ -1456,22 +1677,32 @@
       var r = track.getBoundingClientRect();
       return Math.max(0, Math.min(r.width, e.clientX - r.left));
     };
+    // index under x (2 px frame on each side), within the simulated part; its x
     var at = function (x) {
       var r = track.getBoundingClientRect();
-      return r.width > 0 ? Math.max(0, Math.min(total(), Math.round((x / r.width) * total()))) : 0;
+      return r.width > 4 ? Math.max(0, Math.min(info.known, Math.round(((x - 2) / (r.width - 4)) * span()))) : 0;
+    };
+    var xKnown = function () {
+      var r = track.getBoundingClientRect();
+      return info.complete ? r.width : 2 + (info.known / span()) * (r.width - 4);
     };
     track.addEventListener("pointerdown", function (e) {
-      if (!info.ready || e.button !== 0) return;
+      if (!info.ready || wait || e.button !== 0) return;
       drag = { x0: xOf(e), moved: false, shift: e.shiftKey };
       if (track.setPointerCapture) track.setPointerCapture(e.pointerId);
       e.preventDefault();
     });
     track.addEventListener("pointermove", function (e) {
       if (!info.ready) return;
-      var x = xOf(e);
+      var x = drag ? Math.min(xOf(e), xKnown()) : xOf(e);
       if (!drag) {
-        var k = waveAt(at(x));
-        track.title = "Aller au début de la vague " + (k + 1) + " (événement " + waveStart(k) + ")";
+        track.style.cursor = wait ? "progress" : x > xKnown() ? "default" : "";
+        if (wait) track.title = "Un saut attend la simulation";
+        else if (x > xKnown()) track.title = "Pas encore simulé";
+        else {
+          var k = waveAt(at(x));
+          track.title = "Aller au début de la vague " + (k + 1) + " (événement " + waveStart(k) + ")";
+        }
         return;
       }
       if (!drag.moved && Math.abs(x - drag.x0) > 6) {
@@ -1494,12 +1725,12 @@
     var release = function (e) {
       if (!drag) return;
       var exact = drag.moved || drag.shift || e.shiftKey;
-      var x = drag.moved ? xOf(e) : drag.x0;
+      var x = drag.moved ? Math.min(xOf(e), xKnown()) : drag.x0;
       drag = null;
       toggleClass(track, "mtp-drag", false);
       ui.ghost.hidden = true;
       ui.bubble.hidden = true;
-      if (e.type === "pointerup") {
+      if (e.type === "pointerup" && x <= xKnown()) {
         var n = at(x);
         goto(exact ? n : waveStart(waveAt(n)));
       }
@@ -1643,7 +1874,7 @@
     list.addEventListener("click", function (e) {
       var t = e.target;
       while (t && t !== list && !t.getAttribute("data-i")) t = t.parentNode;
-      if (t && t !== list) goto(Number(t.getAttribute("data-i")) + 1);
+      if (t && t !== list && info.complete) goto(Number(t.getAttribute("data-i")) + 1);
     });
     var scrolled = function () {
       scrolledAt = Date.now();
@@ -1651,6 +1882,18 @@
     var kinds = ["wheel", "touchmove", "keydown", "mousedown"];
     for (var q = 0; q < kinds.length; q++) list.addEventListener(kinds[q], scrolled, { passive: true });
     details.appendChild(list);
+    if (!info.complete) {
+      ui.logWait = node("div", "mtp-logwait");
+      var lbox = node("div", "mtp-veil__box");
+      ui.logWaitText = node("div", "mtp-veil__text", "Chargement du combat…");
+      ui.logWaitBar = node("div", "mtp-progress");
+      ui.logWaitBar.setAttribute("role", "progressbar");
+      lbox.appendChild(ui.logWaitText);
+      lbox.appendChild(ui.logWaitBar);
+      ui.logWait.appendChild(lbox);
+      details.appendChild(ui.logWait);
+      details.className += " mtp-log--waiting";
+    }
     details.addEventListener("toggle", function () {
       fit();
       shownIdx = -1;

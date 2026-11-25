@@ -158,6 +158,18 @@
 .mtp-veil[hidden] {
 	display : none;
 }
+/* fading out (400 ms) once the battle plays or the jump landed */
+.mtp-veil {
+	transition : opacity 0.4s;
+}
+.mtp-veil.mtp-gone {
+	opacity : 0;
+	cursor : auto;
+}
+/* the stage under the loading veil */
+.mtp-stage.mtp-busy {
+	filter : grayscale(1) brightness(0.55);
+}
 .mtp-veil__box {
 	box-sizing : border-box;
 	width : min(80%, 440px);
@@ -193,6 +205,12 @@
 	width : 35%;
 	background : linear-gradient(var(--mtp-green-light), var(--mtp-green));
 	animation : mtp-stripe 1.1s ease-in-out infinite alternate;
+}
+/* determined: the share done */
+.mtp-progress[aria-valuenow]:before {
+	width : calc(100% * clamp(0, var(--mtp-progress, 0), 1));
+	animation : none;
+	transition : width 0.12s linear;
 }
 @keyframes mtp-stripe {
 	from { transform : translateX(0%); }
@@ -287,6 +305,30 @@
 	background : #3f301c;
 	color : #fff8e5;
 	font : 11px/14px var(--mtp-mono);
+	white-space : nowrap;
+	pointer-events : none;
+}
+/* the part not simulated yet: dark, hatched "/" every 6 px, 2 px thick; its label */
+.mtp-unknown {
+	position : absolute;
+	top : 0px;
+	bottom : 0px;
+	right : 0px;
+	background : repeating-linear-gradient(135deg, #7a6443 0px 1.414px, #5b4a31 1.414px 4.243px);
+	background-color : #5b4a31;
+}
+.mtp-unknown[hidden], .mtp-unknown__label[hidden] {
+	display : none;
+}
+.mtp-unknown__label {
+	position : absolute;
+	left : 3px;
+	top : 2px;
+	height : 12px;
+	padding : 0px 3px;
+	background : #3f301c;
+	color : #fff8e5;
+	font : 11px/12px var(--mtp-mono);
 	white-space : nowrap;
 	pointer-events : none;
 }
@@ -1115,6 +1157,30 @@
 }
 .mtp-line:hover {
 	background : rgba(255,230,150,0.55);
+}
+/* the log's veil while the battle is simulated */
+.mtp-log {
+	position : relative;
+}
+.mtp-logwait {
+	position : absolute;
+	inset : 0px;
+	z-index : 3;
+	display : flex;
+	align-items : flex-start;
+	justify-content : center;
+	padding-top : 70px;
+	background : rgba(242,221,184,0.78);
+	cursor : progress;
+}
+.mtp-log--waiting .mtp-lines {
+	overflow : hidden;
+}
+.mtp-log--waiting .mtp-line {
+	cursor : progress;
+}
+.mtp-log--waiting .mtp-line:hover {
+	background : none;
 }
 .mtp-logveil {
 	position : absolute;

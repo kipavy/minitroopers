@@ -108,7 +108,9 @@ interface Ready {
 }
 /** What public/js/player.js exposes as `window.mtPlayer`. */
 interface PlayerInfo {
+  /** What the SWF simulated so far (mtSim); complete once the whole battle is (mtReady). */
   ready: Ready | null;
+  complete: boolean;
   idx: number;
   /** First idx reported by the current Ruffle player (null before its first mtProgress). */
   first: number | null;
@@ -131,7 +133,7 @@ interface SwfState {
 const playerInfo = (page: Page): Promise<PlayerInfo> =>
   page.evaluate(() => {
     const p = (globalThis as unknown as { mtPlayer: PlayerInfo }).mtPlayer;
-    return { ready: p.ready, idx: p.idx, first: p.first, players: p.players };
+    return { ready: p.ready, complete: p.complete, idx: p.idx, first: p.first, players: p.players };
   });
 const swfState = (page: Page): Promise<SwfState> =>
   page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { mtState(): SwfState } } }).document.getElementById("battle").mtState());
@@ -152,7 +154,7 @@ async function until<T>(page: Page, get: () => Promise<T>, ok: (v: T) => boolean
  * many waves. Returns what mtReady reported.
  */
 async function playerReady(page: Page, label: string): Promise<Ready> {
-  const info = await until(page, () => playerInfo(page), (p) => p.ready !== null, 120_000, `${label}: mtReady`);
+  const info = await until(page, () => playerInfo(page), (p) => p.ready !== null && p.complete, 120_000, `${label}: the whole battle simulated`);
   const ready = info.ready!;
   const log = await page.evaluate(() => (globalThis as unknown as { mtLog: { i: number; w: number; t: string }[] }).mtLog);
   assert.equal(log.length, ready.total, `${label}: log lines = SWF history entries`);
