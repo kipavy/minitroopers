@@ -12,3 +12,5 @@ Captures et contrôles de mise en page par CDP brut (Brave ou Chrome sans interf
 - `--compare` compare les captures à 1280 px de même nom ; code de sortie 1 s'il y a une différence.
 - Pages : `pages.json` (`login: true` = connecté à l'armée `--army`, profil gardé dans `var/shots-profile` pour ne se connecter qu'une fois).
 - Navigateur : `SHOTS_BROWSER` (par défaut Brave sous `%LOCALAPPDATA%`). Utiliser `http://localhost`, pas `127.0.0.1` (contrôle d'origine).
+
+Horloge simulée (captures d'un week-end, par exemple) : `MT_FAKE_NOW=2026-11-28T09:30:00Z` au lancement du serveur local. L'horloge part de cet instant et avance normalement. Le fuseau est obligatoire (Z ou ±hh:mm). Jamais en production.

@@ -109,3 +109,12 @@ test("rewardMultiplier follows the draw", () => {
   assert.equal(rewardMultiplier("2026-12-26", 3), 3);
   assert.equal(rewardMultiplier("2026-11-25", 3), 1);
 });
+
+test("rechargeTimes: the day the clocks go forward (02:00 does not exist) still has 11 recharges, 03:00 then 04:00", () => {
+  const t = rechargeTimes("2027-03-28", TZ);
+  assert.equal(t.length, 11);
+  assert.equal(new Set(t).size, 11);
+  assert.equal(t[0], Date.parse("2027-03-28T01:00:00Z")); // 02:00 does not exist: 03:00 summer time
+  assert.equal(t[1], Date.parse("2027-03-28T02:00:00Z")); // 04:00 summer time, 1 h later
+  assert.equal(t[10], Date.parse("2027-03-28T20:00:00Z")); // 22:00 summer time
+});

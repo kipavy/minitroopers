@@ -789,3 +789,16 @@ table.choose a.fac:hover {
 .reserve-row .clock img {
 	vertical-align : middle;
 }
+/* the recharging and empty tiles are not buttons: no hand, no hover lighting */
+.action .reserve-row .recharging .b_bg, .action .reserve-row .empty .b_bg {
+	cursor : default;
+}
+.action .reserve-row .recharging:hover, .action .reserve-row .empty:hover {
+	background-image : url("/img/buttons/bgo_left.png");
+}
+.action .reserve-row .recharging:hover .bgo2_right, .action .reserve-row .empty:hover .bgo2_right {
+	background-image : url("/img/buttons/bgo_right.png");
+}
+.action .reserve-row .recharging:hover .bgo2_bg, .action .reserve-row .empty:hover .bgo2_bg {
+	background-image : url("/img/buttons/bgo_bg.png");
+}
