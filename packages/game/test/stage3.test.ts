@@ -62,3 +62,8 @@ test("seedsOffering", () => {
   assert.deepEqual(seedsOffering(64, 3), [273027, 273048, 273071]);
   assert.equal(seedsOffering(64, 12)[11], 273347);
 });
+
+test("missionReward: 4 for a won mission, 0 for a lost one", () => {
+  assert.equal(missionReward(true), 4);
+  assert.equal(missionReward(false), 0);
+});

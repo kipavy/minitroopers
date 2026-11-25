@@ -818,3 +818,15 @@ table.choose a.fac:hover {
 	padding : 0px;
 	box-sizing : border-box;
 }
+.action .bblock .b_bg {
+	cursor : default;
+}
+.action .bblock:hover {
+	background-image : url("/img/buttons/bblock_left.png");
+}
+.action .bblock:hover .bblock_right {
+	background-image : url("/img/buttons/bblock_right.png");
+}
+.action .bblock:hover .bblock_bg {
+	background-image : url("/img/buttons/bblock_bg.png");
+}

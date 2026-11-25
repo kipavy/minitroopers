@@ -45,7 +45,9 @@ test("the three missions the same day: each by its type, replays numbered across
   for (const type of ["exterminate", "infiltrate", "epic"]) seen.push(await play(env, w, type));
   assert.deepEqual(seen.map((l) => /miss(\d+)/.exec(l)?.[1]), ["1", "2", "3"]);
   assert.deepEqual(modes(env, w.id), ["exterminate", "infiltrate", "epic"]);
-  for (const n of [1, 2, 3]) assert.equal((await get(w.cl, `/b/view/miss${n}`)).status, 200);
+  const pages = await Promise.all([1, 2, 3].map(async (n) => (await get(w.cl, `/b/view/miss${n}`)).text()));
+  // each replay shows its own mission: only the infiltration has the "Infiltrer la base de" title
+  assert.deepEqual(pages.map((p) => p.includes("Infiltrer la base de")), [false, true, false]);
 });
 
 test("a replayed infiltrate URL shows the infiltrate try it made, not another mission's", async () => {

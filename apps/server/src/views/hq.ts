@@ -40,7 +40,6 @@ export interface HqView {
   locked: boolean;
   /** Error shown with the locked view (wrong password). */
   lockError?: string;
-  /** The mission of the day (box title, unlock, tries) and the session key of its action links. */
   /**
    * The mission boxes, in the HQ order (spec 2026-11-25-missions-quotidiennes-design.md §5): exterminate, infiltrate,
    * epic once unlocked (epic with `epicMissing` under 10 recruits); a single unlock box before; three empty boxes for a

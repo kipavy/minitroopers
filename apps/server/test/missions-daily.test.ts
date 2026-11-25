@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { BattleInput } from "@mt/engine";
 import type { MissionType } from "@mt/game";
 import { openDb } from "../src/db.ts";
-import { armyById, availableMissions, dayOver, epicAllowed, fightMission, missionDay, resetDay } from "../src/repo.ts";
+import { armyById, availableMissions, dayOver, epicAllowed, fightMission, missionDay, missionsOfDay, resetDay } from "../src/repo.ts";
 
 // All the missions every day (spec 2026-11-25-missions-quotidiennes-design.md §1, §2, §4).
 const DAY = "2026-11-25";
@@ -97,4 +97,29 @@ test("admin reset-day mission: the three missions start again, targets drawn aga
     assert.deepEqual([m.used - m.reset, m.won, m.target], [0, false, null], t);
   }
   assert.equal(play(w, "infiltrate", true).ok, true);
+});
+
+test("HQ tiles of each mission link the replays numbered across all the missions of the day, after a reset too", () => {
+  const w = world();
+  play(w, "exterminate", false); // miss1
+  play(w, "infiltrate", false); // miss2
+  play(w, "exterminate", false); // miss3
+  assert.deepEqual(missionsOfDay(w.db, w.id, DAY, "infiltrate").map((t) => t.n), [2]);
+  assert.deepEqual(missionsOfDay(w.db, w.id, DAY, "exterminate").map((t) => t.n), [1, 3]);
+  resetDay(w.db, w.id, DAY, { battles: false, mission: true, raid: false, shop: false });
+  play(w, "infiltrate", false); // miss4
+  assert.deepEqual(missionsOfDay(w.db, w.id, DAY, "infiltrate").map((t) => t.n), [4]);
+  assert.deepEqual(missionsOfDay(w.db, w.id, DAY, "exterminate").map((t) => t.n), []);
+});
+
+test("dayOver waits for an epic already played even when the army dropped under 10 recruits", () => {
+  const w = world({ recruits: 10 });
+  play(w, "exterminate", true);
+  for (let i = 0; i < 3; i++) play(w, "infiltrate", false);
+  play(w, "epic", false);
+  w.db.prepare("UPDATE armies SET recruit_confirmed_at = NULL WHERE recruiter_id = ?").run(w.id);
+  assert.equal(over(w), false, "2 epic tries left");
+  play(w, "epic", false);
+  play(w, "epic", false);
+  assert.equal(over(w), true);
 });

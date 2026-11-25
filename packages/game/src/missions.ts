@@ -1,10 +1,8 @@
 import { Rand } from "@mt/engine";
-import { EPIC_MIN_RECRUITS } from "./economy.ts";
 import { fnv1a } from "./hash.ts";
 import type { ArmyRef } from "./opponents.ts";
 
 export type MissionType = "exterminate" | "infiltrate" | "epic";
-
 
 /**
  * Infiltration target: one time in two among the armies already fought (if any), else uniform among candidates; null if none.

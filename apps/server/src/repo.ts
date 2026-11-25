@@ -523,7 +523,7 @@ export function opponentsResets(db: DatabaseSync, armyId: number, day: string): 
  * offsets (migration 007).
  * - battles: the allowance counts again from the battles fought so far (a full day's worth more), and the day's
  *   opponents are drawn again (salted by the reset count) at the next visit of /b/opp;
- * - mission: the tries count again from the tries made so far, the day is no longer won; same mission type and target;
+ * - mission: the tries count again from the tries made so far, no mission is won any more, the infiltrate and epic targets are drawn again;
  * - raid: phase 1 again with every recruit alive, at the next URL counter (`raid_phase` + 1) so that no URL issued
  *   before the reset can fight; a raid not started yet is left as it is.
  * - shop: the offers of /add are drawn again (salted by the reset count); every call draws a new set.
