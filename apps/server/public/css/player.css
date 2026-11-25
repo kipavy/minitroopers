@@ -486,7 +486,7 @@
 /* --- help: "Raccourcis clavier" bubble next to the "?" button (placed by player.js), after BetterTrooper's --- */
 .mtp-help {
 	position : fixed;
-	z-index : 20;
+	z-index : 1000;
 	box-sizing : border-box;
 	width : 390px;
 	max-width : calc(100vw - 16px);

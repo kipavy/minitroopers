@@ -875,7 +875,8 @@
       mtable.appendChild(group);
     }
     ui.help.appendChild(mtable);
-    game.appendChild(ui.help);
+    // on the body: no ancestor stacking context (the mobile frame) puts the page header over it
+    d.body.appendChild(ui.help);
     var enter = function () {
       showHelp(true);
     };
