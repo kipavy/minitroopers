@@ -103,14 +103,18 @@ interface Ready {
   total: number;
   checkpoints: number[];
   waves: number[];
+  /** First keyframe after each NewWave: where wave seeks land. */
+  starts: number[];
 }
 /** What public/js/player.js exposes as `window.mtPlayer`. */
 interface PlayerInfo {
+  /** What the SWF simulated so far (mtSim); complete once the whole battle is (mtReady). */
   ready: Ready | null;
+  complete: boolean;
   idx: number;
   /** First idx reported by the current Ruffle player (null before its first mtProgress). */
   first: number | null;
-  /** Ruffle players created so far (1 + backward seeks). */
+  /** Ruffle players created so far (always 1: seeks never reload it). */
   players: number;
 }
 interface SwfState {
@@ -119,14 +123,17 @@ interface SwfState {
   total: number;
   speed: number;
   paused: boolean;
+  /** The game's own pause screen is open. */
+  screen: boolean;
   ended: boolean;
   seeking: boolean;
   hidden: boolean;
+  banner: boolean;
 }
 const playerInfo = (page: Page): Promise<PlayerInfo> =>
   page.evaluate(() => {
     const p = (globalThis as unknown as { mtPlayer: PlayerInfo }).mtPlayer;
-    return { ready: p.ready, idx: p.idx, first: p.first, players: p.players };
+    return { ready: p.ready, complete: p.complete, idx: p.idx, first: p.first, players: p.players };
   });
 const swfState = (page: Page): Promise<SwfState> =>
   page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { mtState(): SwfState } } }).document.getElementById("battle").mtState());
@@ -147,17 +154,20 @@ async function until<T>(page: Page, get: () => Promise<T>, ok: (v: T) => boolean
  * many waves. Returns what mtReady reported.
  */
 async function playerReady(page: Page, label: string): Promise<Ready> {
-  const info = await until(page, () => playerInfo(page), (p) => p.ready !== null, 120_000, `${label}: mtReady`);
+  const info = await until(page, () => playerInfo(page), (p) => p.ready !== null && p.complete, 120_000, `${label}: the whole battle simulated`);
   const ready = info.ready!;
   const log = await page.evaluate(() => (globalThis as unknown as { mtLog: { i: number; w: number; t: string }[] }).mtLog);
   assert.equal(log.length, ready.total, `${label}: log lines = SWF history entries`);
   assert.equal(Math.max(0, ...log.map((l) => l.w)), ready.waves.length, `${label}: log waves = SWF waves`);
   assert.ok(await page.locator("#mtp-bar").isVisible(), `${label}: control bar shown`);
+  // the loading veil gone (the battle played its first entry), and the 400 ms the keys wait after it
+  await page.locator(".mtp-veil").waitFor({ state: "hidden", timeout: 120_000 });
+  await page.waitForTimeout(450);
   return ready;
 }
 
 /**
- * Waits for the battle page's Ruffle player, jumps to the end through the enhanced player ("Fin", mtSeek(total): the
+ * Waits for the battle page's Ruffle player, jumps to the end through the enhanced player ("Fin", mtGoto(total): the
  * emulated Chromium of the dev PC plays far slower than real time), waits for the end banner of client_fr_play.swf,
  * checks it against the winner stored in the database (`won`), then clicks "continuer" until the SWF's endBattle()
  * reaches `end`.
@@ -174,7 +184,14 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
     last = await until(page, () => swfState(page), (s) => s.ended || s.idx >= s.total, 30_000, `${label}: end of the battle after "Fin"`).catch(() => undefined);
   }
   assert.ok(last, `${label}: end of the battle after "Fin"`);
-  const box = (await player.boundingBox())!;
+  // The banner crop is compared at full size: with the log beside it (wide window) the player is scaled down, so the
+  // log is folded for the comparison, then unfolded again to click "continuer" on the scaled player.
+  const scaled = (await player.boundingBox())!.width < 719;
+  if (scaled) {
+    await page.click("#mtp-log summary");
+    await until(page, async () => (await player.boundingBox())!.width, (w) => Math.abs(w - 720) < 1, 10_000, `${label}: full size with the log folded`);
+  }
+  let box = (await player.boundingBox())!;
   const victory = readFileSync(join(FIXTURES, "banner-victoire.png"));
   const defeat = readFileSync(join(FIXTURES, "banner-defaite.png"));
   const clip = { x: box.x + BANNER.dx, y: box.y + BANNER.dy, width: BANNER.width, height: BANNER.height };
@@ -202,9 +219,14 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
     shot = await page.screenshot({ clip });
   }
   assert.equal(banner(shot), won ? "VICTOIRE" : "DEFAITE", `${label}: banner drawn by the SWF vs winner in the database`);
+  if (scaled) {
+    await page.click("#mtp-log summary");
+    box = await until(page, async () => (await player.boundingBox())!, (b) => b.width < 719, 10_000, `${label}: scaled again with the log beside`);
+  }
+  const k = box.width / 720;
   // Ruffle swallows the first click on a fresh page (activation); the next one reaches "continuer".
   for (let i = 0; i < 4 && page.url() !== end; i++) {
-    await page.mouse.click(box.x + CONTINUE.dx, box.y + CONTINUE.dy);
+    await page.mouse.click(box.x + CONTINUE.dx * k, box.y + CONTINUE.dy * k);
     await page.waitForURL(end, { timeout: 2_000 }).catch(() => {});
   }
   assert.equal(page.url(), end, `${label}: endBattle() called by the SWF`);
@@ -266,7 +288,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await page.fill("#name", "Bidasses");
       await page.click("#tr_1000 > ul");
       await page.mouse.move(0, 0); // the skill tooltip follows the mouse and would cover the button
-      await page.waitForSelector("#submit:not([disabled])", { timeout: 15_000 });
+      await page.waitForSelector("#submit:not([disabled])", { timeout: 60_000 });
       await Promise.all([page.waitForURL(at("bidasses", "/hq")).catch(async (e: unknown) => {
         throw new Error(`creation: at ${page.url()}: ${(await page.textContent("body"))?.replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
       }), page.click("#submit")]);
@@ -311,9 +333,11 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
 }
 
 // Enhanced battle player (public/js/player.js) on the "just fought" page: keyboard without clicking into Ruffle (and
-// never over an input, Ctrl/Meta or F5), pause button, log click forward, wave click backward (new Ruffle player,
-// right index, pause kept), PNG capture, x32 then "Fin": the end banner still shows the stored winner and its button
-// still leads to /hq?money=N. Then ?at=N on the replay page, and a 390 px wide window without horizontal scrolling.
+// never over an input, Ctrl/Meta or F5), pause button, log click forward, wave click backward (mtGoto on the same
+// Ruffle element, no SWF reloaded, right index, pause kept), every seek through mtGoto, PNG capture, the hover help
+// bubble, the log beside the player (wide window) and folded, x32 then "Fin": the end banner still shows the stored
+// winner and its button still leads to /hq?money=N. Then ?at=N on the replay page, and a 390 px wide window without
+// horizontal scrolling.
 type Doc = {
   body: { appendChild(e: unknown): void; dispatchEvent(e: unknown): boolean };
   documentElement: { scrollWidth: number; clientWidth: number };
@@ -322,7 +346,7 @@ type Doc = {
 };
 
 for (const mode of ["path", "subdomain"] as Mode[]) {
-  test(`[e2e ${mode}] enhanced player: shortcuts, pause, log and wave seeks, capture, x32 to the end, ?at=, mobile`, { timeout: 900_000 }, async (t) => {
+  test(`[e2e ${mode}] enhanced player: shortcuts, pause, seeks through mtGoto, capture, help bubble, log beside, x32 to the end, ?at=, mobile`, { timeout: 900_000 }, async (t) => {
     if (!browsersInstalled()) return t.skip("Playwright Chromium not installed under tools/bin/ms-playwright");
     mkdirSync(join(REPO, "var"), { recursive: true });
     const dataDir = mkdtempSync(join(REPO, "var", `e2e5-${mode}-`));
@@ -339,6 +363,10 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       page.on("dialog", (d) => void d.accept());
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(String(e)));
+      let swfLoads = 0;
+      page.on("request", (r) => {
+        if (r.url().includes("/swf/client_fr_play.swf")) swfLoads++;
+      });
       await page.goto(`${root}/`);
       await createArmyIn(page, "Bidasses", at("bidasses", "/hq"));
       const army = db.prepare("SELECT id FROM armies WHERE host = 'bidasses'").get() as { id: number };
@@ -349,11 +377,29 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       const won = b.winner !== null && b.winner === (JSON.parse(b.input) as BattleInput).attackerSide;
       await page.locator("ruffle-player#battle").waitFor({ timeout: 30_000 });
       const ready = await playerReady(page, `${mode}-player`);
-      const landed = (n: number, idx: number): boolean => idx === n || (ready.checkpoints.includes(n) && idx === n + 1);
+      const landed = (n: number, idx: number): boolean => idx === n;
+      // every seek of the page must go through the SWF's mtGoto: its calls are recorded (window.__gotos)
+      await page.evaluate(() => {
+        const g = globalThis as unknown as { __gotos: number[]; document: { getElementById(id: string): Record<string, (n: number) => boolean> } };
+        const el = g.document.getElementById("battle");
+        const orig = el.mtGoto!;
+        g.__gotos = [];
+        // a data property, whatever Ruffle defined (its callbacks may be accessors)
+        Object.defineProperty(el, "mtGoto", {
+          configurable: true,
+          writable: true,
+          value: (n: number) => {
+            g.__gotos.push(n);
+            return orig.call(el, n);
+          },
+        });
+        if (el.mtGoto === orig) throw new Error("mtGoto spy not installed");
+      });
+      const gotos = (): Promise<number[]> => page.evaluate(() => (globalThis as unknown as { __gotos: number[] }).__gotos.slice());
 
-      // 1. shortcuts without any click into Ruffle: Space pauses, K resumes
-      await page.keyboard.press(" ");
-      await until(page, () => swfState(page), (s) => s.paused, 10_000, "Space pauses");
+      // 1. shortcuts without any click into Ruffle: Shift+Space pauses, K resumes (BetterTrooper's keys)
+      await page.keyboard.press("Shift+Space");
+      await until(page, () => swfState(page), (s) => s.paused, 10_000, "Shift+Space pauses");
       await page.keyboard.press("k");
       await until(page, () => swfState(page), (s) => !s.paused, 10_000, "K resumes");
       // not taken: F5, Ctrl+R, Ctrl+K, Meta+Space (default action kept, nothing done)
@@ -380,14 +426,68 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).paused, false, "keys typed into a field ignored");
       await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("probe").remove());
 
-      // 2. pause button (the seeks below run paused: they land exactly where asked)
+      // 1b. a click on the battlefield: the game's own pause (its PAUSE screen); the page follows through mtPaused, the
+      // play button shows "play" without toggling again; a second click resumes
+      const iconPaused = (): Promise<boolean> => page.evaluate(() => (globalThis as unknown as { document: { querySelector(s: string): { className: string } } }).document.querySelector("#mtp-play .mtp-playicon").className.includes("--paused"));
+      const field = (await page.locator("ruffle-player#battle").boundingBox())!;
+      const clickField = (): Promise<void> => page.mouse.click(field.x + field.width / 2, field.y + field.height * 0.6);
+      await clickField();
+      await page.waitForTimeout(600);
+      if (!(await swfState(page)).paused) await clickField(); // Ruffle may swallow the first click (focus)
+      const f0 = await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "field click: the PAUSE screen");
+      assert.equal(await until(page, iconPaused, (p) => p, 5_000, "play icon after the field click"), true);
+      await page.waitForTimeout(500);
+      assert.equal((await swfState(page)).paused, true, "no second toggle by the page");
+      void f0;
+      await clickField();
+      await until(page, () => swfState(page), (s) => !s.paused, 10_000, "field click: resumed");
+      assert.equal(await until(page, iconPaused, (p) => !p, 5_000, "pause icon after resuming"), false);
+
+      // 2. pause button: the same PAUSE screen (the seeks below run paused: they land exactly where asked, paused)
       await page.click("#mtp-play");
-      const s0 = await until(page, () => swfState(page), (s) => s.paused, 10_000, "pause button");
+      await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "pause button: the PAUSE screen");
+      assert.equal(await until(page, iconPaused, (p) => p, 5_000, "play icon"), true);
+      // back to the start (H, paused): a short battle may be nearly over by now
+      await page.keyboard.press("h");
+      const s0 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx === 0 && s.paused, 10_000, "H: the start, still paused");
 
       // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
-      // → goes to the next shown line the same way; the share link reopens on that line (step 7)
+      // → goes one history entry further; the share dialog's "event" link reopens there (step 7)
       const lines = await page.locator("#mtp-log li[data-i]").evaluateAll((els) => els.map((e) => Number((e as unknown as { dataset: { i: string } }).dataset.i)));
-      const firstWave = ready.waves[0] ?? 0;
+
+      // the log's lines as BetterTrooper's: a clock badge (turquoise "warp" when the entry's time is below the
+      // clock), faction-coloured names with a head, weapon icons, HUD lines, deploy lines
+      const drawn = await page.evaluate(() => {
+        type El = { textContent: string; className: string; getAttribute(a: string): string | null; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<El> };
+        const g = globalThis as unknown as { document: { querySelectorAll(s: string): ArrayLike<El>; querySelector(s: string): El | null }; mtLog: { i: number; t: string; c: number; x?: number }[]; getComputedStyle(e: El, p?: string): { backgroundImage: string; backgroundColor: string } };
+        const lis = Array.from(g.document.querySelectorAll("#mtp-log li[data-i]"));
+        const byI = new Map(g.mtLog.map((l) => [l.i, l]));
+        const bad: string[] = [];
+        for (const li of lis) {
+          const l = byI.get(Number(li.getAttribute("data-i")))!;
+          const time = li.querySelector(".mtp-time");
+          if (!time || time.textContent !== String(l.c)) bad.push(`clock of ${l.i}`);
+          if (!!time && time.className.includes("mtp-time--warp") !== (l.x === 1)) bad.push(`warp of ${l.i}`);
+          if (!li.textContent.endsWith(l.t)) bad.push(`text of ${l.i}`);
+        }
+        const name = g.document.querySelectorAll("#mtp-log .mtp-lname[data-faction]")[0];
+        return {
+          bad,
+          names: g.document.querySelectorAll("#mtp-log .mtp-lname[data-faction]").length,
+          head: name ? g.getComputedStyle(name, "::before").backgroundImage : "",
+          huds: g.document.querySelectorAll("#mtp-log .mtp-hud .mtp-stat").length,
+          deploys: lis.filter((li) => li.textContent.includes(" déploie : ")).length,
+          wicons: g.document.querySelectorAll("#mtp-log .mtp-wicon").length,
+          clock: lis[0] ? g.getComputedStyle(lis[0].querySelector(".mtp-time")!).backgroundImage : "",
+          wave: ((e: El | null) => (e ? [g.getComputedStyle(e).backgroundImage, g.getComputedStyle(e).backgroundColor] : []))(g.document.querySelector("#mtp-track .mtp-curwave")),
+        };
+      });
+      assert.deepEqual(drawn.bad, [], "every line: clock badge, warp colour, text");
+      assert.ok(drawn.names > 0 && /\/img\/log\/(trooper-[0-5]|rat|clown)\.png/.test(drawn.head), `names with a head: ${JSON.stringify(drawn)}`);
+      assert.match(drawn.clock, /\/img\/log\/battle-clock\.png/, "the game's clock in the badge");
+      assert.deepEqual(drawn.wave, ["none", "rgb(255, 218, 73)"], "current wave: flat yellow, no gradient");
+      assert.ok(drawn.huds > 0 && drawn.deploys > 0 && drawn.wicons > 0, `HUD, deploy lines, weapon icons: ${JSON.stringify(drawn)}`);
+      const firstWave = ready.starts[0] ?? 0;
       const k = lines.findIndex((i) => i >= Math.max(s0.idx + 3, firstWave + 3) && i < ready.total - 3);
       assert.ok(k >= 0 && k + 1 < lines.length, "a log line ahead, and one after it");
       const j = lines[k]!;
@@ -403,56 +503,188 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal((await swfState(page)).idx, s1.idx, "still paused after the seek");
       assert.equal(await page.locator("#mtp-log li.mtp-cur").count(), 1, "one current log line");
       assert.equal(await current(), j, "the clicked line is the highlighted one");
-      const j2 = lines[k + 1]!;
       await page.keyboard.press("ArrowRight");
-      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > j2, 120_000, `→ to line ${j2}`);
-      assert.ok(landed(j2 + 1, s1b.idx), `→: idx ${s1b.idx} for line ${j2}`);
+      const s1b = await until(page, () => swfState(page), (s) => !s.seeking && s.idx > s1.idx, 120_000, "→ one entry further");
+      assert.equal(s1b.idx, s1.idx + 1, "→: one history entry");
+      const j2 = lines.filter((i) => i <= s1b.idx - 1).at(-1)!;
       assert.equal(await until(page, current, (c) => c === j2, 5_000, "highlight after →"), j2);
-      await page.click("#mtp-link");
-      const link = await page.inputValue(".mtp-linkbox");
+      // S: the share dialog (Ruffle paused under it), started at this event
+      await page.keyboard.press("s");
+      await until(page, () => page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { open: boolean } } }).document.getElementById("mtp-share").open), (o) => o, 5_000, "share dialog");
+      await page.click('#mtp-share .mtp-share__choice[data-start="event"]');
+      const message = await page.inputValue("#mtp-share textarea");
+      const link = /\]\((.*)\)$/.exec(message)![1]!;
       assert.ok(link.endsWith(`at=${s1b.idx}`), `share link ${link}`);
+      await page.keyboard.press("Escape");
+      const share = await page.evaluate(() => (globalThis as unknown as { mtShare: string | null }).mtShare);
       await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
 
-      // 4. backward: a click on the timeline inside wave 1 (= that wave's start), or without waves Shift + click at half
-      // the current index (= that exact event) → a new Ruffle player, then mtSeek there, still paused
+      // 4. backward: a click on the timeline inside wave 2 (= that wave's start: the first keyframe after its NewWave,
+      // starts[0]), or without waves Shift + click at half the current index (= that exact event) → mtGoto there on the
+      // same Ruffle element, no SWF reloaded, still paused
       const back = ready.waves.length > 0 ? firstWave : Math.floor(s1.idx / 2);
       assert.ok(back < s1.idx && back > 0, `a target before the current index (${back} < ${s1.idx})`);
       await page.evaluate(() => {
         (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old = true;
       });
       const players = (await playerInfo(page)).players;
+      const loads = swfLoads;
+      assert.ok(loads >= 1, "the SWF was requested");
       const track = (await page.locator("#mtp-track").boundingBox())!;
-      const x = track.x + ((ready.waves.length > 0 ? back + 1.5 : back + 0.25) / ready.total) * track.width;
+      const x = track.x + ((ready.waves.length > 0 ? (ready.waves[0]! + back) / 2 + 0.5 : back + 0.25) / ready.total) * track.width;
       if (ready.waves.length === 0) await page.keyboard.down("Shift");
       await page.mouse.click(x, track.y + track.height / 2);
       if (ready.waves.length === 0) await page.keyboard.up("Shift");
-      await until(page, () => playerInfo(page), (p) => p.players === players + 1 && p.ready !== null && p.first !== null, 120_000, "player recreated and landed");
-      assert.equal(await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old), undefined, "a new Ruffle element");
-      const s2 = await until(page, () => swfState(page), (s) => !s.seeking, 60_000, "backward seek done");
+      const s2 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx < s1.idx, 10_000, "backward seek done");
       assert.ok(landed(back, s2.idx), `backward: idx ${s2.idx} for ${back}`);
-      assert.equal(s2.paused, true, "pause kept across the new player");
-      assert.equal(s2.speed, s0.speed, "speed kept across the new player");
+      assert.equal(await page.evaluate(() => (globalThis as unknown as { document: Doc }).document.getElementById("battle").__old), true, "the same Ruffle element");
+      assert.equal((await playerInfo(page)).players, players, "no new Ruffle player");
+      assert.equal(swfLoads, loads, "no new request of the SWF");
+      assert.equal((await playerInfo(page)).idx, back, "the page's idx");
+      assert.equal(s2.paused, true, "pause kept");
+      assert.equal(s2.speed, s0.speed, "speed kept");
+      assert.deepEqual((await gotos()).slice(-1), [back], "the timeline click went through mtGoto");
 
-      // 5. capture: a 720x440 PNG download
-      const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.click("#mtp-shot")]);
+      // 4b. every other seek goes through mtGoto and lands at once: ← → Maj+→ N P Début Fin, the Début/Fin buttons;
+      // back from the end, the end banner is gone and the end is reported again on the way back
+      const seekBy = async (what: string, act: () => Promise<void>): Promise<SwfState> => {
+        const before = (await gotos()).length;
+        await act();
+        const calls = await until(page, gotos, (g) => g.length > before, 5_000, `${what}: mtGoto called`);
+        const n = calls.at(-1)!;
+        const s = await until(page, () => swfState(page), (s) => !s.seeking && s.idx === n, 10_000, `${what}: landed on ${n}`);
+        assert.equal(calls.length, before + 1, `${what}: one mtGoto`);
+        assert.equal(s.paused, true, `${what}: still paused`);
+        assert.equal(s.screen, true, `${what}: the PAUSE screen still there`);
+        return s;
+      };
+      const r1 = await seekBy("→", () => page.keyboard.press("ArrowRight"));
+      assert.ok(r1.idx > back);
+      const r2 = await seekBy("←", () => page.keyboard.press("ArrowLeft"));
+      assert.ok(r2.idx < r1.idx);
+      const r3 = await seekBy("Maj+→", () => page.keyboard.press("Shift+ArrowRight"));
+      assert.equal(r3.idx, Math.min(ready.total, r2.idx + 10));
+      const r3b = await seekBy("+5", () => page.click('.mtp-transport [data-step="5"]'));
+      assert.equal(r3b.idx, Math.min(ready.total, r3.idx + 5));
+      if (r3b.wave < ready.waves.length) {
+        // N: the start (starts[k]) of the next wave; P: the start of the current wave, which is that one
+        const r4 = await seekBy("N", () => page.keyboard.press("n"));
+        assert.equal(r4.idx, ready.starts[r3b.wave]);
+        const r5 = await seekBy("P", () => page.keyboard.press("p"));
+        assert.equal(r5.idx, r4.idx);
+      }
+      const r6 = await seekBy("Fin", () => page.keyboard.press("End"));
+      assert.equal(r6.idx, ready.total);
+      await until(page, () => swfState(page), (s) => s.ended, 10_000, "ended at the end");
+      const r7 = await seekBy("Début", () => page.keyboard.press("Home"));
+      assert.equal(r7.idx, 0);
+      assert.equal(r7.ended, false, "not ended any more");
+      assert.equal(r7.banner, false, "no end banner any more");
+      const r8 = await seekBy("E", () => page.keyboard.press("e"));
+      assert.equal(r8.idx, ready.total);
+      assert.equal((await seekBy("H", () => page.keyboard.press("h"))).idx, 0);
+      await seekBy("back to the wave start", () => page.evaluate((n) => {
+        (globalThis as unknown as { document: { querySelector(s: string): { click(): void } } }).document.querySelector(`#mtp-log li[data-i="${n}"]`).click();
+      }, lines.find((i) => i >= back)!));
+      assert.equal((await playerInfo(page)).players, players, "still one Ruffle player");
+      assert.equal(swfLoads, loads, "still no new request of the SWF");
+
+      // 5. capture: the dialog, its game-only picture downloaded as a 720x440 PNG
+      await page.click("#mtp-shot");
+      await until(page, () => page.evaluate(() => (globalThis as unknown as { document: { getElementById(id: string): { open: boolean } } }).document.getElementById("mtp-shotdlg").open), (o) => o, 10_000, "capture dialog");
+      const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), page.click('#mtp-shotdlg [data-shot="game"] [data-act="download"]')]);
       assert.match(download.suggestedFilename(), /\.png$/);
       const png = decodePng(readFileSync((await download.path())!));
       assert.deepEqual([png.width, png.height], [720, 440]);
+      await page.keyboard.press("Escape");
+
+      // 5b. the "?" button: hovering it shows the site's own tooltip (#tooltip of app.js, .tiptop markup like every
+      // other tip) next to it, inside the window, "Raccourcis clavier" then "Souris"; leaving hides it; keyboard focus
+      // shows it; ? and Ctrl+/ toggle it, Échap closes it
+      type Rect = { left: number; top: number; right: number; bottom: number };
+      type HelpState = { shown: boolean; titles: string[]; kbd: number; rows: number; btn: Rect; tip: Rect | null; vw: number; vh: number };
+      const helpState = (): Promise<HelpState> =>
+        page.evaluate(() => {
+          type El = { style: { top: string }; getBoundingClientRect(): Rect; querySelector(s: string): El | null; querySelectorAll(s: string): ArrayLike<{ textContent: string }> };
+          const g = globalThis as unknown as { document: { getElementById(id: string): El | null }; innerWidth: number; innerHeight: number; mt: { js: { Tip: { lastRef: unknown } } } };
+          const box = (e: El): Rect => {
+            const b = e.getBoundingClientRect();
+            return { left: b.left, top: b.top, right: b.right, bottom: b.bottom };
+          };
+          const btn = g.document.getElementById("mtp-helpbtn")!;
+          const t = g.document.getElementById("tooltip");
+          const top = t?.querySelector(".tiptop") ?? null;
+          const shown = !!t && t.style.top !== "-1000px" && g.mt.js.Tip.lastRef === btn;
+          return { shown, titles: top ? Array.from(top.querySelectorAll("h1"), (h) => h.textContent) : [], kbd: top ? top.querySelectorAll("kbd").length : 0, rows: top ? top.querySelectorAll("tr").length : 0, btn: box(btn), tip: top ? box(top) : null, vw: g.innerWidth, vh: g.innerHeight };
+        });
+      const helpIs = (shown: boolean, what: string): Promise<HelpState> => until(page, helpState, (s) => s.shown === shown, 2_000, what);
+      assert.equal((await helpState()).shown, false, "help hidden at first");
+      await page.hover("#mtp-helpbtn");
+      const h1 = await helpIs(true, "tooltip on hover");
+      assert.deepEqual(h1.titles, ["Raccourcis clavier", "Souris"], "the site's tooltip, two sections");
+      assert.ok(h1.kbd >= 15 && h1.rows >= 14, `keys as keycaps, key | action and place | gesture | effect tables: ${JSON.stringify(h1)}`);
+      const tb = h1.tip!;
+      const gap = Math.max(tb.left - h1.btn.right, h1.btn.left - tb.right, tb.top - h1.btn.bottom, h1.btn.top - tb.bottom);
+      assert.ok(gap <= 30, `tooltip next to the button: ${JSON.stringify(h1)}`);
+      assert.ok(tb.left >= 0 && tb.top >= 0 && tb.right <= h1.vw && tb.bottom <= h1.vh, `tooltip inside the window: ${JSON.stringify(h1)}`);
+      await page.mouse.move(5, 5);
+      await helpIs(false, "hidden when the mouse leaves");
+      await page.focus("#mtp-helpbtn");
+      const h2 = await helpIs(true, "tooltip on keyboard focus");
+      assert.ok(h2.tip!.top >= 0 && h2.tip!.bottom <= h2.vh, `focused: inside the window ${JSON.stringify(h2)}`);
+      await page.evaluate(() => (globalThis as unknown as { document: { activeElement: { blur(): void } } }).document.activeElement.blur());
+      await helpIs(false, "hidden on blur");
+      await page.keyboard.press("?");
+      await helpIs(true, "? shows it");
+      await page.keyboard.press("?");
+      await helpIs(false, "? hides it");
+      await page.keyboard.press("Control+/");
+      await helpIs(true, "Ctrl+/ shows it");
+      await page.keyboard.press("Escape");
+      await helpIs(false, "Échap hides it");
+
+      // 5c. wide window: the log beside the player, same height, its own scrolling; the player scaled down (mtShot
+      // above still gave 720x440); folding the log puts the player back to full size, centred
+      type Box = { left: number; top: number; right: number; bottom: number; width: number; height: number };
+      const layout = (): Promise<{ frame: Box; log: Box; battle: Box; game: Box; list: Box; overflow: string }> =>
+        page.evaluate(() => {
+          const d = (globalThis as unknown as { document: { querySelector(s: string): { getBoundingClientRect(): Box; scrollHeight: number; clientHeight: number } } }).document;
+          const r = (s: string): Box => {
+            const b = d.querySelector(s).getBoundingClientRect();
+            return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height };
+          };
+          const list = d.querySelector("#mtp-log .mtp-lines");
+          return { frame: r(".mtp-game .swfframe"), log: r("#mtp-log"), battle: r("#battle"), game: r(".mtp-game"), list: r("#mtp-log .mtp-lines"), overflow: (globalThis as unknown as { getComputedStyle(e: unknown): { overflowY: string } }).getComputedStyle(list).overflowY };
+        });
+      const l1 = await layout();
+      assert.ok(l1.log.left >= l1.frame.right, `log on the right: ${JSON.stringify(l1)}`);
+      assert.ok(Math.abs(l1.log.top - l1.frame.top) <= 1 && Math.abs(l1.log.height - l1.frame.height) <= 2, `log as high as the player: ${JSON.stringify(l1)}`);
+      assert.ok(Math.abs(l1.battle.width - 580) <= 2, `player scaled to 580 px: ${JSON.stringify(l1.battle)}`);
+      // the list fills the log down to its bottom and scrolls there (a short battle may not need to)
+      assert.ok(l1.overflow === "auto" && Math.abs(l1.list.bottom - l1.log.bottom) <= 2, `the log scrolls inside: ${JSON.stringify(l1)}`);
+      await page.click("#mtp-log summary");
+      const l2 = await until(page, layout, (l) => Math.abs(l.battle.width - 720) <= 1, 5_000, "full size with the log folded");
+      assert.ok(Math.abs((l2.frame.left + l2.frame.right) / 2 - (l2.game.left + l2.game.right) / 2) <= 2, `player centred: ${JSON.stringify(l2)}`);
+      assert.ok(l2.log.top >= l2.frame.bottom, "folded log under the player");
+      await page.click("#mtp-log summary");
+      await until(page, layout, (l) => l.log.left >= l.frame.right, 5_000, "log beside again");
 
       // 6. x32, play, then "Fin": the banner shows the stored winner, its button leads to /hq?money=N
-      await page.locator("#mtp-speed").fill("32"); // the speed slider's last notch: x32
+      await page.locator("#mtp-speed").fill("18"); // the speed slider's last notch: x32
       await page.click("#mtp-play");
       const s3 = await until(page, () => swfState(page), (s) => !s.paused, 10_000, "play button");
       assert.equal(s3.speed, 32);
       assert.deepEqual(errors, []);
       await swfReplay(page, `${mode}-player`, won, at("bidasses", `/hq?money=${won ? 2 : 1}`));
 
-      // 7. the share link (?at=N) on the replay page: the first reported index is N, whose current line is j2 again
-      assert.ok(link.startsWith(battleUrl.split("?")[0]!));
+      // 7. the share link (?at=N) on the battle's public page (mtShare): the first reported index is N, whose current
+      // line is j2 again
+      assert.ok(share && link.startsWith(share), `share link ${link} on the public page ${share}`);
       await page.goto(link);
       await playerReady(page, `${mode}-at`);
       const p = await until(page, () => playerInfo(page), (p) => p.first !== null, 120_000, "first mtProgress with ?at=");
       assert.ok(landed(s1b.idx, p.first!), `?at=${s1b.idx}: started at ${p.first}`);
+      assert.equal(p.players, 1, "?at= without a second Ruffle player");
       const lineAt = lines.filter((i) => i <= p.first! - 1).at(-1);
       assert.equal(lineAt, j2, "the shared moment shows the same current line");
 
@@ -470,6 +702,11 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.ok(sizes.scroll <= sizes.client, `no horizontal scrolling: ${JSON.stringify(sizes)}`);
       assert.ok(sizes.width <= 390 && sizes.width > 300 && sizes.right <= 390, `player scaled to the width: ${JSON.stringify(sizes)}`);
       assert.ok(await m.locator("#mtp-bar").isVisible());
+      const under = await m.evaluate(() => {
+        const d = (globalThis as unknown as { document: { querySelector(s: string): { getBoundingClientRect(): { top: number; bottom: number } } } }).document;
+        return { frame: d.querySelector(".mtp-game .swfframe").getBoundingClientRect().bottom, log: d.querySelector("#mtp-log").getBoundingClientRect().top };
+      });
+      assert.ok(under.log >= under.frame, `narrow window: the log under the player ${JSON.stringify(under)}`);
     } finally {
       db?.close();
       await browser.close();
@@ -484,7 +721,7 @@ async function createArmyIn(page: Page, name: string, hq: string): Promise<void>
   await page.fill("#name", name);
   await page.click("#tr_1000 > ul");
   await page.mouse.move(0, 0); // the skill tooltip follows the mouse and would cover the button
-  await page.waitForSelector("#submit:not([disabled])", { timeout: 15_000 });
+  await page.waitForSelector("#submit:not([disabled])", { timeout: 60_000 });
   await Promise.all([page.waitForURL(hq).catch(async (e: unknown) => {
     throw new Error(`creation of ${name}: at ${page.url()}: ${(await page.textContent("body"))?.replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
   }), page.click("#submit")]);

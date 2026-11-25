@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="26" viewBox="0 0 12 26">
+  <!-- Right bracket of the compact command button (mt-button, compact size): b1_right.png at two thirds, on whole
+       pixels. As on the site it is the left one turned half a turn (long arm on top, short arm below, the notches
+       higher up; the slab ends at x = 6), still lit from above, its upright shaded in the same order as the left one.
+       Colours picked on b1_right.png. -->
+  <path fill="#363c55" fill-rule="evenodd" d="M10 26H2V23H6L7 22V4L6 3H0V1L1 0H11L12 1V24ZM11 7H12V8H11ZM11 12H12V13H11Z"/>
+  <path fill="#363c55" fill-opacity=".56" d="M11 7H12V8H11ZM11 12H12V13H11Z"/>
+  <!-- steel: the light top of the arms, the shadow under the long arm, the upright -->
+  <path fill="#b2b9d0" d="M1 1H11V2H1Z"/>
+  <path fill="#727ea8" d="M7 2H8V3H7Z"/>
+  <path fill="#3a427f" d="M8 2H9V3H8Z"/>
+  <path fill="#4b5588" d="M9 2H10V3H9Z"/>
+  <path fill="#6c7ba7" d="M10 2H11V3H10Z"/>
+  <path fill="#556497" d="M8 3H9V4H8Z"/>
+  <path fill="#515c8e" d="M9 3H10V4H9Z"/>
+  <path fill="#6976a3" d="M8 4H9V23H8Z"/>
+  <path fill="#535e90" d="M9 4H10V23H9Z"/>
+  <path fill="#a4adc8" d="M10 3H11V23H10Z"/>
+  <path fill="#8e98ba" d="M7 23H8V24H7Z"/>
+  <path fill="#6876a3" d="M8 23H9V24H8Z"/>
+  <path fill="#5d6a99" d="M9 23H10V24H9Z"/>
+  <path fill="#99a1c0" d="M10 23H11V24H10Z"/>
+  <path fill="#a5adc8" d="M3 24H7V25H3Z"/>
+  <path fill="#7f8bb1" d="M7 24H8V25H7Z"/>
+  <path fill="#464f84" d="M8 24H10V25H8Z"/>
+  <path fill="#7884ac" d="M10 24H11V25H10Z"/>
+  <path fill="#4e5777" d="M10 7H11V8H10ZM10 12H11V13H10Z"/>
+  <path fill="#596597" d="M9 7H10V8H9ZM9 12H10V13H9Z"/>
+  <path fill="#626982" d="M8 7H9V8H8ZM8 12H9V13H8Z"/>
+  <path fill="#afb5cd" d="M10 8H11V9H10ZM10 13H11V14H10Z"/>
+  <path fill="#626e9d" d="M9 8H10V9H9ZM9 13H10V14H9Z"/>
+  <path fill="#7782aa" d="M8 8H9V9H8ZM8 13H9V14H8Z"/>
+</svg>

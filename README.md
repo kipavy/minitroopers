@@ -97,32 +97,46 @@ les archives n'en gardent aucune trace.
 
 ### Lecteur de combats amélioré
 
-Actif par défaut sur toutes les pages de combat. Son interface s'inspire de BetterTrooper (voir Crédits). Il est
-intégré nativement : pas d'extension de navigateur.
+Actif par défaut sur toutes les pages de combat. Son interface reprend celle de BetterTrooper, avec l'accord de son
+développeur (voir Crédits). Il est intégré nativement : pas d'extension de navigateur.
 
-- Pause et reprise, vitesse de ×1/8 à ×32, bouton ×2.
-- Frise des vagues : un clic va au début de la vague ; glisser ou Maj+clic va à l'événement exact.
-- Boutons de transport : événement précédent / suivant, vague précédente / suivante, début, fin.
-- Journal du combat en français, synchronisé avec le rejeu ; un clic sur une ligne y saute.
-- Lien de partage `?at=<événement>` : la page s'ouvre à ce point du combat.
-- Capture d'écran en PNG.
-- Avertissement quand un combat reste bloqué.
-- Disposition adaptée au mobile.
-- Raccourcis (`?` affiche l'aide) :
+- **Chargement progressif** : le combat commence à se jouer dès sa première entrée, pendant que le jeu calcule la
+  suite. Un voile en trois étapes couvre le chargement ; la partie de la frise pas encore calculée est hachurée
+  (« simulation NN % ») et le journal attend la fin du calcul.
+- **Sauts instantanés**, dans les deux sens : le jeu garde des images clés du combat et repart de la plus proche,
+  sans recharger le lecteur. Un saut au-delà de la partie calculée attend le calcul sous un voile.
+- **Pause native** : le bouton, `K` ou un clic sur le terrain ouvrent l'écran de pause du jeu (terrain grisé,
+  « PAUSE », fiche d'un trooper au clic). Les sauts gardent la pause.
+- **Transport** : pas de −50, −10, −5, −1, +1, +5, +10 et +50 événements ; maintenus, ils se répètent.
+- **Frise des vagues** : un clic va au début de la vague ; glisser ou Maj+clic va à l'événement exact.
+- **Vitesse** de ×1/16 à ×32 en 19 crans, bouton ×2 / ×1, `+` maintenu pour ×2.
+- **Journal du combat** en français, façon BetterTrooper : horloge, têtes et couleurs des armées, icônes du jeu
+  (armes, équipement, compétences), état des réserves ; il suit le combat, un clic sur une ligne y saute.
+- **Partage** : choix du départ (début, vague, événement), message prêt pour Discord, lien `?at=<événement>`.
+- **Capture d'écran** : le jeu seul ou encadré (titre, date, frise, lien), à télécharger ou copier.
+- Ligne d'état (événement, vague, images par seconde), avertissement quand un combat reste bloqué.
+- **Mobile** : quatre pas autour de la pause sous 720 px ; en paysage, scène sur toute la hauteur, commandes à
+  droite et plein écran au premier toucher.
+- Raccourcis (`?` affiche la liste) :
 
 | Touche | Action |
 |---|---|
-| Espace ou `K` | pause / reprise |
-| `←` / `→` | événement précédent / suivant (Maj : saut de plusieurs événements) |
-| `P` / `N` (ou PgHaut / PgBas) | vague précédente / suivante |
-| `Début` / `Fin` | début / fin du combat |
-| `+` / `-` ou `>` / `<` | vitesse supérieure / inférieure |
+| `K` ou Maj+Espace | pause / reprise |
+| Espace ou `N` | vague suivante |
+| `←` / `→` (Maj : ×10) | un événement en arrière / en avant |
+| PgHaut ou `P` | début de la vague (deux fois vite : la précédente) |
+| `Début` / `Fin` ou `H` / `E` | début / fin du combat |
+| `<` / `>` (ou `[` / `]`) | vitesse : un cran |
+| `+` maintenu | ×2 tant que la touche est enfoncée |
+| `S` | partager |
 | `C` | capture d'écran |
-| `?`, `Échap` | afficher / fermer l'aide |
+| Ctrl+`/` ou `?` | cette liste |
 
 Le lecteur modifie la boucle d'affichage de `client_fr_play.swf`, jamais le calcul du combat : le résultat reste
-identique à l'original, ce que vérifie le banc oracle. `v1.0.0` (et l'image `ghcr.io/kipavy/minitroopers:1.0.0`)
-garde le lecteur d'origine. Détails : [conception](docs/superpowers/specs/2026-11-24-lecteur-ameliore-design.md),
+identique à l'original, entrée pour entrée, ce que vérifie le banc oracle. `v1.0.0` (et l'image
+`ghcr.io/kipavy/minitroopers:1.0.0`) garde le lecteur d'origine. Détails :
+[conception](docs/superpowers/specs/2026-11-24-lecteur-ameliore-design.md),
+[sauts instantanés](docs/superpowers/specs/2026-11-25-sauts-instantanes-design.md),
 [recherche sur le SWF](docs/research/lecteur-swf.md).
 
 ### Aperçus de liens

@@ -246,3 +246,26 @@ Risk order: progress (none) < speed/pause by call count < fast-forward seek (per
 jump (Motion-Twin's own skip, cosmetic gaps) < in-SWF rewind (high → use page reload).
 Performance: cap calls per frame by time, hide the Game clip while seeking; the map already thins particles
 (`§n#\x07\f§.§\b&\tS§`). Free today: Space (next wave) and numpad + (16×) once the player has focus.
+
+## 9. Ce qui a été construit : images clés et simulation paresseuse
+
+Les sections 4 et 6 décrivent les pistes de départ ; voici ce qui est en place (`client_fr_play.swf?v=12`). Le détail
+des correctifs P-code et de l'API est dans [tools/oracle/instrument/README.md](../../tools/oracle/instrument/README.md).
+
+- **Images clés** (`mtKf`) : après chaque `resolve()`, le SWF lit l'historique et l'état des troopers (la même
+  fonction `getInfos()` que le `CheckPoint` natif, sans tirage aléatoire ni écriture). Une image clé toutes les
+  4 entrées environ, après chaque `NewWave`, à l'index 0 et à la fin. Elle garde les troopers vivants, leur état,
+  les morts de la vague et les armes au sol.
+- **Saut** (`mtGoto(n)`) : synchrone, dans les deux sens, sans recharger le lecteur. Le jeu restaure l'image clé
+  la plus proche avant `n`, puis rejoue caché les entrées restantes. L'historique n'est jamais modifié : la file du
+  jeu joue une copie (`mtHist`). En pause, le saut garde la pause et son écran.
+- **Simulation paresseuse** : l'état 0 du jeu (le calcul complet avant la première image) est quitté dès la
+  première entrée. Le reste est calculé par tranches pendant la lecture, environ 5 ms par image, soit environ
+  0,4 s pour un combat entier. Mêmes appels à `resolve()` dans le même ordre : l'historique est identique, entrée
+  pour entrée (vérifié sur 30 combats de référence).
+- **Échanges avec la page** : `mtSim({events, complete, waves, starts, checkpoints})` à chaque image qui ajoute des
+  entrées ; `mtReady` seulement une fois le combat complet. Un saut au-delà de la partie calculée renvoie `false`
+  avec `mtState().target = n` ; le SWF calcule alors tout le reste à l'image suivante et saute.
+- **Côté page** (`apps/server/public/js/player.js`) : voile de chargement en trois étapes, frise hachurée sur la
+  partie non calculée (« simulation NN % », rapporté au nombre exact d'entrées, connu du serveur par le journal),
+  voile du journal, voile déterminé pendant un saut en attente.
