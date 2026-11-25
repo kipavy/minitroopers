@@ -765,6 +765,7 @@ test("lazy simulation on large/00016: playback starts before the battle is fully
     assert.equal(c0.ready.length, 0, "playback started before mtReady");
     assert.ok(c0.sim.length > 0 && !c0.sim[0]!.complete && c0.sim[0]!.events < total, `first mtSim ${JSON.stringify(c0.sim[0])}`);
     const n = total - 5;
+    await p.call("mtPause"); // playback would go on past n once landed
     const r = await p.call("mtGoto", n);
     const s0 = await p.call("mtState");
     if (!r && !s0.complete) assert.deepEqual({ seeking: s0.seeking, target: s0.target }, { seeking: true, target: n }, "jump waiting for the simulation");

@@ -387,7 +387,7 @@ ofs0081:
             }
             return _loc6_ + "(" + §(m]a\x02§.mtStr(_loc4_,param2 + 1).slice(1,-1) + ")";
          }
-         if(getQualifiedClassName(param1) == "Object")
+         if(Object(param1).constructor === Object)
          {
             _loc4_ = [];
             for(_loc6_ in param1)
@@ -1011,7 +1011,7 @@ ofs0081:
          }
          else
          {
-            param1.§\x011wD§.addEventListener(Event.ENTER_FRAME,mtSimFrame);
+            param1.§\x011wD§.addEventListener(Event.ENTER_FRAME,mtSimFrame,false,1);
          }
       }
 
@@ -1189,7 +1189,7 @@ ofs0081:
       // --- lazy simulation (as BetterTrooper): the Game's state 0 resolves the battle 200 steps per frame until it is
       // over, then plays it. Here state 0 is left as soon as the history has an entry (mtKfGo returns true: the Game
       // takes the history and goes to state 1, mtInit runs); the battle is then resolved mtAheadN steps per frame by
-      // mtSimFrame (an ENTER_FRAME listener of the Game clip, after the Game's own: state 1 and 2), while it plays. Each
+      // mtSimFrame (an ENTER_FRAME listener of the Game clip, before the Game's own (priority 1): states 1 and 2), while it plays. Each
       // frame the new entries are copied to mtHist and appended to the Game's queue (unless the Winner was applied), the
       // keyframes' display state (mtShownStep), waves, checkpoints, wave starts are brought up to date, and the page gets
       // mtSim({events, complete, waves, starts, checkpoints}). mtReady comes once the battle is complete, as before.
@@ -1237,7 +1237,7 @@ ofs0081:
       public static function mtSimFrame(param1:*) : void
       {
          var _loc2_:* = mtSimB;
-         var _loc3_:int = mtSimTarget >= 0 && mtAheadN < 30 ? 30 : mtAheadN;
+         var _loc3_:int = mtSimTarget >= 0 ? 2147483647 : mtAheadN;
          var _loc4_:int = 0;
          var _loc5_:Boolean = false;
          var _loc6_:int = 0;
@@ -1246,13 +1246,14 @@ ofs0081:
             return;
          }
          _loc6_ = getTimer();
-         // mtAheadN steps per frame (30 at least while a jump waits), as BetterTrooper: no time limit
+         // mtAheadN steps per frame, as BetterTrooper; while a jump waits: all the steps up to its entry in this frame
+         // (at most the whole battle, ~0.3 s once, as the original state 0), then the jump in the same frame (mtSimSync)
          while(_loc4_ < _loc3_)
          {
             _loc4_++;
             _loc5_ = _loc2_.MnRZ();
             mtKf(_loc2_);
-            if(_loc5_)
+            if(_loc5_ || mtSimTarget >= 0 && _loc2_.§7\x13JZ\x03§.length >= mtSimTarget)
             {
                break;
             }
@@ -1500,7 +1501,7 @@ ofs0081:
             }
             return;
          }
-         if(getQualifiedClassName(param1) == "Object")
+         if(Object(param1).constructor === Object)
          {
             _loc4_ = param1["iE!m\x02"];
             if(param1["\x1e,d\x01"] != null && _loc4_ is Array)
@@ -1809,7 +1810,7 @@ ofs0081:
             }
             return;
          }
-         if(getQualifiedClassName(param1) == "Object")
+         if(Object(param1).constructor === Object)
          {
             if(param1["\x1e,d\x01"] != null && param1["iE!m\x02"] is Array)
             {
@@ -1939,7 +1940,7 @@ ofs0081:
             }
             return _loc2_;
          }
-         if(getQualifiedClassName(param1) == "Object")
+         if(Object(param1).constructor === Object)
          {
             _loc2_ = {};
             for(_loc3_ in param1)
@@ -2857,7 +2858,7 @@ ofs0081:
                _loc4_++;
             }
          }
-         else if(param1 != null && !(param1 is String) && getQualifiedClassName(param1) == "Object")
+         else if(param1 != null && !(param1 is String) && Object(param1).constructor === Object)
          {
             param2[0]++;
             for(_loc3_ in param1)
