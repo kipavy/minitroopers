@@ -79,7 +79,7 @@ for (const mode of MODES) {
     assert.ok(!page.includes("braziball") && !page.includes("trax.motion-twin"));
   });
 
-  test(`[${mode}] unlocked missions unplayed: 5th battle goes to /hq, then the 3rd failed mission try goes to /endDay`, async () => {
+  test(`[${mode}] unlocked missions unplayed: 5th battle goes to /hq, then the 3rd failed try of the LAST mission goes to /endDay`, async () => {
     const env = setup(mode);
     const { cl, id } = await warp(env);
     env.db.prepare("UPDATE armies SET missions_unlocked = 1 WHERE id = ?").run(id);
@@ -89,13 +89,16 @@ for (const mode of MODES) {
     assert.ok(toHq(await view(env, cl, v5)));
     assert.equal((await get(env, cl, "/endDay")).status, 302);
     assert.equal((await get(env, cl, "/endDay")).headers.get("location"), loc(mode, "/hq"));
-    // 3 lost tries, stored one by one
-    const ids: number[] = [];
-    for (let n = 1; n <= 3; n++) {
-      ids.push(copyAs(env, id, "mission", "exterminate", null, "loss"));
-      env.db.prepare("INSERT INTO daily(army_id, day, missions_used) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET missions_used = excluded.missions_used").run(id, today(env), n);
-      const p = await view(env, cl, `/b/view/miss${n}?d=${today(env)}`);
-      assert.equal(endsAt(p, mode), n === 3, `try ${n}`);
+    // 3 lost tries of each mission (exterminate, then infiltrate), stored one by one: only the last one ends the day
+    let n = 0;
+    for (const type of ["exterminate", "infiltrate"]) {
+      for (let k = 1; k <= 3; k++) {
+        copyAs(env, id, "mission", type, null, "loss");
+        env.db.prepare("INSERT INTO mission_day(army_id, day, type, used) VALUES (?, ?, ?, ?) ON CONFLICT(army_id, day, type) DO UPDATE SET used = excluded.used").run(id, today(env), type, k);
+        n++;
+        const p = await view(env, cl, `/b/view/miss${n}?d=${today(env)}`);
+        assert.equal(endsAt(p, mode), n === 6, `try ${n}`);
+      }
     }
   });
 

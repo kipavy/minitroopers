@@ -47,7 +47,7 @@ function compare(a, b) {
 }
 
 const BROWSER = process.env.SHOTS_BROWSER || join(process.env.LOCALAPPDATA ?? "", "BraveSoftware/Brave-Browser/Application/brave.exe");
-const FREEZE_CSS = "ruffle-player, ruffle-object, object, embed { visibility : hidden !important; } #miss_tip, #raid_tip { visibility : hidden !important; }";
+const FREEZE_CSS = "ruffle-player, ruffle-object, object, embed { visibility : hidden !important; } [id^="miss_tip"], #raid_tip { visibility : hidden !important; }";
 
 /** One headless browser on `profile`; returns a small CDP driver. */
 async function openBrowser(profile) {

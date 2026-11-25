@@ -490,8 +490,8 @@ async function createArmyIn(page: Page, name: string, hq: string): Promise<void>
   }), page.click("#submit")]);
 }
 
-// Stage 3: referral, mission of the day, raid, password. A creates an army; B signs up through A's recruit link;
-// A opens /history (+100 bounty), unlocks and plays the mission of the day, raids with B, then sets a password.
+// Stage 3: referral, missions, raid, password. A creates an army; B signs up through A's recruit link;
+// A opens /history (+100 bounty), unlocks the missions and plays Exterminer, raids with B, then sets a password.
 // The mission and the raid are replayed by the SWF with the winner stored in the database.
 for (const mode of ["path", "subdomain"] as Mode[]) {
   test(`[e2e ${mode}] referral, mission and raid replayed by the SWF with the stored winner, password`, { timeout: 1_200_000 }, async (t) => {
@@ -541,13 +541,13 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       assert.equal(armyOf("bidasses")!.credits, referralBounty(1), "first recruit bounty");
       assert.equal(referralBounty(1), 100);
 
-      // 4. A unlocks the missions (5) and plays the mission of the day (whatever type the day draws)
+      // 4. A unlocks the missions (5) and plays one of them (Exterminer: every mission is there every day)
       await pa.goto(at("bidasses", "/hq"));
       await Promise.all([pa.waitForURL(at("bidasses", "/hq")), pa.click('a[href*="/b/unlock?chk="]')]);
       assert.equal(armyOf("bidasses")!.credits, 100 - MISSION_UNLOCK_COST);
-      await Promise.all([pa.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/miss1?d="))), pa.click('a[href*="/b/mission?n=0;chk="]')]);
+      await Promise.all([pa.waitForURL((u) => u.href.startsWith(at("bidasses", "/b/view/miss1?d="))), pa.click('a[href*="/b/mission?type=exterminate;n=0;chk="]')]);
       const m = db.prepare("SELECT input, winner, mode FROM battles WHERE attacker_id = ? AND kind = 'mission'").get(a.id) as { input: string; winner: number | null; mode: string };
-      assert.ok(["exterminate", "infiltrate", "epic"].includes(m.mode), `mission type ${m.mode}`);
+      assert.equal(m.mode, "exterminate");
       const mWon = m.winner !== null && m.winner === (JSON.parse(m.input) as BattleInput).attackerSide;
       await swfReplay(pa, `${mode}-mission-${m.mode}`, mWon, mWon ? at("bidasses", `/hq?money=${missionReward(true)}`) : at("bidasses", "/hq"));
       // replay page (seen): no reward link any more

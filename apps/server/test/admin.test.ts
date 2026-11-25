@@ -373,24 +373,24 @@ test("reset-day battles: the day's opponents are drawn again (frozen until the n
   assert.equal(battlesUsed(env.db, id, day), 0);
 });
 
-test("reset-day mission: same mission again, MISSION_ATTEMPTS fresh tries, a pre-reset URL replays nothing", async () => {
+test("reset-day mission: the mission again, MISSION_ATTEMPTS fresh tries, target drawn again, a pre-reset URL replays nothing", async () => {
   const env = setup();
   const { cl, id, at } = await warpArmy(env);
   const day = dayOf(env);
-  env.db.prepare("INSERT INTO daily(army_id, day, mission_type, mission_target) VALUES (?, ?, 'exterminate', 'tgt')").run(id, day);
+  env.db.prepare("INSERT INTO mission_day(army_id, day, type, target) VALUES (?, ?, 'exterminate', 'tgt')").run(id, day);
   env.db.prepare("UPDATE armies SET missions_unlocked = 1 WHERE id = ?").run(id);
   let calls = 0;
-  const go = (used: number, win: boolean) => fightMission(env.db, { armyId: id, day, now: env.clock.t, used, decide: () => (calls++, stubMode("exterminate", win)) });
+  const go = (used: number, win: boolean) => fightMission(env.db, { armyId: id, day, type: "exterminate", now: env.clock.t, used, decide: () => (calls++, stubMode("exterminate", win)) });
   assert.equal(go(0, true).ok, true);
   assert.equal(go(1, true).ok, false); // won: done for the day
   const before = rowsOf(env.db, id, "mission");
   resetDay(env.db, id, day, { mission: true });
-  const m = missionDay(env.db, id, day);
-  assert.deepEqual({ type: m.type, target: m.target, won: m.won, used: m.used }, { type: "exterminate", target: "tgt", won: false, used: 1 });
+  const m = missionDay(env.db, id, day, "exterminate");
+  assert.deepEqual({ target: m.target, won: m.won, used: m.used }, { target: null, won: false, used: 1 });
   assert.deepEqual(rowsOf(env.db, id, "mission"), before);
   const credits = creditsOf(env.db, id);
   // the pre-reset URL (n=0), through the route: shows the try it made, fights nothing
-  const stale = at(`/b/mission?n=0;chk=${cl.key}`);
+  const stale = at(`/b/mission?type=exterminate;n=0;chk=${cl.key}`);
   const r = await cl.req(stale.url, { host: stale.host });
   assert.equal(r.status, 302);
   assert.match(r.headers.get("location")!, /\/b\/view\/miss1\?d=/);
@@ -399,7 +399,7 @@ test("reset-day mission: same mission again, MISSION_ATTEMPTS fresh tries, a pre
   for (let k = 0; k < MISSION_ATTEMPTS; k++) assert.equal(go(1 + k, false).ok, true);
   assert.equal(go(1 + MISSION_ATTEMPTS, false).ok, false);
   assert.equal(calls, 1 + MISSION_ATTEMPTS);
-  assert.deepEqual(missionsOfDay(env.db, id, day).map((t) => t.n), [2, 3, 4]);
+  assert.deepEqual(missionsOfDay(env.db, id, day, "exterminate").map((t) => t.n), [2, 3, 4]);
 });
 
 test("reset-day raid: phase 1 again with every recruit alive, at a new URL counter; the pre-reset URL replays nothing", async () => {
@@ -519,7 +519,7 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     db.prepare("INSERT INTO armies(host, name, part, faction, credits, created_at, recruiter_id) VALUES ('recrue','Recrue',0,0,0,1,?)").run(a.id);
     const today = "2026-01-15"; // explicit --day below: never flaky around midnight
     db.prepare("INSERT INTO battles(day, attacker_id, input, winner) VALUES (?, ?, '{}', 0)").run(today, a.id);
-    db.prepare("INSERT INTO daily(army_id, day, missions_used, mission_won, mission_type) VALUES (?, ?, 1, 1, 'epic')").run(a.id, today);
+    db.prepare("INSERT INTO mission_day(army_id, day, type, used, won) VALUES (?, ?, 'epic', 1, 1)").run(a.id, today);
     db.close();
 
     assert.match(cli(dir, "show", "--army", "rats-morts").stdout, /Recrues : 0 confirmée\(s\), 1 en attente/);
@@ -535,8 +535,8 @@ test("admin CLI edits: show, set-credits, set-rats, unlock-missions, rename, lev
     const rd = cli(dir, "reset-day", "--army", "rats-morts", "--day", today, "--what", "battles");
     assert.equal(rd.status, 0, rd.stderr);
     assert.match(rd.stdout, /Batailles : 0\//);
-    assert.match(rd.stdout, /Mission : epic, essais 1\/3, gagnée : oui/);
-    assert.match(cli(dir, "reset-day", "--army", "rats-morts", "--day", today).stdout, /Mission : epic, essais 0\/3, gagnée : non/);
+    assert.match(rd.stdout, /Mission epic : essais 1\/3, gagnée : oui/);
+    assert.match(cli(dir, "reset-day", "--army", "rats-morts", "--day", today).stdout, /Mission epic : essais 0\/3, gagnée : non/);
     db = openDb(join(dir, "minitroopers.db"));
     assert.equal((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE attacker_id = ?").get(a.id) as { n: number }).n, 1);
     db.close();

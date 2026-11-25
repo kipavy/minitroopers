@@ -54,8 +54,13 @@ type Row = { id: number; kind: string; mode: string; defender_id: number | null;
 const missions = (env: Env, id: number): Row[] => env.db.prepare("SELECT * FROM battles WHERE attacker_id = ? AND kind = 'mission' ORDER BY id").all(id) as unknown as Row[];
 const won = (r: Row): boolean => r.winner !== null && r.winner === (JSON.parse(r.input) as BattleInput).attackerSide;
 type Daily = { missions_used: number; mission_won: number; mission_type: string | null; mission_target: string | null };
+/** The mission chosen by `prepare` for an env (missions are no longer drawn: every one is played by its type). */
+const current = new WeakMap<Env, string>();
+/** Today's state of the prepared mission, under the former `daily` column names. */
 const daily = (env: Env, id: number, day = today(env)): Daily | undefined =>
-  env.db.prepare("SELECT missions_used, mission_won, mission_type, mission_target FROM daily WHERE army_id = ? AND day = ?").get(id, day) as Daily | undefined;
+  env.db
+    .prepare("SELECT used AS missions_used, won AS mission_won, type AS mission_type, target AS mission_target FROM mission_day WHERE army_id = ? AND day = ? AND type = ?")
+    .get(id, day, current.get(env) ?? "exterminate") as Daily | undefined;
 
 /** A stored army made directly: `troopers[i]` goes to slot i. */
 function army(env: Env, host: string, troopers: { seed: number; name: string; choices?: number[] }[], o: { recruiterId?: number | null } = {}): number {
@@ -90,13 +95,14 @@ async function warp(env: Env, credit = 100) {
 }
 
 const get = (env: Env, cl: Client, path: string): Promise<Response> => {
-  const at = env.at("warp", path);
+  // a try link without its type plays the prepared mission
+  const at = env.at("warp", path.replace("/b/mission?n=",`/b/mission?type=${current.get(env) ?? "exterminate"};n=`));
   return cl.req(at.url, { host: at.host });
 };
 const loc = (mode: Mode, path: string): string => (mode === "path" ? `/a/warp${path}` : `http://warp.lvh.me:8080${path}`);
-/** Freezes today's mission type (as the first HQ visit would) and unlocks the missions. */
+/** Chooses the mission the following try links play, and unlocks the missions. */
 const prepare = (env: Env, id: number, type: string, unlocked = true): void => {
-  env.db.prepare("INSERT INTO daily(army_id, day, mission_type) VALUES (?, ?, ?) ON CONFLICT(army_id, day) DO UPDATE SET mission_type = excluded.mission_type").run(id, today(env), type);
+  current.set(env, type);
   env.db.prepare("UPDATE armies SET missions_unlocked = ? WHERE id = ?").run(unlocked ? 1 : 0, id);
 };
 /** A strong roster (12 troopers of level 21). */
@@ -115,8 +121,9 @@ function battleFlashvars(html: string): string {
 }
 
 /** Mission links of the HQ: [n, key]. */
-const missionLinks = (html: string): { n: number; key: string; href: string }[] =>
-  [...html.matchAll(/href="([^"]*\/b\/mission\?n=(\d+);chk=([A-Za-z0-9]{6}))"/g)].map((m) => ({ href: m[1]!, n: Number(m[2]), key: m[3]! }));
+/** Try links of one mission box (`type`) of the HQ. */
+const missionLinks = (html: string, type = "exterminate"): { n: number; key: string; href: string }[] =>
+  [...html.matchAll(/href="([^"]*\/b\/mission\?type=(\w+);n=(\d+);chk=([A-Za-z0-9]{6}))"/g)].filter((m) => m[2] === type).map((m) => ({ href: m[1]!, n: Number(m[3]), key: m[4]! }));
 
 test("exterminate: a won try adds one rat, capped at RATS_MAX (100)", async () => {
   assert.equal(RATS_MAX, 100);
@@ -129,7 +136,7 @@ test("exterminate: a won try adds one rat, capped at RATS_MAX (100)", async () =
   const rats = (): number => (env.db.prepare("SELECT rats FROM armies WHERE id = ?").get(id) as { rats: number }).rats;
   env.db.prepare("UPDATE armies SET missions_unlocked = 1, rats = ? WHERE id = ?").run(RATS_MAX - 1, id);
   for (const day of ["2026-11-23", "2026-11-24", "2026-11-25"]) {
-    assert.equal(fightMission(env.db, { armyId: id, day, now: env.clock.t, used: 0, decide: win }).ok, true, day);
+    assert.equal(fightMission(env.db, { armyId: id, day, type: "exterminate", now: env.clock.t, used: 0, decide: win }).ok, true, day);
   }
   assert.equal(rats(), RATS_MAX);
 });
@@ -140,7 +147,10 @@ for (const mode of MODES) {
     const { cl, key, id } = await warp(env, 12);
     prepare(env, id, "exterminate", false);
     const hq = await (await get(env, cl, "/hq")).text();
-    assert.ok(hq.includes('<h1 class="hbox">Mission : Exterminer</h1>'));
+    // choice D: a single "Missions" box before the unlock
+    assert.ok(hq.includes('<h1 class="hbox">Missions</h1>'));
+    assert.ok(!hq.includes("Mission : Infiltrer"));
+    assert.ok(hq.includes("Débloque les missions : Exterminer et Infiltrer tous les jours !"));
     assert.ok(hq.includes("url('/img/mode/attic.jpg')"));
     assert.ok(hq.includes(`href="${loc(mode, `/b/unlock?chk=${key}`)}"`), "unlock tile");
     assert.ok(hq.includes("Débloquer pour 5"));
@@ -164,6 +174,8 @@ for (const mode of MODES) {
     assert.ok(!after.includes("Débloquer pour 5"));
     const links = missionLinks(after);
     assert.equal(links.length, 3);
+    assert.equal(missionLinks(after, "infiltrate").length, 3, "infiltrate too, every day");
+    assert.ok(after.includes("Encore 10 recrues"), "epic blocked under 10 recruits (choice A)");
     assert.ok(links.every((l) => l.n === 0 && l.key === key));
     assert.ok(after.includes("Il te reste 3 essais pour la mission du jour !"));
     assert.ok(after.includes("Nouvelle mission dans"));
@@ -240,7 +252,7 @@ for (const mode of MODES) {
     assert.equal(missionLinks(hq).length, 0);
     for (const n of [1, 2, 3]) assert.ok(hq.includes(`href="${loc(mode, `/b/view/miss${n}`)}" class="b_bg bdefeat_bg"`));
     // the tooltip is a valid JS string: the apostrophe is escaped for JS, not only for HTML (which the browser decodes)
-    assert.ok(hq.includes(`onmouseover="_.showTip('miss_tip','Ce combat s\\'est soldé par un échec !')"`));
+    assert.ok(hq.includes(`onmouseover="_.showTip('miss_tip_exterminate','Ce combat s\\'est soldé par un échec !')"`));
     assert.ok(!hq.includes("s&#39;est soldé"));
     // first view of a defeat: failure message, back to the HQ, no button
     const page = await (await get(env, cl, "/b/view/miss2")).text();
@@ -289,7 +301,7 @@ for (const mode of MODES) {
     assert.ok(replay.includes(`document.location = ${JSON.stringify(loc(mode, "/hq"))};`));
     // HQ: the win tile, no try left
     const hq = await (await get(env, cl, "/hq")).text();
-    assert.ok(hq.includes(`href="${loc(mode, "/b/view/miss1")}" class="b_bg bwin_bg" onmouseover="_.showTip('miss_tip','Tu as remporté la mission du jour !')"`));
+    assert.ok(hq.includes(`href="${loc(mode, "/b/view/miss1")}" class="b_bg bwin_bg" onmouseover="_.showTip('miss_tip_exterminate','Tu as remporté la mission du jour !')"`));
     assert.equal(missionLinks(hq).length, 0);
     assert.ok(hq.includes('<div class="action bcount1">'));
     // next day: 2 rats
@@ -375,24 +387,21 @@ for (const mode of MODES) {
     assert.equal(daily(env, id)!.missions_used, 1);
   });
 
-  test(`[${mode}] the day changes at midnight: counter back to 0, a new type is drawn`, async () => {
+  test(`[${mode}] the day changes at midnight: every mission's counter back to 0`, async () => {
     const env = setup(mode);
     env.clock.t = Date.parse("2026-11-23T22:59:59Z"); // 23:59:59 in Paris
     const { cl, key, id } = await warp(env);
-    env.db.prepare("UPDATE armies SET missions_unlocked = 1 WHERE id = ?").run(id);
-    await get(env, cl, "/hq"); // first visit: the type is drawn and frozen
-    const first = daily(env, id)!;
-    assert.ok(["exterminate", "infiltrate"].includes(first.mission_type!));
+    prepare(env, id, "exterminate");
     await get(env, cl, `/b/mission?n=0;chk=${key}`);
     assert.equal(daily(env, id)!.missions_used, 1);
     env.clock.t = Date.parse("2026-11-23T23:00:01Z"); // 00:00:01
     const hq = await (await get(env, cl, "/hq")).text();
-    const links = missionLinks(hq);
-    assert.equal(links.length, 3);
-    assert.ok(links.every((l) => l.n === 0));
-    const fresh = daily(env, id, "2026-11-24")!;
-    assert.equal(fresh.missions_used, 0);
-    assert.ok(fresh.mission_type !== null);
+    for (const t of ["exterminate", "infiltrate"]) {
+      const links = missionLinks(hq, t);
+      assert.equal(links.length, 3, t);
+      assert.ok(links.every((l) => l.n === 0));
+    }
+    assert.equal(daily(env, id, "2026-11-24"), undefined);
     await get(env, cl, `/b/mission?n=0;chk=${key}`);
     assert.equal(daily(env, id, "2026-11-24")!.missions_used, 1);
   });

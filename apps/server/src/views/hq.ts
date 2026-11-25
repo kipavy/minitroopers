@@ -9,7 +9,7 @@ import { eventBanner } from "./event.ts";
 import { layout, tip } from "./layout.ts";
 import { jsStr } from "./swf.ts";
 import { armyGrid, armyMenu, insertPass, menuOf, newChildItem } from "./panel.ts";
-import { missionBox } from "./mission.ts";
+import { missionBox, missionTip } from "./mission.ts";
 import { defenseItem } from "./history.ts";
 
 export interface HqView {
@@ -40,8 +40,12 @@ export interface HqView {
   locked: boolean;
   /** Error shown with the locked view (wrong password). */
   lockError?: string;
-  /** The mission of the day (box title, unlock, tries) and the session key of its action links. */
-  mission: { type: MissionType; unlocked: boolean; tries: DayBattle[]; next: number; key: string };
+  /**
+   * The mission boxes, in the HQ order (spec 2026-11-25-missions-quotidiennes-design.md §5): exterminate, infiltrate,
+   * epic once unlocked (epic with `epicMissing` under 10 recruits); a single unlock box before; three empty boxes for a
+   * stranger (locked).
+   */
+  missions: { type: MissionType; unlocked: boolean; tries: DayBattle[]; next: number; key: string; epicMissing?: number }[];
   /**
    * Today's raid: phase to fight (or last fought once over), URL counter of its link (`RaidDay.step`), living recruits,
    * outcome of the last phase once over.
@@ -268,7 +272,7 @@ ${historyList(cfg, v)}
 ${eventBanner(cfg, v.now)}
 ${battleBox(cfg, v)}
 
-${missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn), ...v.mission })}
+${raw(v.missions.map((m) => missionBox(cfg, { host: a.host, locked: v.locked, attempts: MISSION_ATTEMPTS, unlockCost: MISSION_UNLOCK_COST, timer: resetTimer(v.resetIn, missionTip(m.type)), ...m }).value).join(" "))}
 ${raidBox(cfg, v)}
 ${AD_SLOT}
 ${recruitBox(cfg, v)}
