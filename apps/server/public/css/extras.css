@@ -405,6 +405,7 @@ td.right > .event-banner {
 	body.mtm .ranks table th, body.mtm .ranks table td {
 		padding-left : 3px;
 		padding-right : 3px;
+		overflow-wrap : anywhere;
 	}
 	body.mtm .ranks p {
 		margin : 0px 6px;
