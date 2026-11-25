@@ -114,10 +114,10 @@ Validée par Killian sur captures.
 - Les jours de recharge, la boîte a une **seconde rangée de 3 cases**, sous les cases du jour.
 - **Cadre d'une seule pièce.** Le bas de la boîte devient une image plus haute de 32 px, `box2bottom-reserve.png`, tirée
   de `box2bottom.png` : la bande camouflage intérieure (lignes 0 à 29) est prolongée en recopiant ses propres lignes.
-  - Après la ligne 26, on insère les lignes 25 à 11 en miroir, puis 11 à 26 dans l'ordre : chaque raccord est continu.
+  - Après la ligne 26, on insère les lignes 25 à 10 en miroir, puis 11 à 26 dans l'ordre (32 lignes) : chaque raccord est continu.
   - Pas d'étirement ni de superposition.
   - L'image est générée par un script versionné (`apps/server/scripts/`), comme `gen-og-image.mjs`.
-  - La zone `.action` passe de 51 à 83 px.
+  - La zone `.action` passe de 51 à 82 px (mesuré : la ligne d'info dépasse de 4 px comme l'original).
   - La ligne d'info dépasse le bas de la boîte de **4 px, comme l'original**. C'est mesuré.
 - **Cases.** Ce sont les vraies cases du jeu (`.b.bgo2` : images `bgo_left/right/bg`, coins et survol d'origine), larges.
   - 3 cases de 101 px, espacées de 3 px.
