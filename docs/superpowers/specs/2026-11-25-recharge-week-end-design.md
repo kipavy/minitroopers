@@ -62,6 +62,14 @@ Ces points sont fixés par Killian, sauf la fonction de hachage, qui est mon cho
 - Le multiplicateur de gains (`rewardMultiplier`) ne s'applique que si la formule contient ×3. Il concerne les combats,
   les missions et le raid, comme aujourd'hui. Gains d'un week-end « recharge seule » : ×1.
 
+Tirage des prochains week-ends (FNV-1a 32 bits) :
+
+- 28/11 et 5/12 : recharge seule ;
+- 12/12 et 19/12 : ×3 seul ;
+- 26/12 et 2/1 : ×3 + recharge.
+
+Killian l'accepte tel quel : pas de ×3 au lancement (2026-11-25).
+
 ### 2. Recharge, réserve B
 
 Fixé avec Killian.
@@ -114,6 +122,14 @@ Validée par Killian sur captures.
 - **Cases.** Ce sont les vraies cases du jeu (`.b.bgo2` : images `bgo_left/right/bg`, coins et survol d'origine), larges.
   - 3 cases de 101 px, espacées de 3 px.
   - La rangée est alignée au pixel sur la rangée du jour (de 433 à 742 à 1280 px).
+  - Avec 6 ou 7 cases du jour (Commandement) : les 3 cases, toujours espacées de 3 px, couvrent exactement la largeur de
+    la rangée du jour, du bord gauche de sa première case au bord droit de sa dernière. C'est mon choix ; c'est mesuré
+    comme pour 5 cases.
+- **Résultats des combats de réserve** : uniquement dans l'historique (Killian, option a).
+  - La rangée du jour garde exactement le quota de base (5 à 7 cases) et n'affiche que les combats de base, c'est-à-dire
+    les N premiers combats comptés du jour.
+  - Une case de réserve jouée redevient grise, puis se recharge.
+  - La vue reçoit donc les combats de base séparés des combats de réserve.
 - **Case en recharge.** C'est la même case « GO ! », sans l'image du tank.
   - Sa partie à venir est désaturée (`saturate(.12) brightness(.97)`).
   - La partie colorée avance de gauche à droite selon le temps écoulé depuis la dernière recharge, sur 2 h : c'est une
@@ -126,7 +142,8 @@ Validée par Killian sur captures.
   - Réserve pleine (3/3) : 3 « GO ! ».
   - Après 22:00, sans recharge à venir : « GO ! » pour la réserve restante, et des cases grises pour le reste.
 - **Ligne d'info**, mon choix sauf « Réserve : 2 batailles sur 3 ! », validé.
-  - S'il reste du quota de base : texte actuel, « Il te reste N batailles aujourd'hui ! ».
+  - S'il reste du quota de base : texte actuel, « Il te reste N batailles aujourd'hui ! ». N = quota de base restant
+    seulement (mon choix : la réserve se voit dans sa propre rangée).
   - Sinon, avec une réserve : « Réserve : R bataille(s) sur 3 ! ».
   - Sinon, avec une recharge à venir : « Prochaine bataille dans [chrono] ».
   - Sinon : « Tu as terminé tes batailles du jour ! ».
