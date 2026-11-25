@@ -77,7 +77,8 @@ window.swfobject = { embedSWF: function (url, id) {
         if (s.target >= 0 && events >= s.target) { var n = s.target; s.target = -1; s.seeking = false; land(n); }
         if (s.complete) window.mtReady({ total: 40, checkpoints: [0, 12, 27], waves: READY.waves, starts: READY.starts });
       }, 150);
-      setTimeout(function () { land(1); }, 300);
+      // ?noplay: the battle never plays its first entry (the loading veil stays)
+      if (!/noplay/.test(location.search)) setTimeout(function () { land(1); }, 300);
     }, 1500);
   }
   // the game's own pause screen: it opens at the next frame, and the SWF tells the page (mtPaused) whatever the origin
@@ -549,7 +550,7 @@ test("loading: BetterTrooper's three steps under a veil over the greyed stage, g
     assert.deepEqual(seen, ["Chargement du lecteur et du jeu… (1/3)", "Démarrage du jeu… (2/3)", "Préparation du combat… (3/3)"]);
     assert.ok(busy, "the stage greyed under the veil");
     assert.equal(await page.$eval(".mtp-stage", (e) => e.classList.contains("mtp-busy")), false);
-    assert.ok((await calls(page)).some((c) => c[0] === "ahead" && c[1] === 4), "mtAhead(4)");
+    assert.ok(!(await calls(page)).some((c) => c[0] === "ahead"), "no mtAhead: the SWF's own pace (Killian's choice)");
   } finally {
     await close(page);
   }
@@ -610,6 +611,47 @@ test("simulation: Space past the last known wave waits for that wave (« Simulat
     await page.evaluate(() => ((window as unknown as { simGo: boolean }).simGo = true));
     await page.waitForFunction(() => (document.querySelector(".mtp-veil") as HTMLElement).hidden, null, { timeout: 5000 });
     assert.equal((await gotos(page)).at(-1), 27, "the start of wave 3 once known");
+    assert.ok((await gotos(page)).includes(40), "the wait went through mtGoto past the simulated part (the SWF catches up at once)");
+  } finally {
+    await close(page);
+  }
+});
+
+test("while loading: only the player's keys wait (Tab, Enter, Échap pass), the timeline is inert, a dialog opened then keeps the battle paused", async (t) => {
+  if (skip(t)) return;
+  const page = await openLazy();
+  try {
+    await page.waitForFunction(() => /\(1\/3\)/.test(document.querySelector(".mtp-veil__text")!.textContent!));
+    const prevented = await page.evaluate(() =>
+      ["Tab", "Enter", "Escape", "PageDown", " ", "k", "ArrowRight"].map((key) => {
+        const e = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        document.body.dispatchEvent(e);
+        return e.defaultPrevented;
+      }),
+    );
+    assert.deepEqual(prevented, [false, false, false, false, true, true, true]);
+    // the header's Partager opens its dialog at once; the battle, once it plays, stays paused under it
+    await page.click("#mtp-link");
+    await page.waitForFunction(() => (window as unknown as { mtPlayer: { idx: number } }).mtPlayer.idx > 0, null, { timeout: 10000 });
+    await page.waitForTimeout(600);
+    assert.equal((await swf(page)).paused, true, "paused under the dialog once playing");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    assert.equal((await swf(page)).paused, false, "playing once the dialog is closed");
+  } finally {
+    await close(page);
+  }
+});
+
+test("while loading: a click on the timeline does nothing", async (t) => {
+  if (skip(t)) return;
+  const page = await openLazy({}, "&stop=20&noplay");
+  try {
+    await page.waitForFunction(() => (window as unknown as { mtPlayer: { known: number } }).mtPlayer.known >= 10);
+    assert.equal(await page.evaluate(() => !(document.querySelector(".mtp-veil") as HTMLElement).hidden), true, "still loading");
+    const tr = (await page.locator("#mtp-track").boundingBox())!;
+    await page.mouse.click(tr.x + 10, tr.y + 10);
+    assert.deepEqual(await gotos(page), []);
   } finally {
     await close(page);
   }

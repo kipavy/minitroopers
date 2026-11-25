@@ -61,12 +61,9 @@
   var ui = null;
   // the exact number of entries: the server's log has one line per entry
   var EXACT = log.length;
-  // BetterTrooper's simulation lead (labNavAhead): 4 entries, 2 on touch screens
-  var AHEAD = coarse.matches ? 2 : 4;
   // the loading veil (until the battle plays its first entry) and a jump waiting for the simulation
   var loading = { t0: Date.now() };
   var wait = null;
-  var aheadSet = false;
 
   w.swfobject.embedSWF = function (url, id) {
     if (id === "swf_battle") started();
@@ -228,6 +225,9 @@
     if (k < waveCount()) return goto(waveStart(k));
     if (info.complete) return void toast("Il n'y a pas de vague " + (k + 1) + " dans ce combat.", { warning: true });
     startWait({ kind: "wave", k: k });
+    // a target past the simulated part: the SWF simulates the rest at once; the wave's start is sought once known
+    setSeeking(true);
+    if (call("mtGoto", total()) === true) setSeeking(false);
   }
 
   // --- a jump waiting for the simulation: the game paused meanwhile, BetterTrooper's determined veil ---
@@ -244,7 +244,10 @@
   function endWait(text) {
     var x = wait;
     wait = null;
-    if (x && x.paused) call("mtResume");
+    if (x && x.paused) {
+      if (anyHold()) resumeAfter = true;
+      else call("mtResume");
+    }
     if (text) toast(text, { warning: true });
     veil();
     update();
@@ -286,9 +289,14 @@
     seeking = v;
     clearInterval(seekTimer);
     if (v) {
+      var t0 = Date.now();
       seekTimer = setInterval(function () {
         var s = state();
         if (s && !s.seeking) setSeeking(false);
+        else if (!s && Date.now() - t0 > 20000) {
+          setSeeking(false);
+          setOff(true);
+        }
       }, 400);
     }
     veil();
@@ -355,23 +363,35 @@
 
   var holds = {};
   var resumeAfter = false;
+  var held = false;
+  function anyHold() {
+    for (var key in holds) if (holds[key]) return true;
+    return false;
+  }
+  /** Pauses the battle for the holds once it plays (not while loading); a waiting jump already paused it. */
+  function applyHolds() {
+    if (held || !anyHold() || !info.ready || loading) return;
+    held = true;
+    if (wait) return;
+    resumeAfter = !paused;
+    if (resumeAfter) call("mtPause");
+  }
   function holdRuffle(why, on) {
-    var any = function () {
-      for (var key in holds) if (holds[key]) return true;
-      return false;
-    };
     if (on) {
       if (holds[why]) return;
-      if (!any() && info.ready) {
-        resumeAfter = !paused;
-        if (resumeAfter) call("mtPause");
-      }
       holds[why] = true;
+      applyHolds();
     } else {
       if (!holds[why]) return;
       holds[why] = false;
-      if (!any() && resumeAfter) call("mtResume");
-      if (!any()) resumeAfter = false;
+      if (anyHold()) return;
+      // a waiting jump resumes the battle once landed instead
+      if (held && resumeAfter) {
+        if (wait) wait.paused = true;
+        else call("mtResume");
+      }
+      held = false;
+      resumeAfter = false;
     }
   }
   d.addEventListener("visibilitychange", function () {
@@ -434,7 +454,10 @@
       stuckBanner = null;
       fit();
     }
-    if (idx !== null) stuckBanner = banner("error", "Le combat est bloqué à l'événement " + idx + " : le jeu n'avance plus. Espace, la frise ou les boutons +1 à +50 font avancer le combat.");
+    if (idx !== null) {
+      var how = narrow.matches ? "La frise ou les boutons d'avance font" : "Espace, la frise ou les boutons +1 à +50 font";
+      stuckBanner = banner("error", "Le combat est bloqué à l'événement " + idx + " : le jeu n'avance plus. " + how + " avancer le combat.");
+    }
   }
 
   // --- share ---
@@ -925,13 +948,15 @@
     return !!(t && t.closest && t.closest("input, textarea, select, dialog, [contenteditable]"));
   }
   var swallowUntil = 0;
+  var PLAYER_KEYS = /^( |Spacebar|ArrowLeft|ArrowRight|Home|End|PageUp|[hHeEpPnNkKsScC<>[\]+=?])$/;
 
   function onKey(e) {
     if (off || e.defaultPrevented || own(e.target)) return;
     var mod = e.ctrlKey || e.metaKey || e.altKey;
-    // while loading or seeking, the keys wait
+    // while loading, seeking or waiting for the simulation, the player's keys wait (BetterTrooper holds every key;
+    // Tab, Enter, Échap and the others stay usable here)
     if (isBusy() || seeking || Date.now() < swallowUntil) {
-      if (!mod && !/^F([1-9]|1\d|2[0-4])$/.test(e.key || "")) {
+      if ((!mod && PLAYER_KEYS.test(e.key || "")) || helpKey(e)) {
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -1064,16 +1089,13 @@
   }
   /** Every 100 ms: the loading steps, the simulation lead, a waiting jump. */
   function tick() {
-    var e = el();
-    if (!aheadSet && e && typeof e.mtAhead === "function") {
-      call("mtAhead", AHEAD);
-      aheadSet = true;
-    }
-    if (loading && ((info.ready && info.idx > 0) || (info.complete && info.known === 0) || Date.now() - loading.t0 > 60000)) {
+    if (loading && !loading.ending && ((info.ready && info.idx > 0) || (info.complete && info.known === 0) || Date.now() - loading.t0 > 60000)) {
       // two frames: the first entry drawn under the veil
+      loading.ending = true;
       w.requestAnimationFrame(function () {
         w.requestAnimationFrame(function () {
           loading = null;
+          applyHolds();
           veil();
           update();
         });
@@ -1687,7 +1709,7 @@
       return info.complete ? r.width : 2 + (info.known / span()) * (r.width - 4);
     };
     track.addEventListener("pointerdown", function (e) {
-      if (!info.ready || wait || e.button !== 0) return;
+      if (!info.ready || loading || wait || e.button !== 0) return;
       drag = { x0: xOf(e), moved: false, shift: e.shiftKey };
       if (track.setPointerCapture) track.setPointerCapture(e.pointerId);
       e.preventDefault();
