@@ -108,7 +108,7 @@ test("jsq: JS-escapes \\ ' and line breaks, then HTML-escapes &<>\" (safe in onm
   assert.equal(jsq('a\\b\n<i>"&').value, "a\\\\b\\n&lt;i&gt;&quot;&amp;");
 });
 
-const SATURDAY = Date.parse("2026-11-28T10:00:00Z");
+const SATURDAY = Date.parse("2026-12-12T10:00:00Z"); // week-end « ×3 seul »
 const BANNER = 'class="event-banner"';
 /** Home page, trooper sheet and HQ of a fresh army at clock `t`. */
 async function pages(t: number, extra: Record<string, string> = {}): Promise<{ home: string; sheet: string; hq: string }> {
@@ -143,7 +143,25 @@ test("no event banner when WEEKEND_MULTIPLIER=1", async () => {
 });
 
 test("event banner follows TZ_GAME: Saturday 00:30 in Paris is still Friday in UTC", async () => {
-  assert.ok((await pages(Date.parse("2026-11-27T23:30:00Z"))).hq.includes(BANNER));
+  assert.ok((await pages(Date.parse("2026-12-11T23:30:00Z"))).hq.includes(BANNER));
+});
+
+test("banner of a « ×3 + recharge » weekend (2026-12-26): both in one line, recharge tooltip", async () => {
+  const hq = (await pages(Date.parse("2026-12-26T10:00:00Z"))).hq.replaceAll("&amp;#39;", "'").replaceAll("&#39;", "'"); // tooltip text: escaped twice (attribute, then tip HTML)
+  assert.ok(hq.includes('Événement du week-end : <strong>×3 <img src="/img/token.png" class="coin"/> et combats qui se rechargent toutes les 2 h</strong> !'));
+  assert.ok(hq.includes("+1 bataille toutes les 2 h, jusqu'à 3 en réserve, jusqu'à dimanche minuit."));
+});
+
+test("banner of a « recharge seule » weekend (2026-11-28): no ×3", async () => {
+  const hq = (await pages(Date.parse("2026-11-28T10:00:00Z"))).hq;
+  assert.ok(hq.includes("Événement du week-end : <strong>combats qui se rechargent toutes les 2 h</strong> !"));
+  assert.ok(!hq.includes("×3"));
+});
+
+test("WEEKEND_MULTIPLIER=1 on a Saturday drawn « recharge »: the recharge banner without ×3", async () => {
+  const hq = (await pages(Date.parse("2026-12-19T10:00:00Z"), { WEEKEND_MULTIPLIER: "1" })).hq;
+  assert.match(hq, /combats qui se rechargent toutes les 2 h/);
+  assert.ok(!hq.includes("×"));
 });
 
 const VIEWPORT = '<meta name="viewport" content="width=device-width, initial-scale=1"/>';

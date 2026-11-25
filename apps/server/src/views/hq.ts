@@ -1,5 +1,5 @@
 import type { BattleTrooperInput } from "@mt/engine";
-import { MISSION_ATTEMPTS, MISSION_UNLOCK_COST, type MissionType } from "@mt/game";
+import { MISSION_ATTEMPTS, MISSION_UNLOCK_COST, RESERVE_MAX, type MissionType } from "@mt/game";
 import type { Config } from "../config.ts";
 import type { ArmyRow, DayBattle, DefenseRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
@@ -75,15 +75,53 @@ function battleBox(cfg: Config, v: HqView): Html {
   // 6 or 7 tiles (COMMANDEMENT on top of the 5 of this instance) fit on one row only without the whitespace between the
   // inline-block tiles; up to 5 the markup stays the original one.
   const tiles = count > 5 ? raw(all.map((t) => t.value.trimEnd()).join("")) : all;
-  const tipText = left === 0 ? "Tu as terminé tes batailles du jour !" : `Il te reste ${left} ${left > 1 ? "batailles" : "bataille"} aujourd'hui !`;
+  const r = v.reserve;
+  const tipText: Html | string =
+    left > 0
+      ? `Il te reste ${left} ${left > 1 ? "batailles" : "bataille"} aujourd'hui !`
+      : r && r.ready > 0
+        ? `Réserve : ${r.ready} ${r.ready > 1 ? "batailles" : "bataille"} sur ${RESERVE_MAX} !`
+        : r && r.nextAt !== null
+          ? html`Prochaine bataille dans
+${chrono(Math.round((r.nextAt - v.now) / 1000))}`
+          : "Tu as terminé tes batailles du jour !";
   const train = html`<a href="${armyUrl(cfg, v.army.host, "/b/train")}" class="train-link" ${tip("Entraînement", "Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.")}>» S'entraîner (illimité)</a>`;
-  return html`<div class="box2"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>
+  if (!r) {
+    return html`<div class="box2"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>
 <div class="box2bottom"><div class="action bcount${count}">
 
 ${tiles}
 <div class="hqtip">${train}<img src="/img/info.png"/>
 <span id="bat_tip">${tipText}</span></div>
 </div></div></div></div>`;
+  }
+  return html`<div class="box2 reserve"><div class="box2bg" ${raw(BG("garden"))}><h1 class="hbox">Bataille</h1>
+<div class="box2bottom"><div class="action bcount${count} reserve">
+
+${tiles}
+${reserveRow(cfg, v, r)}
+<div class="hqtip">${train}<img src="/img/info.png"/>
+<span id="bat_tip">${tipText}</span></div>
+</div></div></div></div>
+<script type="text/javascript" src="/js/reserve.js?v=${RESERVE_JS_V}"></script>`;
+}
+
+const RESERVE_JS_V = 1;
+
+/**
+ * The reserve row of a recharge weekend (version F, spec 2026-11-25-recharge-week-end-design.md §4): `ready` GO tiles
+ * (links to /b/opp like the day's), then the recharging tile (a GO tile without the tank, coloured up to `--p` %, the
+ * rest desaturated, the chrono on top) when a recharge is still coming and the reserve is not full, then empty tiles.
+ */
+function reserveRow(cfg: Config, v: HqView, r: NonNullable<HqView["reserve"]>): Html {
+  const go = html`<div class="b bgo2"><div class="b_right bgo2_right"><a href="${armyUrl(cfg, v.army.host, "/b/opp")}" class="b_bg bgo2_bg" onmouseover="_.showTip('bat_tip','Lance une bataille de ta réserve !')" onmouseout="_.resetTip('bat_tip')"><img src="/img/bgo2.gif"/></a></div></div>`;
+  const cells: Html[] = Array.from({ length: r.ready }, () => go);
+  if (r.nextAt !== null && cells.length < RESERVE_MAX) {
+    const p = Math.max(0, Math.min(100, Math.round(((v.now - r.prevAt) / (r.nextAt - r.prevAt)) * 100)));
+    cells.push(html`<div class="b bgo2 recharging" data-from="${r.prevAt}" data-to="${r.nextAt}" data-now="${v.now}" style="--p:${p}"><div class="b_right bgo2_right"><span class="b_bg bgo2_bg"></span></div><i class="rest"></i><span class="clock">${chrono(Math.round((r.nextAt - v.now) / 1000))}</span></div>`);
+  }
+  while (cells.length < RESERVE_MAX) cells.push(html`<div class="b bgo2 empty"><div class="b_right bgo2_right"><span class="b_bg bgo2_bg"></span></div><i class="rest"></i></div>`);
+  return html`<div class="reserve-row">${raw(cells.map((c) => c.value).join(""))}</div>`;
 }
 
 /** The chrono itself (image and `mt.js.Timer`): `seconds` left, shown from a fixed base date. */
