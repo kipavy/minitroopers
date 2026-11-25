@@ -456,8 +456,10 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
 - **Simulation paresseuse** (comme BetterTrooper) : le combat n'est plus calculé en entier avant d'être joué. L'état 0
   du Game (200 `resolve()` par image jusqu'à la fin) est quitté dès que l'historique a une entrée (`mtKfGo`) ; `mtInit`
   part de cet historique partiel et `mtSimFrame` (écouteur ENTER_FRAME du clip du Game, avant celui du Game, priorité 1 : états 1
-  et 2) continue `resolve()` + `mtKf` par tranches pendant la lecture : au plus `mtAhead(n)` pas par image (4 par
-  défaut, comme leur `labNavAhead` ; 2 conseillé sur écran tactile), sans limite de temps comme chez eux ; tant qu'un saut
+  et 2) continue `resolve()` + `mtKf` par tranches pendant la lecture : par défaut autant de pas que 5 ms par image en
+  permettent (au moins un : le combat est complet ~0,4 s après le début sur un ordinateur, et un saut qui suit coûte
+  comme en `?v=10`) ; la page peut fixer un nombre de pas par image avec `mtAhead(n)` (comme leur `labNavAhead`,
+  1 à 200, sans limite de temps), et revenir au défaut avec `mtAhead(0)` ; tant qu'un saut
   attend, tous les pas jusqu'à son entrée dans l'image suivante. Chaque image, les nouvelles entrées sont copiées dans `mtHist` et
   ajoutées à la file du Game (sauf si le `Winner` est déjà appliqué : il vide la file), et vagues, checkpoints,
   `Winner` (inconnu d'ici là : pas de fin), état d'affichage des images clés (`mtShownStep`, incrémental) et débuts de
