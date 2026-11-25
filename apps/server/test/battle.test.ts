@@ -492,9 +492,9 @@ for (const mode of MODES) {
     const input = JSON.parse(row.input) as BattleInput;
     const total = simulateBattle(input).events.length;
     const page = await (await get(env, cl, "/b/view/bat1")).text();
-    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=3"></script>'));
+    assert.ok(page.includes('<script type="text/javascript" src="/js/player.js?v=4"></script>'));
     assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");
-    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=3"/>'));
+    assert.ok(page.includes('<link rel="stylesheet" type="text/css" href="/css/player.css?v=4"/>'));
     const { log, at } = playerVars(page);
     assert.equal(log.length, total, "one line per history entry");
     assert.deepEqual(log.map((l) => l.i), [...log.keys()]);

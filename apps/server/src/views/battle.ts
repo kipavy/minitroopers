@@ -85,7 +85,7 @@ var mtAt = ${raw(jsJson(v.at))};
 var mtSides = ${raw(jsJson(v.sides))};
 var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 </script>
-<script type="text/javascript" src="/js/player.js?v=3"></script>
+<script type="text/javascript" src="/js/player.js?v=4"></script>
 <div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
 <div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>
@@ -99,5 +99,5 @@ var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 ${v.back !== null ? html`<a href="${v.back}" class="button5">Retour</a>
 ` : ""}
 </div>`;
-  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=3"], ...(v.og ? { og: v.og } : {}) });
+  return layout(cfg, { title: null, content, host: v.host, pass: v.pass ?? false, bodyClass: "mtp", viewport: true, css: ["/css/player.css?v=4"], ...(v.og ? { og: v.og } : {}) });
 }

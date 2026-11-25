@@ -1,10 +1,11 @@
 /*
  * Enhanced battle player: controls, synced log and keyboard shortcuts over the replay API of client_fr_play.swf.
- * Page -> SWF (methods of the Ruffle element #battle): mtPause, mtResume, mtSpeed(x), mtSeek(n) (forward only),
- * mtState(), mtShot(). SWF -> page: mtReady({total, checkpoints, waves}), mtProgress(idx, wave), mtEnd(), mtStuck(idx).
+ * Page -> SWF (methods of the Ruffle element #battle): mtPause, mtResume, mtSpeed(x), mtGoto(n) (synchronous, both
+ * directions), mtState(), mtShot(). SWF -> page: mtReady({total, checkpoints, waves, starts}), mtProgress(idx, wave),
+ * mtEnd(), mtStuck(idx). Every seek of the page goes through goto(n) -> mtGoto(n); the Ruffle player is never reloaded.
  * Page data: mtLog (one {i, w, t} per history entry, t = "" for technical ones), mtAt (?at=, or null) and mtSides
  * (army and trooper names of input sides 0 and 1, coloured in the log).
- * Loaded before the battle embed: it wraps swfobject.embedSWF so that a backward seek can replay the same embed.
+ * Loaded before the battle embed: it wraps swfobject.embedSWF to start the readiness timer.
  * Calls into the SWF are never made from inside one of its callbacks (deferred with setTimeout).
  * The look lives in /css/player.css (.mtp-* classes only).
  */
@@ -42,17 +43,13 @@
   var ended = false;
   var off = false;
   var seeking = false;
-  var pending = typeof w.mtAt === "number" && w.mtAt > 0 ? { seek: w.mtAt, speed: 1, paused: false } : null;
-  var embedArgs = null;
+  var pendingAt = typeof w.mtAt === "number" && w.mtAt > 0 ? w.mtAt : 0;
   var readyTimer = null;
   var seekTimer = null;
   var ui = null;
 
   w.swfobject.embedSWF = function (url, id) {
-    if (id === "swf_battle") {
-      embedArgs = Array.prototype.slice.call(arguments);
-      started();
-    }
+    if (id === "swf_battle") started();
     return embed.apply(this, arguments);
   };
 
@@ -93,20 +90,20 @@
       for (var i = 0; a && i < a.length; i++) out.push(a[i] | 0);
       return out;
     };
-    info.ready = { total: r.total | 0, checkpoints: list(r.checkpoints), waves: list(r.waves) };
+    var waves = list(r.waves);
+    var starts = list(r.starts);
+    // starts[k]: first keyframe after the NewWave waves[k], where wave seeks land without a replay
+    info.ready = { total: r.total | 0, checkpoints: list(r.checkpoints), waves: waves, starts: starts.length === waves.length ? starts : waves.slice() };
     info.idx = 0;
     info.wave = 0;
     clearTimeout(readyTimer);
     setOff(false);
     if (ui) checkLog();
-    var p = pending;
-    pending = null;
-    if (p) {
+    var at = pendingAt;
+    pendingAt = 0;
+    if (at > 0) {
       setTimeout(function () {
-        if (p.speed !== 1) call("mtSpeed", p.speed);
-        if (p.paused) call("mtPause");
-        if (p.seek > 0) startSeek(p.seek);
-        else setSeeking(false);
+        goto(at);
       }, 0);
     }
     update();
@@ -141,21 +138,18 @@
     return s ? s.idx : info.idx;
   }
 
-  /** Goes to history index n: forward through mtSeek, backward by recreating the Ruffle player. */
-  function seek(n) {
+  /**
+   * Goes to history index n, in either direction, through mtGoto (pause and speed kept). It lands within the call,
+   * reporting mtProgress (and mtEnd at the end) synchronously; a long replay ends on the next frames, under the veil.
+   */
+  function goto(n) {
     if (!info.ready) return;
     n = Math.max(0, Math.min(total(), Math.floor(n)));
-    var s = state();
-    var idx = s ? s.idx : info.idx;
-    var done = s ? s.ended : ended;
     stuck(false);
-    if (n > idx && !done) startSeek(n);
-    else if (n < idx) recreate(n);
-  }
-
-  function startSeek(n) {
-    call("mtSeek", n);
+    ended = false;
     setSeeking(true);
+    if (call("mtGoto", n) === true) setSeeking(false);
+    update();
   }
 
   /** Seek veil: on until the landing mtProgress, or until mtState says the seek is over. */
@@ -171,26 +165,14 @@
     veil();
   }
 
-  function recreate(n) {
-    var e = el();
-    if (!e || !embedArgs || !e.parentNode) return;
-    var s = state();
-    pending = { seek: n, speed: speed, paused: s ? s.paused : paused };
-    var holder = d.createElement("div");
-    holder.id = "swf_battle";
-    holder.className = "swf";
-    e.parentNode.replaceChild(holder, e);
-    info.idx = n;
-    seeking = true;
-    w.swfobject.embedSWF.apply(w.swfobject, embedArgs);
-  }
-
   function togglePause() {
     var s = state();
     if (!s) return;
     if (s.ended) {
+      // "Revoir": from the start, playing
+      if (s.paused) call("mtResume");
       paused = false;
-      recreate(0);
+      goto(0);
     } else if (s.paused) {
       call("mtResume");
       paused = false;
@@ -219,32 +201,33 @@
   }
 
   // The current log line is the last shown entry applied (index <= idx - 1); going to line i means applying it:
-  // seek(i + 1), so that it becomes the current line.
+  // goto(i + 1), so that it becomes the current line.
   function nextEvent() {
     var cur = eventAt(currentIdx() - 1);
-    if (cur + 1 < events.length) seek(events[cur + 1] + 1);
-    else seek(total());
+    if (cur + 1 < events.length) goto(events[cur + 1] + 1);
+    else goto(total());
   }
   function prevEvent() {
     var cur = eventAt(currentIdx() - 1);
-    if (cur >= 1) seek(events[cur - 1] + 1);
-    else seek(0);
+    if (cur >= 1) goto(events[cur - 1] + 1);
+    else goto(0);
   }
+  // Wave seeks land on starts[k], the new wave already deployed.
   function nextWave() {
     var idx = currentIdx();
     var waves = info.ready ? info.ready.waves : [];
-    for (var i = 0; i < waves.length; i++) if (waves[i] > idx) return seek(waves[i]);
-    seek(total());
+    for (var i = 0; i < waves.length; i++) if (waves[i] > idx) return goto(info.ready.starts[i]);
+    goto(total());
   }
   function prevWave() {
-    var waves = info.ready ? info.ready.waves : [];
+    var starts = info.ready ? info.ready.starts : [];
     var s = state();
     var idx = s ? s.idx : info.idx;
     var wave = s ? s.wave : info.wave;
     // within the first entries of a wave, it goes to the previous one
-    if (wave >= 1 && idx > waves[wave - 1] + 2) seek(waves[wave - 1]);
-    else if (wave >= 2) seek(waves[wave - 2]);
-    else seek(0);
+    if (wave >= 1 && idx > starts[wave - 1] + 2) goto(starts[wave - 1]);
+    else if (wave >= 2) goto(starts[wave - 2]);
+    else goto(0);
   }
 
   function capture() {
@@ -303,6 +286,7 @@
     var text = linkAt(currentIdx());
     ui.linkbox.value = text;
     ui.linkrow.style.display = "";
+    fit();
     ui.linkbox.focus();
     ui.linkbox.select();
     var done = function () {
@@ -325,25 +309,32 @@
   }
 
   function onKey(e) {
-    if (off || !info.ready || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (off || !info.ready) return;
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === "/" && !editable(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleHelp();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     // the speed slider keeps its own arrows
     if (editable(e.target) && !(e.target === (ui && ui.range) && !/^Arrow/.test(e.key))) return;
     var key = e.key;
     var act = null;
     if (key === " " || key === "Spacebar" || key === "k" || key === "K") act = togglePause;
-    else if (key === "ArrowRight") act = e.shiftKey ? function () { seek(currentIdx() + JUMP); } : nextEvent;
-    else if (key === "ArrowLeft") act = e.shiftKey ? function () { seek(currentIdx() - JUMP); } : prevEvent;
+    else if (key === "ArrowRight") act = e.shiftKey ? function () { goto(currentIdx() + JUMP); } : nextEvent;
+    else if (key === "ArrowLeft") act = e.shiftKey ? function () { goto(currentIdx() - JUMP); } : prevEvent;
     else if (key === "n" || key === "N") act = nextWave;
     else if (key === "p" || key === "P") act = prevWave;
-    else if (key === "Home") act = function () { seek(0); };
-    else if (key === "End") act = function () { seek(total()); };
+    else if (key === "Home") act = function () { goto(0); };
+    else if (key === "End") act = function () { goto(total()); };
     else if (key === "PageDown") act = nextWave;
     else if (key === "PageUp") act = prevWave;
     else if (key === "+" || key === "=" || key === "Add" || key === ">") act = function () { stepSpeed(1); };
     else if (key === "-" || key === "_" || key === "Subtract" || key === "<") act = function () { stepSpeed(-1); };
     else if (key === "c" || key === "C") act = captureSoon;
     else if (key === "?") act = toggleHelp;
-    else if (key === "Escape" && ui && !ui.help.hidden) act = toggleHelp;
+    else if (key === "Escape" && ui && !ui.help.hidden) act = function () { showHelp(false); };
     if (!act) return;
     // Window capture phase: before Ruffle sees the key (the SWF's own Space skips a wave).
     e.preventDefault();
@@ -359,6 +350,7 @@
     if (!ui) return;
     toggleClass(ui.game, "mtp-off", v);
     veil();
+    fit();
   }
 
   function toggleClass(n, cls, on) {
@@ -373,7 +365,7 @@
   /** Loading / seeking overlay over the stage. */
   function veil() {
     if (!ui) return;
-    var text = off ? "" : !info.ready ? (info.players > 1 ? "Retour en arrière…" : "Préparation du combat…") : seeking ? "Avance rapide…" : "";
+    var text = off ? "" : !info.ready ? "Préparation du combat…" : seeking ? "Recherche de ce moment…" : "";
     ui.veil.hidden = !text;
     ui.veilText.textContent = text;
   }
@@ -388,8 +380,45 @@
     }, 3000);
   }
 
+  // --- help bubble: shown while the "?" button (or the bubble) is hovered or the button focused; ? and Ctrl+/ toggle it
+
+  var helpTimer = null;
+  function showHelp(v) {
+    if (!ui) return;
+    clearTimeout(helpTimer);
+    ui.help.hidden = !v;
+    ui.helpBtn.setAttribute("aria-expanded", v ? "true" : "false");
+    if (v) placeHelp();
+  }
   function toggleHelp() {
-    if (ui) ui.help.hidden = !ui.help.hidden;
+    if (ui) showHelp(ui.help.hidden);
+  }
+  function hideHelpSoon() {
+    clearTimeout(helpTimer);
+    helpTimer = setTimeout(function () {
+      showHelp(false);
+    }, 150);
+  }
+
+  /** Like BetterTrooper's: above the button, its "?" corner over it, growing to the right; kept inside the window. */
+  function placeHelp() {
+    var h = ui.help;
+    var m = 8;
+    var vw = d.documentElement.clientWidth;
+    var vh = d.documentElement.clientHeight;
+    h.style.maxHeight = Math.max(120, vh - 2 * m) + "px";
+    h.style.left = "0px";
+    h.style.top = "0px";
+    var r = h.getBoundingClientRect();
+    var b = ui.helpBtn.getBoundingClientRect();
+    var left = Math.max(m, Math.min(b.left - 30, vw - m - r.width));
+    var top = b.top - r.height - 4;
+    if (top < m) top = b.bottom + 4 + r.height <= vh - m ? b.bottom + 4 : Math.max(m, vh - m - r.height);
+    h.style.left = Math.round(left) + "px";
+    h.style.top = Math.round(top) + "px";
+  }
+  function replaceHelp() {
+    if (ui && !ui.help.hidden) placeHelp();
   }
 
   function node(tag, cls, text) {
@@ -415,6 +444,7 @@
     toggleClass(ui.game, "mtp-nolog", log.length !== info.ready.total);
     toggleClass(ui.log, "mtp-nolog", log.length !== info.ready.total);
     drawTrack();
+    fit();
   }
 
   function drawTrack() {
@@ -438,11 +468,11 @@
     }
   }
 
-/** First history index of the wave holding index n (0 before the first wave). */
+  /** Where a seek to the wave holding index n lands: starts[k] of that wave, 0 before the first NewWave. */
   function waveStart(n) {
     var waves = info.ready ? info.ready.waves : [];
     var start = 0;
-    for (var i = 0; i < waves.length && waves[i] <= n; i++) start = waves[i];
+    for (var i = 0; i < waves.length && waves[i] <= n; i++) start = info.ready.starts[i];
     return start;
   }
 
@@ -515,13 +545,23 @@
     }
   }
 
-  /** Scales the 720x440 player down to the available width (narrow screens). */
+  /**
+   * Scales the 720x440 player down to the width of its screen: narrow windows, or the log beside it (wide windows,
+   * player.css). Beside the player, the log takes its height and scrolls inside.
+   */
   function fit() {
     if (!ui) return;
+    toggleClass(ui.game, "mtp-side", !!(ui.log && ui.log.open));
     var width = ui.screen.clientWidth;
     var s = width > 0 && width < 720 ? width / 720 : 1;
     ui.stage.style.transform = s < 1 ? "scale(" + s + ")" : "";
     ui.screen.style.height = s < 1 ? Math.round(440 * s) + "px" : "";
+    if (!ui.log) return;
+    var frame = ui.screen.parentNode;
+    var beside = ui.log.open && ui.log.offsetTop === frame.offsetTop && ui.log.offsetLeft > frame.offsetLeft;
+    ui.log.style.height = beside ? frame.offsetHeight + "px" : "";
+    ui.list.style.height = beside ? Math.max(0, ui.log.clientHeight - ui.summary.offsetHeight) + "px" : "";
+    replaceHelp();
   }
 
   /** A log line, the army and trooper names coloured by side. */
@@ -680,7 +720,7 @@
       ui.ghost.hidden = true;
       if (e.type === "pointerup") {
         var n = at(e);
-        seek(exact ? n : waveStart(n));
+        goto(exact ? n : waveStart(n));
       }
     };
     track.addEventListener("pointerup", release);
@@ -697,7 +737,7 @@
     var transport = node("div", "mtp-transport");
     var jump = function (delta) {
       return function () {
-        seek(currentIdx() + delta);
+        goto(currentIdx() + delta);
       };
     };
     var tbtn = function (n, dir, cls, title, fn, id) {
@@ -705,7 +745,7 @@
       b.appendChild(chevrons(n, dir));
       transport.appendChild(b);
     };
-    tbtn(4, -1, "", "Début du combat (Début)", function () { seek(0); }, "mtp-start");
+    tbtn(4, -1, "", "Début du combat (Début)", function () { goto(0); }, "mtp-start");
     tbtn(3, -1, "", "Vague précédente (P)", prevWave, "mtp-prevwave");
     tbtn(2, -1, "mtp-wide", JUMP + " événements en arrière (Maj + ←)", jump(-JUMP), "mtp-back10");
     tbtn(1, -1, "", "Événement précédent (←)", prevEvent, "mtp-prev");
@@ -714,7 +754,7 @@
     tbtn(1, 1, "", "Événement suivant (→)", nextEvent, "mtp-next");
     tbtn(2, 1, "mtp-wide", JUMP + " événements en avant (Maj + →)", jump(JUMP), "mtp-fwd10");
     tbtn(3, 1, "", "Vague suivante (N)", nextWave, "mtp-nextwave");
-    tbtn(4, 1, "", "Fin du combat (Fin)", function () { seek(total()); }, "mtp-end");
+    tbtn(4, 1, "", "Fin du combat (Fin)", function () { goto(total()); }, "mtp-end");
     bar.appendChild(transport);
 
     // speed, x2, help
@@ -746,7 +786,17 @@
     second.appendChild(ui.speedValue);
     ui.x2 = button("×2", "mtp-xs", "Vitesse ×2", toggleX2, "mtp-x2");
     second.appendChild(ui.x2);
-    var help = button("?", "mtp-help-btn mtp-xs", "Raccourcis clavier (?)", toggleHelp, "mtp-helpbtn");
+    // the "?" of the game's tips (/img/info.png), bigger: hover or focus shows the shortcuts bubble
+    var help = button("", "mtp-help-btn", "Raccourcis clavier (?)", function (e) {
+      // a mouse already opened it by hovering; a tap, Enter or Space toggles it
+      if (lastPointer !== "mouse" || e.detail === 0) toggleHelp();
+    }, "mtp-helpbtn");
+    var lastPointer = "";
+    help.addEventListener("pointerdown", function (e) {
+      lastPointer = e.pointerType;
+    });
+    help.setAttribute("aria-controls", "mtp-help");
+    ui.helpBtn = help;
     second.appendChild(help);
     bar.appendChild(second);
 
@@ -758,72 +808,93 @@
     ui.linkrow.style.display = "none";
     bar.appendChild(ui.linkrow);
 
+    // the bubble (BetterTrooper's layout): keys drawn as keycaps, one column of keys, one of actions, rows
+    // alternating; then the mouse, by place
     ui.help = node("div", "mtp-help");
     ui.help.id = "mtp-help";
+    ui.help.setAttribute("role", "tooltip");
     ui.help.hidden = true;
-    // keys: alternatives joined by "ou", chords by "+"
+    // a key list: alternatives joined by "ou"; [a, "&", b] is a chord; keys side by side are a pair (back, forward)
     var keys = [
-      [[["Espace"], ["K"]], "Pause, reprise"],
-      [[["←"], ["→"]], "Un événement en arrière, en avant"],
-      [[["Maj", "←"], ["Maj", "→"]], "Dix événements"],
-      [[["P"], ["N"]], "Vague précédente, suivante"],
-      [[["Pg préc."], ["Pg suiv."]], "Vague précédente, suivante"],
-      [[["Début"], ["Fin"]], "Début, fin du combat"],
-      [[["<"], [">"]], "Plus lent, plus vite (un cran)"],
-      [[["C"]], "Capture d'écran"],
-      [[["?"]], "Cette aide"]
+      [["K", "ou", "Espace"], "Pause, reprise"],
+      [["N", "ou", "Pg suiv."], "Vague suivante"],
+      [["←", "→"], "Un événement en arrière, en avant"],
+      [["Maj", "&", "←", "→"], "Dix événements"],
+      [["P", "ou", "Pg préc."], "Début de la vague (à son tout début : la précédente)"],
+      [["Début", "Fin"], "Début, fin du combat"],
+      [["<", ">", "ou", "-", "+"], "Plus lent, plus vite (un cran)"],
+      [["C"], "Capture d'écran"],
+      [["Ctrl", "&", "/", "ou", "?"], "Cette liste (de nouveau, ou Échap : la ferme)"]
     ];
     var mouse = [
-      ["Frise", "Clic", "Début de cette vague"],
-      ["", "Glisser", "Cet événement précis"],
-      ["", "Maj + clic", "Cet événement précis"],
-      ["Journal", "Clic sur une ligne", "Y aller"]
+      ["Terrain", [["Clic", "Pause, reprise"], ["Clic sur un soldat", "Sa fiche"]]],
+      ["Frise", [["Clic", "Début de cette vague"], ["Glisser", "Cet événement précis"], [["Maj"], "Cet événement précis"]]],
+      ["Journal", [["Clic sur une ligne", "Y aller"]]]
     ];
-    var head = node("div", "mtp-help__head");
-    head.appendChild(node("span", "mtp-help__q", "?"));
-    head.appendChild(node("span", "mtp-help__title", "Raccourcis clavier"));
-    head.appendChild(button("×", "mtp-help__close", "Fermer l'aide", toggleHelp));
-    ui.help.appendChild(head);
-    var table = node("table", "mtp-help__table");
-    var section = function (text) {
-      var tr = node("tr", "mtp-help__section");
-      var th = node("th", "", text);
-      th.colSpan = 3;
-      tr.appendChild(th);
-      table.appendChild(tr);
-    };
-    section("Clavier");
+    ui.help.appendChild(node("span", "mtp-help__badge", "?"));
+    ui.help.appendChild(node("div", "mtp-help__title", "Raccourcis clavier"));
+    var table = node("table", "mtp-help__table mtp-help__keys");
     for (var h = 0; h < keys.length; h++) {
       var tr = node("tr");
-      var td = node("td", "mtp-help__keys");
-      td.colSpan = 2;
-      var alts = keys[h][0];
-      for (var q = 0; q < alts.length; q++) {
-        if (q) td.appendChild(node("span", "mtp-help__or", alts.length > 2 ? "," : "ou"));
-        for (var c = 0; c < alts[q].length; c++) {
-          if (c) td.appendChild(node("span", "mtp-help__plus", "+"));
-          td.appendChild(node("kbd", "", alts[q][c]));
-        }
+      var td = node("td", "mtp-help__combo");
+      var combo = keys[h][0];
+      for (var q = 0; q < combo.length; q++) {
+        if (combo[q] === "ou") td.appendChild(node("span", "mtp-help__or", "ou"));
+        else if (combo[q] === "&") td.appendChild(node("span", "mtp-help__plus", "+"));
+        else td.appendChild(node("kbd", "", combo[q]));
       }
       tr.appendChild(td);
-      tr.appendChild(node("td", "", keys[h][1]));
+      tr.appendChild(node("td", "mtp-help__what", keys[h][1]));
       table.appendChild(tr);
     }
-    section("Souris");
-    for (var m = 0; m < mouse.length; m++) {
-      var mr = node("tr");
-      mr.appendChild(node("td", "mtp-help__where", mouse[m][0]));
-      var how = node("td", "mtp-help__how");
-      if (mouse[m][1] === "Maj + clic") {
-        how.appendChild(node("kbd", "", "Maj"));
-        how.appendChild(d.createTextNode(" + clic"));
-      } else how.textContent = mouse[m][1];
-      mr.appendChild(how);
-      mr.appendChild(node("td", "", mouse[m][2]));
-      table.appendChild(mr);
-    }
     ui.help.appendChild(table);
-    bar.appendChild(ui.help);
+    ui.help.appendChild(node("div", "mtp-help__title mtp-help__title--mouse", "Souris"));
+    var mtable = node("table", "mtp-help__table mtp-help__mouse");
+    for (var m = 0; m < mouse.length; m++) {
+      var group = node("tbody");
+      var rows = mouse[m][1];
+      for (var r = 0; r < rows.length; r++) {
+        var mr = node("tr");
+        if (r === 0) {
+          var where = node("th", "mtp-help__where", mouse[m][0]);
+          where.rowSpan = rows.length;
+          where.scope = "rowgroup";
+          mr.appendChild(where);
+        }
+        var how = node("td", "mtp-help__how");
+        if (typeof rows[r][0] === "string") how.textContent = rows[r][0];
+        else {
+          how.appendChild(node("kbd", "", rows[r][0][0]));
+          how.appendChild(node("span", "mtp-help__plus", "+"));
+          how.appendChild(d.createTextNode("clic"));
+        }
+        mr.appendChild(how);
+        mr.appendChild(node("td", "mtp-help__what", rows[r][1]));
+        group.appendChild(mr);
+      }
+      mtable.appendChild(group);
+    }
+    ui.help.appendChild(mtable);
+    game.appendChild(ui.help);
+    var enter = function () {
+      showHelp(true);
+    };
+    help.addEventListener("mouseenter", enter);
+    help.addEventListener("focus", enter);
+    help.addEventListener("mouseleave", hideHelpSoon);
+    help.addEventListener("blur", function () {
+      if (!help.matches(":hover") && !ui.help.matches(":hover")) showHelp(false);
+    });
+    ui.help.addEventListener("mouseenter", function () {
+      clearTimeout(helpTimer);
+    });
+    ui.help.addEventListener("mouseleave", hideHelpSoon);
+    // a tap elsewhere closes it (touch screens have no "mouse leaves")
+    d.addEventListener("pointerdown", function (e) {
+      if (!ui.help.hidden && !ui.help.contains(e.target) && !help.contains(e.target)) showHelp(false);
+    });
+    w.addEventListener("scroll", replaceHelp, true);
+
 
     // log: a disclosure under the player
     var details = d.createElement("details");
@@ -847,22 +918,30 @@
     list.addEventListener("click", function (e) {
       var t = e.target;
       while (t && t !== list && !t.getAttribute("data-i")) t = t.parentNode;
-      if (t && t !== list) seek(Number(t.getAttribute("data-i")) + 1);
+      if (t && t !== list) goto(Number(t.getAttribute("data-i")) + 1);
     });
     details.appendChild(list);
     details.addEventListener("toggle", function () {
+      fit();
       shownIdx = -1;
       update();
     });
     logBox.parentNode.replaceChild(details, logBox);
     ui.log = details;
     ui.list = list;
+    ui.summary = details.firstChild;
 
     if (info.ready) checkLog();
     setOff(off);
     update();
     fit();
     w.addEventListener("resize", fit);
+    // the frame's height also changes with fonts, the link row, the stuck warning: the log beside follows it
+    if (w.ResizeObserver) {
+      new w.ResizeObserver(function () {
+        w.requestAnimationFrame(fit);
+      }).observe(frame);
+    }
   }
 
   if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", build);
