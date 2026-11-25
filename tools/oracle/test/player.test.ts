@@ -36,6 +36,7 @@ interface Calls {
   end: number[]; // performance.now()
   stuck: [number, number][]; // [idx, performance.now()]
   paused: boolean[]; // mtPaused(paused) calls
+  sim: { events: number; complete: boolean; waves: number[]; starts: number[]; at: number }[]; // mtSim calls
   readyAt: number;
 }
 
@@ -49,7 +50,12 @@ after(() => runner.close());
  * the `data` flashvar the oracle was captured with (toFlashvars: trooper prefs as sent by the original pages, which
  * the battle history carries in its CheckPoint infos) instead of the server's (battleData).
  */
-const open = async (id: string, flashvars: Record<string, string> = {}, oracleData = false) => {
+/**
+ * The battle is simulated while it plays (lazy simulation): by default the page asks for 200 resolve() steps per frame
+ * (mtAhead) at the first mtSim, so that the battle is complete within a few frames as before; ahead: 0 keeps the SWF's
+ * default (4); pauseAtStart pauses before the first entry is applied (a plain playback from 0, for references).
+ */
+const open = async (id: string, flashvars: Record<string, string> = {}, oracleData = false, opts: { ahead?: number; pauseAtStart?: boolean } = {}) => {
   const t = golden(id);
   const { page, origin, playSwf, embed } = await runner.newPage();
   const errors: string[] = [];
@@ -60,9 +66,9 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
     ...Object.fromEntries(Object.entries(flashvars).map(([k, v]) => [k, v.replace("{origin}", origin)])),
   };
   await page.evaluate(
-    ([u, p, x]) => {
+    ([u, p, x, o]) => {
       const w = globalThis as any;
-      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], paused: [], readyAt: 0 });
+      const c: Calls = (w.__calls = { ready: [], progress: [], end: [], stuck: [], paused: [], sim: [], readyAt: 0 });
       w.mtReady = (r: Ready) => {
         c.ready.push(r);
         c.readyAt = performance.now();
@@ -71,10 +77,19 @@ const open = async (id: string, flashvars: Record<string, string> = {}, oracleDa
       w.mtEnd = () => c.end.push(performance.now());
       w.mtStuck = (idx: number) => c.stuck.push([idx, performance.now()]);
       w.mtPaused = (b: boolean) => c.paused.push(b);
+      w.mtSim = (x: any) => {
+        c.sim.push({ ...x, at: performance.now() });
+        if (c.sim.length === 1)
+          setTimeout(() => {
+            const e = w.document.getElementById("battle");
+            if (o.ahead) e.mtAhead(o.ahead);
+            if (o.pauseAtStart) e.mtPause();
+          }, 0);
+      };
       w.__mtLoad(u, p, x);
       w.document.querySelector("#c > *").id = "battle";
     },
-    [playSwf, parameters, embed] as [string, Record<string, string>, typeof embed],
+    [playSwf, parameters, embed, { ahead: opts.ahead ?? 200, pauseAtStart: !!opts.pauseAtStart }] as [string, Record<string, string>, typeof embed, { ahead: number; pauseAtStart: boolean }],
   );
   const calls = (): Promise<Calls> => page.evaluate(() => (globalThis as any).__calls as Calls);
   const call = (fn: string, ...args: unknown[]): Promise<any> =>
@@ -370,7 +385,7 @@ for (const id of HISTORY) {
     try {
       const total = p.t.record.events.length;
       const expected = p.t.record.events.join("\n");
-      await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+      await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady (battle fully simulated)");
       assert.equal(await p.call("mtHistStr"), expected, "as computed");
       await p.call("mtPause");
       const s = await p.call("mtState");
@@ -465,11 +480,12 @@ for (const [k, id] of EQUIV.entries()) {
       for (let i = 0; i < 5 && (await p.call("mtSettle", 800)) === -2; i++);
       return (await p.call("mtDump")) as string;
     };
-    const a = await open(id);
+    const a = await open(id, {}, false, { pauseAtStart: true });
     try {
       await a.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
       await a.call("mtPause");
       await a.call("mtSpeed", 32);
+      assert.equal((await a.call("mtState")).idx, 0, "reference paused before the first entry");
       for (const n of sorted) {
         if (n > 0) {
           await a.call("mtStopAt", n);
@@ -529,7 +545,7 @@ test(`mtGoto timings on ${TIMED}: warm jumps (wave start, step ±1, end, home) u
   const p = await open(TIMED);
   try {
     const total = p.t.record.events.length;
-    await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+    await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady (battle fully simulated)");
     await p.call("mtPause");
     const st = await p.call("mtState");
     const starts = st.starts as number[];
@@ -576,7 +592,7 @@ test("keyframes of the largest reference battle (large/00011): count and size", 
   if (skip(t)) return;
   const p = await open("large/00011.json.gz");
   try {
-    await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+    await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady (battle fully simulated)");
     const [kf, objs, vals, gap] = (await p.call("mtKfSize")) as [number, number, number, number];
     t.diagnostic(`${p.t.record.events.length} entries: ${kf} keyframes (largest gap ${gap} entries), ${objs} objects / ${vals} values (≈ ${Math.round((objs * 64 + vals * 16) / 1024)} KiB at 64 B per object and 16 B per value)`);
     assert.ok(kf >= p.t.record.events.length / 16 && objs < 200_000, `${kf} keyframes, ${objs} objects`);
@@ -610,11 +626,12 @@ test("mtStuck fires once, within 12 s, when the background image never loads", {
   if (skip(t)) return;
   const p = await open("basic/00028.json.gz", { imageurl: "{origin}/missing/" });
   try {
-    const r = await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+    const r = await p.waitFor((c) => c.sim.length > 0, 60_000, "first mtSim (mtInit)");
     const c = await p.waitFor((c) => c.stuck.length > 0, 15_000, "mtStuck");
-    const after = c.stuck[0]![1] - r.readyAt;
-    t.diagnostic(`mtStuck ${Math.round(after)} ms after mtReady`);
-    assert.ok(after >= 9_500 && after < 12_000, `mtStuck ${Math.round(after)} ms after mtReady (state 1 for 10 s)`);
+    const after = c.stuck[0]![1] - r.sim[0]!.at;
+    t.diagnostic(`mtStuck ${Math.round(after)} ms after mtInit`);
+    assert.ok(after >= 9_500 && after < 12_000, `mtStuck ${Math.round(after)} ms after mtInit (state 1 for 10 s)`);
+    assert.equal(c.ready.length, 1, "the battle is simulated in state 1 too");
     assert.equal(c.stuck[0]![0], 0);
     await p.page.waitForTimeout(1500);
     const c2 = await p.calls();
@@ -661,7 +678,7 @@ test("native pause (click on the battlefield) = mtPause; mtGoto during the pause
   if (skip(t)) return;
   const id = "basic/00028.json.gz";
   const n = 40;
-  const a = await open(id);
+  const a = await open(id, {}, false, { pauseAtStart: true });
   let want = "";
   try {
     await a.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
@@ -729,6 +746,38 @@ test("native pause (click on the battlefield) = mtPause; mtGoto during the pause
     assert.equal((await p.call("mtState")).paused, false);
     await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) > s3.idx, 30_000, "idx increases after mtResume");
     assert.deepEqual((await p.calls()).paused, [true, false, true, false]);
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
+});
+
+// Lazy simulation (as BetterTrooper): the Game leaves its state 0 as soon as the history has an entry and the battle is
+// resolved a few steps per frame while it plays. mtSim reports the entries simulated so far (growing), then complete;
+// mtReady comes once complete (same total as the golden). Playback starts before that. A jump past the simulated entries
+// waits for them (seeking, target) and lands; the history is the golden's, entry for entry.
+test("lazy simulation on large/00016: playback starts before the battle is fully simulated; a jump past it waits and lands", { timeout: 300_000 }, async (t) => {
+  if (skip(t)) return;
+  const p = await open("large/00016.json.gz", {}, true, { ahead: 0 });
+  try {
+    const total = p.t.record.events.length;
+    const c0 = await p.waitFor((c) => c.progress.length > 0, 60_000, "first mtProgress");
+    assert.equal(c0.ready.length, 0, "playback started before mtReady");
+    assert.ok(c0.sim.length > 0 && !c0.sim[0]!.complete && c0.sim[0]!.events < total, `first mtSim ${JSON.stringify(c0.sim[0])}`);
+    const n = total - 5;
+    const r = await p.call("mtGoto", n);
+    const s0 = await p.call("mtState");
+    if (!r && !s0.complete) assert.deepEqual({ seeking: s0.seeking, target: s0.target }, { seeking: true, target: n }, "jump waiting for the simulation");
+    const s1 = await seekDone(p);
+    assert.deepEqual({ idx: s1.idx, seeking: s1.seeking }, { idx: n, seeking: false }, `mtGoto(${n}) landed`);
+    const c = await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
+    assert.equal(c.ready[0]!.total, total);
+    const ev = c.sim.map((x) => x.events);
+    assert.ok(ev.every((x, i) => i === 0 || x >= ev[i - 1]!), "events never decrease");
+    assert.deepEqual({ events: c.sim.at(-1)!.events, complete: c.sim.at(-1)!.complete }, { events: total, complete: true });
+    assert.ok(c.sim.filter((x) => x.complete).length === 1, "complete once");
+    assert.equal(await p.call("mtHistStr"), p.t.record.events.join("\n"), "history as computed");
+    t.diagnostic(`${c.sim.length} mtSim calls; first mtProgress ${Math.round(c0.progress[0]![2])} ms, mtReady ${Math.round(c.readyAt)} ms after load`);
     assert.deepEqual(p.errors, []);
   } finally {
     await p.close();

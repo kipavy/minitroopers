@@ -235,6 +235,7 @@ ifeq ofs0081
 ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
    import flash.display.BitmapData;
+   import flash.events.Event;
    import flash.events.MouseEvent;
    import flash.external.ExternalInterface;
    import flash.geom.ColorTransform;
@@ -628,7 +629,11 @@ ofs0081:
             "paused":mtPaused,
             "screen":mtGame != null && (mtGame.§w\x0b\x01o\x02§ != null || mtScreen != null),
             "ended":mtEnded,
-            "seeking":mtSeekTo >= 0,
+            "seeking":mtSeekTo >= 0 || mtSimTarget >= 0,
+            "complete":mtSimDone,
+            "target":mtSimTarget,
+            "ahead":mtAheadN,
+            "sim":mtSimSt,
             "hidden":(mtGame != null && !mtGame.§\x011wD§.visible),
             "calls":mtCalls,
             "kf":mtKfs.length,
@@ -646,7 +651,7 @@ ofs0081:
          return mtGoto(param1);
       }
 
-      // Instant seek, both ways (n clamped to [0, total]): restores the last keyframe at or before n (unless the current
+      // Instant seek, both ways (n clamped to [0, total]; past the entries simulated so far, see mtSimTarget): restores the last keyframe at or before n (unless the current
       // position is closer), then replays up to n hidden and synchronously, for at most 250 ms; the rest, if any, is
       // replayed over the next frames (mtSeekStep). mtProgress is sent once n is reached; mtEnd again if n is past the
       // Winner entry. Pause and speed are kept: during the pause, the pause screen stays (set aside, then put back over the scene at n).
@@ -668,6 +673,13 @@ ofs0081:
          {
             param1 = 0;
          }
+         // past the entries simulated so far: done once they exist (mtSimSync), 30 resolve() steps per frame meanwhile
+         if(param1 > mtTotal && !mtSimDone)
+         {
+            mtSimTarget = param1;
+            return false;
+         }
+         mtSimTarget = -1;
          if(param1 > mtTotal)
          {
             param1 = mtTotal;
@@ -922,7 +934,9 @@ ofs0081:
          mtWarmK = 0;
          mtCps = [];
          mtWaves = [];
-         mtWinIdx = mtTotal - 1;
+         // unknown while the battle is simulated: no end before the Winner entry exists
+         mtWinIdx = mtSimDone ? mtTotal - 1 : 2147483647;
+         mtSimTarget = -1;
          mtSpd = 1;
          mtAcc = 0;
          mtPaused = false;
@@ -970,6 +984,7 @@ ofs0081:
                ExternalInterface.addCallback("mtStopAt",mtStopAt);
                ExternalInterface.addCallback("mtSettle",mtSettle);
                ExternalInterface.addCallback("mtKfSize",mtKfSize);
+               ExternalInterface.addCallback("mtAhead",mtAhead);
             }
             catch(_loc_e_:*)
             {
@@ -986,24 +1001,18 @@ ofs0081:
          catch(_loc_e_:*)
          {
          }
-         mtStarts = [];
-         _loc3_ = 0;
-         while(_loc3_ < mtWaves.length)
+         mtStartsCalc();
+         mtSimSt[1] = getTimer();
+         mtSimOut();
+         if(mtSimDone)
          {
-            _loc4_ = 0;
-            while(_loc4_ < mtKfs.length && int(mtKfs[_loc4_].i) <= int(mtWaves[_loc3_]))
-            {
-               _loc4_++;
-            }
-            mtStarts.push(_loc4_ < mtKfs.length ? int(mtKfs[_loc4_].i) : int(mtWaves[_loc3_]));
-            _loc3_++;
+            mtSimSt[2] = mtSimSt[1];
+            mtReadyOut();
          }
-         mtOut("mtReady",[{
-            "total":mtTotal,
-            "checkpoints":mtCps,
-            "waves":mtWaves,
-            "starts":mtStarts
-         }]);
+         else
+         {
+            param1.§\x011wD§.addEventListener(Event.ENTER_FRAME,mtSimFrame);
+         }
       }
 
       // Ruffle's setTimeout can fire early (seen after ~7 s for 10 s): re-armed until 10 s of wall time have passed
@@ -1176,6 +1185,202 @@ ofs0081:
       // Never throws into the Game's state 0: on an error, keyframes stop for this battle (only the empty one at 0 is
       // kept, so jumps replay from the start) and the battle goes on as computed.
       public static var mtKfOff:* = null;
+
+      // --- lazy simulation (as BetterTrooper): the Game's state 0 resolves the battle 200 steps per frame until it is
+      // over, then plays it. Here state 0 is left as soon as the history has an entry (mtKfGo returns true: the Game
+      // takes the history and goes to state 1, mtInit runs); the battle is then resolved mtAheadN steps per frame by
+      // mtSimFrame (an ENTER_FRAME listener of the Game clip, after the Game's own: state 1 and 2), while it plays. Each
+      // frame the new entries are copied to mtHist and appended to the Game's queue (unless the Winner was applied), the
+      // keyframes' display state (mtShownStep), waves, checkpoints, wave starts are brought up to date, and the page gets
+      // mtSim({events, complete, waves, starts, checkpoints}). mtReady comes once the battle is complete, as before.
+      // A jump past the simulated entries waits (mtSimTarget, 30 steps per frame meanwhile) and is made once they exist.
+      // Same resolve() calls in the same order: the history is the same, entry for entry.
+      public static var mtSimB:* = null;
+      public static var mtSimDone:Boolean = true;
+      public static var mtAheadN:int = 4;
+      public static var mtSimTarget:int = -1;
+      public static var mtSimAt:int = -1;
+      // timings: [first resolve, mtInit, complete (getTimer ms), ms in resolve() after mtInit, its steps, frames, ms syncing]
+      public static var mtSimSt:Array = [-1,-1,-1,0,0,0,0];
+      public static var mtSimSB:* = null;
+
+      public static function mtKfGo(param1:*, param2:Boolean) : Boolean
+      {
+         if(param1 !== mtSimSB)
+         {
+            mtSimSB = param1;
+            mtSimSt = [getTimer(),-1,-1,0,0,0,0];
+         }
+         mtKf(param1);
+         if(param2)
+         {
+            mtSimB = null;
+            mtSimDone = true;
+            return true;
+         }
+         if(param1.§7\x13JZ\x03§.length > 0)
+         {
+            mtSimB = param1;
+            mtSimDone = false;
+            return true;
+         }
+         return false;
+      }
+
+      // page: steps of resolve() per frame while the battle is simulated (BetterTrooper's labNavAhead: 4, 2 on touch
+      // screens, 30 while a jump waits)
+      public static function mtAhead(param1:int) : void
+      {
+         mtAheadN = param1 < 1 ? 1 : (param1 > 200 ? 200 : param1);
+      }
+
+      public static function mtSimFrame(param1:*) : void
+      {
+         var _loc2_:* = mtSimB;
+         var _loc3_:int = mtSimTarget >= 0 && mtAheadN < 30 ? 30 : mtAheadN;
+         var _loc4_:int = 0;
+         var _loc5_:Boolean = false;
+         var _loc6_:int = 0;
+         if(mtSimDone || _loc2_ == null || mtGame == null)
+         {
+            return;
+         }
+         _loc6_ = getTimer();
+         // mtAheadN steps per frame (30 at least while a jump waits), as BetterTrooper: no time limit
+         while(_loc4_ < _loc3_)
+         {
+            _loc4_++;
+            _loc5_ = _loc2_.MnRZ();
+            mtKf(_loc2_);
+            if(_loc5_)
+            {
+               break;
+            }
+         }
+         mtSimSt[3] += getTimer() - _loc6_;
+         mtSimSt[4] += _loc4_;
+         mtSimSt[5]++;
+         _loc6_ = getTimer();
+         mtSimSync(_loc5_);
+         mtSimSt[6] += getTimer() - _loc6_;
+         if(mtSimDone)
+         {
+            mtSimSt[2] = getTimer();
+         }
+      }
+
+      public static function mtSimSync(param1:Boolean) : void
+      {
+         var _loc2_:Array = mtSimB.§7\x13JZ\x03§;
+         var _loc3_:§Q\btf§ = mtGame;
+         var _loc4_:int = mtHist.length;
+         var _loc5_:Boolean = mtApplied(_loc3_) <= mtWinIdx;
+         var _loc6_:* = null;
+         var _loc7_:int = 0;
+         var _loc8_:int = 0;
+         while(_loc4_ < _loc2_.length)
+         {
+            _loc6_ = mtCopy(_loc2_[_loc4_]);
+            mtHist.push(_loc6_);
+            mtPristine[_loc6_] = true;
+            _loc7_ = int(_loc6_["An%6"][")-Z\x19\x01"]);
+            if(_loc7_ == 38)
+            {
+               mtCps.push(_loc4_);
+            }
+            else if(_loc7_ == 39)
+            {
+               mtWaves.push(_loc4_);
+            }
+            else if(_loc7_ == 34)
+            {
+               mtWinIdx = _loc4_;
+            }
+            // the queue is a suffix of mtHist (Game's own, a restore's), but once the Winner is applied: it empties it
+            if(_loc5_)
+            {
+               _loc3_.§\x1e-\x02\x07\x01§.push(_loc6_);
+            }
+            _loc4_++;
+            _loc8_++;
+         }
+         mtTotal = mtHist.length;
+         try
+         {
+            mtShownStep();
+         }
+         catch(_loc_e_:*)
+         {
+         }
+         mtStartsCalc();
+         if(param1)
+         {
+            mtSimDone = true;
+            mtSimB = null;
+            if(mtWinIdx > mtTotal)
+            {
+               mtWinIdx = mtTotal - 1;
+            }
+            _loc3_.§\x011wD§.removeEventListener(Event.ENTER_FRAME,mtSimFrame);
+            // the pre-warm goes over the keyframes again, the last ones included
+            mtWarmP = 0;
+            mtWarmAt = 0;
+            mtWarmK = 0;
+         }
+         if(_loc8_ > 0 || param1)
+         {
+            mtSimOut();
+         }
+         if(param1)
+         {
+            mtReadyOut();
+         }
+         if(mtSimTarget >= 0 && (mtTotal >= mtSimTarget || mtSimDone))
+         {
+            _loc7_ = mtSimTarget;
+            mtSimTarget = -1;
+            mtGoto(_loc7_);
+         }
+      }
+
+      public static function mtSimOut() : void
+      {
+         mtOut("mtSim",[{
+            "events":mtTotal,
+            "complete":mtSimDone,
+            "waves":mtWaves,
+            "starts":mtStarts,
+            "checkpoints":mtCps
+         }]);
+      }
+
+      public static function mtReadyOut() : void
+      {
+         mtOut("mtReady",[{
+            "total":mtTotal,
+            "checkpoints":mtCps,
+            "waves":mtWaves,
+            "starts":mtStarts
+         }]);
+      }
+
+      // per wave: the history index of its first keyframe after the NewWave (a keyframe not taken yet: the NewWave's)
+      public static function mtStartsCalc() : void
+      {
+         var _loc1_:int = 0;
+         var _loc2_:int = 0;
+         mtStarts = [];
+         while(_loc1_ < mtWaves.length)
+         {
+            _loc2_ = 0;
+            while(_loc2_ < mtKfs.length && int(mtKfs[_loc2_].i) <= int(mtWaves[_loc1_]))
+            {
+               _loc2_++;
+            }
+            mtStarts.push(_loc2_ < mtKfs.length ? int(mtKfs[_loc2_].i) : int(mtWaves[_loc1_]));
+            _loc1_++;
+         }
+      }
 
       public static function mtKf(param1:§P!L/\x02§.§\x0b\x0eNO§) : void
       {
@@ -1351,27 +1556,42 @@ ofs0081:
       // - healed: BattleMsg 12 (heal: its target), 17 with skill 77 (team heal: its ids), 14 with skill 90 (its hits'
       //   targets). A hit's effects after a weapon caught (6) or a hit passed on (5) are not applied (the display returns).
       // An id can come back as another trooper (no weapon in common, mtShownKf): that one starts from a blank state.
+      // incremental (the history grows while the battle is simulated): states mtShD, put-aside ones mtShA, next entry
+      // mtShI, next keyframe mtShK, history index of the previous keyframe mtShP
+      public static var mtShD:Dictionary = new Dictionary();
+      public static var mtShA:Array = [];
+      public static var mtShI:int = 0;
+      public static var mtShK:int = 0;
+      public static var mtShP:int = 0;
+
       public static function mtShown() : void
       {
-         var _loc1_:Dictionary = new Dictionary();
-         var _loc2_:int = 0;
-         var _loc3_:int = 0;
-         var _loc4_:Array = [];
-         var _loc5_:int = 0;
-         while(_loc2_ <= mtHist.length)
+         mtShD = new Dictionary();
+         mtShA = [];
+         mtShI = 0;
+         mtShK = 0;
+         mtShP = 0;
+         mtShownStep();
+      }
+
+      // the keyframes and entries not done yet (a keyframe's index is the history's length when it was taken: never
+      // above mtHist's, and increasing)
+      public static function mtShownStep() : void
+      {
+         while(true)
          {
-            while(_loc3_ < mtKfs.length && int(mtKfs[_loc3_].i) == _loc2_)
+            while(mtShK < mtKfs.length && int(mtKfs[mtShK].i) <= mtShI)
             {
-               mtShownKf(mtKfs[_loc3_],_loc1_,_loc4_,_loc5_);
-               _loc5_ = _loc2_;
-               _loc3_++;
+               mtShownKf(mtKfs[mtShK],mtShD,mtShA,mtShP);
+               mtShP = mtShI;
+               mtShK++;
             }
-            if(_loc2_ == mtHist.length)
+            if(mtShI >= mtHist.length)
             {
                break;
             }
-            mtShownE(_loc1_,mtHist[_loc2_]);
-            _loc2_++;
+            mtShownE(mtShD,mtHist[mtShI]);
+            mtShI++;
          }
       }
 
@@ -2740,17 +2960,19 @@ ofs009a:
 callproperty QName(PackageNamespace(""),"MnRZ"), 0
 convert_b
 iffalse ofs0061
-//@@ PC_PLAY_KF_REPLACE  (=> `if((r = battle.resolve(), §(m]a\x02§.mtKf(battle), r))`: the only addition to state 0, read-only (keyframes))
+//@@ PC_PLAY_KF_REPLACE  (=> `if(§(m]a\x02§.mtKfGo(battle, battle.resolve()))`: keyframes (read-only), and state 0 left as soon as the history has entries (the rest is resolved while the battle plays: mtSimFrame))
 callproperty QName(PackageNamespace(""),"MnRZ"), 0
 getlex QName(PackageNamespace(""),"(m]a\x02")
+swap
 findproperty QName(PackageNamespace(""),"S\rNK\x02")
 getproperty QName(PackageNamespace(""),"S\rNK\x02")
-callpropvoid QName(PackageNamespace(""),"mtKf"), 1
+swap
+callproperty QName(PackageNamespace(""),"mtKfGo"), 2
 convert_b
 iffalse ofs0061
 //@@ PC_PLAY_KF_STACK_FIND  (same method: its declared operand stack depth)
 maxstack 2
-//@@ PC_PLAY_KF_STACK_REPLACE  (=> 3: resolve()'s result, the helper class and the battle while mtKf is called)
+//@@ PC_PLAY_KF_STACK_REPLACE  (=> 3: the helper class, the battle and resolve()'s result while mtKfGo is called)
 maxstack 3
 //@@ PC_PLAY_FAST_FIND  (Game isFast() §Bl{K\x01§: `return ticksPerFrame >= 8;`)
 pushbyte 8

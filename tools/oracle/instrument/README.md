@@ -442,7 +442,7 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
 | `PC_PLAY_GAME_INIT` | handler ENTER_FRAME du Game, passage état 0 → 1 (même endroit que `PC_GAME`) | `mtInit(this)` : enregistre les callbacks, calcule `total`, les index des `CheckPoint` (38), `NewWave` (39) et `Winner` (34), arme la détection de blocage en état 1, appelle `mtReady` |
 | `PC_PLAY_GAME_FRAME` | même handler, état 2 : `this.frame()` | devient `mtFrame(this)` |
 | `PC_PLAY_FAST` | `§Bl{K\x01§` (isFast : `ticks >= 8`) | `(ticks >= 8) \| mtFast` (`bitor` + `convert_b`) : à vitesse ≥ 8 les mêmes effets que le mode natif 16× sont coupés |
-| `PC_PLAY_KF` (+ `PC_PLAY_KF_STACK`) | même handler, état 0 : `if (battle.resolve())` | `resolve()`, puis `mtKf(battle)`, puis le test d'origine sur le résultat de `resolve()` (resté sur la pile ; `maxstack` 2 → 3). **Seul ajout dans l'état 0**, en lecture seule (images clés, ci-dessous) |
+| `PC_PLAY_KF` (+ `PC_PLAY_KF_STACK`) | même handler, état 0 : `if (battle.resolve())` | `if (mtKfGo(battle, battle.resolve()))` (`swap` ×2 ; `maxstack` 2 → 3) : `mtKf(battle)` (images clés, en lecture seule), puis vrai si `resolve()` a fini **ou dès que l'historique a une entrée** (simulation paresseuse, ci-dessous) : le Game prend l'historique et passe à l'état 1 comme d'origine. **Seul ajout dans l'état 0** |
 | `PC_PLAY_TICK` | `tick()` du Game `§&~\x03'§` : rendu puis avance de tous les clips (`§;io&§.§i'\x04W\x02§`, `§?d0r\x01§`) | `mtClips()` : les mêmes deux appels (temps mesurés pour `mtState().prof`), précédés de `mtKeep` ; pendant un rejeu caché, `mtClipsSeek` (ci-dessous) |
 
 - SWF → page (`ExternalInterface.call`) : `mtReady({total, checkpoints, waves, starts})` une fois (`starts[k]` : index
@@ -453,6 +453,30 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   elle n'est pas toujours la dernière ; son application vide la file, donc `idx = total`) ; `mtStuck(idx)` une fois par
   blocage (ci-dessous) ; `mtPaused(paused)` à chaque changement de pause, quelle qu'en soit l'origine (bouton de la
   page, clic sur le terrain, clic sur un trooper, `mtStopAt`).
+- **Simulation paresseuse** (comme BetterTrooper) : le combat n'est plus calculé en entier avant d'être joué. L'état 0
+  du Game (200 `resolve()` par image jusqu'à la fin) est quitté dès que l'historique a une entrée (`mtKfGo`) ; `mtInit`
+  part de cet historique partiel et `mtSimFrame` (écouteur ENTER_FRAME du clip du Game, après celui du Game : états 1
+  et 2) continue `resolve()` + `mtKf` par tranches pendant la lecture : au plus `mtAhead(n)` pas par image (4 par
+  défaut, comme leur `labNavAhead` ; 2 conseillé sur écran tactile), sans limite de temps comme chez eux ; au moins 30
+  pas tant qu'un saut attend. Chaque image, les nouvelles entrées sont copiées dans `mtHist` et
+  ajoutées à la file du Game (sauf si le `Winner` est déjà appliqué : il vide la file), et vagues, checkpoints,
+  `Winner` (inconnu d'ici là : pas de fin), état d'affichage des images clés (`mtShownStep`, incrémental) et débuts de
+  vague sont mis à jour. Mêmes appels à `resolve()` dans le même ordre : l'historique est le même, entrée pour entrée
+  (tests d'historique sur 30 combats, et après un saut fait pendant la simulation). Mesures (Brave natif, combat 16) :
+  toute la simulation coûte ~0,3 s de `resolve()` (354 pas) ; d'origine elle tient en 2 images avant la première.
+  - SWF → page : `mtSim({events, complete, waves, starts, checkpoints})` à `mtInit` puis à chaque image où des entrées
+    arrivent, et une dernière fois avec `complete: true` ; **`mtReady` ne vient qu'une fois le combat complet**
+    (inchangé : `total`, `checkpoints`, `waves`, `starts` définitifs). La lecture commence avant : le premier
+    `mtProgress` précède `mtReady`. `mtState()` : `total` = entrées connues (croît), `complete`, `target` (saut en
+    attente, -1 sinon), `ahead`, `sim` ([premier resolve, mtInit, fin (ms getTimer), ms dans resolve après mtInit,
+    pas, images, ms de synchro]).
+  - Saut au-delà des entrées connues : `mtGoto(n)` retourne faux, `seeking` vrai et `target = n` ; le SWF passe à 30
+    pas par image et fait le saut dès que l'entrée `n` existe (ou à la fin, borné au total). Choix : attendre plutôt
+    que calculer jusqu'à `n` dans l'appel (300 ms de `resolve()` dans un appel ExternalInterface figeraient la page
+    et risquent le tampon détaché, ci-dessous) ; la page affiche l'attente (voile « Simulation jusqu'à … ») tant que
+    `target >= 0`, et peut mettre en pause pendant l'attente comme BetterTrooper.
+  - Pourcentage : BetterTrooper l'estime (`events / (lignes du journal × 1,1 + 5)`, plafonné à 97 %) ; ici la page
+    connaît le nombre exact d'entrées (journal du serveur) : `events / total`.
 - **Pause = la pause native** : un clic sur le terrain bascule la pause du Game (`§;y\x1a-§`) : écran de pause
   `§J\b\x17Z\x03§` (instantané du terrain en gris, « PAUSE » qui glisse, fiche d'un trooper sur un clic sur lui ; ses
   tweens dans sa propre liste), `frame()` ne fait plus que l'animer ; la reprise le fait disparaître en fondu.
