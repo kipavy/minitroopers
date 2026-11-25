@@ -39,7 +39,7 @@ export function registerTrain(pages: Hono<Env>, deps: Deps): void {
     if (o instanceof Response) return o;
     const refs = pickTrainingOpponents({
       self: { id: String(o.army.id), power: o.power },
-      candidates: armyPowers(db).map((a) => ({ id: String(a.id), power: a.power })),
+      candidates: armyPowers(db).map((a) => ({ id: String(a.id), power: a.power, isFaction: a.isFaction })),
       seed: randomBytes(8).toString("hex"),
     });
     const foes: OppFoe[] = [];

@@ -38,7 +38,7 @@ export function registerOpp(pages: Hono<Env>, deps: Deps): void {
     const refs = freezeOpponents<ArmyRef>(db, o.army.id, day, () =>
       pickOpponents({
         self: { id: String(o.army.id), power: o.power },
-        candidates: armyPowers(db).map((a) => ({ id: String(a.id), power: a.power })),
+        candidates: armyPowers(db).map((a) => ({ id: String(a.id), power: a.power, isFaction: a.isFaction })),
         day,
         clientId: c.get("session").clientId,
         ...(resets > 0 ? { salt: `reset#${resets}` } : {}),

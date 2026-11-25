@@ -1,23 +1,23 @@
 import { fnv1a } from "./hash.ts";
 import { fillerArmy, fillerId } from "./fillers.ts";
 
-export type ArmyRef = { id: string; power: number; isFiller?: boolean };
+/** `isFaction`: one of the six faction armies, never drawn (reachable through the "Défie une faction" box). */
+export type ArmyRef = { id: string; power: number; isFiller?: boolean; isFaction?: boolean };
 
 export const OPPONENT_COUNT = 5;
 
 // First power window = 10 % of max(own power, 10); it doubles up to MAX_WINDOW, never beyond.
 const FIRST_WINDOW = 0.1;
-// Real armies farther than 50 % of max(own power, 10) are never shown: the slots go to fillers instead
-// (spec: fillers "à Power comparable … quand il manque des armées réelles"). Without a bound, the six faction
-// armies (power 114, seeded at first start) took every slot of a new power-5 army.
-const MAX_WINDOW = 0.5;
+// Real armies farther than 20 % of max(own power, 10) are never shown: the slots go to fillers instead, so that a small
+// instance (two players) still gets opponents of its level (Killian, 2026-11-25).
+const MAX_WINDOW = 0.2;
 
 /**
- * The 5 opponents shown on the home page for (day, client): real armies of the closest power first, then
- * generated fillers around the own power. Stable for a given (day, client) and inputs.
- * UNVERIFIED: the original rule is unknown (wiki: "near power"; late-era archived lists were not tight);
- * window 10 % of the own power, doubled until 5 are found but capped at ±50 % (a real army farther than that is never picked,
- * fillers take the slots), order inside a window by hash(day|clientId|id), fillers within ±20 %.
+ * The 5 opponents shown on the home page for (day, client): real armies (never the factions) of the closest power first,
+ * then generated fillers around the own power. Stable for a given (day, client) and inputs.
+ * Departure from the original (whose rule is unknown): window 10 % of the own power, doubled until 5 are found but capped
+ * at ±20 % (a real army farther than that is never picked, fillers take the slots), order inside a window by
+ * hash(day|clientId|id), fillers within ±20 %.
  */
 export function pickOpponents(p: { self: ArmyRef; candidates: ArmyRef[]; day: string; clientId: string; salt?: string }): ArmyRef[] {
   // `salt` (admin reset-day): another draw for the same day; absent, the original derivation.
@@ -25,7 +25,7 @@ export function pickOpponents(p: { self: ArmyRef; candidates: ArmyRef[]; day: st
   const seen = new Set<string>([p.self.id]);
   const pool: ArmyRef[] = [];
   for (const c of p.candidates) {
-    if (c.isFiller || seen.has(c.id)) continue;
+    if (c.isFiller || c.isFaction || seen.has(c.id)) continue;
     seen.add(c.id);
     pool.push(c);
   }
@@ -57,7 +57,7 @@ function fillUp(picked: ArmyRef[], power: number, key: (id: string) => number): 
 
 /**
  * Opponents of the training page (/b/train): OPPONENT_COUNT drawn uniformly (order by hash(seed|id)) among the real
- * armies other than `self` whose power is between half and double max(own power, 10), completed by generated armies
+ * armies other than `self` (never the factions) within ±20 % of max(own power, 10) of the own power, completed by generated armies
  * like pickOpponents. A new `seed` at each visit gives a new draw ("Autres adversaires").
  */
 export function pickTrainingOpponents(p: { self: ArmyRef; candidates: ArmyRef[]; seed: string }): ArmyRef[] {
@@ -66,7 +66,7 @@ export function pickTrainingOpponents(p: { self: ArmyRef; candidates: ArmyRef[];
   const seen = new Set<string>([p.self.id]);
   const pool: ArmyRef[] = [];
   for (const c of p.candidates) {
-    if (c.isFiller || seen.has(c.id) || c.power < base / 2 || c.power > base * 2) continue;
+    if (c.isFiller || c.isFaction || seen.has(c.id) || Math.abs(c.power - p.self.power) > MAX_WINDOW * base) continue;
     seen.add(c.id);
     pool.push(c);
   }

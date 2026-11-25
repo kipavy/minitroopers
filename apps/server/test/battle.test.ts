@@ -44,6 +44,11 @@ function foe(env: Env, host: string, name: string, troopers: { seed: number; nam
   return r.army.id;
 }
 
+/** Raises Warp's only trooper to level 6 (power 10), the power of a two-trooper level-1 foe. */
+function sameLevel(env: Env, id: number): void {
+  env.db.prepare("UPDATE troopers SET choices = ? WHERE army_id = ?").run(JSON.stringify([0, 0, 0, 0, 0]), id);
+}
+
 async function warp(env: Env) {
   const cl = env.client();
   const res = await create(env, cl, "Warp", { part: "0" });
@@ -130,7 +135,7 @@ for (const mode of MODES) {
     assert.deepEqual(again.map((l) => l.ref), links.map((l) => l.ref));
   });
 
-  test(`[${mode}] /b/opp with the seeded factions: a new army gets fillers, factions only near its power`, async () => {
+  test(`[${mode}] /b/opp with the seeded factions: a new army gets fillers, factions are never drawn`, async () => {
     const env = setup(mode);
     seedFactions(env.db, env.clock.t);
     const factionIds = env.db.prepare("SELECT id FROM armies WHERE is_faction = 1").all().map((r) => String(r.id));
@@ -142,7 +147,7 @@ for (const mode of MODES) {
     assert.ok(refs.includes(String(near)), "a real army of comparable power is listed");
     assert.equal(refs.filter((r) => r.startsWith("filler:")).length, 4, "the far factions leave their slots to fillers");
     assert.ok(!refs.some((r) => factionIds.includes(r)));
-    // a strong army (power 105) is within the bound of the factions (114): they are listed
+    // a strong army (power 105) is within 20 % of the factions (114): still never drawn, fillers take the slots
     const strong = setup(mode);
     seedFactions(strong.db, strong.clock.t);
     const ids = strong.db.prepare("SELECT id FROM armies WHERE is_faction = 1").all().map((r) => String(r.id));
@@ -150,7 +155,8 @@ for (const mode of MODES) {
     strong.db.prepare("UPDATE troopers SET choices = ? WHERE army_id = ?").run(JSON.stringify(new Array(100).fill(0)), w.id);
     const strongRefs = attackLinks(await (await get(strong, w.cl, "/b/opp")).text()).map((l) => l.ref);
     assert.equal(strongRefs.length, 5);
-    assert.ok(strongRefs.every((r) => ids.includes(r)), "the factions are of comparable power");
+    assert.ok(!strongRefs.some((r) => ids.includes(r)), "factions are never drawn");
+    assert.equal(strongRefs.filter((r) => r.startsWith("filler:")).length, 5);
   });
 
   test(`[${mode}] attack: one battle stored, reward credited, replay page decodes to the stored input`, async () => {
@@ -159,7 +165,8 @@ for (const mode of MODES) {
     const foeId = foe(env, "foe", "Foe", [
       { seed: 1234567, name: "Bob" },
       { seed: 2345678, name: "Rob" },
-    ]); // power 10: within the opponent bound of a power-5 army (5 +- max(5, 10) * 50 %)
+    ]);
+    sameLevel(env, id); // power 10 like Foe: within the ±20 % opponent bound
     const links = attackLinks(await (await get(env, cl, "/b/opp")).text());
     const target = links.find((l) => l.ref === String(foeId))!;
     const before = credits(env, id);
@@ -563,6 +570,7 @@ async function fightAt(t: number, extra: Record<string, string> = {}) {
     { seed: 1234567, name: "Bob" },
     { seed: 2345678, name: "Rob" },
   ]);
+  sameLevel(env, id); // power 10 like Foe: within the ±20 % opponent bound
   const target = attackLinks(await (await get(env, cl, "/b/opp")).text()).find((l) => l.ref === String(foeId))!;
   const before = credits(env, id);
   await get(env, cl, pathOf("path", target.href));
@@ -694,6 +702,7 @@ test("the first view shows the reward actually paid, even if the config changed 
     { seed: 1234567, name: "Bob" },
     { seed: 2345678, name: "Rob" },
   ]);
+  sameLevel(env, id); // power 10 like Foe: within the ±20 % opponent bound
   const target = attackLinks(await (await get(env, cl, "/b/opp")).text()).find((l) => l.ref === String(foeId))!;
   const before = credits(env, id);
   await get(env, cl, pathOf("path", target.href));
@@ -714,6 +723,7 @@ test("a battle stored before migration 010 (reward NULL) shows the reward comput
     { seed: 1234567, name: "Bob" },
     { seed: 2345678, name: "Rob" },
   ]);
+  sameLevel(env, id); // power 10 like Foe: within the ±20 % opponent bound
   const page = await (await get(env, cl, "/b/opp")).text();
   const target = attackLinks(page).find((l) => l.ref === String(foeId))!;
   assert.ok(page.replaceAll("&#39;", "'").includes("onclick=\"return confirm('Confirmer cette action ?')\">Attaquer !</a>"), "/b/opp keeps its confirmations");
@@ -723,4 +733,29 @@ test("a battle stored before migration 010 (reward NULL) shows the reward comput
   env.cfg.weekendMultiplier = 2;
   const view = await (await get(env, cl, "/b/view/bat1")).text();
   assert.equal(decodeBattleFlashvars(battleFlashvars(view)).vars.endMsg, msgFor(win, win ? 4 : 2));
+});
+
+const FACTION_HOSTS = ["sang-surs", "soleil-rugissant", "gecko-nevrose", "torses-velus", "fol-ecume", "groin-celeste"];
+
+test("/b/opp: « Défie une faction » box with the 6 factions in order; a button fights the faction as a daily battle", async () => {
+  const env = setup("path");
+  seedFactions(env.db, env.clock.t); // stored factions, as in production
+  const { cl, key, id } = await warp(env);
+  const page = (await (await get(env, cl, "/b/opp")).text()).replaceAll("&#39;", "'");
+  assert.ok(page.includes("<h1>Défie une faction :</h1>"));
+  const links = [...page.matchAll(/<a class="fac" href="([^"]+)" title="([^"]+)" style="background:(#[0-9A-F]{6})"[^>]*>([^<]+)<\/a>/g)];
+  assert.deepEqual(
+    links.map((m) => m[1]),
+    FACTION_HOSTS.map((h) => `/a/warp/b/battle?friend=${h};n=0;chk=${key}`),
+  );
+  assert.deepEqual(links.map((m) => m[3]), ["#E87D5F", "#FFAA27", "#FFDB7F", "#96B732", "#9EADEF", "#A55DC6"]);
+  assert.deepEqual(links.map((m) => m[4]), ["Sang-surs", "Soleil rugissant", "Gecko nevrosé", "Torses velus", "Fol-ecume", "Groin céleste"]);
+  assert.equal(links[1]![2], "L'armée du Soleil rugissant");
+  assert.ok(links.every((m) => m[0].includes(`onclick="return confirm('Confirmer cette action ?')"`)), "/b/opp keeps its confirmations");
+  const res = await get(env, cl, links[0]![1]!.replace("/a/warp", ""));
+  assert.match(res.headers.get("location")!, /\/a\/warp\/b\/fview\/\d+$/);
+  const rows = battles(env, id);
+  assert.equal(rows.length, 1);
+  assert.equal((env.db.prepare("SELECT opp FROM battles WHERE id = ?").get(rows[0]!.id) as { opp: string }).opp, "friend:sang-surs");
+  assert.equal(rows[0]!.defender_id, armyByHost(env.db, "sang-surs")!.id, "the stored faction army is the defender");
 });

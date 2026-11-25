@@ -97,24 +97,34 @@ test("pickOpponents: prefers the closest power", () => {
   assert.deepEqual(ids, ["a1", "a2", "a3", "a4", "a5"]);
 });
 
-test("pickOpponents: widens the window progressively, up to +-50 % of the own power", () => {
+test("pickOpponents: widens the window progressively, up to +-20 % of the own power", () => {
   const self = real(0, 100);
-  const candidates = [real(1, 102), real(2, 98), real(3, 150), real(4, 60), real(5, 300), real(6, 900)];
+  const candidates = [real(1, 102), real(2, 98), real(3, 118), real(4, 83), real(5, 121), real(6, 70)];
   const out = pickOpponents({ self, candidates, ...base });
-  // 150 and 60 are reached by widening; 300 and 900 are beyond the bound: fillers take their slots
+  // 118 and 83 are reached by widening; 121 and 70 are beyond the bound: fillers take their slots
   assert.deepEqual(out.filter((x) => !x.isFiller).map((x) => x.id).sort(), ["a1", "a2", "a3", "a4"]);
   assert.equal(out.filter((x) => x.isFiller).length, 1);
 });
 
 test("pickOpponents: real armies far from the own power are never picked (seeded factions vs a new army)", () => {
-  const factions = Array.from({ length: 6 }, (_, i) => real(100 + i, 114));
+  const factions = Array.from({ length: 6 }, (_, i): ArmyRef => ({ ...real(100 + i, 114), isFaction: true }));
   const fresh = pickOpponents({ self: real(0, 5), candidates: factions, ...base });
   assert.equal(fresh.length, 5);
   assert.ok(fresh.every((x) => x.isFiller), "a power-5 army only gets fillers");
-  const near = pickOpponents({ self: real(0, 5), candidates: [...factions, real(1, 8), real(2, 10), real(3, 11)], ...base });
-  assert.deepEqual(near.filter((x) => !x.isFiller).map((x) => x.id).sort(), ["a1", "a2"]); // bound max(5, 10) * 50 % = 5 -> 0..10
+  const near = pickOpponents({ self: real(0, 5), candidates: [...factions, real(1, 6), real(2, 7), real(3, 8)], ...base });
+  assert.deepEqual(near.filter((x) => !x.isFiller).map((x) => x.id).sort(), ["a1", "a2"]); // bound max(5, 10) * 20 % = 2 -> 3..7
   const strong = pickOpponents({ self: real(0, 100), candidates: factions, ...base });
-  assert.equal(strong.filter((x) => !x.isFiller).length, 5); // 114 is within 100 +- 50
+  assert.ok(strong.every((x) => x.isFiller), "factions are never drawn, even within the window");
+});
+
+test("factions are never drawn (daily and training), real armies of the same power are", () => {
+  const self = real(0, 114);
+  const candidates: ArmyRef[] = [...Array.from({ length: 6 }, (_, i): ArmyRef => ({ ...real(100 + i, 114), isFaction: true })), real(1, 114)];
+  for (const out of [pickOpponents({ self, candidates, ...base }), pickTrainingOpponents({ self, candidates, seed: "s" })]) {
+    assert.equal(out.length, 5);
+    assert.deepEqual(out.filter((x) => !x.isFiller).map((x) => x.id), ["a1"]);
+    assert.equal(out.filter((x) => x.isFiller).length, 4);
+  }
 });
 
 test("pickOpponents: real armies first, completed with fillers", () => {
@@ -155,30 +165,30 @@ test("trooperName still exported", () => {
   assert.equal(typeof trooperName, "function");
 });
 
-test("training draw: only real armies within half..double the own power, never self, fillers complete", () => {
+test("training draw: only real armies within +-20 % of the own power, never self, fillers complete", () => {
   const self = { id: "1", power: 40 };
-  const candidates = [10, 19, 20, 40, 55, 80, 81].map((power, i) => ({ id: String(i + 2), power }));
+  const candidates = [31, 32, 40, 48, 49].map((power, i) => ({ id: String(i + 2), power }));
   candidates.push({ id: "1", power: 40 });
   const got = pickTrainingOpponents({ self, candidates, seed: "s1" });
   assert.equal(got.length, OPPONENT_COUNT);
   const real = got.filter((a) => !a.isFiller).map((a) => a.power).sort((x, y) => x - y);
-  assert.deepEqual(real, [20, 40, 55, 80]); // 40 = another army ("5"), not self
+  assert.deepEqual(real, [32, 40, 48]); // 40 = another army ("4"), not self
   assert.ok(!got.some((a) => a.id === "1"));
-  assert.equal(got.filter((a) => a.isFiller).length, 1);
+  assert.equal(got.filter((a) => a.isFiller).length, 2);
 });
 
 test("training draw: another seed gives another order among many candidates, the same seed the same list", () => {
   const self = { id: "self", power: 100 };
-  const candidates = Array.from({ length: 30 }, (_, i) => ({ id: `a${i}`, power: 60 + i * 3 }));
+  const candidates = Array.from({ length: 30 }, (_, i) => ({ id: `a${i}`, power: 85 + i }));
   const a = pickTrainingOpponents({ self, candidates, seed: "one" });
   assert.deepEqual(pickTrainingOpponents({ self, candidates, seed: "one" }), a);
   assert.notDeepEqual(pickTrainingOpponents({ self, candidates, seed: "two" }), a);
   assert.ok(a.every((x) => !x.isFiller));
 });
 
-test("training draw: tiny armies use the same floor of 10 as pickOpponents (band 5..20)", () => {
+test("training draw: tiny armies use the same floor of 10 as pickOpponents (gap <= 2)", () => {
   const self = { id: "self", power: 5 };
-  const candidates = [4, 5, 20, 21].map((power, i) => ({ id: `a${i}`, power }));
+  const candidates = [4, 5, 8, 12].map((power, i) => ({ id: `a${i}`, power }));
   const real = pickTrainingOpponents({ self, candidates, seed: "x" }).filter((a) => !a.isFiller).map((a) => a.power).sort((x, y) => x - y);
-  assert.deepEqual(real, [5, 20]);
+  assert.deepEqual(real, [4, 5]);
 });

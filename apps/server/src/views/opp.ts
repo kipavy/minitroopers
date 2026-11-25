@@ -1,4 +1,5 @@
 import { clientParams, gridData, type BattleTrooperInput } from "@mt/engine";
+import { FACTIONS, FACTION_COLOURS } from "@mt/game";
 import type { Config } from "../config.ts";
 import type { ArmyRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
@@ -51,15 +52,30 @@ ${f.power}</li></ul></div></td>
 `;
 }
 
-/** The by-name form cell ("… l'armée de ton choix"), shared with /b/train: `hidden` inputs, confirmed unless `confirm` is false. */
-export function mateCell(o: { action: string; heading: Html; button: string; hidden: Html; confirm: boolean }): Html {
+/**
+ * The "Défie une faction" box (not in the original): one button per faction army, in faction order and colour, since the
+ * factions are never drawn as opponents and nobody knows their names. `link(host)` = the by-name fight URL.
+ */
+export function factionBox(link: (host: string) => string, confirm: boolean): Html {
+  const onclick = confirm ? html` onclick="return confirm('Confirmer cette action ?')"` : "";
+  const buttons = FACTIONS.map(
+    (f) => html`<a class="fac" href="${link(f.host)}" title="${armyTitle(f.name, f.part)}" style="background:${FACTION_COLOURS[f.id] ?? "#e2c066"}"${onclick}>${f.name}</a>`,
+  );
+  return html`<div class="facbox"><h1>Défie une faction :</h1><div class="facs">${buttons}</div></div>`;
+}
+
+/**
+ * The by-name form cell ("… l'armée de ton choix"), shared with /b/train: `hidden` inputs, confirmed unless `confirm` is
+ * false, then `extra` (the faction box) in the same cell.
+ */
+export function mateCell(o: { action: string; heading: Html; button: string; hidden: Html; confirm: boolean; extra?: Html }): Html {
   const submit = o.confirm
     ? html`<a href="#" onclick="if( confirm('Confirmer cette action ?') ) $('#friends').submit()" class="button5">${o.button}</a>`
     : html`<a href="#" onclick="$('#friends').submit(); return false" class="button5">${o.button}</a>`;
   return html`<td class="choosetd mate"><div class="backchoose"><h1>${o.heading}</h1>
 <form action="${o.action}" id="friends" method="POST">${o.hidden}
 <input name="friend" class="field"/></form>
-${submit}</div></td>
+${submit}</div>${o.extra ?? ""}</td>
 `;
 }
 
@@ -82,6 +98,7 @@ export function oppPage(cfg: Config, v: OppView): Html {
     button: "Infiltrer !",
     hidden: html`<input name="chk" type="hidden" value="${v.key}"/><input name="n" type="hidden" value="${v.used}"/>`,
     confirm: true,
+    extra: factionBox((h) => armyUrl(cfg, v.army.host, `/b/battle?friend=${h};n=${v.used};chk=${v.key}`), true),
   });
   const right = html`${chooseTable(cells, mate)}
 `;

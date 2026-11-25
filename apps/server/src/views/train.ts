@@ -4,7 +4,7 @@ import type { ArmyRow } from "../repo.ts";
 import { armyUrl } from "../urls.ts";
 import { notification } from "./army.ts";
 import { html, type Html } from "./html.ts";
-import { chooseTable, foeCell, mateCell, type OppFoe } from "./opp.ts";
+import { chooseTable, factionBox, foeCell, mateCell, type OppFoe } from "./opp.ts";
 import { shellPage } from "./panel.ts";
 
 /** One stored training of the army, for the "recent trainings" list. */
@@ -50,6 +50,7 @@ export function trainPage(cfg: Config, v: TrainView): Html {
     button: "Affronter !",
     hidden: html`<input name="chk" type="hidden" value="${v.key}"/>`,
     confirm: false,
+    extra: factionBox((h) => armyUrl(cfg, v.army.host, `/b/train/fight?friend=${h};chk=${v.key}`), false),
   });
   const right = html`<div class="train"><div class="train-head"><p>Combats illimités pour le plaisir : ils ne rapportent rien et ne comptent pas dans tes batailles du jour.</p>
 <div class="but b3"><div class="but_right b3_right"><a class="but_bg b3_bg" href="${armyUrl(cfg, v.army.host, "/b/train")}">Autres adversaires</a></div></div></div>

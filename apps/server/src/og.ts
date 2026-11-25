@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { Resvg } from "@resvg/resvg-js";
+import { FACTION_COLOURS } from "@mt/game";
 import type { Job } from "./ogWorker.ts";
 
 /**
@@ -41,8 +42,6 @@ const FONT = "Lilita One";
 const IMG_DIR = new URL("../public/img/", import.meta.url);
 const RESVG_OPTS = { font: { fontFiles: [FONT_FILE], loadSystemFonts: false, defaultFontFamily: FONT } };
 
-/** Faction colours of public/css/style.css (.faction0 … .faction5). */
-export const FACTION_COLOURS = ["#E87D5F", "#FFAA27", "#FFDB7F", "#96B732", "#9EADEF", "#A55DC6"] as const;
 const colourOf = (f: number): string => FACTION_COLOURS[f] ?? "#FFDB7F";
 
 const dataUri = (rel: string, type: string): string => `data:${type};base64,${readFileSync(new URL(rel, IMG_DIR)).toString("base64")}`;
