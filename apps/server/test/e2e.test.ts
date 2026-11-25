@@ -160,6 +160,9 @@ async function playerReady(page: Page, label: string): Promise<Ready> {
   assert.equal(log.length, ready.total, `${label}: log lines = SWF history entries`);
   assert.equal(Math.max(0, ...log.map((l) => l.w)), ready.waves.length, `${label}: log waves = SWF waves`);
   assert.ok(await page.locator("#mtp-bar").isVisible(), `${label}: control bar shown`);
+  // the loading veil gone (the battle played its first entry), and the 400 ms the keys wait after it
+  await page.locator(".mtp-veil").waitFor({ state: "hidden", timeout: 120_000 });
+  await page.waitForTimeout(450);
   return ready;
 }
 
@@ -442,8 +445,11 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
 
       // 2. pause button: the same PAUSE screen (the seeks below run paused: they land exactly where asked, paused)
       await page.click("#mtp-play");
-      const s0 = await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "pause button: the PAUSE screen");
+      await until(page, () => swfState(page), (s) => s.paused && s.screen, 10_000, "pause button: the PAUSE screen");
       assert.equal(await until(page, iconPaused, (p) => p, 5_000, "play icon"), true);
+      // back to the start (H, paused): a short battle may be nearly over by now
+      await page.keyboard.press("h");
+      const s0 = await until(page, () => swfState(page), (s) => !s.seeking && s.idx === 0 && s.paused, 10_000, "H: the start, still paused");
 
       // 3. forward: a click on a log line ahead applies that entry (seek to j + 1): it becomes the highlighted line;
       // → goes one history entry further; the share dialog's "event" link reopens there (step 7)
