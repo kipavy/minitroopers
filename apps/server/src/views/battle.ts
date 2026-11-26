@@ -92,7 +92,7 @@ var mtShare = ${raw(jsJson(v.og?.url ?? null))};
 var mtDate = ${raw(jsJson(v.day ?? null))};
 </script>
 <script type="text/javascript" src="/js/sfx.js?v=2"></script>
-<script type="text/javascript" src="/js/player.js?v=7"></script>
+<script type="text/javascript" src="/js/player.js?v=8"></script>
 <div class="game mtp-game">${title}<div class="mtp-screen"><div class="mtp-stage">${swfEmbed({ id: "swf_battle", width: 720, height: 440, flashvars: v.flashvars, objId: "battle", opaque: true })}</div></div>
 <div id="mtp-bar" class="mtp-bar"></div></div>
 <div id="mtp-log" class="mtp-log"></div>

@@ -200,7 +200,7 @@ for (const mode of MODES) {
     assert.equal(dec.vars.endMsg, won(row) ? "Tu as remporté cette bataille ! Ton armée gagne +2 [T]" : "Tu as perdu cette bataille ! Ton armée gagne +1 [T]");
     assert.equal(dec.vars.imageurl, "/img/");
     assert.ok(page.includes(`document.location = ${JSON.stringify(loc(mode, `/hq?money=${reward}`))};`));
-    assert.ok(page.includes("/swf/client_fr_play.swf?v=15"));
+    assert.ok(page.includes("/swf/client_fr_play.swf?v=16"));
     assert.ok(page.includes(",720,440,"));
     assert.match(page, /<h1>\nL&#39;armée de Warp\nVS\nL&#39;armée de Foe\n<\/h1>/);
     assert.ok(page.includes("<title>MiniTroopers</title>"));
@@ -492,7 +492,7 @@ for (const mode of MODES) {
     const input = JSON.parse(row.input) as BattleInput;
     const total = simulateBattle(input).events.length;
     const page = await (await get(env, cl, "/b/view/bat1")).text();
-    assert.ok(page.includes('<script type="text/javascript" src="/js/sfx.js?v=2"></script>\n<script type="text/javascript" src="/js/player.js?v=7"></script>'));
+    assert.ok(page.includes('<script type="text/javascript" src="/js/sfx.js?v=2"></script>\n<script type="text/javascript" src="/js/player.js?v=8"></script>'));
     // the viewer's side (input side): its victory or defeat sound at the end (public/js/sfx.js)
     assert.equal(JSON.parse(/^var mtSide = (.*);$/m.exec(page)![1]!), input.attackerSide);
     assert.ok(page.indexOf("/js/player.js") < page.indexOf('<div id="swf_battle"'), "player.js before the embed (it wraps embedSWF)");

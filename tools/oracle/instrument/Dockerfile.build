@@ -1,0 +1,9 @@
+# Throwaway build container for build.ps1 / build-play.ps1 on Linux (README "Construire"): nothing installed on the host.
+FROM node:24.12-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless curl unzip ca-certificates libicu72 && rm -rf /var/lib/apt/lists/*
+RUN arch=$(dpkg --print-architecture | sed 's/amd64/x64/') && curl -sSL -o /tmp/pwsh.tgz https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/powershell-7.4.6-linux-$arch.tar.gz \
+ && mkdir -p /opt/pwsh && tar -xzf /tmp/pwsh.tgz -C /opt/pwsh && chmod +x /opt/pwsh/pwsh && ln -s /opt/pwsh/pwsh /usr/local/bin/pwsh && rm /tmp/pwsh.tgz
+RUN curl -sSL -o /tmp/ffdec.zip https://github.com/jindrapetrik/jpexs-decompiler/releases/download/version26.5.0/ffdec_26.5.0.zip \
+ && echo "8d00c2713a724bb3f7e6c9a64994836ce3a953b5ac264f405d98f92e7c266d33  /tmp/ffdec.zip" | sha256sum -c - \
+ && mkdir -p /opt/ffdec && unzip -q /tmp/ffdec.zip -d /opt/ffdec && rm /tmp/ffdec.zip
+WORKDIR /w

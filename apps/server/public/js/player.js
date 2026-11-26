@@ -1384,6 +1384,24 @@
   w.addEventListener("pointercancel", stopHold);
 
   var shownIdx = -1;
+  // Writes only what changes: update() runs at every entry, inside Ruffle's frame, and any DOM write (even of the same
+  // value) makes the next layout read (Ruffle reads its container's size at every frame) recompute the page's layout.
+  function setProp(n, k, v) {
+    if (n[k] !== v) n[k] = v;
+  }
+  function setAttr(n, k, v) {
+    if (n.getAttribute(k) !== v) n.setAttribute(k, v);
+  }
+  function setText(n, v) {
+    if (n.textContent !== v) n.textContent = v;
+  }
+  function setStyle(n, k, v) {
+    // the last value written (a calc() read back from style is normalised)
+    if (n["mtv-" + k] === v) return;
+    n["mtv-" + k] = v;
+    n.style[k] = v;
+  }
+
   function update() {
     if (!ui) return;
     var ready = !!info.ready;
@@ -1391,36 +1409,38 @@
     steps();
     var off2 = isBusy();
     var btns = ui.transport.querySelectorAll(".mtp-step");
-    for (var i = 0; i < btns.length; i++) btns[i].disabled = off2;
-    ui.play.disabled = ui.range.disabled = ui.x2.disabled = off2;
+    for (var i = 0; i < btns.length; i++) setProp(btns[i], "disabled", off2);
+    setProp(ui.play, "disabled", off2);
+    setProp(ui.range, "disabled", off2);
+    setProp(ui.x2, "disabled", off2);
     var t = total();
     var sp = span();
     var idx = Math.min(info.idx, t);
     // the clock badges of entries played in advance flash only while the battle plays (BetterTrooper's --still)
     if (ui.list) toggleClass(ui.list, "mtp-still", !ready || paused || ended);
-    ui.play.setAttribute("aria-label", paused ? "Reprendre" : "Pause");
-    ui.play.title = (paused ? "Reprendre" : "Pause") + " (K ou Maj + Espace, ou un clic sur le terrain)";
+    setAttr(ui.play, "aria-label", paused ? "Reprendre" : "Pause");
+    setProp(ui.play, "title", (paused ? "Reprendre" : "Pause") + " (K ou Maj + Espace, ou un clic sur le terrain)");
     toggleClass(ui.playIcon, "mtp-playicon--paused", paused);
-    if (d.activeElement !== ui.range) ui.range.value = String(notch);
-    ui.speedValue.textContent = "×" + LABELS[notch];
-    ui.range.setAttribute("aria-valuetext", ui.speedValue.textContent);
-    ui.x2.textContent = notch === X1 ? "×2" : "×1";
-    ui.x2.title = notch === X1 ? "Vitesse ×2" : "Vitesse normale";
-    ui.cursor.style.left = "calc(2px + (100% - 4px) * " + Math.min(1, idx / sp) + ")";
+    if (d.activeElement !== ui.range) setProp(ui.range, "value", String(notch));
+    setText(ui.speedValue, "×" + LABELS[notch]);
+    setAttr(ui.range, "aria-valuetext", ui.speedValue.textContent);
+    setText(ui.x2, notch === X1 ? "×2" : "×1");
+    setProp(ui.x2, "title", notch === X1 ? "Vitesse ×2" : "Vitesse normale");
+    setStyle(ui.cursor, "left", "calc(2px + (100% - 4px) * " + Math.min(1, idx / sp) + ")");
     // the part not simulated yet: hatched, « simulation NN % » (NN of the server's exact count)
     var unknown = ready && !info.complete;
-    ui.unknown.hidden = !unknown;
+    setProp(ui.unknown, "hidden", !unknown);
     if (unknown) {
-      ui.unknown.style.left = (100 * info.known) / sp + "%";
-      ui.unknownLabel.textContent = "simulation " + Math.min(99, Math.floor((100 * info.known) / sp)) + " %";
-      ui.unknownLabel.hidden = ui.track.classList.contains("mtp-drag") || ui.unknown.offsetWidth < ui.unknownLabel.offsetWidth + 12;
+      setStyle(ui.unknown, "left", (100 * info.known) / sp + "%");
+      setText(ui.unknownLabel, "simulation " + Math.min(99, Math.floor((100 * info.known) / sp)) + " %");
+      setProp(ui.unknownLabel, "hidden", ui.track.classList.contains("mtp-drag") || ui.unknown.offsetWidth < ui.unknownLabel.offsetWidth + 12);
     }
     for (var j = 0; ui.segList && j < ui.segList.length; j++) {
       toggleClass(ui.segList[j], "mtp-curwave", Number(ui.segList[j].getAttribute("data-wave")) === info.wave);
     }
     var plus = info.complete ? "" : "+";
-    ui.wherePos.textContent = ready ? " · événement " + idx + " / " + (info.complete ? t : info.known + plus) + " · vague " + (info.wave + 1) + " / " + waveCount() + plus : "";
-    ui.trackLoading.hidden = ready;
+    setText(ui.wherePos, ready ? " · événement " + idx + " / " + (info.complete ? t : info.known + plus) + " · vague " + (info.wave + 1) + " / " + waveCount() + plus : "");
+    setProp(ui.trackLoading, "hidden", ready);
     if (idx !== shownIdx) {
       shownIdx = idx;
       highlight(idx);
@@ -1429,10 +1449,16 @@
   }
 
   var scrolledAt = 0;
+  var curLine = -1;
   /** Line idx - 1 (the last applied entry) is current; one veil covers the lines after it. */
   function highlight(idx) {
     var cur = eventAt(idx - 1);
-    for (var i = 0; i < ui.lines.length; i++) toggleClass(ui.lines[i], "mtp-cur", i === cur);
+    // only the lines that change (the log of an epic battle has a thousand)
+    if (curLine !== cur) {
+      if (ui.lines[curLine]) toggleClass(ui.lines[curLine], "mtp-cur", false);
+      if (ui.lines[cur]) toggleClass(ui.lines[cur], "mtp-cur", true);
+      curLine = cur;
+    }
     placeVeil();
     var at = ui.lines[cur];
     // the log follows the battle, unless the reader scrolled it in the last 4 s
@@ -1445,7 +1471,7 @@
   }
   function placeVeil() {
     if (!ui || !ui.logVeil) return;
-    var cur = ui.list.querySelector(".mtp-cur");
+    var cur = ui.lines[curLine] || null;
     var top = cur ? cur.offsetTop + cur.offsetHeight : 0;
     ui.logVeil.style.top = top + "px";
     ui.logVeil.style.height = "0px";
