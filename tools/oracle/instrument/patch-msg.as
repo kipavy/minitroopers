@@ -1041,14 +1041,13 @@ ofs0081:
                case 10:
                   mtSfx("grenade",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
                   break;
-               case 11:
-                  mtSfx("move","",_loc6_);
-                  break;
                case 12:
                case 13:
                   mtSfx("heal","",_loc6_);
                   break;
                case 14:
+                  mtSfx("pin",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
+                  break;
                case 16:
                case 17:
                   mtSfx("skill",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
@@ -1154,6 +1153,110 @@ ofs0081:
             return;
          }
          mtSfx("explosion",param4 >= 20 ? "big" : "grenade",param1);
+      }
+
+      // animations that make a sound when a display trooper starts them (Data.ANIMS labels); detail: the label, "rat:"
+      // before it for a rat (class 2)
+      public static var mtSfxAnims:Object = {"ball":1,"jump":1,"land":1,"fly":1,"ground_crash":1,"wake_up":1,"pillule":1,"autoPique":1,"anti_poison":1,"talky_walky":1,"scout":1,"magnet":1,"voodoo":1,"treat":1,"kick":1,"ground_kick":1,"tomoe_nage":1,"dodge_punch":1,"intercept":1,"hide_weapon":1,"charge":1,"shock":1,"leave":1,"boite":1,"blueprint":1,"lifted_up":1,"taunt1":1,"taunt2":1,"taunt3":1,"taunt4":1};
+
+      // PC_PLAY_SFX_ANIM: a display trooper starts an animation (§PNcV\x01§(anim))
+      public static function mtSfxAnim(param1:*, param2:*) : void
+      {
+         var _loc3_:String = null;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param2 == null || param1.§Qg}\x07§)
+            {
+               return;
+            }
+            _loc3_ = String(§\x17@E{§.§\x10\x18'\x14\x03§[int(param2.§)-Z\x19\x01§)].§t\x14S6\x03§);
+            if(mtSfxAnims[_loc3_] == null)
+            {
+               return;
+            }
+            if(int(param1.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2)
+            {
+               _loc3_ = "rat:" + _loc3_;
+            }
+            mtSfx("anim",_loc3_,Number(param1.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_MOVE: a display move's frame (§\f\x01§.§Z\b4]§); at its first one (progress 0): "move" with detail
+      // "<who>:<frames>", who = "v<vehicle index>" (vehicle), "rat" or "run", frames = the move's length at x1 (40 fps)
+      public static function mtSfxMove(param1:*) : void
+      {
+         var _loc2_:* = null;
+         var _loc3_:Number = NaN;
+         var _loc4_:String = null;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || Number(param1.§)PJ\x16§) != 0)
+            {
+               return;
+            }
+            _loc2_ = param1.§(\x01§;
+            if(_loc2_ == null || _loc2_.§Qg}\x07§)
+            {
+               return;
+            }
+            _loc3_ = Number(param1.§\\x0fY\x01§);
+            if(!(_loc3_ > 0))
+            {
+               return;
+            }
+            if(_loc2_.§W\x19\x1bT\x03§ != null)
+            {
+               _loc4_ = "v" + int(_loc2_.§W\x19\x1bT\x03§.§7X\x01§.§)-Z\x19\x01§);
+            }
+            else if(int(_loc2_.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2)
+            {
+               _loc4_ = "rat";
+            }
+            else
+            {
+               _loc4_ = "run";
+            }
+            mtSfx("move",_loc4_ + ":" + Math.ceil(1 / _loc3_),Number(_loc2_.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_THROW: a thrown grenade leaves the hand (grenade action §87 9§; detail: its skill)
+      public static function mtSfxThrow(param1:*) : void
+      {
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0)
+            {
+               return;
+            }
+            mtSfx("throw",String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§(\x01§.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_DETONATE: a thrown grenade lands and goes off (OX2i; detail: its skill, "catch" when intercepted)
+      public static function mtSfxDetonate(param1:*) : void
+      {
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param1.§x\x1eBv§ == null)
+            {
+               return;
+            }
+            mtSfx("detonate",param1.§~qM;§ != null ? "catch" : String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§x\x1eBv§.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
       }
 
       // --- Game hooks
@@ -3358,6 +3461,51 @@ getlocal2
 getlocal3
 getlocal 4
 callpropvoid QName(PackageNamespace(""),"mtSfxBlast"), 4
+//@@ PC_PLAY_SFX_ANIM_FIND  (display trooper §PNcV\x01§(anim): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_ANIM_REPLACE  (=> `§(m]a\x02§.mtSfxAnim(this, anim);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+getlocal1
+callpropvoid QName(PackageNamespace(""),"mtSfxAnim"), 2
+//@@ PC_PLAY_SFX_MOVE_FIND  (display move §\f\x01§.§Z\b4]§ frame §&l\f[\x01§(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_MOVE_REPLACE  (=> `§(m]a\x02§.mtSfxMove(this);` first, before the progress grows)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxMove"), 1
+//@@ PC_PLAY_SFX_THROW_FIND  (grenade action §I&\x01§.§(qs[§ release §87 9§(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_THROW_REPLACE  (=> `§(m]a\x02§.mtSfxThrow(this);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxThrow"), 1
+//@@ PC_PLAY_SFX_DETONATE_FIND  (grenade action OX2i(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_DETONATE_REPLACE  (=> `§(m]a\x02§.mtSfxDetonate(this);` first, while the grenade sprite is there)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxDetonate"), 1
 //@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
 getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
 callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0

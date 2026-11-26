@@ -881,8 +881,16 @@ test("during the simulation: native pause, trooper card, x32, resume+pause and p
 
 // Sound cues: the display calls mtSfx(kind, detail, x) when it shows an action (README "Sons"); never during a jump
 // (restore, hidden replay) nor with the pause screen open.
-const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty", "fire", "melee", "grenade", "explosion", "jet", "heal", "skill", "charge", "carry", "hit", "crit", "miss", "block", "nodmg", "death", "end"]);
-for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.json.gz"]) {
+const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty", "fire", "melee", "grenade", "explosion", "jet", "heal", "skill", "pin", "throw", "detonate", "anim", "charge", "carry", "hit", "crit", "miss", "block", "nodmg", "death", "end"]);
+// cues each reference battle must send (round 2: moves with their length, animations, grenades pinned, thrown, going off)
+const SFX_WANT: Record<string, RegExp[]> = {
+  "basic/00028.json.gz": [/^move:run:\d+$/],
+  "vehicles/00007.json.gz": [/^move:v\d:\d+$/],
+  "rats/00005.json.gz": [/^move:rat:\d+$/, /^melee:36$/],
+  "comms/00038.json.gz": [/^pin:8\d$/, /^throw:8\d$/, /^detonate:8\d$/, /^anim:(pillule|talky_walky|autoPique|voodoo)$/],
+  "jet/00003.json.gz": [/^jet:$/, /^throw:8\d$/],
+};
+for (const id of Object.keys(SFX_WANT)) {
   test(`mtSfx: cues while playing, none during jumps nor in the pause (${id})`, { timeout: 300_000 }, async (t) => {
     if (skip(t)) return;
     const p = await open(id);
@@ -900,6 +908,8 @@ for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.j
         if (k === "fire" || k === "melee") assert.match(d, /^(\d|[12]\d|3[0-7])$/, `${k} weapon id ${d}`);
       }
       assert.ok(sfx.some(([k]) => k === "fire" || k === "melee"), "a shot or a blow");
+      const seen = [...new Set(sfx.map(([k, d]) => k + ":" + d))];
+      for (const re of SFX_WANT[id]!) assert.ok(seen.some((x) => re.test(x)), `a cue ${re}`);
       const [nSwf, nPage] = await p.page.evaluate(() => { const w = globalThis as any; return [w.document.getElementById("battle").mtState().sfx, w.__calls.sfx.length]; });
       assert.equal(nSwf, nPage, "mtState().sfx counts the calls");
       // jumps both ways, in one JS turn: no cue
