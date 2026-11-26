@@ -717,6 +717,15 @@
 .mtp-sound {
 	display : inline-flex;
 }
+/* the browser holds the sound back: the button blinks twice (sfx.js onBlocked) */
+#mtp-sound.mtp-sound--hint {
+	animation : mtp-sound-hint 1s ease-in-out 2;
+}
+@keyframes mtp-sound-hint {
+	50% {
+		opacity : 0.35;
+	}
+}
 /* "?": the game's tip icon (/img/info.png, 12 px) drawn at twice its size, no frame (mt-icon-button) */
 .mtp-helpbtn {
 	display : inline-flex;

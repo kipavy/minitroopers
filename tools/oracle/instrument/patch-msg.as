@@ -235,6 +235,7 @@ ifeq ofs0081
 ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
    import flash.display.BitmapData;
+   import flash.display.Sprite;
    import flash.events.Event;
    import flash.events.MouseEvent;
    import flash.external.ExternalInterface;
@@ -664,6 +665,8 @@ ofs0081:
             "prof":mtProf,
             "pool":mtPoolN,
             "sfx":mtSfxN,
+            "tip":(§^\x05\x01!§.§xy\x04\x06§.§*#\x01§ != null && §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.visible),
+            "tipHold":mtTipHold,
             "waves":mtWaves,
             "starts":mtStarts
          };
@@ -1041,14 +1044,13 @@ ofs0081:
                case 10:
                   mtSfx("grenade",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
                   break;
-               case 11:
-                  mtSfx("move","",_loc6_);
-                  break;
                case 12:
                case 13:
                   mtSfx("heal","",_loc6_);
                   break;
                case 14:
+                  mtSfx("pin",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
+                  break;
                case 16:
                case 17:
                   mtSfx("skill",_loc4_ != null ? mtSfxIdx(_loc4_[0]) : "",_loc6_);
@@ -1123,7 +1125,7 @@ ofs0081:
             {
                _loc3_ = "nodmg";
             }
-            mtSfx(_loc3_,param1.§W\x19\x1bT\x03§ != null ? "vehicle" : (param2.§An%6§ == null ? "" : String(int(param2.§An%6§.§)-Z\x19\x01§))),Number(param1.§v\x01§));
+            mtSfx(_loc3_,param1.§W\x19\x1bT\x03§ != null ? "vehicle" : (int(param1.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2 ? "rat" : (param2.§An%6§ == null ? "" : String(int(param2.§An%6§.§)-Z\x19\x01§)))),Number(param1.§v\x01§));
          }
          catch(_loc_e_:*)
          {
@@ -1154,6 +1156,202 @@ ofs0081:
             return;
          }
          mtSfx("explosion",param4 >= 20 ? "big" : "grenade",param1);
+      }
+
+      // animations that make a sound when a display trooper starts them (Data.ANIMS labels); detail: the label, "rat:"
+      // before it for a rat (class 2)
+      public static var mtSfxAnims:Object = {"ball":1,"jump":1,"land":1,"fly":1,"ground_crash":1,"wake_up":1,"pillule":1,"autoPique":1,"anti_poison":1,"talky_walky":1,"scout":1,"magnet":1,"voodoo":1,"treat":1,"kick":1,"ground_kick":1,"tomoe_nage":1,"dodge_punch":1,"intercept":1,"hide_weapon":1,"charge":1,"shock":1,"leave":1,"boite":1,"blueprint":1,"lifted_up":1,"taunt1":1,"taunt2":1,"taunt3":1,"taunt4":1};
+
+      // PC_PLAY_SFX_ANIM: a display trooper starts an animation (§PNcV\x01§(anim))
+      public static function mtSfxAnim(param1:*, param2:*) : void
+      {
+         var _loc3_:String = null;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param2 == null || param1.§Qg}\x07§)
+            {
+               return;
+            }
+            _loc3_ = String(§\x17@E{§.§\x10\x18'\x14\x03§[int(param2.§)-Z\x19\x01§)].§t\x14S6\x03§);
+            if(mtSfxAnims[_loc3_] == null)
+            {
+               return;
+            }
+            if(int(param1.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2)
+            {
+               _loc3_ = "rat:" + _loc3_;
+            }
+            mtSfx("anim",_loc3_,Number(param1.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_MOVE: a display move's frame (§\f\x01§.§Z\b4]§); at its first one (progress 0): "move" with detail
+      // "<who>:<frames>", who = "v<vehicle index>" (vehicle), "rat" or "run", frames = the move's length at x1 (40 fps)
+      public static function mtSfxMove(param1:*) : void
+      {
+         var _loc2_:* = null;
+         var _loc3_:Number = NaN;
+         var _loc4_:String = null;
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || Number(param1.§)PJ\x16§) != 0)
+            {
+               return;
+            }
+            _loc2_ = param1.§{DEL}(\x01§;
+            if(_loc2_ == null || _loc2_.§Qg}\x07§)
+            {
+               return;
+            }
+            _loc3_ = Number(param1.§\\\x0fY\x01§);
+            if(!(_loc3_ > 0))
+            {
+               return;
+            }
+            if(_loc2_.§W\x19\x1bT\x03§ != null)
+            {
+               _loc4_ = "v" + int(_loc2_.§W\x19\x1bT\x03§.§7X\x01§.§)-Z\x19\x01§);
+            }
+            else if(int(_loc2_.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2)
+            {
+               _loc4_ = "rat";
+            }
+            else
+            {
+               _loc4_ = "run";
+            }
+            mtSfx("move",_loc4_ + ":" + Math.ceil(1 / _loc3_),Number(_loc2_.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_THROW: a thrown grenade leaves the hand (grenade action §87 9§; detail: its skill)
+      public static function mtSfxThrow(param1:*) : void
+      {
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0)
+            {
+               return;
+            }
+            mtSfx("throw",String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§{DEL}(\x01§.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_SFX_DETONATE: a thrown grenade lands and goes off (OX2i; detail: its skill, "catch" when intercepted)
+      public static function mtSfxDetonate(param1:*) : void
+      {
+         try
+         {
+            if(mtSfxMute > 0 || mtSeekTo >= 0 || param1.§x\x1eBv§ == null)
+            {
+               return;
+            }
+            mtSfx("detonate",param1.§~qM;§ != null ? "catch" : String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§x\x1eBv§.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // --- touch screens: the tooltips of the pause sheet (skills, health, statuses, weapons) show on a hover only
+      // (§^\x05\x01!§.§xy\x04\x06§: show §\x14;T\x07§, hide §\x07MJ\x1f§, called by each element's own over / out
+      // listeners), and the browser's pointer leave right after a tap rolls out. While the page reports touch input
+      // (mtTouch, from its pointerdown): a tooltip shown is held (PC_PLAY_TIP_SHOW), a hide while held is undone
+      // (PC_PLAY_TIP_HIDE, end of the hide); a press (stage, capture) ends the hold of a tooltip shown before it, and
+      // when the press itself showed none, its target (then its parents) gets the over events a hover would have sent.
+      public static var mtTouchOn:Boolean = false;
+      public static var mtTipHold:Boolean = false;
+      public static var mtTipClosing:Boolean = false;
+      public static var mtTipAt:int = -1000;
+      public static var mtTipStage:* = null;
+
+      public static function mtTouch(param1:Boolean) : void
+      {
+         mtTouchOn = param1;
+         if(!param1)
+         {
+            mtTipHold = false;
+            return;
+         }
+         try
+         {
+            if(mtTipStage == null && mtGame != null && mtGame.§\x011wD§.stage != null)
+            {
+               mtTipStage = mtGame.§\x011wD§.stage;
+               mtTipStage.addEventListener(MouseEvent.MOUSE_DOWN,mtTipDown,true,100);
+            }
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // PC_PLAY_TIP_SHOW
+      public static function mtTipShow(param1:*) : void
+      {
+         mtTipAt = getTimer();
+         if(mtTouchOn && !mtTipClosing)
+         {
+            mtTipHold = true;
+         }
+      }
+
+      // PC_PLAY_TIP_HIDE
+      public static function mtTipHid(param1:*) : void
+      {
+         if(mtTouchOn && mtTipHold && !mtTipClosing)
+         {
+            param1.visible = true;
+         }
+      }
+
+      public static function mtTipDown(param1:MouseEvent) : void
+      {
+         var _loc2_:* = null;
+         var _loc3_:int = 0;
+         var _loc4_:* = §^\x05\x01!§.§xy\x04\x06§.§*#\x01§;
+         if(!mtTouchOn || _loc4_ == null)
+         {
+            return;
+         }
+         try
+         {
+            if(getTimer() - mtTipAt < 60)
+            {
+               return;
+            }
+            if(mtTipHold)
+            {
+               mtTipClosing = true;
+               _loc4_.§\x07MJ\x1f§();
+               mtTipClosing = false;
+               mtTipHold = false;
+            }
+            _loc2_ = param1.target;
+            while(_loc2_ != null && _loc3_ < 6 && getTimer() - mtTipAt >= 60)
+            {
+               if(_loc3_ == 0)
+               {
+                  _loc2_.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER,true));
+               }
+               _loc2_.dispatchEvent(new MouseEvent(MouseEvent.ROLL_OVER,false));
+               _loc2_ = _loc2_.parent;
+               _loc3_++;
+            }
+         }
+         catch(_loc_e_:*)
+         {
+            mtTipClosing = false;
+         }
       }
 
       // --- Game hooks
@@ -1233,6 +1431,7 @@ ofs0081:
                ExternalInterface.addCallback("mtSettle",mtSettle);
                ExternalInterface.addCallback("mtKfSize",mtKfSize);
                ExternalInterface.addCallback("mtAhead",mtAhead);
+               ExternalInterface.addCallback("mtTouch",mtTouch);
             }
             catch(_loc_e_:*)
             {
@@ -3358,6 +3557,71 @@ getlocal2
 getlocal3
 getlocal 4
 callpropvoid QName(PackageNamespace(""),"mtSfxBlast"), 4
+//@@ PC_PLAY_SFX_ANIM_FIND  (display trooper §PNcV\x01§(anim): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_ANIM_REPLACE  (=> `§(m]a\x02§.mtSfxAnim(this, anim);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+getlocal1
+callpropvoid QName(PackageNamespace(""),"mtSfxAnim"), 2
+//@@ PC_PLAY_SFX_MOVE_FIND  (display move §\f\x01§.§Z\b4]§ frame §&l\f[\x01§(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_MOVE_REPLACE  (=> `§(m]a\x02§.mtSfxMove(this);` first, before the progress grows)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxMove"), 1
+//@@ PC_PLAY_SFX_THROW_FIND  (grenade action §I&\x01§.§(qs[§ release §87 9§(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_THROW_REPLACE  (=> `§(m]a\x02§.mtSfxThrow(this);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxThrow"), 1
+//@@ PC_PLAY_SFX_DETONATE_FIND  (grenade action OX2i(): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_SFX_DETONATE_REPLACE  (=> `§(m]a\x02§.mtSfxDetonate(this);` first, while the grenade sprite is there)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtSfxDetonate"), 1
+//@@ PC_PLAY_TIP_SHOW_FIND  (tooltip §^\x05\x01!§.§xy\x04\x06§ show §\x14;T\x07§(text, ...): the start of its code)
+code
+getlocal0
+pushscope
+//@@ PC_PLAY_TIP_SHOW_REPLACE  (=> `§(m]a\x02§.mtTipShow(this);` first)
+code
+getlocal0
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtTipShow"), 1
+//@@ PC_PLAY_TIP_HIDE_FIND  (tooltip hide §\x07MJ\x1f§: `visible = false;` then the end)
+initproperty QName(PackageNamespace(""),"visible")
+returnvoid
+//@@ PC_PLAY_TIP_HIDE_REPLACE  (=> `visible = false; §(m]a\x02§.mtTipHid(this);`)
+initproperty QName(PackageNamespace(""),"visible")
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtTipHid"), 1
+returnvoid
 //@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
 getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
 callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0

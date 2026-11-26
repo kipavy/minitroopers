@@ -146,7 +146,27 @@ if ($Play) {
        trait = 'trait method QName(PackageNamespace(""),"\x16mf\x01")' },
     @{ name = "PC_PLAY_SFX_BLAST"; class = "${S}n#\x07\f${S}"; rel = "scripts\${S}n#%5Cx07%5Cf${S}"
        sig = "      public function ${S}nEI(\x01${S}(param1:Number, param2:Number, param3:int = 50, param4:int = 10, param5:Number = 0.1, param6:Number = 0.2, param7:Object = undefined) : void"
-       trait = 'trait method QName(PackageNamespace(""),"nEI(\x01")' }
+       trait = 'trait method QName(PackageNamespace(""),"nEI(\x01")' },
+    # sounds, round 2: a display trooper's animation, a display move's frame, a grenade's release and detonation
+    @{ name = "PC_PLAY_SFX_ANIM"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+       sig = "      public function ${S}PNcV\x01${S}(param1:${S}/U3W${S}) : void"
+       trait = 'trait method QName(PackageNamespace(""),"PNcV\x01")' },
+    @{ name = "PC_PLAY_SFX_MOVE"; class = "${S}${DEL}\f\x01${S}.${S}Z\b4]${S}"; rel = "scripts\${S}${DEL}%5Cf%5Cx01${S}\${S}Z%5Cb4]${S}"
+       sig = "      override public function ${S}&l\f[\x01${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"&l\f[\x01")' },
+    @{ name = "PC_PLAY_SFX_THROW"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts\${S}I&%5Cx01${S}\${S}(qs[${S}"
+       sig = "      public function ${S}87 9${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"87 9")' },
+    @{ name = "PC_PLAY_SFX_DETONATE"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts\${S}I&%5Cx01${S}\${S}(qs[${S}"
+       sig = "      public function OX2i() : void"
+       trait = 'trait method QName(PackageNamespace(""),"OX2i")' },
+    # touch screens: the pause sheet's tooltips on a tap (README "Infobulles au toucher")
+    @{ name = "PC_PLAY_TIP_SHOW"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts\${S}^%5Cx05%5Cx01!${S}\${S}xy%5Cx04%5Cx06${S}"
+       sig = "      public function ${S}\x14;T\x07${S}(param1:String, param2:Object = undefined, param3:int = 0) : void"
+       trait = 'trait method QName(PackageNamespace(""),"\x14;T\x07")' },
+    @{ name = "PC_PLAY_TIP_HIDE"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts\${S}^%5Cx05%5Cx01!${S}\${S}xy%5Cx04%5Cx06${S}"
+       sig = "      public function ${S}\x07MJ\x1f${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"\x07MJ\x1f")' }
   )
 }
 $argLines = New-Object System.Collections.Generic.List[string]

@@ -881,8 +881,16 @@ test("during the simulation: native pause, trooper card, x32, resume+pause and p
 
 // Sound cues: the display calls mtSfx(kind, detail, x) when it shows an action (README "Sons"); never during a jump
 // (restore, hidden replay) nor with the pause screen open.
-const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty", "fire", "melee", "grenade", "explosion", "jet", "heal", "skill", "charge", "carry", "hit", "crit", "miss", "block", "nodmg", "death", "end"]);
-for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.json.gz"]) {
+const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty", "fire", "melee", "grenade", "explosion", "jet", "heal", "skill", "pin", "throw", "detonate", "anim", "charge", "carry", "hit", "crit", "miss", "block", "nodmg", "death", "end"]);
+// cues each reference battle must send (round 2: moves with their length, animations, grenades pinned, thrown, going off)
+const SFX_WANT: Record<string, RegExp[]> = {
+  "basic/00028.json.gz": [/^move:run:\d+$/],
+  "vehicles/00007.json.gz": [/^move:v\d:\d+$/],
+  "rats/00005.json.gz": [/^move:rat:\d+$/, /^melee:36$/, /^death:2$/],
+  "comms/00038.json.gz": [/^pin:8\d$/, /^throw:8\d$/, /^detonate:8\d$/, /^anim:(pillule|talky_walky|autoPique|voodoo)$/],
+  "vehicles/00056.json.gz": [/^jet:$/, /^explosion:big$/],
+};
+for (const id of Object.keys(SFX_WANT)) {
   test(`mtSfx: cues while playing, none during jumps nor in the pause (${id})`, { timeout: 300_000 }, async (t) => {
     if (skip(t)) return;
     const p = await open(id);
@@ -890,7 +898,7 @@ for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.j
       const total = p.t.record.events.length;
       await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
       await p.call("mtSpeed", 8);
-      const c = await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= Math.min(60, total - 5) || c.end.length > 0, 300_000, "playback");
+      const c = await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= Math.min(id.startsWith("rats/") ? 110 : 60, total - 5) || c.end.length > 0, 300_000, "playback");
       const sfx = c.sfx;
       t.diagnostic(`${sfx.length} cues: ${[...new Set(sfx.map(([k, d]) => k + (d ? ":" + d : "")))].sort().join(" ")}`);
       assert.ok(sfx.length > 0, "cues while playing");
@@ -900,6 +908,8 @@ for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.j
         if (k === "fire" || k === "melee") assert.match(d, /^(\d|[12]\d|3[0-7])$/, `${k} weapon id ${d}`);
       }
       assert.ok(sfx.some(([k]) => k === "fire" || k === "melee"), "a shot or a blow");
+      const seen = [...new Set(sfx.map(([k, d]) => k + ":" + d))];
+      for (const re of SFX_WANT[id]!) assert.ok(seen.some((x) => re.test(x)), `a cue ${re}`);
       const [nSwf, nPage] = await p.page.evaluate(() => { const w = globalThis as any; return [w.document.getElementById("battle").mtState().sfx, w.__calls.sfx.length]; });
       assert.equal(nSwf, nPage, "mtState().sfx counts the calls");
       // jumps both ways, in one JS turn: no cue
@@ -926,3 +936,95 @@ for (const id of ["basic/00028.json.gz", "vehicles/00007.json.gz", "rats/00005.j
     }
   });
 }
+
+
+// Touch screens (README "Infobulles au toucher"): the pause sheet's tooltips show on hover only; with the page's touch
+// flag (mtTouch, sent by player.js on a touch pointerdown) a tap shows one and keeps it, a tap on another element shows
+// that one, a tap elsewhere in the sheet hides it. The mouse is unchanged. Mobile scale (390 px wide, like the site's
+// transform), taps through CDP touch events; MT_SHEET_SHOT: a screenshot of a skill's tooltip after a tap.
+test("touch: a tap on the pause sheet shows the native tooltip and keeps it; the mouse unchanged (comms/00038, 390 px)", { timeout: 600_000 }, async (t) => {
+  if (skip(t)) return;
+  const p = await open("comms/00038.json.gz");
+  try {
+    const state = () => p.call("mtState");
+    const box0 = (await p.page.locator("#battle").boundingBox())!;
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= 5, 60_000, "idx >= 5");
+    // a trooper of the left side, with skills: his card (a click on him while playing: the native pause with his card;
+    // Ruffle may swallow the first click of a fresh page)
+    await p.call("mtSpeed", 0.125);
+    let tx = 0;
+    let ty = 0;
+    for (let i = 0; i < 6 && !(await state()).paused; i++) {
+      const m = /^T\d+ s0 @(\d+),(\d+) hp[1-9]/m.exec((await p.call("mtDump")) as string)!;
+      tx = Number(m[1]);
+      ty = Number(m[2]);
+      await p.page.mouse.click(box0.x + tx, box0.y + ty - 20);
+      await p.page.waitForTimeout(800);
+    }
+    assert.equal((await state()).paused, true, "paused with the trooper's card");
+    await p.call("mtSpeed", 1);
+    await p.page.waitForTimeout(1000);
+    // the mobile scale
+    const S = 390 / 720;
+    await p.page.setViewportSize({ width: 390, height: 600 });
+    await p.page.evaluate((s) => {
+      const c = (globalThis as any).document.getElementById("c");
+      c.style.transformOrigin = "0 0";
+      c.style.transform = `scale(${s})`;
+    }, S);
+    const box = (await p.page.locator("#battle").boundingBox())!;
+    const at = (x: number, y: number) => ({ x: box.x + x * S, y: box.y + y * S });
+    // the card's tooltip spots, by hovering with the mouse (the card is right of the trooper)
+    const spots: [number, number][] = [];
+    const empty: [number, number][] = [];
+    for (let y = ty - 80; y <= ty + 40; y += 10) {
+      for (let x = tx + 104; x <= Math.min(712, tx + 300); x += 12) {
+        const q = at(x, y);
+        await p.page.mouse.move(q.x, q.y);
+        await p.page.waitForTimeout(30);
+        if ((await state()).tip) spots.push([x, y]);
+        else empty.push([x, y]);
+      }
+    }
+    t.diagnostic(`trooper @${tx},${ty}: ${spots.length} tooltip spots, e.g. ${JSON.stringify(spots.slice(0, 6))}`);
+    assert.ok(spots.length >= 2, "tooltip spots on the card");
+    await p.page.mouse.move(at(tx + 200, ty + 130).x, at(tx + 200, ty + 130).y);
+    await p.page.waitForTimeout(100);
+    assert.equal((await state()).tip, false, "mouse out: hidden");
+    // the mouse is unchanged: hover shows, leaving hides, nothing held after a click
+    const a = spots[0]!;
+    await p.page.mouse.move(at(a[0], a[1]).x, at(a[0], a[1]).y);
+    assert.equal((await state()).tip, true, "mouse over: shown");
+    // touch: the page's flag, then taps
+    await p.call("mtTouch", true);
+    const cdp = await p.page.context().newCDPSession(p.page);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+    const tap = async (x: number, y: number) => {
+      const q = at(x, y);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q.x, y: q.y }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await p.page.waitForTimeout(300);
+    };
+    const b = spots.find((s) => s[1] > a[1] + 20) ?? spots.at(-1)!;
+    await tap(a[0], a[1]);
+    let s = await state();
+    assert.deepEqual({ tip: s.tip, hold: s.tipHold, paused: s.paused }, { tip: true, hold: true, paused: true }, "a tap: the tooltip shown and held");
+    await p.page.waitForTimeout(600);
+    assert.equal((await state()).tip, true, "still shown after the tap");
+    // the card's first row: its skills
+    if (process.env.MT_SHEET_SHOT) await p.page.screenshot({ path: process.env.MT_SHEET_SHOT, clip: { x: 0, y: 0, width: 390, height: 260 } });
+    await tap(b[0], b[1]);
+    s = await state();
+    assert.deepEqual({ tip: s.tip, hold: s.tipHold }, { tip: true, hold: true }, "a tap on another element: its tooltip");
+    const e = empty.find(([x, y]) => x > tx + 200 && y > a[1] + 50 && y < ty + 70)!;
+    if (e) {
+      await tap(e[0], e[1]);
+      s = await state();
+      assert.deepEqual({ tip: s.tip, hold: s.tipHold }, { tip: false, hold: false }, "a tap elsewhere in the card: hidden");
+    }
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
+});
+

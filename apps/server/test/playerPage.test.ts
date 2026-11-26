@@ -55,6 +55,7 @@ window.swfobject = { embedSWF: function (url, id) {
     return true;
   };
   el.mtAhead = function (n) { calls.push(["ahead", n]); };
+  el.mtTouch = function (b) { calls.push(["touch", b ? 1 : 0]); };
   var READY = { waves: [10, 25], starts: [12, 27] };
   var sim = function () {
     var known = function (a) { return a.filter(function (w, i) { return READY.waves[i] < events; }); };
@@ -683,10 +684,10 @@ const audio = (page: Page): Promise<Audio> =>
     const l = (window as unknown as { audioLog: { ctx: number; started: number; stopped: number; panners: StereoPannerNode[] } }).audioLog;
     return { ctx: l.ctx, started: l.started, stopped: l.stopped, pans: l.panners.map((p) => p.pan.value) };
   });
-/** A first gesture (a click beside the player), then every sound decoded. */
+/** A first gesture (a click beside the player), then every sound decoded and the AudioContext running. */
 async function unlock(page: Page): Promise<void> {
   await page.mouse.click(5, 5);
-  await page.waitForFunction(() => (window as unknown as { MtSfx?: { ready: boolean } }).MtSfx?.ready === true, null, { timeout: 10000 });
+  await page.waitForFunction(() => { const S = (window as unknown as { MtSfx?: { ready: boolean; running(): boolean } }).MtSfx; return S?.ready === true && S.running(); }, null, { timeout: 10000 });
 }
 const cue = (page: Page, list: [string, string, number][], gapMs = 0): Promise<void> =>
   page.evaluate(
@@ -723,13 +724,21 @@ test("sound: the button is on by default; a click mutes it (sound-off icon, « S
   }
 });
 
-test("sound: no AudioContext nor console error before a gesture; after one, a cue plays one sound panned by x", async (t) => {
+test("sound: every sound decoded at load without a gesture, no console message; held back until a gesture (a hint, once), then a cue plays one sound panned by x", async (t) => {
   if (skip(t)) return;
   const page = await open({ spy: true });
   try {
-    await cue(page, [["fire", "13", 0.2]]);
-    await page.waitForTimeout(200);
-    assert.equal((await audio(page)).ctx, 0, "no AudioContext before a gesture");
+    await page.waitForFunction(() => (window as unknown as { MtSfx: { ready: boolean } }).MtSfx.ready === true, null, { timeout: 10000 });
+    const S = () => page.evaluate(() => { const m = (window as unknown as { MtSfx: { ready: boolean; running(): boolean } }).MtSfx; return { ready: m.ready, running: m.running() }; });
+    assert.equal((await S()).ready, true, "decoded without a gesture");
+    assert.ok((await audio(page)).ctx <= 1, "one AudioContext at most");
+    t.diagnostic(`running at load: ${(await S()).running}`);
+    if (!(await S()).running) {
+      await cue(page, [["fire", "13", 0.2]]);
+      assert.equal((await audio(page)).started, 0, "held back before a gesture");
+      assert.equal(await page.textContent(".mtp-toast"), "Clique pour activer le son");
+      assert.ok(await page.evaluate(() => document.getElementById("mtp-sound")!.classList.contains("mtp-sound--hint")), "the sound button blinks");
+    }
     assert.deepEqual((page as unknown as { console: string[] }).console, []);
     await unlock(page);
     await cue(page, [["fire", "13", 0.2]]);
@@ -745,8 +754,8 @@ test("sound: no AudioContext nor console error before a gesture; after one, a cu
     a = await audio(page);
     assert.equal(a.started, 3);
     assert.equal(a.pans.at(-1), 0, "no trooper: centred");
-    await cue(page, [["move", "", 0.5], ["carry", "", 0.5], ["charge", "30", 0.5]]);
-    assert.equal((await audio(page)).started, 3, "moves are silent");
+    await cue(page, [["carry", "", 0.5], ["charge", "30", 0.5], ["anim", "stand", 0.5], ["detonate", "82", 0.5]]);
+    assert.equal((await audio(page)).started, 3, "silent cues");
     assert.deepEqual((page as unknown as { console: string[] }).console, []);
     assert.deepEqual((page as unknown as { errors: string[] }).errors, []);
   } finally {
@@ -764,9 +773,15 @@ test("sound: the cue -> sound map (one fire cue per bullet; weapons by family, p
         ["fire", "1"], ["fire", "2"], ["fire", "3"], ["fire", "5"], ["fire", "6"], ["fire", "7"], ["fire", "8"], ["fire", "9"], ["fire", "10"],
         ["fire", "11"], ["fire", "13"], ["fire", "15"], ["fire", "17"], ["fire", "20"], ["fire", "21"], ["fire", "24"], ["fire", "25"], ["fire", "29"],
         ["fire", "31"], ["fire", "32"], ["fire", "33"], ["fire", "35"], ["fire", "37"],
-        ["melee", "0"], ["melee", "30"], ["melee", "36"], ["grenade", "82"], ["grenade", "17"], ["grenade", "18"], ["grenade", "31"], ["grenade", "33"], ["skill", "83"], ["explosion", "grenade"], ["explosion", "big"],
+        ["melee", "0"], ["melee", "30"], ["melee", "36"], ["melee", "37"], ["grenade", "82"], ["grenade", "17"], ["grenade", "18"], ["grenade", "31"], ["grenade", "33"], ["skill", "83"], ["explosion", "grenade"], ["explosion", "big"],
         ["reload", "start"], ["reload", "load"], ["hit", "0"], ["hit", "1"], ["hit", "3"], ["hit", "4"], ["hit", "6"], ["hit", "vehicle"], ["crit", "0"], ["miss", "9"], ["block", "0"],
         ["death", "0"], ["death", "2"], ["deploy", ""], ["wave", ""], ["end", "0"], ["end", "1"], ["move", ""], ["switch", ""],
+        ["hit", "rat"], ["nodmg", "0"], ["nodmg", "5"], ["nodmg", "vehicle"], ["empty", "4"], ["heal", ""], ["jet", ""],
+        ["pin", "83"], ["throw", "83"], ["detonate", "82"], ["detonate", "83"], ["detonate", "84"], ["detonate", "85"], ["detonate", "86"], ["detonate", "87"],
+        ["detonate", "88"], ["detonate", "89"], ["detonate", "90"], ["detonate", "91"], ["detonate", "catch"],
+        ["move", "run:20"], ["move", "rat:20"], ["move", "v0:30"], ["move", "v1:30"], ["move", "v2:30"], ["move", "v3:30"], ["move", "v4:30"], ["move", "v7:30"],
+        ["anim", "ball"], ["anim", "land"], ["anim", "fly"], ["anim", "ground_crash"], ["anim", "pillule"], ["anim", "autoPique"], ["anim", "anti_poison"],
+        ["anim", "talky_walky"], ["anim", "voodoo"], ["anim", "dodge_punch"], ["anim", "lifted_up"], ["anim", "jump"], ["anim", "rat:fly"],
       ];
       return Object.fromEntries(q.map(([k, d]) => [k + ":" + d, S.sounds(k, d).join(",")]));
     });
@@ -775,9 +790,15 @@ test("sound: the cue -> sound map (one fire cue per bullet; weapons by family, p
       "fire:8": "rifle-double", "fire:9": "shotgun", "fire:10": "shotgun-dry", "fire:11": "assault", "fire:13": "assault", "fire:15": "rifle-auto",
       "fire:17": "rocket", "fire:20": "rocket", "fire:21": "mg", "fire:24": "mg", "fire:25": "sniper", "fire:29": "sniper", "fire:31": "cannon",
       "fire:32": "mg", "fire:33": "cannon", "fire:35": "mg", "fire:37": "",
-      "melee:0": "punch", "melee:30": "knife", "melee:36": "rat,rat-2", "grenade:82": "throw", "grenade:17": "rocket", "grenade:18": "rocket", "grenade:31": "cannon", "grenade:33": "cannon", "skill:83": "", "explosion:grenade": "explosion", "explosion:big": "explosion-big",
-      "reload:start": "", "reload:load": "reload", "hit:0": "hit", "hit:1": "", "hit:3": "hit", "hit:4": "", "hit:6": "punch", "hit:vehicle": "", "crit:0": "crit", "miss:9": "miss", "block:0": "",
-      "death:0": "death,death-2", "death:2": "rat,rat-2", "deploy:": "deploy", "wave:": "deploy", "end:0": "victory", "end:1": "defeat", "move:": "", "switch:": "",
+      "melee:0": "punch", "melee:30": "knife", "melee:36": "ratbite", "melee:37": "clownhit,clownlaugh", "grenade:82": "throw", "grenade:17": "rocket", "grenade:18": "rocket", "grenade:31": "cannon", "grenade:33": "cannon", "skill:83": "", "explosion:grenade": "explosion", "explosion:big": "explosion-big",
+      "reload:start": "magout", "reload:load": "reload", "hit:0": "hit", "hit:1": "", "hit:3": "hit", "hit:4": "", "hit:6": "punch", "hit:vehicle": "clang", "crit:0": "crit", "miss:9": "miss", "block:0": "whoosh",
+      "death:0": "death,death-2", "death:2": "ratdeath", "deploy:": "deploy", "wave:": "deploy", "end:0": "victory", "end:1": "defeat", "move:": "", "switch:": "switch",
+      "hit:rat": "ratpain,ratpain-2", "nodmg:0": "ricochet", "nodmg:5": "", "nodmg:vehicle": "clang", "empty:4": "empty", "heal:": "heal", "jet:": "jet",
+      "pin:83": "pin", "throw:83": "throw", "detonate:82": "", "detonate:83": "flash", "detonate:84": "gas", "detonate:85": "clown", "detonate:86": "frag", "detonate:87": "shock",
+      "detonate:88": "sticky", "detonate:89": "blessed", "detonate:90": "healgren", "detonate:91": "blackhole", "detonate:catch": "",
+      "move:run:20": "run", "move:rat:20": "ratrun", "move:v0:30": "moto", "move:v1:30": "jeep", "move:v2:30": "tank", "move:v3:30": "heli", "move:v4:30": "bigtank", "move:v7:30": "",
+      "anim:ball": "roll", "anim:land": "land", "anim:fly": "fly", "anim:ground_crash": "fall", "anim:pillule": "pill", "anim:autoPique": "syringe", "anim:anti_poison": "syringe",
+      "anim:talky_walky": "radio", "anim:voodoo": "voodoo", "anim:dodge_punch": "whoosh", "anim:lifted_up": "carry", "anim:jump": "", "anim:rat:fly": "",
     });
   } finally {
     await close(page);
@@ -855,6 +876,53 @@ test("sound: at most 8 voices for 50 cues at once; at ×8 a repeated sound is sp
     const s8 = (await audio(page)).started;
     await cue(page, Array.from({ length: 6 }, () => ["hit", "0", 0.5] as [string, string, number]), 60);
     assert.ok((await audio(page)).started - s8 <= 2, "×8: spaced out");
+  } finally {
+    await close(page);
+  }
+});
+
+test("sound: moves loop as long as they last (one loop per sound, a new cue extends it); no footsteps at ×4 and more; a pause cuts them", async (t) => {
+  if (skip(t)) return;
+  const page = await open({ spy: true });
+  try {
+    await unlock(page);
+    await cue(page, [["move", "v0:40", 0.2]]);
+    assert.equal((await audio(page)).started, 1, "the moto's engine");
+    await cue(page, [["move", "v0:40", 0.3], ["move", "v0:400", 0.3]]);
+    assert.equal((await audio(page)).started, 1, "extended, not doubled");
+    await cue(page, [["move", "v3:40", 0.8], ["move", "run:30", 0.5], ["move", "run:30", 0.6], ["move", "rat:30", 0.4]]);
+    assert.equal((await audio(page)).started, 4, "helicopter, footsteps (one loop), rats");
+    // a pause cuts every loop
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => (document.getElementById("battle") as unknown as { mtState(): { paused: boolean } }).mtState().paused);
+    assert.ok((await audio(page)).stopped >= 4, "cut by the pause");
+    await page.evaluate(() => (document.getElementById("battle") as unknown as { clickField(): void }).clickField());
+    await page.waitForFunction(() => !(document.getElementById("battle") as unknown as { mtState(): { paused: boolean } }).mtState().paused);
+    await page.evaluate(() => {
+      const r = document.getElementById("mtp-speed") as HTMLInputElement;
+      r.value = "14";
+      r.dispatchEvent(new Event("input"));
+    });
+    await page.waitForTimeout(200);
+    const s0 = (await audio(page)).started;
+    await cue(page, [["move", "run:30", 0.5], ["move", "rat:30", 0.5], ["move", "v2:30", 0.5]]);
+    assert.equal((await audio(page)).started - s0, 1, "×8: the tank only");
+    assert.deepEqual((page as unknown as { errors: string[] }).errors, []);
+  } finally {
+    await close(page);
+  }
+});
+
+test("touch: a touch pointerdown tells the SWF (mtTouch(true), so that a tap shows the pause sheet's tooltips), a mouse one mtTouch(false)", async (t) => {
+  if (skip(t)) return;
+  const page = await open({ width: 390, height: 844, touch: true });
+  try {
+    await page.waitForFunction(() => (window as unknown as { mtPlayer: { ready: unknown } }).mtPlayer.ready);
+    await page.touchscreen.tap(200, 150);
+    await page.mouse.click(200, 150);
+    const t2 = (await calls(page)).filter((c) => c[0] === "touch").map((c) => c[1]);
+    assert.deepEqual(t2.slice(0, 1), [1], "touch first");
+    assert.ok(t2.includes(0), "then the mouse");
   } finally {
     await close(page);
   }

@@ -166,6 +166,16 @@ async function playerReady(page: Page, label: string): Promise<Ready> {
   return ready;
 }
 
+/** The sounds are heard: every sound decoded without a gesture; the page was opened by a click (the browser lets the
+ * AudioContext run at once), else a gesture starts it; then the SWF's cues play sounds. */
+async function soundsHeard(page: Page, label: string): Promise<void> {
+  type Sfx = { ready: boolean; played: number; running(): boolean };
+  const sfx = () => page.evaluate(() => { const S = (globalThis as unknown as { MtSfx: Sfx }).MtSfx; return { ready: S.ready, running: S.running(), played: S.played }; });
+  await until(page, sfx, (s) => s.ready, 30_000, `${label}: sounds decoded`);
+  if (!(await sfx()).running) await page.mouse.click(2, 2);
+  await until(page, sfx, (s) => s.running && s.played > 0, 120_000, `${label}: sounds played`);
+}
+
 /**
  * Waits for the battle page's Ruffle player, jumps to the end through the enhanced player ("Fin", mtGoto(total): the
  * emulated Chromium of the dev PC plays far slower than real time), waits for the end banner of client_fr_play.swf,
@@ -180,6 +190,7 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   assert.equal(await page.getAttribute("#mtp-sound", "aria-pressed"), "true", `${label}: sound on by default`);
   assert.equal(await page.getAttribute("#mtp-sound", "aria-disabled"), null, `${label}: sound button active`);
   await until(page, () => page.evaluate(() => (globalThis as unknown as { mtPlayer: { sfx: number } }).mtPlayer.sfx), (n) => n > 0, 120_000, `${label}: sound cues from the SWF`);
+  await soundsHeard(page, label);
   // "Fin" again if the jump stopped short (a step stuck before the end: a new seek destroys it, as the stuck warning's
   // "Vague suivante" does)
   let last: SwfState | undefined;
@@ -871,6 +882,7 @@ for (const mode of ["path", "subdomain"] as Mode[]) {
       await pb.goto(at("warp", "/b/opp"));
       await pb.fill('#friends input[name="friend"]', "Boss");
       await Promise.all([pb.waitForURL(at("warp", "/b/fview/1")), pb.click('a.button5:has-text("Infiltrer")')]);
+      await soundsHeard(pb, `${mode}-infiltrer`);
       assert.equal((db.prepare("SELECT COUNT(*) AS n FROM battles WHERE defender_id = ?").get(boss) as { n: number }).n, 1, "battle suffered by Boss");
       for (let i = 0; i < 2; i++) {
         await pb.goto(at("warp", "/b/opp"));

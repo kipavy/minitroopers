@@ -115,12 +115,15 @@ développeur (voir Crédits). Il est intégré nativement : pas d'extension de n
 - **Partage** : choix du départ (début, vague, événement), message prêt pour Discord, lien `?at=<événement>`.
 - **Capture d'écran** : le jeu seul ou encadré (titre, date, frise, lien), à télécharger ou copier.
 - **Sons réalistes** (le jeu original est muet) : tirs selon la famille d'arme, impacts, coups critiques, morts,
-  grenades, explosions, rechargement, déploiement, victoire ou défaite, joués à l'image exacte de l'action et placés à
+  grenades (goupille, lancer, détonation propre à chaque type : flash, gaz, gluante, trou noir…), explosions,
+  véhicules (moteurs de moto, jeep, chars, hélicoptère ; avion de chasse), pas de course, roulades, chutes, objets
+  (Twinoïde, talkie-walkie, piqûres, soins), rats, rechargement, déploiement, victoire ou défaite, joués à l'image exacte de l'action et placés à
   gauche ou à droite selon le trooper. Silence pendant un saut, en pause, sous une fenêtre ou onglet caché ; à grande
   vitesse, les sons se raréfient au lieu de saturer. Bouton son du lecteur (actif par défaut, choix mémorisé).
 - Ligne d'état (événement, vague, images par seconde), avertissement quand un combat reste bloqué.
 - **Mobile** : quatre pas autour de la pause sous 720 px ; en paysage, scène sur toute la hauteur, commandes à
-  droite et plein écran au premier toucher.
+  droite et plein écran au premier toucher ; en pause, un toucher sur une compétence, la santé, un statut ou une arme
+  de la fiche d'un trooper affiche son infobulle (un autre toucher la remplace ou la ferme).
 - Raccourcis (`?` affiche la liste) :
 
 | Touche | Action |
@@ -278,10 +281,55 @@ qu'en développement : la procédure est décrite dans `tools/oracle/instrument/
 | miss | Real Bullet Flyby Sound | qubodup | [freesound.org/s/855248](https://freesound.org/s/855248/) |
 | death | Grunt1 - Death Pain.wav | tonsil5 | [freesound.org/s/416839](https://freesound.org/s/416839/) |
 | death-2 | Male Death Sound | Blankened | [freesound.org/s/554443](https://freesound.org/s/554443/) |
-| rat | Rat.ogg | egomassive | [freesound.org/s/536753](https://freesound.org/s/536753/) |
-| rat-2 | rat-squeak.wav | toefur | [freesound.org/s/288941](https://freesound.org/s/288941/) |
 | deploy | Walkie Talkie Beep | SoundBiterSFX | [freesound.org/s/732209](https://freesound.org/s/732209/) |
 | deploy | Heavy Walking.wav | morganpurkis | [freesound.org/s/381570](https://freesound.org/s/381570/) |
 | victory | Fanfare - Rpg | colorsCrimsonTears | [freesound.org/s/566203](https://freesound.org/s/566203/) |
 | defeat | End Game - Fail | davidbain | [freesound.org/s/135831](https://freesound.org/s/135831/) |
+| clown | partypopper.flac | Streety | [freesound.org/s/26349](https://freesound.org/s/26349/) |
+| blackhole | oddworld_ReverseBang.wav | Oddworld | [freesound.org/s/75329](https://freesound.org/s/75329/) |
+| shock | Shockwave.mp3 | TristanLuigi | [freesound.org/s/110819](https://freesound.org/s/110819/) |
+| bigtank | tracked vehicle.wav | cognito perceptu | [freesound.org/s/121531](https://freesound.org/s/121531/) |
+| ratbite | ratSqueak.wav | Zabuhailo | [freesound.org/s/143125](https://freesound.org/s/143125/) |
+| ratrun | rat gnawing a rusk.wav | Zabuhailo | [freesound.org/s/143250](https://freesound.org/s/143250/) |
+| pin | ring pull flick 2.wav | lolamadeus | [freesound.org/s/144182](https://freesound.org/s/144182/) |
+| tank | Driving Tank Engine.flac | qubodup | [freesound.org/s/187676](https://freesound.org/s/187676/) |
+| flash | Ear Ring.wav | ErikH2000 | [freesound.org/s/232212](https://freesound.org/s/232212/) |
+| clown, clownhit | Clown_Horn.mp3 | inplay | [freesound.org/s/251611](https://freesound.org/s/251611/) |
+| healgren | Aerosol Spray | WeeJee_vdH | [freesound.org/s/267709](https://freesound.org/s/267709/) |
+| whoosh | Knife Swish 1.wav | jawbutch | [freesound.org/s/344403](https://freesound.org/s/344403/) |
+| fly | Whoosh_1.wav | lzmraul | [freesound.org/s/389458](https://freesound.org/s/389458/) |
+| ricochet | Ricochet 2.wav | morganpurkis | [freesound.org/s/392975](https://freesound.org/s/392975/) |
+| roll, fall-2 | Body falling on the ground 1 | ihitokage | [freesound.org/s/395331](https://freesound.org/s/395331/) |
+| pin | Little Metal Piece Drop 3 | Timmeh515 | [freesound.org/s/413301](https://freesound.org/s/413301/) |
+| sticky | Mud Splat | Breviceps | [freesound.org/s/445109](https://freesound.org/s/445109/) |
+| sticky | Step on a slug (Splat!) 1 | Breviceps | [freesound.org/s/447929](https://freesound.org/s/447929/) |
+| carry | R18-35-Drag Body Across Floor.wav | craigsmith | [freesound.org/s/481863](https://freesound.org/s/481863/) |
+| fall | BODY FALL - V HVY - DIRT | leonelmail | [freesound.org/s/504626](https://freesound.org/s/504626/) |
+| radio | Radio Sign Off / Squelch | JovianSounds | [freesound.org/s/524205](https://freesound.org/s/524205/) |
+| pill | Pill Bottle Quick Shaking out Pills | Rudmer_Rotteveel | [freesound.org/s/536419](https://freesound.org/s/536419/) |
+| gas | Gas Grenade.wav | Themiwa100 | [freesound.org/s/551429](https://freesound.org/s/551429/) |
+| jet | High speed pass | US Navy FA/18 Super Hornet fighter jets by PostProdDog | [freesound.org/s/581097](https://freesound.org/s/581097/) |
+| blessed | bell ding 1.wav | 5ro4 | [freesound.org/s/611113](https://freesound.org/s/611113/) |
+| clownlaugh | Man's laugh | quavosh | [freesound.org/s/670839](https://freesound.org/s/670839/) |
+| switch | 22lr revolver handling clicking foley | serøutōnin--deprivəd | [freesound.org/s/677159](https://freesound.org/s/677159/) |
+| pill | Gulp, single swallow.mp3 | UnderASpell | [freesound.org/s/693249](https://freesound.org/s/693249/) |
+| empty | A rifle being dry fired once | serøutōnin--deprivəd | [freesound.org/s/725402](https://freesound.org/s/725402/) |
+| flash | Flashbang | modusmogulus | [freesound.org/s/737326](https://freesound.org/s/737326/) |
+| moto | Motorcycle - Harley Davidson vintage | Vrymaa | [freesound.org/s/737775](https://freesound.org/s/737775/) |
+| magout | Mag_Out_2 | SuHomunRiko | [freesound.org/s/738334](https://freesound.org/s/738334/) |
+| syringe | Syringe Pop | Chaos-Kid | [freesound.org/s/740045](https://freesound.org/s/740045/) |
+| voodoo | SingleKnock_Wood | NoisyRedFox | [freesound.org/s/742356](https://freesound.org/s/742356/) |
+| frag | Explosion And Schrapnel Fly-by | modusmogulus | [freesound.org/s/752630](https://freesound.org/s/752630/) |
+| ratpain-2 | Rodent Sound | Tony_Cannoli | [freesound.org/s/798054](https://freesound.org/s/798054/) |
+| ratpain | Mouse Rodent Squeak Whistle | SecureSubset | [freesound.org/s/800274](https://freesound.org/s/800274/) |
+| heal | Tape Bandages Rip | SecureSubset | [freesound.org/s/800275](https://freesound.org/s/800275/) |
+| ratdeath | Rodents - American Guinea Pig, Squealing, Close Perspective | TheKingOfGeeks360 | [freesound.org/s/815837](https://freesound.org/s/815837/) |
+| ratbite | Crunch | qubodup | [freesound.org/s/816237](https://freesound.org/s/816237/) |
+| run | running on dirt 2 edit | Luisa_Sanchez | [freesound.org/s/816792](https://freesound.org/s/816792/) |
+| land | Human jumping down to gravel w/ impact | DeqstersLab | [freesound.org/s/819656](https://freesound.org/s/819656/) |
+| jeep | Humvee driving on dirt road | barryshamir | [freesound.org/s/834241](https://freesound.org/s/834241/) |
+| clang | Basic Metal Clang Free | AardsReal | [freesound.org/s/842171](https://freesound.org/s/842171/) |
+| radio | Unintelligible Military Radio Voice Command | qubodup | [freesound.org/s/854482](https://freesound.org/s/854482/) |
+| heli | UH‑60 Black Hawk Helicopter Hover Loop 1 | qubodup | [freesound.org/s/854493](https://freesound.org/s/854493/) |
+| roll | Person Rolling on Floor Clothing Rustle | KoimeMatsuchiya | [freesound.org/s/872226](https://freesound.org/s/872226/) |
 

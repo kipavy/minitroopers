@@ -486,7 +486,13 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   helper : `PC_PLAY_SFX_APPLY` (`Game.apply(entrée)` : l'action de l'entrée est créée à cet instant ; un tir part
   dans le même appel), `PC_PLAY_SFX_HIT` (`§3\x19/\x01§(coup, angle)` du trooper affiché : tout coup reçu, balle,
   explosion ou corps à corps, à l'image de l'impact), `PC_PLAY_SFX_DIE` (`§\x16mf\x01§()` : sa mort),
-  `PC_PLAY_SFX_BLAST` (`§nEI(\x01§` de la carte : les débris d'une explosion). Jamais hors de l'état 2 (calcul,
+  `PC_PLAY_SFX_BLAST` (`§nEI(\x01§` de la carte : les débris d'une explosion). Deuxième ronde (`?v=15`), quatre
+  insertions de plus : `PC_PLAY_SFX_ANIM` (`§PNcV\x01§(anim)` du trooper affiché : il commence une animation, étiquette
+  lue dans `Data.ANIMS`, `§\x17@E{§.§\x10\x18'\x14\x03§`, liste blanche `mtSfxAnims`), `PC_PLAY_SFX_MOVE` (image d'un
+  déplacement affiché `§{DEL}\f\x01§.§Z\b4]§.§&l\f[\x01§` : à la première, avancement 0, sa durée en images
+  `ceil(1 / pas)` ; déploiement, déplacement, véhicule, rats), `PC_PLAY_SFX_THROW` (grenade à main
+  `§I&\x01§.§(qs[§.§87 9§` : elle quitte la main, à l'image `hit` de l'animation `launch`) et `PC_PLAY_SFX_DETONATE`
+  (`OX2i` : elle touche le sol et agit, effet propre à chaque type). Jamais hors de l'état 2 (calcul,
   simulation paresseuse : la logique n'appelle rien), pendant un saut (restauration, rejeu caché : `mtSfxMute`,
   `mtSeekTo`), `mtSettle`, le pré-chauffage, ni l'écran PAUSE ouvert ; `mtState().sfx` compte les appels.
   Contrat pour la page (kind : detail) :
@@ -495,7 +501,11 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   |---|---|---|
   | `deploy` | — | entrée 1 : troupes déployées (début de vague) |
   | `wave` | — | entrée 39 : nouvelle vague |
-  | `move` | — | entrée 11 : un trooper part vers une case |
+  | `move` | `<qui>:<images>` | un déplacement affiché commence (déploiement compris) ; qui = `run` (à pied), `rat`, `v<véhicule>` (`VEHICULE_ROWS` : 0 moto, 1 jeep, 2 char léger, 3 hélicoptère, 4 char lourd…) ; images = sa durée à ×1 (40 images/s) |
+  | `anim` | étiquette (`rat:` devant pour un rat) | animation commencée : `ball` (roulade, Roulé-boulé / ramassage d'arme), `jump`, `land`, `fly` (projeté), `ground_crash` (chute), `wake_up`, `pillule` (Twinoïde), `autoPique` (amphet), `anti_poison`, `talky_walky`, `scout`, `magnet`, `voodoo`, `treat`, `kick`, `ground_kick`, `tomoe_nage`, `dodge_punch`, `intercept`, `hide_weapon`, `charge`, `shock`, `leave`, `boite`, `blueprint`, `lifted_up`, `taunt1-4` |
+  | `pin` | id de grenade (82 à 91) | entrée 14 : début du lancer d'une grenade à main (goupille) |
+  | `throw` | id de grenade | elle quitte la main |
+  | `detonate` | id de grenade, `catch` si interceptée | elle touche le sol : 82 grenade et 89 bénie (+ `explosion`), 83 flash, 84 gaz, 85 clown, 86 fragmentation, 87 secousse, 88 gluante, 90 soin, 91 trou noir |
   | `switch` | — | entrée 25 : changement d'arme |
   | `reload` | `start` / `load` | entrées 3 (début du rechargement) / 4 (balles remises) |
   | `empty` | id d'arme | entrée 5 : arme à sec (en lecture, un changement d'arme suit) |
@@ -503,12 +513,12 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   | `melee` | id d'arme | entrée 9 : coup au contact |
   | `charge` | id d'arme | entrée 18 : course vers la cible pour la frapper (l'impact vient plus tard : `hit`) |
   | `carry` | — | entrée 19 : un trooper en emporte un autre |
-  | `grenade` | id de compétence (`SKILL_ROWS` : grenade, flash, gaz…) | entrée 10 : lancer ; l'explosion suit (`explosion`) |
+  | `grenade` | id d'arme (lance-roquettes, canons…) | entrée 10 : départ du projectile ; l'explosion suit (`explosion`) |
   | `explosion` | `grenade` / `big` | débris d'explosion : grenade ou roquette (16 éclats), frappe aérienne / avion (20) |
   | `jet` | — | entrée 21 : passage de l'avion de chasse |
   | `heal` | — | entrées 12 (soin) et 13 (antidote) |
-  | `skill` | id de compétence | entrées 14, 16, 17 : compétence active, cri, compétence d'équipe |
-  | `hit` | type de coup (0-8) ou `vehicle` | coup qui blesse (sur un véhicule : `vehicle`) |
+  | `skill` | id de compétence | entrées 16, 17 : compétence active, compétence d'équipe |
+  | `hit` | type de coup (0-8), `vehicle` ou `rat` | coup qui blesse (sur un véhicule : `vehicle` ; sur un rat : `rat`, de même pour `crit`, `miss`, `block`, `nodmg`) |
   | `crit` | type de coup | coup critique (effet « localisé », texte et à-coup) |
   | `miss` | `9` | tir manqué (MISS) |
   | `block` | type de coup | coup paré / esquivé (texte de parade) |
@@ -653,6 +663,23 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   d'échec.
 - Test : `tools/oracle/test/player.test.ts` (Ruffle web, `OracleRunner.newPage`).
 
+### Infobulles au toucher (`?v=15`)
+
+La fiche d'un trooper en pause (`§^\x05\x01!§.§cfKo\x03§`) a des infobulles (compétences `§r\x14XV\x01§`, santé,
+statuts `§th\b\x01§`, armes) : chaque élément, sur son survol (`ROLL_OVER` / `MOUSE_OVER`), appelle le gestionnaire
+`§^\x05\x01!§.§xy\x04\x06§` (affiche `§\x14;T\x07§`, masque `§\x07MJ\x1f§`). Un écran tactile n'a pas de survol, et le
+navigateur envoie une sortie du pointeur juste après le toucher (Ruffle la traduit en sortie de l'élément). Deux
+insertions : `PC_PLAY_TIP_SHOW` (début de l'affichage : `mtTipShow`, l'infobulle est **tenue**) et `PC_PLAY_TIP_HIDE`
+(après `visible = false` du masquage : `mtTipHid` la réaffiche si elle est tenue). Un écouteur `MOUSE_DOWN` sur la
+scène, en capture, priorité 100 (`mtTipDown`) : un appui termine la tenue d'une infobulle affichée **avant** lui et la
+masque ; si l'appui n'en a affiché aucune (pas de survol au toucher), sa cible puis ses parents (6 au plus, jusqu'à ce
+qu'une infobulle s'affiche) reçoivent `MOUSE_OVER` / `ROLL_OVER`, comme un survol : un toucher sur un élément affiche
+son infobulle, sur un autre la remplace, ailleurs la ferme. Seulement si la page a signalé un toucher : `mtTouch(bool)`
+(méthode de l'élément Ruffle, qui pose aussi l'écouteur de scène), que `player.js` appelle à chaque `pointerdown`
+(phase de capture, avant Ruffle) avec `pointerType === "touch"` ; à la souris, rien ne change. `mtState().tip` /
+`tipHold` : infobulle visible / tenue.
+Test : `player.test.ts` (« touch: a tap on the pause sheet… »).
+
 ### Icônes transparentes (bitmaps 17 et 19, bogue de Ruffle a111ceec)
 
 Au démarrage, l'original rend transparent le blanc opaque de deux bitmaps (classe décompilée `§$9Y\x01§`) :
@@ -711,11 +738,12 @@ sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0c
 `c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` ; saut en attente rattrapé dans l'image
 suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
 `?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` ; sons (`mtSfx`) :
-`5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` ; sons, deuxième ronde (animations, déplacements, grenades) et infobulles au toucher :
+`0dab17e9fe3c484690fdb2197369fdf2ff869560aa91888a186a24e1d52dd297`, `?v=15` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build.ps1 -Play -Verify`, `?v=14`) : 31 fichiers P-code diffèrent octet à octet, 6 hors renumérotation
+- Innocuité (`build.ps1 -Play -Verify`, `?v=14` ; `?v=15` ajoute des appels en tête de méthodes d'affichage : `§PNcV\x01§` du trooper affiché, `§&l\f[\x01§` du déplacement `§{DEL}\f\x01§.§Z\b4]§`, `§87 9§` et `OX2i` de la grenade `§I&\x01§.§(qs[§`, `§\x14;T\x07§` et la fin de `§\x07MJ\x1f§` de l'infobulle `§^\x05\x01!§.§xy\x04\x06§`) : 31 fichiers P-code diffèrent octet à octet, 6 hors renumérotation
   `newfunction N` : en plus de ceux ci-dessous, `§59=F\x03§` (trooper affiché : un appel en tête de `§3\x19/\x01§` et de
   `§\x16mf\x01§`), `§n#\x07\f§` (carte : un appel en tête de `§nEI(\x01§`) et, dans le Game, un appel en tête de
   `apply` (sons, ci-dessus) ; `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :
