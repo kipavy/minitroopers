@@ -159,7 +159,11 @@ if ($Play) {
        trait = 'trait method QName(PackageNamespace(""),"87 9")' },
     @{ name = "PC_PLAY_SFX_DETONATE"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts\${S}I&%5Cx01${S}\${S}(qs[${S}"
        sig = "      public function OX2i() : void"
-       trait = 'trait method QName(PackageNamespace(""),"OX2i")' }
+       trait = 'trait method QName(PackageNamespace(""),"OX2i")' },
+    # touch screens: the pause sheet's tooltips on a tap (README "Infobulles au toucher")
+    @{ name = "PC_PLAY_TIP"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts\${S}^%5Cx05%5Cx01!${S}\${S}xy%5Cx04%5Cx06${S}"
+       sig = "      public function ${S}x~\x03x${S}(param1:Sprite, param2:String) : void"
+       trait = 'trait method QName(PackageNamespace(""),"x~\x03x")' }
   )
 }
 $argLines = New-Object System.Collections.Generic.List[string]

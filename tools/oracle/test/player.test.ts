@@ -886,9 +886,9 @@ const SFX_KINDS = new Set(["deploy", "wave", "move", "switch", "reload", "empty"
 const SFX_WANT: Record<string, RegExp[]> = {
   "basic/00028.json.gz": [/^move:run:\d+$/],
   "vehicles/00007.json.gz": [/^move:v\d:\d+$/],
-  "rats/00005.json.gz": [/^move:rat:\d+$/, /^melee:36$/],
+  "rats/00005.json.gz": [/^move:rat:\d+$/, /^melee:36$/, /^death:2$/],
   "comms/00038.json.gz": [/^pin:8\d$/, /^throw:8\d$/, /^detonate:8\d$/, /^anim:(pillule|talky_walky|autoPique|voodoo)$/],
-  "jet/00003.json.gz": [/^jet:$/, /^throw:8\d$/],
+  "vehicles/00056.json.gz": [/^jet:$/, /^explosion:big$/],
 };
 for (const id of Object.keys(SFX_WANT)) {
   test(`mtSfx: cues while playing, none during jumps nor in the pause (${id})`, { timeout: 300_000 }, async (t) => {
@@ -898,7 +898,7 @@ for (const id of Object.keys(SFX_WANT)) {
       const total = p.t.record.events.length;
       await p.waitFor((c) => c.ready.length > 0, 60_000, "mtReady");
       await p.call("mtSpeed", 8);
-      const c = await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= Math.min(60, total - 5) || c.end.length > 0, 300_000, "playback");
+      const c = await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= Math.min(id.startsWith("rats/") ? 110 : 60, total - 5) || c.end.length > 0, 300_000, "playback");
       const sfx = c.sfx;
       t.diagnostic(`${sfx.length} cues: ${[...new Set(sfx.map(([k, d]) => k + (d ? ":" + d : "")))].sort().join(" ")}`);
       assert.ok(sfx.length > 0, "cues while playing");

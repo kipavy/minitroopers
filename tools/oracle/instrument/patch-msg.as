@@ -235,6 +235,7 @@ ifeq ofs0081
 ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
    import flash.display.BitmapData;
+   import flash.display.Sprite;
    import flash.events.Event;
    import flash.events.MouseEvent;
    import flash.external.ExternalInterface;
@@ -1122,7 +1123,7 @@ ofs0081:
             {
                _loc3_ = "nodmg";
             }
-            mtSfx(_loc3_,param1.§W\x19\x1bT\x03§ != null ? "vehicle" : (param2.§An%6§ == null ? "" : String(int(param2.§An%6§.§)-Z\x19\x01§))),Number(param1.§v\x01§));
+            mtSfx(_loc3_,param1.§W\x19\x1bT\x03§ != null ? "vehicle" : (int(param1.§;\f\x01§.§5E[\x1d§.§An%6§.§)-Z\x19\x01§) == 2 ? "rat" : (param2.§An%6§ == null ? "" : String(int(param2.§An%6§.§)-Z\x19\x01§)))),Number(param1.§v\x01§));
          }
          catch(_loc_e_:*)
          {
@@ -1198,12 +1199,12 @@ ofs0081:
             {
                return;
             }
-            _loc2_ = param1.§(\x01§;
+            _loc2_ = param1.§{DEL}(\x01§;
             if(_loc2_ == null || _loc2_.§Qg}\x07§)
             {
                return;
             }
-            _loc3_ = Number(param1.§\\x0fY\x01§);
+            _loc3_ = Number(param1.§\\\x0fY\x01§);
             if(!(_loc3_ > 0))
             {
                return;
@@ -1236,7 +1237,7 @@ ofs0081:
             {
                return;
             }
-            mtSfx("throw",String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§(\x01§.§v\x01§));
+            mtSfx("throw",String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§{DEL}(\x01§.§v\x01§));
          }
          catch(_loc_e_:*)
          {
@@ -1253,6 +1254,66 @@ ofs0081:
                return;
             }
             mtSfx("detonate",param1.§~qM;§ != null ? "catch" : String(int(param1.§\rhgP\x03§.§)-Z\x19\x01§)),Number(param1.§x\x1eBv§.§v\x01§));
+         }
+         catch(_loc_e_:*)
+         {
+         }
+      }
+
+      // --- touch screens: the pause sheet's tooltips (§xy\x04\x06§) show on ROLL_OVER and hide on ROLL_OUT; a tap gives
+      // no hover (and the browser's pointer leave after it rolls out). PC_PLAY_TIP (start of the tooltip registration
+      // §x~\x03x§(sprite, text)) adds, ahead of the native listeners: MOUSE_DOWN -> the same tooltip, held; ROLL_OUT
+      // while held -> ignored. The next press anywhere ends the hold (and hides it, unless it lands on another tooltip).
+      // Only while the page reports touch input (mtTouch, from its pointerdown); the mouse is unchanged.
+      public static var mtTouchOn:Boolean = false;
+      public static var mtTipHold:Boolean = false;
+      public static var mtTipStage:Boolean = false;
+
+      public static function mtTouch(param1:Boolean) : void
+      {
+         mtTouchOn = param1;
+         if(!param1)
+         {
+            mtTipHold = false;
+         }
+      }
+
+      public static function mtTipReg(param1:Sprite, param2:String) : void
+      {
+         var t:String = param2;
+         try
+         {
+            param1.addEventListener(MouseEvent.MOUSE_DOWN,function(param1:*):void
+            {
+               if(!mtTouchOn || §^\x05\x01!§.§xy\x04\x06§.§*#\x01§ == null)
+               {
+                  return;
+               }
+               §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.§\x14;T\x07§(t);
+               mtTipHold = true;
+            });
+            param1.addEventListener(MouseEvent.ROLL_OUT,function(param1:*):void
+            {
+               if(mtTouchOn && mtTipHold)
+               {
+                  param1.stopImmediatePropagation();
+               }
+            });
+            if(!mtTipStage && param1.stage != null)
+            {
+               mtTipStage = true;
+               param1.stage.addEventListener(MouseEvent.MOUSE_DOWN,function(param1:*):void
+               {
+                  if(mtTipHold)
+                  {
+                     mtTipHold = false;
+                     if(§^\x05\x01!§.§xy\x04\x06§.§*#\x01§ != null)
+                     {
+                        §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.§\x07MJ\x1f§();
+                     }
+                  }
+               },true);
+            }
          }
          catch(_loc_e_:*)
          {
@@ -1336,6 +1397,7 @@ ofs0081:
                ExternalInterface.addCallback("mtSettle",mtSettle);
                ExternalInterface.addCallback("mtKfSize",mtKfSize);
                ExternalInterface.addCallback("mtAhead",mtAhead);
+               ExternalInterface.addCallback("mtTouch",mtTouch);
             }
             catch(_loc_e_:*)
             {
@@ -3506,6 +3568,22 @@ pushscope
 getlex QName(PackageNamespace(""),"(m]a\x02")
 getlocal0
 callpropvoid QName(PackageNamespace(""),"mtSfxDetonate"), 1
+//@@ PC_PLAY_TIP_FIND  (tooltip registration §^\x05\x01!§.§xy\x04\x06§.§x~\x03x§(sprite, text): the start of its code)
+code
+getlocal0
+pushscope
+newactivation
+pushscope
+//@@ PC_PLAY_TIP_REPLACE  (=> `§(m]a\x02§.mtTipReg(sprite, text);` first, before the native ROLL_OVER / ROLL_OUT listeners)
+code
+getlocal0
+pushscope
+newactivation
+pushscope
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal1
+getlocal2
+callpropvoid QName(PackageNamespace(""),"mtTipReg"), 2
 //@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
 getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
 callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0
