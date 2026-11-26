@@ -665,6 +665,8 @@ ofs0081:
             "prof":mtProf,
             "pool":mtPoolN,
             "sfx":mtSfxN,
+            "tip":(§^\x05\x01!§.§xy\x04\x06§.§*#\x01§ != null && §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.visible),
+            "tipHold":mtTipHold,
             "waves":mtWaves,
             "starts":mtStarts
          };
@@ -1260,14 +1262,17 @@ ofs0081:
          }
       }
 
-      // --- touch screens: the pause sheet's tooltips (§xy\x04\x06§) show on ROLL_OVER and hide on ROLL_OUT; a tap gives
-      // no hover (and the browser's pointer leave after it rolls out). PC_PLAY_TIP (start of the tooltip registration
-      // §x~\x03x§(sprite, text)) adds, ahead of the native listeners: MOUSE_DOWN -> the same tooltip, held; ROLL_OUT
-      // while held -> ignored. The next press anywhere ends the hold (and hides it, unless it lands on another tooltip).
-      // Only while the page reports touch input (mtTouch, from its pointerdown); the mouse is unchanged.
+      // --- touch screens: the tooltips of the pause sheet (skills, health, statuses, weapons) show on a hover only
+      // (§^\x05\x01!§.§xy\x04\x06§: show §\x14;T\x07§, hide §\x07MJ\x1f§, called by each element's own over / out
+      // listeners), and the browser's pointer leave right after a tap rolls out. While the page reports touch input
+      // (mtTouch, from its pointerdown): a tooltip shown is held (PC_PLAY_TIP_SHOW), a hide while held is undone
+      // (PC_PLAY_TIP_HIDE, end of the hide); a press (stage, capture) ends the hold of a tooltip shown before it, and
+      // when the press itself showed none, its target (then its parents) gets the over events a hover would have sent.
       public static var mtTouchOn:Boolean = false;
       public static var mtTipHold:Boolean = false;
-      public static var mtTipStage:Boolean = false;
+      public static var mtTipClosing:Boolean = false;
+      public static var mtTipAt:int = -1000;
+      public static var mtTipStage:* = null;
 
       public static function mtTouch(param1:Boolean) : void
       {
@@ -1275,48 +1280,77 @@ ofs0081:
          if(!param1)
          {
             mtTipHold = false;
+            return;
          }
-      }
-
-      public static function mtTipReg(param1:Sprite, param2:String) : void
-      {
-         var t:String = param2;
          try
          {
-            param1.addEventListener(MouseEvent.MOUSE_DOWN,function(param1:*):void
+            if(mtTipStage == null && mtGame != null && mtGame.§\x011wD§.stage != null)
             {
-               if(!mtTouchOn || §^\x05\x01!§.§xy\x04\x06§.§*#\x01§ == null)
-               {
-                  return;
-               }
-               §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.§\x14;T\x07§(t);
-               mtTipHold = true;
-            });
-            param1.addEventListener(MouseEvent.ROLL_OUT,function(param1:*):void
-            {
-               if(mtTouchOn && mtTipHold)
-               {
-                  param1.stopImmediatePropagation();
-               }
-            });
-            if(!mtTipStage && param1.stage != null)
-            {
-               mtTipStage = true;
-               param1.stage.addEventListener(MouseEvent.MOUSE_DOWN,function(param1:*):void
-               {
-                  if(mtTipHold)
-                  {
-                     mtTipHold = false;
-                     if(§^\x05\x01!§.§xy\x04\x06§.§*#\x01§ != null)
-                     {
-                        §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.§\x07MJ\x1f§();
-                     }
-                  }
-               },true);
+               mtTipStage = mtGame.§\x011wD§.stage;
+               mtTipStage.addEventListener(MouseEvent.MOUSE_DOWN,mtTipDown,true,100);
             }
          }
          catch(_loc_e_:*)
          {
+         }
+      }
+
+      // PC_PLAY_TIP_SHOW
+      public static function mtTipShow(param1:*) : void
+      {
+         mtTipAt = getTimer();
+         if(mtTouchOn && !mtTipClosing)
+         {
+            mtTipHold = true;
+         }
+      }
+
+      // PC_PLAY_TIP_HIDE
+      public static function mtTipHid(param1:*) : void
+      {
+         if(mtTouchOn && mtTipHold && !mtTipClosing)
+         {
+            param1.visible = true;
+         }
+      }
+
+      public static function mtTipDown(param1:MouseEvent) : void
+      {
+         var _loc2_:* = null;
+         var _loc3_:int = 0;
+         var _loc4_:* = §^\x05\x01!§.§xy\x04\x06§.§*#\x01§;
+         if(!mtTouchOn || _loc4_ == null)
+         {
+            return;
+         }
+         try
+         {
+            if(getTimer() - mtTipAt < 60)
+            {
+               return;
+            }
+            if(mtTipHold)
+            {
+               mtTipClosing = true;
+               _loc4_.§\x07MJ\x1f§();
+               mtTipClosing = false;
+               mtTipHold = false;
+            }
+            _loc2_ = param1.target;
+            while(_loc2_ != null && _loc3_ < 6 && getTimer() - mtTipAt >= 60)
+            {
+               if(_loc3_ == 0)
+               {
+                  _loc2_.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER,true));
+               }
+               _loc2_.dispatchEvent(new MouseEvent(MouseEvent.ROLL_OVER,false));
+               _loc2_ = _loc2_.parent;
+               _loc3_++;
+            }
+         }
+         catch(_loc_e_:*)
+         {
+            mtTipClosing = false;
          }
       }
 
@@ -3568,22 +3602,26 @@ pushscope
 getlex QName(PackageNamespace(""),"(m]a\x02")
 getlocal0
 callpropvoid QName(PackageNamespace(""),"mtSfxDetonate"), 1
-//@@ PC_PLAY_TIP_FIND  (tooltip registration §^\x05\x01!§.§xy\x04\x06§.§x~\x03x§(sprite, text): the start of its code)
+//@@ PC_PLAY_TIP_SHOW_FIND  (tooltip §^\x05\x01!§.§xy\x04\x06§ show §\x14;T\x07§(text, ...): the start of its code)
 code
 getlocal0
 pushscope
-newactivation
-pushscope
-//@@ PC_PLAY_TIP_REPLACE  (=> `§(m]a\x02§.mtTipReg(sprite, text);` first, before the native ROLL_OVER / ROLL_OUT listeners)
+//@@ PC_PLAY_TIP_SHOW_REPLACE  (=> `§(m]a\x02§.mtTipShow(this);` first)
 code
 getlocal0
-pushscope
-newactivation
 pushscope
 getlex QName(PackageNamespace(""),"(m]a\x02")
-getlocal1
-getlocal2
-callpropvoid QName(PackageNamespace(""),"mtTipReg"), 2
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtTipShow"), 1
+//@@ PC_PLAY_TIP_HIDE_FIND  (tooltip hide §\x07MJ\x1f§: `visible = false;` then the end)
+initproperty QName(PackageNamespace(""),"visible")
+returnvoid
+//@@ PC_PLAY_TIP_HIDE_REPLACE  (=> `visible = false; §(m]a\x02§.mtTipHid(this);`)
+initproperty QName(PackageNamespace(""),"visible")
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal0
+callpropvoid QName(PackageNamespace(""),"mtTipHid"), 1
+returnvoid
 //@@ PC_PLAY_TICK_FIND  (Game tick() §&~\x03'§: `Clip.renderAll(); Clip.advanceAll();`)
 getlex QName(PackageNamespace("`\x0b\x01.\tnP+"),";io&")
 callpropvoid QName(PackageNamespace(""),"i\'\x04W\x02"), 0

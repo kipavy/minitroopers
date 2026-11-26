@@ -66,6 +66,27 @@
   var loading = { t0: Date.now() };
   var wait = null;
   var sfx = w.MtSfx || null;
+  // the browser holds the sound back until a gesture: a discreet hint, once (the sound button blinks)
+  if (sfx)
+    sfx.onBlocked = function () {
+      var touch = w.matchMedia && w.matchMedia("(pointer: coarse)").matches;
+      toast(touch ? "Touche l'écran pour activer le son" : "Clique pour activer le son", { ms: 3200 });
+      var b = d.getElementById("mtp-sound");
+      if (b) {
+        b.classList.add("mtp-sound--hint");
+        setTimeout(function () {
+          b.classList.remove("mtp-sound--hint");
+        }, 2000);
+      }
+    };
+  // touch input: the SWF then shows the pause sheet's tooltips on a tap (mtTouch, README « Infobulles au toucher »)
+  w.addEventListener(
+    "pointerdown",
+    function (e) {
+      call("mtTouch", e.pointerType === "touch");
+    },
+    true,
+  );
 
   w.swfobject.embedSWF = function (url, id) {
     if (id === "swf_battle") started();

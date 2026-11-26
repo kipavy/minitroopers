@@ -936,3 +936,86 @@ for (const id of Object.keys(SFX_WANT)) {
     }
   });
 }
+
+
+// Touch screens (README "Infobulles au toucher"): the pause sheet's tooltips show on hover only; with the page's touch
+// flag (mtTouch, sent by player.js on a touch pointerdown) a tap shows one and keeps it, a tap on another element shows
+// that one, a tap elsewhere in the sheet hides it. The mouse is unchanged. Mobile scale (390 px wide, like the site's
+// transform), taps through CDP touch events; MT_SHEET_SHOT: a screenshot of a skill's tooltip after a tap.
+test("touch: a tap on the pause sheet shows the native tooltip and keeps it; the mouse unchanged (comms/00038, 390 px)", { timeout: 300_000 }, async (t) => {
+  if (skip(t)) return;
+  const p = await open("comms/00038.json.gz");
+  try {
+    const state = () => p.call("mtState");
+    const S = 390 / 720;
+    await p.page.setViewportSize({ width: 390, height: 600 });
+    await p.page.evaluate((s) => {
+      const c = (globalThis as any).document.getElementById("c");
+      c.style.transformOrigin = "0 0";
+      c.style.transform = `scale(${s})`;
+    }, S);
+    const box = (await p.page.locator("#battle").boundingBox())!;
+    const at = (x: number, y: number) => ({ x: box.x + x * S, y: box.y + y * S });
+    await p.waitFor((c) => (c.progress.at(-1)?.[0] ?? 0) >= 5, 60_000, "idx >= 5");
+    await p.call("mtPause");
+    await p.page.waitForTimeout(600);
+    // a trooper of the left side, with skills: his card (a mouse click on him in the pause)
+    const dump = (await p.call("mtDump")) as string;
+    const m = /^T\d+ s0 @(\d+),(\d+) hp[1-9]/m.exec(dump)!;
+    const tx = Number(m[1]);
+    const ty = Number(m[2]);
+    const c0 = at(tx, ty - 20);
+    await p.page.mouse.click(c0.x, c0.y);
+    await p.page.waitForTimeout(800);
+    // the card's tooltip spots, by hovering with the mouse (the card is right of the trooper)
+    const spots: [number, number][] = [];
+    const empty: [number, number][] = [];
+    for (let y = ty - 40; y <= ty + 100; y += 8) {
+      for (let x = tx + 50; x <= Math.min(712, tx + 340); x += 8) {
+        const q = at(x, y);
+        await p.page.mouse.move(q.x, q.y);
+        if ((await state()).tip) spots.push([x, y]);
+        else if (x > tx + 90) empty.push([x, y]);
+      }
+    }
+    t.diagnostic(`trooper @${tx},${ty}: ${spots.length} tooltip spots, e.g. ${JSON.stringify(spots.slice(0, 6))}`);
+    assert.ok(spots.length >= 2, "tooltip spots on the card");
+    await p.page.mouse.move(at(tx + 200, ty + 130).x, at(tx + 200, ty + 130).y);
+    await p.page.waitForTimeout(100);
+    assert.equal((await state()).tip, false, "mouse out: hidden");
+    // the mouse is unchanged: hover shows, leaving hides, nothing held after a click
+    const a = spots[0]!;
+    await p.page.mouse.move(at(a[0], a[1]).x, at(a[0], a[1]).y);
+    assert.equal((await state()).tip, true, "mouse over: shown");
+    // touch: the page's flag, then taps
+    await p.call("mtTouch", true);
+    const cdp = await p.page.context().newCDPSession(p.page);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
+    const tap = async (x: number, y: number) => {
+      const q = at(x, y);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: q.x, y: q.y }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await p.page.waitForTimeout(300);
+    };
+    const b = spots.find((s) => Math.abs(s[0] - a[0]) > 30 || Math.abs(s[1] - a[1]) > 20) ?? spots.at(-1)!;
+    await tap(a[0], a[1]);
+    let s = await state();
+    assert.deepEqual({ tip: s.tip, hold: s.tipHold, paused: s.paused }, { tip: true, hold: true, paused: true }, "a tap: the tooltip shown and held");
+    await p.page.waitForTimeout(600);
+    assert.equal((await state()).tip, true, "still shown after the tap");
+    await tap(b[0], b[1]);
+    s = await state();
+    assert.deepEqual({ tip: s.tip, hold: s.tipHold }, { tip: true, hold: true }, "a tap on another element: its tooltip");
+    if (process.env.MT_SHEET_SHOT) await p.page.screenshot({ path: process.env.MT_SHEET_SHOT });
+    const e = empty.find(([x, y]) => x > tx + 120 && x < tx + 240 && y > ty - 10 && y < ty + 60)!;
+    if (e) {
+      await tap(e[0], e[1]);
+      s = await state();
+      assert.deepEqual({ tip: s.tip, hold: s.tipHold }, { tip: false, hold: false }, "a tap elsewhere in the card: hidden");
+    }
+    assert.deepEqual(p.errors, []);
+  } finally {
+    await p.close();
+  }
+});
+

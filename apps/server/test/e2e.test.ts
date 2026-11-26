@@ -180,6 +180,13 @@ async function swfReplay(page: Page, label: string, won: boolean, end: string): 
   assert.equal(await page.getAttribute("#mtp-sound", "aria-pressed"), "true", `${label}: sound on by default`);
   assert.equal(await page.getAttribute("#mtp-sound", "aria-disabled"), null, `${label}: sound button active`);
   await until(page, () => page.evaluate(() => (globalThis as unknown as { mtPlayer: { sfx: number } }).mtPlayer.sfx), (n) => n > 0, 120_000, `${label}: sound cues from the SWF`);
+  // and they are heard: every sound decoded without a gesture; the page was opened by a click (the browser lets the
+  // AudioContext run at once), else a gesture starts it
+  type Sfx = { ready: boolean; played: number; running(): boolean };
+  const sfx = () => page.evaluate(() => { const S = (globalThis as unknown as { MtSfx: Sfx }).MtSfx; return { ready: S.ready, running: S.running(), played: S.played }; });
+  await until(page, sfx, (s) => s.ready, 30_000, `${label}: sounds decoded`);
+  if (!(await sfx()).running) await page.mouse.click(2, 2);
+  await until(page, sfx, (s) => s.running && s.played > 0, 60_000, `${label}: sounds played`);
   // "Fin" again if the jump stopped short (a step stuck before the end: a new seek destroys it, as the stuck warning's
   // "Vague suivante" does)
   let last: SwfState | undefined;
