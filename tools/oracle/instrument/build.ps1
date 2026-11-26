@@ -21,7 +21,7 @@
 #>
 param(
   # outside the repo: decompiled Motion-Twin code must never be committed
-  [string]$WorkDir = (Join-Path $PSScriptRoot "..\..\..\..\minitroopers-work\oracle-build"),
+  [string]$WorkDir = (Join-Path $PSScriptRoot "../../../../minitroopers-work/oracle-build"),
   [switch]$Verify,
   # build assets/swf/client_fr_play.swf instead (see build-play.ps1): the chk check removed,
   # the replay API (PC_PLAY_GAME_*, PC_PLAY_FAST, HELPERS_PLAY), no trace helpers
@@ -30,13 +30,14 @@ param(
 $ErrorActionPreference = "Stop"
 $WorkDir = [IO.Path]::GetFullPath($WorkDir)
 
-$Root = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
-$Java = Join-Path $Root "tools\bin\jdk\bin\java.exe"
-$FFDec = Join-Path $Root "tools\bin\ffdec\ffdec-cli.jar"
-$FFHome = Join-Path $Root "tools\bin\ffdec-home"
-$Src = Join-Path $Root "assets\swf\client_fr.swf"
-$OutDir = Join-Path $Root "assets\oracle"
-if ($Play) { $OutDir = Join-Path $Root "assets\swf"; $OutName = "client_fr_play.swf" } else { $OutName = "client_fr_trace.swf" }
+$Root = (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
+# MT_JAVA / MT_FFDEC: another Java or FFDec (e.g. the Linux build container, tools/oracle/instrument/README.md)
+$Java = if ($env:MT_JAVA) { $env:MT_JAVA } else { Join-Path $Root "tools/bin/jdk/bin/java.exe" }
+$FFDec = if ($env:MT_FFDEC) { $env:MT_FFDEC } else { Join-Path $Root "tools/bin/ffdec/ffdec-cli.jar" }
+$FFHome = Join-Path $Root "tools/bin/ffdec-home"
+$Src = Join-Path $Root "assets/swf/client_fr.swf"
+$OutDir = Join-Path $Root "assets/oracle"
+if ($Play) { $OutDir = Join-Path $Root "assets/swf"; $OutName = "client_fr_play.swf" } else { $OutName = "client_fr_trace.swf" }
 $Out = Join-Path $OutDir $OutName
 $Patch = Join-Path $PSScriptRoot "patch-msg.as"
 $Utf8 = New-Object System.Text.UTF8Encoding($false)
@@ -74,7 +75,7 @@ function Find-Once([string]$Text, [string]$Anchor, [string]$What) {
 }
 
 # 1. source integrity
-$expected = ((Get-Content (Join-Path $Root "assets\swf\SHA256SUMS") | Where-Object { $_ -match "client_fr\.swf$" }) -split "\s+")[0]
+$expected = ((Get-Content (Join-Path $Root "assets/swf/SHA256SUMS") | Where-Object { $_ -match "client_fr\.swf$" }) -split "\s+")[0]
 $actual = Get-Sha256 $Src
 if ($expected -ne $actual) { throw "client_fr.swf SHA-256 mismatch: $actual (expected $expected)" }
 
@@ -107,15 +108,15 @@ function Get-Section([string]$Name) { return (($sections[$Name] -join "`n") + "`
 #    trait = P-code trait line of the method.
 $pcodeEdits = @(
   @{ name = "PC_TROOPER"; class = "${S}P!L/\x02${S}.${S}59=F\x03${S}"
-     rel = "scripts\${S}P!L%2F%5Cx02${S}\${S}59=F%5Cx03${S}"
+     rel = "scripts/${S}P!L%2F%5Cx02${S}/${S}59=F%5Cx03${S}"
      sig = "      public function ${S}(\x07\x184${S}(param1:${S}\x0b\x0eNO${S}) : void"
      trait = 'trait method QName(PackageNamespace(""),"(\x07\x184")' },
   @{ name = "PC_GAME"; class = "${S}Q\btf${S}"
-     rel = "scripts\${S}Q%5Cbtf${S}"
+     rel = "scripts/${S}Q%5Cbtf${S}"
      sig = "      public function ${S}&l\f[\x01${S}(param1:*) : void"
      trait = 'trait method QName(PackageNamespace(""),"&l\f[\x01")' },
   @{ name = "PC_MAIN"; class = "${S},7u\x1f${S}"
-     rel = "scripts\${S},7u%5Cx1f${S}"
+     rel = "scripts/${S},7u%5Cx1f${S}"
      sig = "      public static function _rsq() : void"
      trait = 'trait method QName(PackageNamespace(""),"_rsq")' }
 )
@@ -138,33 +139,47 @@ if ($Play) {
     @{ name = "PC_PLAY_SFX_APPLY"; class = $game.class; rel = $game.rel
        sig = "      public function apply(param1:Object, param2:Array) : void"
        trait = 'trait method QName(PackageNamespace(""),"apply")' },
-    @{ name = "PC_PLAY_SFX_HIT"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+    @{ name = "PC_PLAY_SFX_HIT"; parts = @("PC_PLAY_SFX_HIT", "PC_PLAY_FX_HELMET"); class = "${S}59=F\x03${S}"; rel = "scripts/${S}59=F%5Cx03${S}"
        sig = "      public function ${S}3\x19/\x01${S}(param1:Object, param2:Object = undefined) : void"
        trait = 'trait method QName(PackageNamespace(""),"3\x19/\x01")' },
-    @{ name = "PC_PLAY_SFX_DIE"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+    @{ name = "PC_PLAY_SFX_DIE"; class = "${S}59=F\x03${S}"; rel = "scripts/${S}59=F%5Cx03${S}"
        sig = "      public function ${S}\x16mf\x01${S}() : void"
        trait = 'trait method QName(PackageNamespace(""),"\x16mf\x01")' },
-    @{ name = "PC_PLAY_SFX_BLAST"; class = "${S}n#\x07\f${S}"; rel = "scripts\${S}n#%5Cx07%5Cf${S}"
+    @{ name = "PC_PLAY_SFX_BLAST"; class = "${S}n#\x07\f${S}"; rel = "scripts/${S}n#%5Cx07%5Cf${S}"
        sig = "      public function ${S}nEI(\x01${S}(param1:Number, param2:Number, param3:int = 50, param4:int = 10, param5:Number = 0.1, param6:Number = 0.2, param7:Object = undefined) : void"
        trait = 'trait method QName(PackageNamespace(""),"nEI(\x01")' },
     # sounds, round 2: a display trooper's animation, a display move's frame, a grenade's release and detonation
-    @{ name = "PC_PLAY_SFX_ANIM"; class = "${S}59=F\x03${S}"; rel = "scripts\${S}59=F%5Cx03${S}"
+    @{ name = "PC_PLAY_SFX_ANIM"; class = "${S}59=F\x03${S}"; rel = "scripts/${S}59=F%5Cx03${S}"
        sig = "      public function ${S}PNcV\x01${S}(param1:${S}/U3W${S}) : void"
        trait = 'trait method QName(PackageNamespace(""),"PNcV\x01")' },
-    @{ name = "PC_PLAY_SFX_MOVE"; class = "${S}${DEL}\f\x01${S}.${S}Z\b4]${S}"; rel = "scripts\${S}${DEL}%5Cf%5Cx01${S}\${S}Z%5Cb4]${S}"
+    @{ name = "PC_PLAY_SFX_MOVE"; class = "${S}${DEL}\f\x01${S}.${S}Z\b4]${S}"; rel = "scripts/${S}${DEL}%5Cf%5Cx01${S}/${S}Z%5Cb4]${S}"
        sig = "      override public function ${S}&l\f[\x01${S}() : void"
        trait = 'trait method QName(PackageNamespace(""),"&l\f[\x01")' },
-    @{ name = "PC_PLAY_SFX_THROW"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts\${S}I&%5Cx01${S}\${S}(qs[${S}"
+    @{ name = "PC_PLAY_SFX_THROW"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts/${S}I&%5Cx01${S}/${S}(qs[${S}"
        sig = "      public function ${S}87 9${S}() : void"
        trait = 'trait method QName(PackageNamespace(""),"87 9")' },
-    @{ name = "PC_PLAY_SFX_DETONATE"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts\${S}I&%5Cx01${S}\${S}(qs[${S}"
+    @{ name = "PC_PLAY_SFX_DETONATE"; class = "${S}I&\x01${S}.${S}(qs[${S}"; rel = "scripts/${S}I&%5Cx01${S}/${S}(qs[${S}"
        sig = "      public function OX2i() : void"
        trait = 'trait method QName(PackageNamespace(""),"OX2i")' },
+    # performance: the shot line leaves after 6 frames (the helmet knocked off: a part of PC_PLAY_SFX_HIT above)
+    @{ name = "PC_PLAY_FX_TRAIL"; class = "${S}I&\x01${S}.${S}rL\x1ff\x03${S}"; rel = "scripts/${S}I&%5Cx01${S}/${S}rL%5Cx1ff%5Cx03${S}"
+       sig = "      public function ${S}s\x11G?\x03${S}(param1:Number, param2:Number) : void"
+       trait = 'trait method QName(PackageNamespace(""),"s\x11G?\x03")' },
+    @{ name = "PC_PLAY_FX_ROCKET"; class = "${S}I&\x01${S}.${S}ae\x1f\t${S}"; rel = "scripts/${S}I&%5Cx01${S}/${S}ae%5Cx1f%5Ct${S}"
+       sig = "      override public function ${S}&l\f[\x01${S}() : void"
+       trait = 'trait method QName(PackageNamespace(""),"&l\f[\x01")' },
+    # performance: constructors (trait = their signature line, which FFDec prints above the P-code of an instance initializer)
+    @{ name = "PC_PLAY_FX_SMOKE"; parts = @("PC_PLAY_FX_SMOKE", "PC_PLAY_FX_SMOKE_BLUR"); class = "${S}z&\x01${S}.${S}#s'\x04\x03${S}"; rel = "scripts/${S}z&%5Cx01${S}/${S}#s'%5Cx04%5Cx03${S}"
+       sig = "      public function ${S}#s'\x04\x03${S}(param1:Number = 0)"
+       trait = "public function ${S}#s'\x04\x03${S}(param1:Number = 0)" },
+    @{ name = "PC_PLAY_FX_BLOOD"; class = "${S}I&\x01${S}.${S}rL\x1ff\x03${S}"; rel = "scripts/${S}I&%5Cx01${S}/${S}rL%5Cx1ff%5Cx03${S}"
+       sig = "      public function ${S}rL\x1ff\x03${S}(param1:${S}59=F\x03${S} = undefined, param2:Array = undefined)"
+       trait = "public function ${S}rL\x1ff\x03${S}(param1:${S}59=F\x03${S} = undefined, param2:Array = undefined)" },
     # touch screens: the pause sheet's tooltips on a tap (README "Infobulles au toucher")
-    @{ name = "PC_PLAY_TIP_SHOW"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts\${S}^%5Cx05%5Cx01!${S}\${S}xy%5Cx04%5Cx06${S}"
+    @{ name = "PC_PLAY_TIP_SHOW"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts/${S}^%5Cx05%5Cx01!${S}/${S}xy%5Cx04%5Cx06${S}"
        sig = "      public function ${S}\x14;T\x07${S}(param1:String, param2:Object = undefined, param3:int = 0) : void"
        trait = 'trait method QName(PackageNamespace(""),"\x14;T\x07")' },
-    @{ name = "PC_PLAY_TIP_HIDE"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts\${S}^%5Cx05%5Cx01!${S}\${S}xy%5Cx04%5Cx06${S}"
+    @{ name = "PC_PLAY_TIP_HIDE"; class = "${S}^\x05\x01!${S}.${S}xy\x04\x06${S}"; rel = "scripts/${S}^%5Cx05%5Cx01!${S}/${S}xy%5Cx04%5Cx06${S}"
        sig = "      public function ${S}\x07MJ\x1f${S}() : void"
        trait = 'trait method QName(PackageNamespace(""),"\x07MJ\x1f")' }
   )
@@ -199,7 +214,7 @@ Invoke-FFDec @("-replace", $Src, $Step1, $argsFile)
 # 4. helpers: static methods added to the empty class §(m]a\x02§, recompiled from AS3
 #    (trace: HELPERS_IMPORTS + HELPERS; -Play: HELPERS_PLAY_IMPORTS + HELPERS_PLAY, the replay API)
 $hSec = if ($Play) { "HELPERS_PLAY" } else { "HELPERS" }
-$hRel = "scripts\${S}(m]a%5Cx02${S}.as"
+$hRel = "scripts/${S}(m]a%5Cx02${S}.as"
 $h = Read-Text (Join-Path $Decomp $hRel)
 $pkg = "package`n{`n"
 $at = Find-Once $h $pkg "${hSec}_IMPORTS"

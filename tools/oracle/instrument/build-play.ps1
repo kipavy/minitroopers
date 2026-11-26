@@ -15,7 +15,7 @@
   P-code differences against the original (README "client_fr_play.swf").
 #>
 param(
-  [string]$WorkDir = (Join-Path $PSScriptRoot "..\..\..\..\minitroopers-work\oracle-build-play"),
+  [string]$WorkDir = (Join-Path $PSScriptRoot "../../../../minitroopers-work/oracle-build-play"),
   [switch]$Verify
 )
 $ErrorActionPreference = "Stop"

@@ -234,6 +234,13 @@ getlocal 6
 ifeq ofs0081
 ofs0081:
 //@@ HELPERS_PLAY_IMPORTS  (client_fr_play.swf: inserted after `package\n{\n` of §(m]a\x02§)
+   import flash.display.Bitmap;
+   import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
+   import flash.filters.BlurFilter;
+   import flash.geom.Matrix;
+   import flash.geom.Point;
+   import flash.geom.Rectangle;
    import flash.display.BitmapData;
    import flash.display.Sprite;
    import flash.events.Event;
@@ -665,6 +672,7 @@ ofs0081:
             "prof":mtProf,
             "pool":mtPoolN,
             "sfx":mtSfxN,
+            "puff":mtPuffN,
             "tip":(§^\x05\x01!§.§xy\x04\x06§.§*#\x01§ != null && §^\x05\x01!§.§xy\x04\x06§.§*#\x01§.visible),
             "tipHold":mtTipHold,
             "waves":mtWaves,
@@ -1574,6 +1582,7 @@ ofs0081:
                mtTm = null;
             }
          }
+         mtPuffFrame();
       }
 
       // one player frame of a seek whose synchronous part (mtGoto) ran out of time: frame() calls (fast flag on, Game clip
@@ -3450,6 +3459,199 @@ ofs0081:
             mtOut("mtEnd",[]);
          }
       }
+      // --- performance (README "Performances") ---
+      // A shot's line (FxLineShot, §I&\x01§.§rL\x1ff\x03§.§s\x11G?\x03§) was never taken away: once its animation was over it
+      // stayed on the battlefield, invisible, its clip still advanced and drawn at every frame, so a long battle slowed
+      // down shot after shot. It now leaves after 6 frames like the game's other effects (a particle §)Kw\x02§ with a
+      // lifetime, whose end gives the clip back), kept in its own layer §n#\x07\f§.§$@k^\x02§.
+      public static function mtTrail(param1:Sprite, param2:*) : void
+      {
+         var _loc3_:§)Kw{DEL}\x02§ = new §)Kw{DEL}\x02§(param1);
+         _loc3_.§/\x12#\x1c\x02§ = 6;
+         _loc3_.§\\87\x01§ = param2;
+         _loc3_.§L\x16;=§(param1.x,param1.y);
+         §n#\x07\f§.§*#\x01§.§7q\x01§.§\x10Gv\x01§(param1,§n#\x07\f§.§$@k^\x02§);
+      }
+
+      // A smoke puff (rocket trail §I&\x01§.§ae\x1f\t§, explosion smoke §z&\x01§.§#s'\x04\x03§) carried a BlurFilter: Ruffle blurred
+      // every puff again at every frame (a rocket's puffs grow at every step), the slowest moments of a battle. The puff's
+      // drawing is now blurred once per size (sizes on a log scale, 40 steps per factor e, ~2.5 %), into a bitmap shared by
+      // every puff of that size and shown in place of its vector drawing; a puff that grows switches bitmap when it
+      // reaches the next size. Same look: the blur stays in screen pixels, as the filter's.
+      public static var mtPuffs:Array = [];
+      public static var mtPuffCache:Object = {};
+      public static var mtPuffN:Array = [0,0,0];
+
+      public static function mtPuffBlur(param1:DisplayObject, param2:*, param3:*) : void
+      {
+         var _loc4_:DisplayObjectContainer = param1 as DisplayObjectContainer;
+         var _loc5_:Object = null;
+         if(_loc4_ == null || param2 == null || Number(param2) != Number(param3) || param1.filters.length != 0)
+         {
+            §l\x16kU§.§l\x03Lh§(param1,param2,param3);
+            return;
+         }
+         _loc5_ = {
+            "o":_loc4_,
+            "b":Number(param2),
+            "k":int.MAX_VALUE,
+            "r":null,
+            "bmp":null,
+            "kids":null,
+            "key":getQualifiedClassName(param1) + "|" + param2
+         };
+         if(mtPuffShow(_loc5_))
+         {
+            mtPuffs.push(_loc5_);
+         }
+         else
+         {
+            §l\x16kU§.§l\x03Lh§(param1,param2,param3);
+         }
+      }
+
+      // after the frame's steps: puffs that left the battlefield are dropped, puffs whose size changed take their bitmap
+      public static function mtPuffFrame() : void
+      {
+         var _loc1_:int = 0;
+         var _loc2_:int = 0;
+         var _loc3_:Object = null;
+         while(_loc1_ < mtPuffs.length)
+         {
+            _loc3_ = mtPuffs[_loc1_];
+            _loc1_++;
+            if(_loc3_.o.parent != null && mtPuffShow(_loc3_))
+            {
+               mtPuffs[_loc2_] = _loc3_;
+               _loc2_++;
+            }
+         }
+         mtPuffs.length = _loc2_;
+      }
+
+      // shows the puff's bitmap for its current size; false: it cannot be baked (left as a filtered drawing)
+      public static function mtPuffShow(param1:Object) : Boolean
+      {
+         var _loc2_:DisplayObjectContainer = param1.o;
+         var _loc3_:Matrix = _loc2_.transform.concatenatedMatrix;
+         var _loc4_:Number = Math.sqrt(_loc3_.a * _loc3_.a + _loc3_.b * _loc3_.b);
+         var _loc5_:int = 0;
+         var _loc6_:Array = null;
+         var _loc7_:Bitmap = null;
+         var _loc8_:int = 0;
+         if(_loc4_ < 0.01 || Math.abs(_loc4_ - Math.sqrt(_loc3_.c * _loc3_.c + _loc3_.d * _loc3_.d)) > _loc4_ * 0.01)
+         {
+            return param1.bmp != null;
+         }
+         _loc5_ = int(Math.round(Math.log(_loc4_) * 40));
+         if(_loc5_ == param1.k)
+         {
+            return true;
+         }
+         if(param1.kids == null)
+         {
+            param1.kids = [];
+            while(_loc8_ < _loc2_.numChildren)
+            {
+               param1.kids.push(_loc2_.getChildAt(_loc8_));
+               _loc8_++;
+            }
+            param1.r = _loc2_.getBounds(_loc2_);
+            if(param1.r.width <= 0 || param1.r.height <= 0)
+            {
+               return false;
+            }
+         }
+         _loc6_ = mtPuffBitmap(param1,_loc5_);
+         if(_loc6_ == null)
+         {
+            return param1.bmp != null;
+         }
+         _loc7_ = param1.bmp;
+         if(_loc7_ == null)
+         {
+            _loc8_ = 0;
+            while(_loc8_ < param1.kids.length)
+            {
+               param1.kids[_loc8_].visible = false;
+               _loc8_++;
+            }
+            _loc7_ = new Bitmap(_loc6_[0],"auto",true);
+            _loc2_.addChild(_loc7_);
+            param1.bmp = _loc7_;
+            mtPuffN[0]++;
+         }
+         else
+         {
+            _loc7_.bitmapData = _loc6_[0];
+            _loc7_.smoothing = true;
+         }
+         _loc7_.x = _loc6_[1];
+         _loc7_.y = _loc6_[2];
+         _loc7_.scaleX = _loc7_.scaleY = _loc6_[3];
+         param1.k = _loc5_;
+         return true;
+      }
+
+      // [bitmap, x, y, scale] of the puff's drawing blurred at size step param2 (cached per drawing, blur and step)
+      public static function mtPuffBitmap(param1:Object, param2:int) : Array
+      {
+         var _loc3_:String = param1.key + "|" + param2;
+         var _loc4_:Array = mtPuffCache[_loc3_];
+         var _loc5_:Number = NaN;
+         var _loc6_:Rectangle = param1.r;
+         var _loc7_:int = 0;
+         var _loc8_:int = 0;
+         var _loc9_:int = 0;
+         var _loc10_:BitmapData = null;
+         var _loc11_:BitmapData = null;
+         var _loc12_:DisplayObject = null;
+         var _loc13_:int = 0;
+         if(_loc4_ != null)
+         {
+            return _loc4_;
+         }
+         _loc5_ = Math.exp(param2 / 40);
+         _loc7_ = int(Math.ceil(param1.b)) + 2;
+         _loc8_ = int(Math.ceil(_loc6_.width * _loc5_)) + 2 * _loc7_;
+         _loc9_ = int(Math.ceil(_loc6_.height * _loc5_)) + 2 * _loc7_;
+         if(_loc8_ > 1024 || _loc9_ > 1024)
+         {
+            return null;
+         }
+         if(param1.bmp != null)
+         {
+            param1.bmp.visible = false;
+         }
+         while(_loc13_ < param1.kids.length)
+         {
+            param1.kids[_loc13_].visible = true;
+            _loc13_++;
+         }
+         _loc12_ = param1.o.mask;
+         param1.o.mask = null;
+         _loc10_ = new BitmapData(_loc8_,_loc9_,true,0);
+         _loc10_.draw(param1.o,new Matrix(_loc5_,0,0,_loc5_,_loc7_ - _loc6_.x * _loc5_,_loc7_ - _loc6_.y * _loc5_));
+         param1.o.mask = _loc12_;
+         _loc13_ = 0;
+         while(_loc13_ < param1.kids.length)
+         {
+            param1.kids[_loc13_].visible = param1.bmp == null;
+            _loc13_++;
+         }
+         if(param1.bmp != null)
+         {
+            param1.bmp.visible = true;
+         }
+         _loc11_ = new BitmapData(_loc8_,_loc9_,true,0);
+         _loc11_.applyFilter(_loc10_,_loc10_.rect,new Point(0,0),new BlurFilter(param1.b,param1.b));
+         _loc10_.dispose();
+         _loc4_ = [_loc11_,_loc6_.x - _loc7_ / _loc5_,_loc6_.y - _loc7_ / _loc5_,1 / _loc5_];
+         mtPuffCache[_loc3_] = _loc4_;
+         mtPuffN[1]++;
+         return _loc4_;
+      }
+
 //@@ PC_PLAY_GAME_INIT_FIND  (Game ENTER_FRAME handler, state 0 -> 1, same spot as PC_GAME)
 getlex QName(PackageNamespace(""),"(\x1ar3")
 getproperty QName(PackageNamespace(""),"{DEL}\x0fY@")
@@ -3630,4 +3832,80 @@ callpropvoid QName(PackageNamespace(""),"?d0r\x01"), 0
 //@@ PC_PLAY_TICK_REPLACE  (=> `§(m]a\x02§.mtClips();`, which makes the same two calls)
 getlex QName(PackageNamespace(""),"(m]a\x02")
 callpropvoid QName(PackageNamespace(""),"mtClips"), 0
+//@@ PC_PLAY_FX_TRAIL_FIND  (shot action §I&\x01§.§rL\x1ff\x03§ line §s\x11G?\x03§(angle, length): its glow, then the end)
+callpropvoid QName(PackageNamespace(""),";\x01Ci"), 4
+returnvoid
+//@@ PC_PLAY_FX_TRAIL_REPLACE  (=> `§(m]a\x02§.mtTrail(sprite, clip);` last: the line leaves after 6 frames)
+callpropvoid QName(PackageNamespace(""),";\x01Ci"), 4
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal 4
+getlocal3
+callpropvoid QName(PackageNamespace(""),"mtTrail"), 2
+returnvoid
+//@@ PC_PLAY_FX_HELMET_FIND  (display trooper §3\x19/\x01§(hit, angle), a helmet knocked off: `particle.life = 600;`)
+getlocal 18
+pushint 600
+initproperty QName(PackageNamespace(""),"/\x12#\x1c\x02")
+//@@ PC_PLAY_FX_HELMET_REPLACE  (=> `particle.clip = helmetClip;` too: the particle's end gives the clip back, it was advanced forever)
+getlocal 18
+pushint 600
+initproperty QName(PackageNamespace(""),"/\x12#\x1c\x02")
+getlocal 18
+getlocal 17
+initproperty QName(PackageNamespace(""),"\\87\x01")
+//@@ PC_PLAY_FX_SMOKE_FIND  (explosion smoke particle §z&\x01§.§#s'\x04\x03§ constructor: `sprite.mask = maskSprite;`)
+findproperty QName(PackageNamespace(""),"\x011wD")
+getproperty QName(PackageNamespace(""),"\x011wD")
+findproperty QName(PackageNamespace(""),"g\r{\x01")
+getproperty QName(PackageNamespace(""),"g\r{\x01")
+initproperty QName(PackageNamespace(""),"mask")
+//@@ PC_PLAY_FX_SMOKE_REPLACE  (=> `this.shadow = maskSprite;` too: the particle's end takes its shadow sprite away, so the mask leaves with its puff; it stayed on the battlefield, and kept its puff alive)
+findproperty QName(PackageNamespace(""),"\x011wD")
+getproperty QName(PackageNamespace(""),"\x011wD")
+findproperty QName(PackageNamespace(""),"g\r{\x01")
+getproperty QName(PackageNamespace(""),"g\r{\x01")
+initproperty QName(PackageNamespace(""),"mask")
+getlocal0
+getlocal0
+getproperty QName(PackageNamespace(""),"g\r{\x01")
+initproperty QName(PackageNamespace(""),"\x0b\x19@@\x02")
+//@@ PC_PLAY_FX_BLOOD_FIND  (shot action §I&\x01§.§rL\x1ff\x03§ constructor, a blood splash: `particle.life = 10;`)
+getlocal 24
+pushbyte 10
+initproperty QName(PackageNamespace(""),"/\x12#\x1c\x02")
+//@@ PC_PLAY_FX_BLOOD_REPLACE  (=> `particle.clip = bloodClip;` too: the particle's end gives the clip back, it was advanced forever)
+getlocal 24
+pushbyte 10
+initproperty QName(PackageNamespace(""),"/\x12#\x1c\x02")
+getlocal 24
+getlocal 23
+initproperty QName(PackageNamespace(""),"\\87\x01")
+//@@ PC_PLAY_FX_ROCKET_FIND  (rocket action §I&\x01§.§ae\x1f\t§ frame §&l\f[\x01§: a smoke puff's `Fx.blur(puff, b, b);`)
+getlex QName(PackageNamespace("`\x0b\x01.NOJE\x03"),"l\x16kU")
+getlocal 7
+getproperty QName(PackageNamespace(""),"\x011wD")
+getlocal 8
+getlocal 8
+callpropvoid QName(PackageNamespace(""),"l\x03Lh"), 3
+//@@ PC_PLAY_FX_ROCKET_REPLACE  (=> `§(m]a\x02§.mtPuffBlur(puff, b, b);`: blurred once per size)
+getlex QName(PackageNamespace(""),"(m]a\x02")
+getlocal 7
+getproperty QName(PackageNamespace(""),"\x011wD")
+getlocal 8
+getlocal 8
+callpropvoid QName(PackageNamespace(""),"mtPuffBlur"), 3
+//@@ PC_PLAY_FX_SMOKE_BLUR_FIND  (explosion smoke particle constructor: `Fx.blur(sprite, 8, 8);`)
+getlex QName(PackageNamespace("`\x0b\x01.NOJE\x03"),"l\x16kU")
+findproperty QName(PackageNamespace(""),"\x011wD")
+getproperty QName(PackageNamespace(""),"\x011wD")
+pushbyte 8
+pushbyte 8
+callpropvoid QName(PackageNamespace(""),"l\x03Lh"), 3
+//@@ PC_PLAY_FX_SMOKE_BLUR_REPLACE  (=> `§(m]a\x02§.mtPuffBlur(sprite, 8, 8);`: blurred once per size)
+getlex QName(PackageNamespace(""),"(m]a\x02")
+findproperty QName(PackageNamespace(""),"\x011wD")
+getproperty QName(PackageNamespace(""),"\x011wD")
+pushbyte 8
+pushbyte 8
+callpropvoid QName(PackageNamespace(""),"mtPuffBlur"), 3
 //@@ END

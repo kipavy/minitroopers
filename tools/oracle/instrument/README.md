@@ -76,6 +76,19 @@ réécrit tout son bytecode (≈6 500 lignes de P-code différentes). L'édition
 garantit que seules les instructions insérées changent. `-importScript` ne sait pas ajouter
 une nouvelle classe, d'où l'hébergement des helpers dans la classe vide `§(m]a\x02§`.
 
+Sous Linux, sans rien installer sur l'hôte : le conteneur jetable `tools/oracle/instrument/Dockerfile.build` (Node
+24.12, PowerShell 7.4.6, OpenJDK 17, FFDec 26.5.0 vérifié par SHA-256) ; `MT_JAVA` / `MT_FFDEC` remplacent les chemins
+de `tools/bin`, la locale UTF-8 garde les `§` des noms de fichiers exportés. Même SHA-256 que sous Windows (`?v=15`
+reconstruit à l'identique) :
+
+```sh
+docker build -t mt-swfbuild -f tools/oracle/instrument/Dockerfile.build tools/oracle/instrument
+docker run --rm -v "$PWD":/w -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+  -e JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8" \
+  -e MT_JAVA=/usr/bin/java -e MT_FFDEC=/opt/ffdec/ffdec-cli.jar \
+  mt-swfbuild pwsh -NoProfile -File /w/tools/oracle/instrument/build-play.ps1
+```
+
 ## Noms obfusqués réels (client_fr.swf)
 
 FFDec affiche les identifiants entre `§…§` avec des échappements `\xNN` ; certains contiennent
@@ -663,6 +676,39 @@ par `-importScript` ; le build de trace garde `HELPERS`, son SHA-256 est inchang
   d'échec.
 - Test : `tools/oracle/test/player.test.ts` (Ruffle web, `OracleRunner.newPage`).
 
+### Performances (`?v=16`)
+
+Sur une longue bataille (mission épique, une douzaine de vagues), le jeu ralentissait vague après vague : mesuré dans
+Brave (PC Snapdragon / Adreno, ARM64) sur l'épique de prod n° 22 (960 entrées, 13 vagues) à ×1, 40 images de jeu par
+seconde au début, 11 à 14 sur les dernières vagues (médiane 22,9). Ni le nightly officiel de Ruffle (2026-11-26) ni le
+Ruffle de BetterTrooper n'y changeaient rien : la cause est dans le SWF de jeu, des effets que l'original ne retire
+jamais. La page publique de BetterTrooper (`/player-fixes`, « Faster and smoother ») décrit les mêmes défauts du fichier
+de jeu ; les correctifs ci-dessous sont les nôtres (insertions P-code et helpers), écrits après lecture du code
+décompilé de `client_fr.swf`.
+
+| Section | Où | Défaut de l'original | Correctif |
+|---|---|---|---|
+| `PC_PLAY_FX_TRAIL` | ligne de tir `§I&\x01§.§rL\x1ff\x03§.§s\x11G?\x03§` | le clip `FxLineShot` (mode `ADD` + lueur) reste sur le terrain une fois son animation finie, invisible, avancé et dessiné à chaque image : un de plus par tir | `mtTrail` : une particule `§)Kw{DEL}\x02§` de 6 images l'emporte et rend le clip (`§\\87\x01§`), dans son calque d'origine `§$@k^\x02§` |
+| `PC_PLAY_FX_HELMET` (part de `PC_PLAY_SFX_HIT`) | casque arraché, `§3\x19/\x01§` du trooper affiché | la particule (600 images) disparaît mais son clip `gfx.Helmet` reste avancé à chaque image | la particule rend le clip à sa fin |
+| `PC_PLAY_FX_BLOOD` | éclaboussure `FxBlood`, constructeur de `§rL\x1ff\x03§` | idem (10 images) | idem |
+| `PC_PLAY_FX_SMOKE` | fumée d'explosion `§z&\x01§.§#s'\x04\x03§`, constructeur | le masque de la bouffée (`§g\r{\x01§`) reste sur le terrain et garde sa bouffée en vie | le masque devient l'« ombre » de la particule (`§\x0b\x19@@\x02§`), retirée avec elle |
+| `PC_PLAY_FX_ROCKET`, `PC_PLAY_FX_SMOKE_BLUR` | bouffées de la roquette `§I&\x01§.§ae\x1f\t§` et de l'explosion | chaque bouffée porte un `BlurFilter` ; celles de la roquette grandissent à chaque image : Ruffle refait chaque flou à chaque image (jusqu'à ~90 bouffées), les à-coups d'une bataille | `mtPuffBlur` / `mtPuffFrame` : le dessin d'une bouffée est flouté une fois par taille (pas logarithmique de ~2,5 %, 40 pas par facteur e) dans une image partagée, affichée à la place du dessin vectoriel ; le flou reste en pixels d'écran comme celui du filtre |
+
+Les deux constructeurs sont visés avec leur ligne de signature comme `trait` (FFDec l'imprime au-dessus du P-code d'un
+initialiseur d'instance, une fois par fichier). `mtState().puff` = [bouffées passées en image, images floutées
+dessinées, 0].
+
+Mesures (même épique, même machine, ×1 avec le son ; images de jeu par seconde, `mtState().calls`) :
+
+| | médiane | 10 % les plus lentes | minimum | durée |
+|---|---|---|---|---|
+| `?v=15` | 22,9 | 11,5 | 5,5 | 388 s |
+| traînées seules | 39,8 | 37,4 | 11 | 242 s |
+| `?v=16` | 39,9 | 39,4 | 29,7 | 238 s |
+
+L'extermination de prod n° 34 (625 entrées) : médiane 39,9, 10 % les plus lentes 39,3. Images identiques (captures du
+vol d'une roquette à ×1/16 avant et après : même traînée de fumée, aux positions aléatoires près).
+
 ### Infobulles au toucher (`?v=15`)
 
 La fiche d'un trooper en pause (`§^\x05\x01!§.§cfKo\x03§`) a des infobulles (compétences `§r\x14XV\x01§`, santé,
@@ -739,7 +785,8 @@ sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0c
 suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
 `?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` ; sons (`mtSfx`) :
 `5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` ; sons, deuxième ronde (animations, déplacements, grenades) et infobulles au toucher :
-`0dab17e9fe3c484690fdb2197369fdf2ff869560aa91888a186a24e1d52dd297`, `?v=15` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`0dab17e9fe3c484690fdb2197369fdf2ff869560aa91888a186a24e1d52dd297`, `?v=15` ; performances (traînées de balles, casques, sang, masques et flou de la fumée, section « Performances ») :
+`e29992635a5fca669aa2624ca6274068fb5781cee72bd4aa383c76813268ff84`, `?v=16` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
