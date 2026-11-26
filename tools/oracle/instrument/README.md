@@ -738,11 +738,12 @@ sauts permis en pause) : `0b0d8d3b66aa8eb42548c1b24742379ba5c6cfa75072d696c9bd0c
 `c88b2140e6752ed74976714dc1991c6734ec471ffb4fdf1a391c9a2a8410b646`, `?v=11` ; saut en attente rattrapé dans l'image
 suivante, simulation par budget de 5 ms par image : `224914b5ca241b088aac0e3aa784e680843b5a3db06fa7decbbd750226137bab`,
 `?v=12` ; pause (fondu, clics simultanés), ×1/16, compétences consommées rétablies : `00889d8b7ab730169172e94adb9cbb0e8579a07003f84c718acc3e2842fafe2b`, `?v=13` ; sons (`mtSfx`) :
-`5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
+`5334e1970720ea123c89b9c581514cf9bcff09f93546fa3a832cc5e5858292ce`, `?v=14` ; sons, deuxième ronde (animations, déplacements, grenades) et infobulles au toucher :
+`0dab17e9fe3c484690fdb2197369fdf2ff869560aa91888a186a24e1d52dd297`, `?v=15` (à chaque fois deux builds dans deux dossiers de travail : même SHA-256). Depuis `?v=7`, deux
 insertions P-code de plus dans le Game : `PC_PLAY_KF` (état 0, après `resolve()`) et `PC_PLAY_TICK` (`tick()`), ci-dessous ;
 le reste du nouveau code est dans les helpers.
 
-- Innocuité (`build.ps1 -Play -Verify`, `?v=14`) : 31 fichiers P-code diffèrent octet à octet, 6 hors renumérotation
+- Innocuité (`build.ps1 -Play -Verify`, `?v=14` ; `?v=15` ajoute des appels en tête de méthodes d'affichage : `§PNcV\x01§` du trooper affiché, `§&l\f[\x01§` du déplacement `§{DEL}\f\x01§.§Z\b4]§`, `§87 9§` et `OX2i` de la grenade `§I&\x01§.§(qs[§`, `§\x14;T\x07§` et la fin de `§\x07MJ\x1f§` de l'infobulle `§^\x05\x01!§.§xy\x04\x06§`) : 31 fichiers P-code diffèrent octet à octet, 6 hors renumérotation
   `newfunction N` : en plus de ceux ci-dessous, `§59=F\x03§` (trooper affiché : un appel en tête de `§3\x19/\x01§` et de
   `§\x16mf\x01§`), `§n#\x07\f§` (carte : un appel en tête de `§nEI(\x01§`) et, dans le Game, un appel en tête de
   `apply` (sons, ci-dessus) ; `§(m]a\x02§` (helpers), `§l\x0b\x01§` (`pushbyte 14` → `20`, ci-dessus), et, hors renumérotation des labels de saut (le Game n'importe plus `§;io&§`, que seul `tick()` appelait) :

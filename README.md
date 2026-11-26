@@ -122,7 +122,8 @@ développeur (voir Crédits). Il est intégré nativement : pas d'extension de n
   vitesse, les sons se raréfient au lieu de saturer. Bouton son du lecteur (actif par défaut, choix mémorisé).
 - Ligne d'état (événement, vague, images par seconde), avertissement quand un combat reste bloqué.
 - **Mobile** : quatre pas autour de la pause sous 720 px ; en paysage, scène sur toute la hauteur, commandes à
-  droite et plein écran au premier toucher.
+  droite et plein écran au premier toucher ; en pause, un toucher sur une compétence, la santé, un statut ou une arme
+  de la fiche d'un trooper affiche son infobulle (un autre toucher la remplace ou la ferme).
 - Raccourcis (`?` affiche la liste) :
 
 | Touche | Action |
