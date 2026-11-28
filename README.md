@@ -35,7 +35,8 @@ Ajouts depuis la fin de l'étape 4 :
 - `reset-day` tire à nouveau la boutique `/add` et les adversaires `/b/opp` du jour (#3) ;
 - `set-faction` change la couleur d'uniforme d'une armée (#4) ;
 - lecteur de combats amélioré sur toutes les pages de combat (voir [Lecteur de combats amélioré](#lecteur-de-combats-amélioré)) ;
-- Ruffle utilise le rendu WebGL : animations fluides sur les GPU où le rendu par défaut (wgpu) rame (#5).
+- Ruffle utilise le rendu WebGL : animations fluides sur les GPU où le rendu par défaut (wgpu) rame (#5) ;
+- prix d'amélioration adouci : `niveau²` au lieu de `niveau^2,5` (441 crédits au lieu de 2 020 pour passer du niveau 21 au 22), réglable par `LEVEL_COST_EXPONENT` (`2.5` = l'original).
 
 ## Fonctionnalités
 

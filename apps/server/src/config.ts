@@ -1,4 +1,5 @@
 import { isAbsolute, resolve } from "node:path";
+import { LEVEL_COST_EXPONENT } from "@mt/game";
 
 export type UrlMode = "path" | "subdomain";
 
@@ -18,6 +19,8 @@ export interface Config {
   tzGame: string;
   /** Credits multiplier of rewards won on Saturdays and Sundays of the game day (WEEKEND_MULTIPLIER, 1-10, 1 = off). */
   weekendMultiplier: number;
+  /** Exponent of the level-up price `int((n+1)^e)` (LEVEL_COST_EXPONENT, 1 to 3, default 2; 2.5 = the original). */
+  levelCostExponent: number;
   /** Cookies get the Secure flag when the public URL is https. */
   secureCookies: boolean;
 }
@@ -61,6 +64,10 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (!/^[0-9]+$/.test(wm) || Number(wm) < 1 || Number(wm) > 10) {
     throw new Error(`invalid WEEKEND_MULTIPLIER: ${JSON.stringify(wm)} (an integer from 1 to 10; 1 disables the weekend event)`);
   }
+  const lce = env.LEVEL_COST_EXPONENT ?? String(LEVEL_COST_EXPONENT);
+  if (!/^[0-9](\.[0-9]{1,2})?$/.test(lce) || Number(lce) < 1 || Number(lce) > 3) {
+    throw new Error(`invalid LEVEL_COST_EXPONENT: ${JSON.stringify(lce)} (a number from 1 to 3, at most 2 decimals; 2.5 = the original)`);
+  }
   // HOST is deliberately not read: tcsh and others export it as the machine name, which is not an address to bind.
   const warnings: string[] = [];
   if (env.HOST) warnings.push(`HOST=${env.HOST} is ignored (often the machine name); set LISTEN_HOST to choose the listening address`);
@@ -75,6 +82,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     trustProxy: trust === "1" || trust === "true",
     tzGame,
     weekendMultiplier: Number(wm),
+    levelCostExponent: Number(lce),
     secureCookies: pub.protocol === "https:",
   };
 }

@@ -5,7 +5,10 @@ export { haxeTrim, host, validateArmyName, RESERVED_HOSTS } from "./host.ts";
 export { dailyOffers } from "./offers.ts";
 export type { OfferTrooper } from "./offers.ts";
 export { trooperName } from "./names.ts";
-export { battleAllowance, battlesPerDay, battleReward, isWeekend, referralBounty, rewardMultiplier, STARTING_CREDITS } from "./economy.ts";
+export {
+  battleAllowance, battlesPerDay, battleReward, isWeekend, LEVEL_COST_EXPONENT, levelUpCost, referralBounty, rewardMultiplier,
+  STARTING_CREDITS,
+} from "./economy.ts";
 export { FACTIONS, FACTION_COLOURS, factionBattleArmy } from "./factions.ts";
 export type { Faction, FactionTrooper } from "./factions.ts";
 export { fillerArmy, fillerBattleArmy, fillerId, parseFillerId } from "./fillers.ts";

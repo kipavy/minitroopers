@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { choiceIndexForSkill, clientParams, describeTrooper, levelUpOptions, trooperData, upgradeCost } from "@mt/engine";
+import { levelUpCost } from "@mt/game";
 import { armyByHost, trooperInput, troopersOf } from "../src/repo.ts";
 import { MINI_SWF } from "../src/views/swf.ts";
 import { create, setup, type Client, type Env, type Mode } from "./helpers.ts";
@@ -54,8 +55,8 @@ for (const mode of MODES) {
   test(`[${mode}] level-up debits upgradeCost once; reloading the URL or racing requests never debits twice`, async () => {
     const env = setup(mode);
     const { cl, key, id } = await army(env, { choices: [0, 0, 0], credits: 100 });
-    const cost = upgradeCost(3);
-    assert.equal(cost, 32);
+    const cost = levelUpCost(3);
+    assert.equal(cost, 16);
     const res = await get(env, cl, `/t/0?levelup=${key}&lv=3`);
     assert.equal(res.status, 302);
     assert.equal(res.headers.get("location"), loc(env, mode, "/levelup/0"));
@@ -77,13 +78,13 @@ for (const mode of MODES) {
 
   test(`[${mode}] level-up refused: wrong key, not enough credits, max level`, async () => {
     const env = setup(mode);
-    const { cl, key, id } = await army(env, { choices: [0, 0, 0], credits: 31 });
+    const { cl, key, id } = await army(env, { choices: [0, 0, 0], credits: 15 });
     const bad = await get(env, cl, `/t/0?levelup=XXXXXX&lv=3`);
     assert.equal(bad.status, 302);
-    assert.equal(credits(env, id), 31);
+    assert.equal(credits(env, id), 15);
     const poor = await get(env, cl, `/t/0?levelup=${key}&lv=3`);
     assert.equal(poor.status, 302); // back to the sheet
-    assert.equal(credits(env, id), 31);
+    assert.equal(credits(env, id), 15);
     assert.equal(trooper0(env, id).pendingLevelup, null);
     const e2 = setup(mode);
     const top = await army(e2, { choices: new Array(60).fill(0), credits: 1e9 });
@@ -312,3 +313,13 @@ for (const mode of MODES) {
     assert.equal((await get(env, (await army(setup(mode))).cl, "/t/7")).status, 404);
   });
 }
+
+test("LEVEL_COST_EXPONENT=2.5 restores the original price on the sheet and the debit", async () => {
+  const env = setup("path", { LEVEL_COST_EXPONENT: "2.5" });
+  const { cl, key, id } = await army(env, { choices: [0, 0, 0], credits: 100 });
+  assert.equal(upgradeCost(3), 32);
+  const html = await (await get(env, cl, "/t/0")).text();
+  assert.match(html, /Améliorer\s+pour\s+32\s+<img/);
+  await get(env, cl, `/t/0?levelup=${key}&lv=3`);
+  assert.equal(credits(env, id), 100 - 32);
+});

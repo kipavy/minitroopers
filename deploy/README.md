@@ -52,6 +52,7 @@ Valeurs fixées par l'image : `NODE_ENV=production`, `PORT=8080`, `LISTEN_HOST=0
 | `TRUST_PROXY` | `0` | `1` : IP client lue dans `CF-Connecting-IP` (voir Cloudflare Tunnel) |
 | `TZ_GAME` | `Europe/Paris` | fuseau IANA du jour de jeu |
 | `WEEKEND_MULTIPLIER` | `3` | gains de combat (batailles, missions, raids) multipliés le samedi et le dimanche du jour de jeu, avec une bannière sur toutes les pages ; `1` désactive l’événement (entier de 1 à 10) |
+| `LEVEL_COST_EXPONENT` | `2` | prix d’amélioration d’un trooper : `int((niveau)^e)` (1 pour le niveau 2, 100 pour le 11, 441 pour le 22) ; `2.5` = la formule du jeu original (nombre de 1 à 3, 2 décimales au plus) |
 
 Détail et contrôles au démarrage : [apps/server/README.md](../apps/server/README.md).
 
