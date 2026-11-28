@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Rand } from "@mt/engine";
+import { Rand, upgradeCost } from "@mt/engine";
 import {
   dayKey, nextResetAt, prevDay, host, validateArmyName, dailyOffers, trooperName,
-  battlesPerDay, battleReward, referralBounty, STARTING_CREDITS, rewardMultiplier, isWeekend,
+  battlesPerDay, battleReward, referralBounty, STARTING_CREDITS, rewardMultiplier, isWeekend, levelUpCost, LEVEL_COST_EXPONENT,
 } from "../src/index.ts";
 
 test("host: recon cases", () => {
@@ -132,4 +132,14 @@ test("rewardMultiplier: weekend days of a ×3 weekend only", () => {
   assert.equal(rewardMultiplier("2026-12-12", 1), 1);
   assert.equal(isWeekend("2027-01-02"), true); // samedi, autre année
   assert.equal(isWeekend("2027-01-04"), false);
+});
+
+test("levelUpCost: (n+1)^2 by default, the original Data.levelCost with exponent 2.5", () => {
+  assert.equal(LEVEL_COST_EXPONENT, 2);
+  assert.deepEqual([0, 1, 2, 3, 9, 20, 41].map((n) => levelUpCost(n)), [1, 4, 9, 16, 100, 441, 1764]);
+  for (let n = 0; n <= 60; n++) assert.equal(levelUpCost(n, 2.5), upgradeCost(n), `n=${n}`);
+  // still superlinear: stacking one trooper from level 21 to 42 costs far more than spreading the same levels
+  let stack = 0;
+  for (let n = 20; n < 41; n++) stack += levelUpCost(n);
+  assert.ok(stack > 12 * (levelUpCost(20) + levelUpCost(21)), String(stack));
 });

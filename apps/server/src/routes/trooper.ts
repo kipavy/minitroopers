@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 import { formBody } from "../form.ts";
-import { Rand, describeTrooper, levelUpOptions, reequip, upgradeCost } from "@mt/engine";
+import { Rand, describeTrooper, levelUpOptions, reequip } from "@mt/engine";
+import { levelUpCost } from "@mt/game";
 import type { Deps, Env } from "../app.ts";
 import { hasKey, queryParam } from "../session.ts";
 import { reequipTrooper, renameTrooper, saveTrooperPref, startLevelUp, trooperInput, type TrooperRow } from "../repo.ts";
@@ -40,7 +41,7 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
       pref: row.pref ?? defaultTrooperPref(),
       key,
       level: row.choices.length,
-      upgradeCost: levelUpOptions(trooper).choiceCount > 0 ? upgradeCost(row.choices.length) : null,
+      upgradeCost: levelUpOptions(trooper).choiceCount > 0 ? levelUpCost(row.choices.length, cfg.levelCostExponent) : null,
       ...(error ? { error } : {}),
     };
     return c.html(String(sheetPage(cfg, view)), status);
@@ -64,7 +65,7 @@ export function registerTrooper(pages: Hono<Env>, deps: Deps): void {
       if (!hasKey(c, "levelup")) return back();
       const can = levelUpOptions(input).choiceCount > 0;
       const lv = /^[0-9]{1,3}$/.test(queryParam(c, "lv") ?? "") ? Number(queryParam(c, "lv")) : -1;
-      const r = startLevelUp(db, o.army.id, slot, lv, (n) => (can ? upgradeCost(n) : null));
+      const r = startLevelUp(db, o.army.id, slot, lv, (n) => (can ? levelUpCost(n, cfg.levelCostExponent) : null));
       return r === "started" || r === "pending" ? to(c, o, `/levelup/${slot}`) : back(); // poor / cap / stale: the sheet again
     }
     if (hasParam(c, "name")) {

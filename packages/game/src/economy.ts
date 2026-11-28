@@ -66,3 +66,15 @@ export function isWeekend(day: string): boolean {
 export function rewardMultiplier(day: string, weekend: number): number {
   return weekendEvent(day, weekend).x3 ? weekend : 1;
 }
+
+/** Default exponent of the level-up price (LEVEL_COST_EXPONENT). The original `Data.levelCost` uses 2.5. */
+export const LEVEL_COST_EXPONENT = 2;
+
+/**
+ * Cost of the next level-up of a trooper with `choicesLength` choices: `int((n+1)^exponent)`, the shape of the original
+ * `Data.levelCost` with a softer default exponent on this instance (2 instead of 2.5, 2026-11-28: at ~40 credits a day a
+ * level-21 trooper took 50 days per level). The total stays cubic, so spreading levels beats stacking one trooper.
+ */
+export function levelUpCost(choicesLength: number, exponent: number = LEVEL_COST_EXPONENT): number {
+  return Math.pow(choicesLength + 1, exponent) | 0;
+}
